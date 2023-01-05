@@ -1,0 +1,15 @@
+#all logs
+*.log*
+
+#node modules
+frontend/node_modules
+
+#python virtual env
+backend/env
+
+#django related
+backend/payroll_system/db.sqlite3
+backend/payroll_system/payroll_system/__pycache__
+backend/payroll_system/api/__pycache__
+backend/payroll_system/api/migrations/__pycache__
+backend/payroll_system/api/auth/__pycache__
