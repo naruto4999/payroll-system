@@ -12,7 +12,7 @@ import { Routes, Route } from "react-router-dom";
 import LoginForm from "./authentication/Login";
 import Profile from "./authentication/Profile";
 import RegisterForm from "./authentication/Register";
-// import NewCompanyEntryForm from "./menu/MasterEntry/forms/NewCompanyEntryForm/NewCompanyEntryForm";
+import NewCompanyEntryForm from "./menu/MasterEntry/forms/NewCompanyEntryForm/NewCompanyEntryForm";
 // import SelectCompany from "./menu/MasterEntry/forms/NewCompanyEntryForm/SelectCompany";
 
 // import store, { persistor } from "./authentication/store/index"
@@ -58,7 +58,7 @@ function App() {
             
             <Routes>
                 <Route path="home" element={<ProtectedRoute><Sidebar /></ProtectedRoute>}>
-                    {/* <Route path="new-company-entry" element={<NewCompanyEntryForm />} /> */}
+                    <Route path="new-company-entry" element={<NewCompanyEntryForm />} />
                     {/* <Route path="select-company" element={<SelectCompany/>} /> */}
                     {/* <Route path="company-entry" element={<CompanyEntryForm />} />
                     <Route path="bank-entry" element={<BankEntryForm />} />
