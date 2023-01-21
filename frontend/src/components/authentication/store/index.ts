@@ -1,4 +1,3 @@
-
 import { configureStore } from "@reduxjs/toolkit";
 import { combineReducers } from "redux";
 import {
@@ -14,11 +13,12 @@ import {
 import storage from "redux-persist/lib/storage";
 import { apiSlice } from "../api/apiSlice";
 import reducer from "./slices/auth";
+import globalCompanyReducer from "./slices/globalCompany";
 
 const rootReducer = combineReducers({
     [apiSlice.reducerPath]: apiSlice.reducer,
     auth: reducer,
-    
+    globalCompany: globalCompanyReducer
   });
   
 const persistedReducer = persistReducer(
