@@ -1,7 +1,6 @@
 import React, { useMemo } from "react";
 import { useSelector } from "react-redux";
 import { useState } from "react";
-import NewCompanyItem from "./NewCompanyItem";
 import { useTable } from "react-table";
 import { FaRegTrashAlt, FaPen, FaCircleNotch } from "react-icons/fa";
 import EditCompany from "./EditCompany";
