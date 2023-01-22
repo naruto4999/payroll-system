@@ -3,6 +3,7 @@ import { useGetCompaniesQuery } from "../../../../authentication/api/newCompanyE
 import { globalCompanyActions } from "../../../../authentication/store/slices/globalCompany";
 import { useSelector, useDispatch } from "react-redux";
 import { useOutletContext } from "react-router-dom";
+import { useEffect } from "react";
 
 const classNames = (...classes) => {
     return classes.filter(Boolean).join(" ");
@@ -22,11 +23,13 @@ const SelectCompany = () => {
         dispatch(globalCompanyActions.setCompany({ id: company.id, name: company.name }));
     };
 
+    useEffect(() => {
+        setShowLoadingBar(isLoading)
+    },[isLoading])
+
     if (isLoading) {
-        setShowLoadingBar(true);
         return <div></div>;
     } else {
-        setShowLoadingBar(false);
         return (
             <section className="mx-6 mt-2">
                 <div className="">
@@ -40,8 +43,8 @@ const SelectCompany = () => {
                                     className={classNames(
                                         globalCompany.id == data.id
                                             ? "bg-blueAccent-700 scale-125"
-                                            : "hover:bg-teal-700",
-                                        "h-32 w-60 p-6 md:h-40 md:w-96 md:p-10 bg-zinc-800 rounded cursor-pointer md:hover:scale-125 transition-transform"
+                                            : "hover:bg-teal-700 md:hover:scale-125 bg-zinc-800",
+                                        "h-32 w-60 p-6 md:h-40 md:w-96 md:p-10 rounded cursor-pointer transition-transform"
                                     )}
                                     onClick={() => handler(data)}
                                     value={val}
