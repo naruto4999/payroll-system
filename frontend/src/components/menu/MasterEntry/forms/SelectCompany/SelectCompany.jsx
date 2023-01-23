@@ -42,8 +42,8 @@ const SelectCompany = () => {
                                     key={data.id}
                                     className={classNames(
                                         globalCompany.id == data.id
-                                            ? "bg-blueAccent-700 scale-125"
-                                            : "hover:bg-teal-700 md:hover:scale-125 bg-zinc-800",
+                                            ? "dark:bg-blueAccent-700 bg-blueAccent-600 scale-125"
+                                            : "dark:hover:bg-teal-700 hover:bg-teal-600 md:hover:scale-125 dark:bg-zinc-800 bg-zinc-200",
                                         "h-32 w-60 p-6 md:h-40 md:w-96 md:p-10 rounded cursor-pointer transition-transform"
                                     )}
                                     onClick={() => handler(data)}
