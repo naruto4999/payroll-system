@@ -40,10 +40,10 @@ CORS_ALLOW_CREDENTIALS = True
 # CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOWED_ORIGINS = [
-    'https://fc65-103-100-4-232.in.ngrok.io',
+    'https://d1cc-43-248-153-133.in.ngrok.io',
     'http://127.0.0.1:8000',
     'http://localhost:8000',
-    'https://16a5-103-100-4-232.in.ngrok.io',
+    'https://a640-43-248-153-133.in.ngrok.io',
 ]
 
 # CORS_ALLOWED_ORIGIN_REGEXES = [

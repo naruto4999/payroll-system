@@ -4,6 +4,7 @@ import { globalCompanyActions } from "../../../../authentication/store/slices/gl
 import { useSelector, useDispatch } from "react-redux";
 import { useOutletContext } from "react-router-dom";
 import { useEffect } from "react";
+import { FaCheck } from "react-icons/fa";
 
 const classNames = (...classes) => {
     return classes.filter(Boolean).join(" ");
@@ -24,8 +25,8 @@ const SelectCompany = () => {
     };
 
     useEffect(() => {
-        setShowLoadingBar(isLoading)
-    },[isLoading])
+        setShowLoadingBar(isLoading);
+    }, [isLoading]);
 
     if (isLoading) {
         return <div></div>;
@@ -44,11 +45,16 @@ const SelectCompany = () => {
                                         globalCompany.id == data.id
                                             ? "dark:bg-blueAccent-700 bg-blueAccent-600 scale-125"
                                             : "dark:hover:bg-teal-700 hover:bg-teal-600 md:hover:scale-125 dark:bg-zinc-800 bg-zinc-200",
-                                        "h-32 w-60 p-6 md:h-40 md:w-96 md:p-10 rounded cursor-pointer transition-transform"
+                                        "h-32 w-60 p-6 md:h-40 md:w-96 md:p-10 rounded cursor-pointer transition-transform relative"
                                     )}
                                     onClick={() => handler(data)}
                                     value={val}
                                 >
+                                    {globalCompany.id == data.id ? (
+                                        <FaCheck className="absolute scale-150 left-1/2 -translate-y-5 -translate-x-1/2" />
+                                    ) : (
+                                        ""
+                                    )}
                                     <h1 className="text-xl">{data.name}</h1>
                                 </button>
                             );

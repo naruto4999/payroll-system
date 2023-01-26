@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useDispatch } from "react-redux";
 import { useSelector } from "react-redux";
 import { authActions } from "../authentication/store/slices/auth";
+import { globalCompanyActions } from "../authentication/store/slices/globalCompany";
 import { FaRegWindowClose, FaRegBuilding, FaChevronDown, FaBars, FaSignOutAlt } from "react-icons/fa";
 import SidebarItem from "./SidebarItem";
 import items from "./SidebarData";
@@ -16,6 +17,7 @@ const Sidebar = () => {
     const dispatch = useDispatch();
     const handleLogout = () => {
         dispatch(authActions.logout());
+        dispatch(globalCompanyActions.deselectComapny());
     };
     const auth = useSelector((state) => state.auth);
     const [showSidebar, setShowSidebar] = useState(true);
