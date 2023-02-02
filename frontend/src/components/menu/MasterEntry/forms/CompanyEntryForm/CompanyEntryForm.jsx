@@ -5,6 +5,13 @@ import { useSelector } from "react-redux";
 const CompanyEntryForm = () => {
     const globalCompany = useSelector((state) => state.globalCompany);
 
+    if (globalCompany.id == null) {
+        return (
+            <section className="flex flex-col items-center">
+                <h4 className="mt-10 text-x text-redAccent-500 dark:text-redAccent-600 font-bold">Please Select a Company First</h4>
+            </section>
+        );
+    }
     return (
         <section className="mx-6 mt-2">
             <div className="flex flex-row place-content-between flex-wrap gap-4">
@@ -38,9 +45,10 @@ const CompanyEntryForm = () => {
                             type="text"
                             name="name"
                             id="name"
-                            className="dark:bg-zinc-800 bg-slate-200 dark:text-slate-400 text-slate-500 rounded p-2"
+                            className="dark:bg-zinc-800 bg-slate-200 dark:text-slate-400 text-slate-500 rounded p-2 w-full lg:w-fit"
                             value={globalCompany.name}
                             disabled
+                            size={globalCompany.name.length}
                         />
                     </div>
                     <div>

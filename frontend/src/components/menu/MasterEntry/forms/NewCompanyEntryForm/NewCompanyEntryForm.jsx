@@ -1,11 +1,12 @@
 import React, { useMemo } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { useState } from "react";
 import { useTable } from "react-table";
 import { FaRegTrashAlt, FaPen, FaCircleNotch } from "react-icons/fa";
 import EditCompany from "./EditCompany";
 import { useOutletContext } from "react-router-dom";
 import { useEffect } from "react";
+import { globalCompanyActions } from "../../../../authentication/store/slices/globalCompany";
 
 //imports after using RTK query
 import {
@@ -31,9 +32,10 @@ const NewCompanyEntryForm = () => {
     const [addComapnyPopover, setAddCompanyPopover] = useState(false);
     const [editCompanyPopover, setEditCompanyPopover] = useState(false);
     const [showLoadingBar, setShowLoadingBar] = useOutletContext()
-    
+    const dispatch = useDispatch();
 
     const auth = useSelector((state) => state.auth);
+    const globalCompany = useSelector((state) => state.globalCompany)
     const [newCompany, setNewCompany] = useState("");
     const [updatedCompany, setUpdatedCompany] = useState({
         id: "",
@@ -87,6 +89,9 @@ const NewCompanyEntryForm = () => {
     const deleteButtonClicked = async (id) => {
         console.log(id);
         deleteCompany({ id });
+        if (globalCompany.id == id) {
+            dispatch(globalCompanyActions.deselectComapny())
+        }
     };
 
     const columns = useMemo(
