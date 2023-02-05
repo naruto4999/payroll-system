@@ -26,8 +26,8 @@ class CompanyEntrySerializer(serializers.ModelSerializer):
     #comp = serializers.StringRelatedField(many=False, read_only=True)
     class Meta:
         model = CompanyDetails
-        #fields = ('company', 'address', 'key_person', 'involving_industry', 'phone_no', 'email', 'pf_no', 'esi_no', 'head_office_address', 'pan_no', 'tin_no', 'registration_no', 'registration_date')
-        fields = ('company', 'address', 'key_person' ,'involving_industry', 'phone_no', 'email', 'pf_no', 'esi_no', 'head_office_address', 'pan_no', 'tin_no', 'registration_no', 'registration_date')
+        #fields = ('company', 'address', 'key_person', 'involving_industry', 'phone_no', 'email', 'pf_no', 'esi_no', 'head_office_address', 'pan_no', 'gst_no', 'registration_no', 'registration_date')
+        fields = ('company', 'address', 'key_person' ,'involving_industry', 'phone_no', 'email', 'pf_no', 'esi_no', 'head_office_address', 'pan_no', 'gst_no')
 
         def to_representation(self, instance):
             print(instance)

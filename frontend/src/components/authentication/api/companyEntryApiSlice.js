@@ -3,7 +3,7 @@ import { apiSlice } from "./apiSlice";
 export const companyEntryApiSlice = apiSlice.injectEndpoints({
     endpoints: builder => ({
         getCompanyDetails: builder.query({
-            query: ({ id }) => `/api/company-details/${id}`,
+            query: (id) => `/api/company-details/${id}`,
             keepUnusedDataFor: 5,
             providesTags: ['CompanyDetails']
         }),
@@ -27,7 +27,7 @@ export const companyEntryApiSlice = apiSlice.injectEndpoints({
 });
 
 export const {
-    useLazyGetCompanyDetailsQuery,
+    useGetCompanyDetailsQuery,
     useUpdateCompanyDetailsMutation,
     usePostCompanyDetailsMutation,
 } = companyEntryApiSlice

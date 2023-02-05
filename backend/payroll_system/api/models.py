@@ -63,8 +63,6 @@ class CompanyDetails(models.Model):
     esi_no = models.PositiveBigIntegerField()
     head_office_address = models.TextField()
     pan_no = models.CharField(max_length=10, unique=True)
-    tin_no = models.CharField(max_length=11, blank=True)
-    registration_no = models.CharField(max_length=50, blank=True)
-    registration_date = models.DateField()
+    gst_no = models.CharField(max_length=15, blank=True)
     
 
