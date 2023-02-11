@@ -1,7 +1,7 @@
 from django.forms import ValidationError
 from django.shortcuts import render
 from rest_framework import generics, status, mixins
-from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer
+from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer
 from .models import Company, CompanyDetails, User
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
@@ -18,15 +18,14 @@ class CompanyListCreateAPIView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     # queryset = Company.objects.all()
     serializer_class = CompanySerializer
-    # def list(self, request, *args, **kwargs):
-    #     print(request.user)
-    #     user = request.user
-    #     queryset = user.company.all()
-    #     serializer = CompanySerializer(queryset, many=True)
-    #     return Response(serializer.data)
+
     def get_queryset(self):
         user = self.request.user
-        return user.company.all()
+        return user.companies.all()
+    
+    def perform_create(self, serializer):
+        # print(self.request.user)
+        serializer.save(user=self.request.user)
 
 
 class CompanyRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -36,17 +35,23 @@ class CompanyRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView)
     lookup_field = 'id'
     def get_queryset(self):
         user = self.request.user
-        return user.company.all()
-
+        return user.companies.all()
+    def perform_update(self, serializer):
+        serializer.save(user=self.request.user)
 
 class CompanyDetailsMixinView(generics.GenericAPIView,
 mixins.CreateModelMixin,
 mixins.RetrieveModelMixin,
 mixins.ListModelMixin,
 mixins.UpdateModelMixin):
-    queryset = CompanyDetails.objects.all()
+    permission_classes = [IsAuthenticated]
+    # queryset = CompanyDetails.objects.all()
     serializer_class = CompanyEntrySerializer
     lookup_field = 'company_id'
+
+    def get_queryset(self):
+        user = self.request.user
+        return user.all_companies_details.all()
 
     def get(self, request, *args, **kwargs):
         #print(kwargs)
@@ -57,11 +62,27 @@ mixins.UpdateModelMixin):
         return self.create(request, *args, **kwargs)
 
     def put(self, request, *args, **kwargs):
-        return self.partial_update(request,  *args, **kwargs)
+        return self.update(request,  *args, **kwargs)
+    
+    def perform_create(self, serializer):
+        return serializer.save(user=self.request.user)
+    
+    def perform_update(self, serializer):
+        return serializer.save(user=self.request.user)
 
 
+class DepartmentListCreateAPIView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    # queryset = Company.objects.all()
+    serializer_class = DepartmentSerializer
 
-
+    def get_queryset(self):
+        user = self.request.user
+        return user.departments.all()
+    
+    def perform_create(self, serializer):
+        # print(self.request.user)
+        serializer.save(user=self.request.user)
 
 
 #Viewsets

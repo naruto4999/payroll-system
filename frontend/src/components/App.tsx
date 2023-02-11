@@ -15,6 +15,7 @@ import RegisterForm from "./authentication/Register";
 import NewCompanyEntryForm from "./menu/MasterEntry/forms/NewCompanyEntryForm/NewCompanyEntryForm";
 import SelectCompany from "./menu/MasterEntry/forms/SelectCompany/SelectCompany";
 import CompanyEntryForm from "./menu/MasterEntry/forms/CompanyEntryForm/CompanyEntryForm";
+import DepartmentEntryForm from "./menu/MasterEntry/forms/DepartmentEntryForm/DepartmentEntryForm";
 
 // import store, { persistor } from "./authentication/store/index"
 // import { PersistGate } from "redux-persist/integration/react";
@@ -62,6 +63,7 @@ function App() {
                     <Route path="new-company-entry" element={<NewCompanyEntryForm />} />
                     <Route path="select-company" element={<SelectCompany/>} />
                     <Route path="company-entry" element={<CompanyEntryForm/>} />
+                    <Route path="department-entry" element={<DepartmentEntryForm/>} />
                     {/* <Route path="bank-entry" element={<BankEntryForm />} />
                     <Route path="category-entry" element={<CategoryEntryForm />} />
                     <Route path="department-entry" element={<DepartmentEntryForm />} />

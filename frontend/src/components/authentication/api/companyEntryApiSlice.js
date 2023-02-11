@@ -16,12 +16,12 @@ export const companyEntryApiSlice = apiSlice.injectEndpoints({
             invalidatesTags: ['CompanyDetails']
         }),
         postCompanyDetails: builder.mutation({
-            query: details => ({
+            query: details => ({    
                 url: "/api/company-details",
                 method: 'POST',
                 body: details,
             }),
-            invalidatesTags: ['CompanyDetails']
+            invalidatesTags: ['']
         }),
     })
 });

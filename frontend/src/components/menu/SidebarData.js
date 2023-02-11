@@ -1,4 +1,4 @@
-import { FaUserTie, FaPlus, FaPen, FaHome } from "react-icons/fa";
+import { FaUserTie, FaPlus, FaPen, FaHome, FaThLarge } from "react-icons/fa";
 
 const items = [
     {
@@ -16,13 +16,9 @@ const items = [
                 path: "/home/company-entry",
             },
             {
-                title: "Anime",
-                children: [
-                    {
-                        title: "Naruto",
-                        path: "/home"
-                    },
-                ],
+                title: "Department Entry",
+                icon: FaThLarge,
+                path: "/home/department-entry"
             },
         ],
     },

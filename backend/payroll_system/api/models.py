@@ -45,7 +45,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 
 class Company(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="company")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="companies")
     id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length=256, null=False, unique=True)
     def __str__(self):
@@ -53,6 +53,7 @@ class Company(models.Model):
 
 
 class CompanyDetails(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_companies_details")
     company = models.OneToOneField(Company, on_delete=models.CASCADE, related_name="company_details", primary_key=True)
     address = models.TextField()
     key_person = models.CharField(max_length=64, blank=True)
@@ -65,4 +66,8 @@ class CompanyDetails(models.Model):
     pan_no = models.CharField(max_length=10, unique=True)
     gst_no = models.CharField(max_length=15, blank=True)
     
+class Deparment(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="departments")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="deparments")
+    name = models.CharField(max_length=256, null=False, blank=False)
 

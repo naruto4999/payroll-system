@@ -34,7 +34,6 @@ const NewCompanyEntryForm = () => {
     const [showLoadingBar, setShowLoadingBar] = useOutletContext()
     const dispatch = useDispatch();
 
-    const auth = useSelector((state) => state.auth);
     const globalCompany = useSelector((state) => state.globalCompany)
     const [newCompany, setNewCompany] = useState("");
     const [updatedCompany, setUpdatedCompany] = useState({
@@ -69,7 +68,6 @@ const NewCompanyEntryForm = () => {
     const addButtonClicked = async () => {
         setAddCompanyPopover(!addComapnyPopover);
         addCompanies({
-            user: auth.account.id,
             name: newCompany,
         });
         console.log(isAddingCompany);
@@ -80,7 +78,6 @@ const NewCompanyEntryForm = () => {
         console.log(updatedCompany);
         updateCompany({
             id: updatedCompany.id,
-            user: auth.account.id,
             name: updatedCompany.name,
         });
         editCompanyPopoverHandler({id: "", name: ""});
