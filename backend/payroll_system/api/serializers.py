@@ -51,5 +51,5 @@ class DepartmentSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     class Meta:
         model = Deparment
-        fields = ('user', 'comapny', 'name')
-        
+        fields = ('id','user', 'company', 'name')
+

@@ -1,8 +1,14 @@
 import React, { useMemo } from "react";
 import { useTable } from "react-table";
 import { FaRegTrashAlt, FaPen } from "react-icons/fa";
+import {
+    useGetDepartmentsQuery,
+    useAddDepartmentMutation
+} from "../../../../authentication/api/departmentEntryApiSlice";
 
 const DepartmentEntryForm = () => {
+    const { data: fetchedData, isLoading, isSuccess, isError, error } = useGetDepartmentsQuery();
+    const [addDepartment, { isLoading: isAddingDepartment }] = useAddDepartmentMutation();
 
     const deleteButtonClicked = (id) => {
         console.log(id);
@@ -21,16 +27,19 @@ const DepartmentEntryForm = () => {
         []
     );
 
-    const data = useMemo(() => [
-        {
-            id: "1",
-            name: "account",
-        },
-        {
-            id: "2",
-            name: "admin",
-        },
-    ]);
+    const data = useMemo(() => (fetchedData ? [...fetchedData] : []), [fetchedData]);
+    console.log(data)
+
+    // const data = useMemo(() => [
+    //     {
+    //         id: "1",
+    //         name: "account",
+    //     },
+    //     {
+    //         id: "2",
+    //         name: "admin",
+    //     },
+    // ]);
 
     console.log(data);
     const tableHooks = (hooks) => {
