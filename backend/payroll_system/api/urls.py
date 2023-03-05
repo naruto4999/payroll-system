@@ -8,6 +8,7 @@ urlpatterns = [
     path('company-details', CompanyDetailsMixinView.as_view()),
     path('company-details/<int:company_id>', CompanyDetailsMixinView.as_view()),
     path('', include('api.routers',)),
+    path('department/<int:company_id>', DepartmentListCreateAPIView.as_view()),
     path('department', DepartmentListCreateAPIView.as_view()),
 
 ]

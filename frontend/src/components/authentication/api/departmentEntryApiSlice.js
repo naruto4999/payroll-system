@@ -3,8 +3,8 @@ import { apiSlice } from "./apiSlice";
 export const departmentEntryApiSlice = apiSlice.injectEndpoints({
     endpoints: builder => ({
         getDepartments: builder.query({
-            query: () => ({
-                url: "/api/department",
+            query: (company) => ({
+                url: `/api/department/${company.id}`,
                 method: 'GET',
             }),
             keepUnusedDataFor: 1,

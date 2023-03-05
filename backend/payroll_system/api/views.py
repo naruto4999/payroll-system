@@ -75,10 +75,14 @@ class DepartmentListCreateAPIView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     # queryset = Company.objects.all()
     serializer_class = DepartmentSerializer
+    lookup_field = 'company_id'
 
-    def get_queryset(self):
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
         user = self.request.user
-        return user.departments.all()
+        departments = user.departments.filter(company=company_id)
+        print(departments)
+        return departments
     
     def perform_create(self, serializer):
         # print(self.request.user)

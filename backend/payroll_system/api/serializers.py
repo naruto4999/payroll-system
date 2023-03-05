@@ -49,6 +49,7 @@ class CompanyEntrySerializer(serializers.ModelSerializer):
 
 class DepartmentSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
+    company = CompanySerializer()
     class Meta:
         model = Deparment
         fields = ('id','user', 'company', 'name')
