@@ -85,8 +85,9 @@ class DepartmentListCreateAPIView(generics.ListCreateAPIView):
         return departments
     
     def perform_create(self, serializer):
-        # print(self.request.user)
-        serializer.save(user=self.request.user)
+        company_id = self.kwargs.get('company_id')
+        company = Company.objects.get(id=company_id)
+        serializer.save(user=self.request.user, company=company)
 
 
 #Viewsets

@@ -10,7 +10,7 @@ import AddDepartment from "./AddDepartment";
 
 const DepartmentEntryForm = () => {
     const globalCompany = useSelector((state) => state.globalCompany);
-    // console.log(globalCompany)
+    console.log(globalCompany)
     const { data: fetchedData, isLoading, isSuccess, isError, error } = useGetDepartmentsQuery(globalCompany);
     console.log(fetchedData)
     const [addDepartment, { isLoading: isAddingDepartment }] = useAddDepartmentMutation();
@@ -28,7 +28,7 @@ const DepartmentEntryForm = () => {
     const addButtonClicked = () => {
         setAddDepartmentPopover(!addDepartmentPopover);
         addDepartment({
-            company: { id: globalCompany.id, name: globalCompany.name },
+            company: globalCompany.id,
             name: newDepartment,
         });
         console.log(isAddingDepartment);

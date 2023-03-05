@@ -11,8 +11,8 @@ export const departmentEntryApiSlice = apiSlice.injectEndpoints({
             provideTags: ['Departments']
         }),
         addDepartment: builder.mutation({
-            query: department => ({
-                url: "/api/department",
+            query: (department) => ({
+                url: `/api/department/${department.company}`,
                 method: 'POST',
                 body: department,
             }),
