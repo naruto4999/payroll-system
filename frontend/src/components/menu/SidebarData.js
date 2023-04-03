@@ -1,4 +1,4 @@
-import { FaUserTie, FaPlus, FaPen, FaHome, FaThLarge } from "react-icons/fa";
+import { FaUserTie, FaPlus, FaPen, FaHome, FaThLarge, FaLevelUpAlt } from "react-icons/fa";
 
 const items = [
     {
@@ -20,6 +20,11 @@ const items = [
                 icon: FaThLarge,
                 path: "/home/department-entry"
             },
+            {
+                title: "Designation Entry",
+                icon: FaLevelUpAlt,
+                path: "/home/designation-entry"
+            }
         ],
     },
 ];

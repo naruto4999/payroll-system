@@ -1,5 +1,5 @@
 from django.urls import path, include
-from .views import CompanyListCreateAPIView, CompanyDetailsMixinView, CompanyRetrieveUpdateDestroyAPIView, DepartmentListCreateAPIView, DepartmentRetrieveUpdateDestroyAPIView
+from .views import CompanyListCreateAPIView, CompanyDetailsMixinView, CompanyRetrieveUpdateDestroyAPIView, DepartmentListCreateAPIView, DepartmentRetrieveUpdateDestroyAPIView, DesignationListCreateAPIView, DesignationRetrieveUpdateDestroyAPIView
 
 urlpatterns = [
     path('company', CompanyListCreateAPIView.as_view()),
@@ -10,6 +10,8 @@ urlpatterns = [
     path('', include('api.routers',)),
     path('department/<int:company_id>', DepartmentListCreateAPIView.as_view()),
     path('department/<int:company_id>/<int:id>', DepartmentRetrieveUpdateDestroyAPIView.as_view()),
+    path('designation/<int:company_id>', DesignationListCreateAPIView.as_view()),
+    path('designation/<int:company_id>/<int:id>', DesignationRetrieveUpdateDestroyAPIView.as_view()),
 
 ]
 

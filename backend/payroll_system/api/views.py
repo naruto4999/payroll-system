@@ -1,7 +1,7 @@
 from django.forms import ValidationError
 from django.shortcuts import render
 from rest_framework import generics, status, mixins
-from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer
+from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer
 from .models import Company, CompanyDetails, User
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
@@ -101,6 +101,40 @@ class DepartmentRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIVi
         departments = user.departments.filter(company=company_id)
         print(departments)
         return departments
+    
+    def perform_update(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class DesignationListCreateAPIView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    # queryset = Company.objects.all()
+    serializer_class = DesignationSerializer
+    lookup_field = 'company_id'
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        user = self.request.user
+        designations = user.designations.filter(company=company_id)
+        print(designations)
+        return designations
+    
+    def perform_create(self, serializer):
+        company_id = self.kwargs.get('company_id')
+        company = Company.objects.get(id=company_id)
+        serializer.save(user=self.request.user, company=company)
+
+class DesignationRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes= [IsAuthenticated]
+    serializer_class = DesignationSerializer
+    lookup_field = 'id'
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        user = self.request.user
+        designations = user.designations.filter(company=company_id)
+        print(designations)
+        return designations
     
     def perform_update(self, serializer):
         serializer.save(user=self.request.user)

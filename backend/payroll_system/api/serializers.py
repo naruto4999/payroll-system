@@ -1,7 +1,7 @@
 from dataclasses import field
 from rest_framework import serializers
 
-from .models import Company, CompanyDetails, User, Deparment
+from .models import Company, CompanyDetails, User, Deparment, Designation
 from rest_framework import serializers
 
 
@@ -51,5 +51,10 @@ class DepartmentSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     class Meta:
         model = Deparment
-        fields = ('id','user', 'company', 'name')
+        fields = ('id', 'user', 'company', 'name')
 
+class DesignationSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    class Meta:
+        model = Designation
+        fields = ('id', 'user', 'company', 'name')

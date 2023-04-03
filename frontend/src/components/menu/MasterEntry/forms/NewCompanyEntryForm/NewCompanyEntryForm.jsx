@@ -46,10 +46,6 @@ const NewCompanyEntryForm = () => {
         name: "",
     });
 
-    const addCompanyPopoverHandler = () => {
-        setAddCompanyPopover(!addComapnyPopover);
-    };
-
     const editCompanyPopoverHandler = (company) => {
         setUpdatedCompany((prevState) => {
             return { ...prevState, id: company.id };

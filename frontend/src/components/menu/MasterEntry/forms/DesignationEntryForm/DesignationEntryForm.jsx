@@ -3,19 +3,19 @@ import { useTable } from "react-table";
 import { FaRegTrashAlt, FaPen } from "react-icons/fa";
 import { useSelector } from "react-redux";
 import {
-    useGetDepartmentsQuery,
-    useAddDepartmentMutation,
-    useDeleteDepartmentMutation,
-    useUpdateDepartmentMutation,
-} from "../../../../authentication/api/departmentEntryApiSlice";
-import AddDepartment from "./AddDepartment";
-import EditDepartment from "./EditDepartment";
+    useGetDesignationsQuery,
+    useAddDesignationMutation,
+    useUpdateDesignationMutation,
+    useDeleteDesignationMutation,
+} from "../../../../authentication/api/designationEntryApiSlice";
+import AddDesignation from "./AddDesignation";
+import EditDesignation from "./EditDesignation";
 import { useOutletContext } from "react-router-dom";
 import ReactModal from "react-modal";
 
-ReactModal.setAppElement('#root')
+ReactModal.setAppElement("#root");
 
-const DepartmentEntryForm = () => {
+const DesignationEntryForm = () => {
     const globalCompany = useSelector((state) => state.globalCompany);
 
     console.log(globalCompany);
@@ -27,62 +27,62 @@ const DepartmentEntryForm = () => {
         error,
         isFetching,
         refetch,
-    } = useGetDepartmentsQuery(globalCompany);
+    } = useGetDesignationsQuery(globalCompany);
     // console.log(fetchedData)
-    const [addDepartment, { isLoading: isAddingDepartment }] = useAddDepartmentMutation();
-    const [updateDepartment, { isLoading: isUpdatingDepartment }] = useUpdateDepartmentMutation();
-    const [deleteDepartment, { isLoading: isDeletingDepartment }] = useDeleteDepartmentMutation();
-    const [addDepartmentPopover, setAddDepartmentPopover] = useState(false);
-    const [newDepartment, setNewDepartment] = useState("");
+    const [addDesignation, { isLoading: isAddingDesignation }] = useAddDesignationMutation();
+    const [updateDesignation, { isLoading: isUpdatingDesignation }] = useUpdateDesignationMutation();
+    const [deleteDesignation, { isLoading: isDeletingDesignation }] = useDeleteDesignationMutation();
+    const [addDesignationPopover, setAddDesignationPopover] = useState(false);
+    const [newDesignation, setNewDesignation] = useState("");
     const [showLoadingBar, setShowLoadingBar] = useOutletContext();
-    const [editDepartmentPopover, setEditDepartmentPopover] = useState(false);
-    const [updatedDepartment, setUpdatedDepartment] = useState({
+    const [editDesignationPopover, setEditDesignationPopover] = useState(false);
+    const [updatedDesignation, setUpdatedDesignation] = useState({
         id: "",
         name: "",
     });
 
     console.log(isFetching);
-    const addDepartmentChangeHandler = (event) => {
-        setNewDepartment(event.target.value);
+    const addDesignationChangeHandler = (event) => {
+        setNewDesignation(event.target.value);
     };
 
-    const editDepartmentPopoverHandler = (department) => {
-        console.log(department);
-        setUpdatedDepartment((prevState) => {
-            return { ...prevState, id: department.id };
+    const editDesignationPopoverHandler = (designation) => {
+        console.log(designation);
+        setUpdatedDesignation((prevState) => {
+            return { ...prevState, id: designation.id };
         });
-        setEditDepartmentPopover(!editDepartmentPopover);
+        setEditDesignationPopover(!editDesignationPopover);
     };
 
-    const updatedDepartmentChangeHandler = (event) => {
-        setUpdatedDepartment((prevState) => {
+    const updatedDesignationChangeHandler = (event) => {
+        setUpdatedDesignation((prevState) => {
             return { ...prevState, name: event.target.value };
         });
     };
 
     const addButtonClicked = async () => {
-        setAddDepartmentPopover(!addDepartmentPopover);
-        addDepartment({
+        setAddDesignationPopover(!addDesignationPopover);
+        addDesignation({
             company: globalCompany.id,
-            name: newDepartment,
+            name: newDesignation,
         });
-        console.log(isAddingDepartment);
-        setNewDepartment("");
+        console.log(isAddingDesignation);
+        setNewDesignation("");
     };
 
     const updateButtonClicked = async () => {
-        console.log(updatedDepartment);
-        updateDepartment({
-            id: updatedDepartment.id,
-            name: updatedDepartment.name,
+        console.log(updatedDesignation);
+        updateDesignation({
+            id: updatedDesignation.id,
+            name: updatedDesignation.name,
             company: globalCompany.id,
         });
-        editDepartmentPopoverHandler({ id: "", name: "" });
+        editDesignationPopoverHandler({ id: "", name: "" });
     };
 
     const deleteButtonClicked = async (id) => {
         console.log(id);
-        deleteDepartment({ id: id, company: globalCompany.id });
+        deleteDesignation({ id: id, company: globalCompany.id });
     };
     const columns = useMemo(
         () => [
@@ -91,7 +91,7 @@ const DepartmentEntryForm = () => {
                 accessor: "id",
             },
             {
-                Header: "Department Name",
+                Header: "Designation Name",
                 accessor: "name",
             },
         ],
@@ -99,7 +99,7 @@ const DepartmentEntryForm = () => {
     );
 
     const data = useMemo(() => (fetchedData ? [...fetchedData] : []), [fetchedData]);
-    // console.log(newDepartment);
+    // console.log(newDesignation);
 
     const tableHooks = (hooks) => {
         hooks.visibleColumns.push((columns) => [
@@ -117,7 +117,7 @@ const DepartmentEntryForm = () => {
                         </div>
                         <div
                             className="p-1.5 dark:bg-teal-700 rounded bg-teal-600 dark:hover:bg-teal-600 hover:bg-teal-700"
-                            onClick={() => editDepartmentPopoverHandler(row.values)}
+                            onClick={() => editDesignationPopoverHandler(row.values)}
                         >
                             <FaPen className="h-4" />
                         </div>
@@ -131,8 +131,8 @@ const DepartmentEntryForm = () => {
     const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } = tableInstance;
 
     useEffect(() => {
-        setShowLoadingBar(isLoading || isAddingDepartment || isDeletingDepartment || isUpdatingDepartment);
-    }, [isLoading, isAddingDepartment, isDeletingDepartment, isUpdatingDepartment]);
+        setShowLoadingBar(isLoading || isAddingDesignation || isDeletingDesignation || isUpdatingDesignation);
+    }, [isLoading, isAddingDesignation, isDeletingDesignation, isUpdatingDesignation]);
 
     if (globalCompany.id == null) {
         return (
@@ -150,14 +150,14 @@ const DepartmentEntryForm = () => {
             <section className="mx-5 mt-2">
                 <div className="flex flex-row place-content-between flex-wrap">
                     <div className="mr-4">
-                        <h1 className="text-3xl font-medium">Departments</h1>
-                        <p className="text-sm my-2">Add more departments here</p>
+                        <h1 className="text-3xl font-medium">Designations</h1>
+                        <p className="text-sm my-2">Add more Designations here</p>
                     </div>
                     <button
                         className="dark:bg-teal-700 my-auto rounded p-2 text-base font-medium bg-teal-500 hover:bg-teal-600 dark:hover:bg-teal-600 whitespace-nowrap"
-                        onClick={() => setAddDepartmentPopover(true)}
+                        onClick={() => setAddDesignationPopover(true)}
                     >
-                        Add Department
+                        Add Designation
                     </button>
                 </div>
 
@@ -200,34 +200,34 @@ const DepartmentEntryForm = () => {
 
                 <ReactModal
                     className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
-                    isOpen={addDepartmentPopover}
-                    onRequestClose={() => setAddDepartmentPopover(false)}
+                    isOpen={addDesignationPopover}
+                    onRequestClose={() => setAddDesignationPopover(false)}
                     style={{
                         overlay: {
                             backgroundColor: "rgba(0, 0, 0, 0.75)",
                         },
                     }}
                 >
-                    <AddDepartment
-                        setAddDepartmentPopover={setAddDepartmentPopover}
-                        addDepartmentChangeHandler={addDepartmentChangeHandler}
+                    <AddDesignation
+                        setAddDesignationPopover={setAddDesignationPopover}
+                        addDesignationChangeHandler={addDesignationChangeHandler}
                         addButtonClicked={addButtonClicked}
                     />
                 </ReactModal>
 
                 <ReactModal
                     className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
-                    isOpen={editDepartmentPopover}
-                    onRequestClose={() => setEditDepartmentPopover(false)}
+                    isOpen={editDesignationPopover}
+                    onRequestClose={() => setEditDesignationPopover(false)}
                     style={{
                         overlay: {
                             backgroundColor: "rgba(0, 0, 0, 0.75)",
                         },
                     }}
                 >
-                    <EditDepartment
-                        editDepartmentPopoverHandler={editDepartmentPopoverHandler}
-                        updatedDepartmentChangeHandler={updatedDepartmentChangeHandler}
+                    <EditDesignation
+                        editDesignationPopoverHandler={editDesignationPopoverHandler}
+                        updatedDesignationChangeHandler={updatedDesignationChangeHandler}
                         updateButtonClicked={updateButtonClicked}
                     />
                 </ReactModal>
@@ -236,4 +236,4 @@ const DepartmentEntryForm = () => {
     }
 };
 
-export default DepartmentEntryForm;
+export default DesignationEntryForm;

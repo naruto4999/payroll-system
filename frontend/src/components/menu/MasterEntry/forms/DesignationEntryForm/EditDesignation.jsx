@@ -1,16 +1,16 @@
 import React from "react";
 
-const AddDepartment = ({ setAddDepartmentPopover, addDepartmentChangeHandler, addButtonClicked }) => {
+const EditDesignation = ({ editDesignationPopoverHandler, updatedDesignationChangeHandler, updateButtonClicked }) => {
     return (
         <div className="text-gray-900 dark:text-slate-100">
-            <h1 className="font-medium text-2xl mb-2">Add Department</h1>
+            <h1 className="font-medium text-2xl mb-2">Edit Designation</h1>
 
             <form action="" className="flex flex-col gap-2 justify-center">
                 <label
                     htmlFor="comapny-name"
                     className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
                 >
-                    Deparment Name
+                    Designation Name
                 </label>
                 <div className="relative">
                     <input
@@ -18,21 +18,22 @@ const AddDepartment = ({ setAddDepartmentPopover, addDepartmentChangeHandler, ad
                         type="text"
                         id="comapny-name"
                         name="comapny-name"
+                        // value={newCompany}
                         placeholder=" "
-                        onChange={addDepartmentChangeHandler}
+                        onChange={updatedDesignationChangeHandler}
                     />
                 </div>
             </form>
             <section className="flex flex-row gap-4 mt-4 mb-2">
                 <button
                     className="bg-teal-500 hover:bg-teal-600 dark:bg-teal-700 rounded w-20 p-2 text-base font-medium dark:hover:bg-teal-600"
-                    onClick={addButtonClicked}
+                    onClick={updateButtonClicked}
                 >
-                    Add
+                    Update
                 </button>
                 <button
                     className="bg-zinc-400 hover:bg-zinc-500 dark:bg-zinc-600 rounded w-20 p-2 text-base font-medium dark:hover:bg-zinc-700"
-                    onClick={() => setAddDepartmentPopover(false)}
+                    onClick={() => editDesignationPopoverHandler({id: "", name: ""})}
                 >
                     Cancel
                 </button>
@@ -41,4 +42,4 @@ const AddDepartment = ({ setAddDepartmentPopover, addDepartmentChangeHandler, ad
     );
 };
 
-export default AddDepartment;
+export default EditDesignation;

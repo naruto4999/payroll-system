@@ -71,3 +71,7 @@ class Deparment(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="deparments")
     name = models.CharField(max_length=256, null=False, blank=False)
 
+class Designation(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="designations")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="designations")
+    name = models.CharField(max_length=256, null=False, blank=False)

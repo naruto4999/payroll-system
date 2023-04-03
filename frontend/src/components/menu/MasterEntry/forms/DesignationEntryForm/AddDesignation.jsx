@@ -1,9 +1,9 @@
 import React from "react";
 
-const AddDepartment = ({ setAddDepartmentPopover, addDepartmentChangeHandler, addButtonClicked }) => {
+const AddDesignation = ({ setAddDesignationPopover, addDesignationChangeHandler, addButtonClicked }) => {
     return (
         <div className="text-gray-900 dark:text-slate-100">
-            <h1 className="font-medium text-2xl mb-2">Add Department</h1>
+            <h1 className="font-medium text-2xl mb-2">Add Designation</h1>
 
             <form action="" className="flex flex-col gap-2 justify-center">
                 <label
@@ -19,7 +19,7 @@ const AddDepartment = ({ setAddDepartmentPopover, addDepartmentChangeHandler, ad
                         id="comapny-name"
                         name="comapny-name"
                         placeholder=" "
-                        onChange={addDepartmentChangeHandler}
+                        onChange={addDesignationChangeHandler}
                     />
                 </div>
             </form>
@@ -32,7 +32,7 @@ const AddDepartment = ({ setAddDepartmentPopover, addDepartmentChangeHandler, ad
                 </button>
                 <button
                     className="bg-zinc-400 hover:bg-zinc-500 dark:bg-zinc-600 rounded w-20 p-2 text-base font-medium dark:hover:bg-zinc-700"
-                    onClick={() => setAddDepartmentPopover(false)}
+                    onClick={() => setAddDesignationPopover(false)}
                 >
                     Cancel
                 </button>
@@ -41,4 +41,4 @@ const AddDepartment = ({ setAddDepartmentPopover, addDepartmentChangeHandler, ad
     );
 };
 
-export default AddDepartment;
+export default AddDesignation;
