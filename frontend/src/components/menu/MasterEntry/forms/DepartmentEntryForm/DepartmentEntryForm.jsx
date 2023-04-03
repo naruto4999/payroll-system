@@ -11,11 +11,9 @@ import {
 import AddDepartment from "./AddDepartment";
 import EditDepartment from "./EditDepartment";
 import { useOutletContext } from "react-router-dom";
-import {
-    useDeleteCompanyMutation,
-    useUpdateCompaniesMutation,
-} from "../../../../authentication/api/newCompanyEntryApiSlice";
+import ReactModal from "react-modal";
 
+ReactModal.setAppElement('#root')
 const classNames = (...classes) => {
     return classes.filter(Boolean).join(" ");
 };
@@ -156,80 +154,89 @@ const DepartmentEntryForm = () => {
     } else {
         return (
             <section className="mx-5 mt-2">
-                <div className={classNames(addDepartmentPopover || editDepartmentPopover == true ? "blur-sm" : "")}>
-                    <div className="flex flex-row place-content-between flex-wrap">
-                        <div className="mr-4">
-                            <h1 className="text-3xl font-medium">Departments</h1>
-                            <p className="text-sm my-2">Add more departments here</p>
-                        </div>
-                        <button
-                            className="dark:bg-teal-700 my-auto rounded p-2 text-base font-medium bg-teal-500 hover:bg-teal-600 dark:hover:bg-teal-600 whitespace-nowrap"
-                            onClick={addDepartmentPopoverHandler}
-                        >
-                            Add Department
-                        </button>
+                <div className="flex flex-row place-content-between flex-wrap">
+                    <div className="mr-4">
+                        <h1 className="text-3xl font-medium">Departments</h1>
+                        <p className="text-sm my-2">Add more departments here</p>
                     </div>
-
-                    <div className="overflow-hidden rounded border border-black border-opacity-50 shadow-md m-5 max-w-5xl mx-auto">
-                        <table className="w-full border-collapse text-center text-sm" {...getTableProps()}>
-                            <thead className="bg-blueAccet-600 dark:bg-blueAccent-700">
-                                {headerGroups.map((headerGroup) => (
-                                    <tr {...headerGroup.getHeaderGroupProps()}>
-                                        {headerGroup.headers.map((column) => (
-                                            <th
-                                                scope="col"
-                                                className="px-4 py-4 font-medium"
-                                                {...column.getHeaderProps()}
-                                            >
-                                                {column.render("Header")}
-                                            </th>
-                                        ))}
-                                    </tr>
-                                ))}
-                            </thead>
-                            <tbody
-                                className="divide-y divide-black divide-opacity-50 border-t border-black border-opacity-50"
-                                {...getTableBodyProps()}
-                            >
-                                {rows.map((row) => {
-                                    prepareRow(row);
-                                    return (
-                                        <tr className="dark:hover:bg-zinc-800 hover:bg-zinc-200" {...row.getRowProps()}>
-                                            {row.cells.map((cell) => {
-                                                return (
-                                                    <td className="px-4 py-4 font-normal" {...cell.getCellProps()}>
-                                                        <div className="text-sm">
-                                                            <div className="font-medium">{cell.render("Cell")}</div>
-                                                        </div>
-                                                    </td>
-                                                );
-                                            })}
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
+                    <button
+                        className="dark:bg-teal-700 my-auto rounded p-2 text-base font-medium bg-teal-500 hover:bg-teal-600 dark:hover:bg-teal-600 whitespace-nowrap"
+                        onClick={addDepartmentPopoverHandler}
+                    >
+                        Add Department
+                    </button>
                 </div>
-                {addDepartmentPopover ? (
+
+                <div className="overflow-hidden rounded border border-black border-opacity-50 shadow-md m-5 max-w-5xl mx-auto">
+                    <table className="w-full border-collapse text-center text-sm" {...getTableProps()}>
+                        <thead className="bg-blueAccent-600 dark:bg-blueAccent-700">
+                            {headerGroups.map((headerGroup) => (
+                                <tr {...headerGroup.getHeaderGroupProps()}>
+                                    {headerGroup.headers.map((column) => (
+                                        <th scope="col" className="px-4 py-4 font-medium" {...column.getHeaderProps()}>
+                                            {column.render("Header")}
+                                        </th>
+                                    ))}
+                                </tr>
+                            ))}
+                        </thead>
+                        <tbody
+                            className="divide-y divide-black divide-opacity-50 border-t border-black border-opacity-50"
+                            {...getTableBodyProps()}
+                        >
+                            {rows.map((row) => {
+                                prepareRow(row);
+                                return (
+                                    <tr className="dark:hover:bg-zinc-800 hover:bg-zinc-200" {...row.getRowProps()}>
+                                        {row.cells.map((cell) => {
+                                            return (
+                                                <td className="px-4 py-4 font-normal" {...cell.getCellProps()}>
+                                                    <div className="text-sm">
+                                                        <div className="font-medium">{cell.render("Cell")}</div>
+                                                    </div>
+                                                </td>
+                                            );
+                                        })}
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+
+                <ReactModal
+                    className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
+                    isOpen={addDepartmentPopover}
+                    onRequestClose={() => setAddDepartmentPopover(false)}
+                    style={{
+                        overlay: {
+                            backgroundColor: "rgba(0, 0, 0, 0.75)",
+                        },
+                    }}
+                >
                     <AddDepartment
                         addDepartmentPopoverHandler={addDepartmentPopoverHandler}
                         addDepartmentChangeHandler={addDepartmentChangeHandler}
                         addButtonClicked={addButtonClicked}
                     />
-                ) : (
-                    ""
-                )}
+                </ReactModal>
 
-                {editDepartmentPopover ? (
+                <ReactModal
+                    className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
+                    isOpen={editDepartmentPopover}
+                    onRequestClose={() => setEditDepartmentPopover(false)}
+                    style={{
+                        overlay: {
+                            backgroundColor: "rgba(0, 0, 0, 0.75)",
+                        },
+                    }}
+                >
                     <EditDepartment
                         editDepartmentPopoverHandler={editDepartmentPopoverHandler}
                         updatedDepartmentChangeHandler={updatedDepartmentChangeHandler}
                         updateButtonClicked={updateButtonClicked}
                     />
-                ) : (
-                    ""
-                )}
+                </ReactModal>
             </section>
         );
     }

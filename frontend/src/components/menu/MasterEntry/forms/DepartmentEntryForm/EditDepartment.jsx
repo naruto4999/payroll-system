@@ -2,7 +2,7 @@ import React from "react";
 
 const EditDepartment = ({ editDepartmentPopoverHandler, updatedDepartmentChangeHandler, updateButtonClicked }) => {
     return (
-        <div className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300  dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl">
+        <div className="text-gray-900 dark:text-slate-100">
             <h1 className="font-medium text-2xl mb-2">Edit Department</h1>
 
             <form action="" className="flex flex-col gap-2 justify-center">
