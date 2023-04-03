@@ -8,6 +8,7 @@ import { useOutletContext } from "react-router-dom";
 import { useEffect } from "react";
 import { globalCompanyActions } from "../../../../authentication/store/slices/globalCompany";
 import AddCompany from "./AddCompany";
+import DeleteCompany from "./DeleteCompany";
 
 //imports after using RTK query
 import {
@@ -33,7 +34,9 @@ const NewCompanyEntryForm = () => {
     const [updateCompany, { isLoading: isUpdatingCompany }] = useUpdateCompaniesMutation();
     const [addComapnyPopover, setAddCompanyPopover] = useState(false);
     const [editCompanyPopover, setEditCompanyPopover] = useState(false);
+    const [deleteCompanyPopover, setDeleteCompanyPopover] = useState(false);
     const [showLoadingBar, setShowLoadingBar] = useOutletContext();
+    const [confirmDelete, setConfirmDelete] = useState({ id: "", phrase: "" });
     const dispatch = useDispatch();
 
     const globalCompany = useSelector((state) => state.globalCompany);
@@ -64,6 +67,12 @@ const NewCompanyEntryForm = () => {
         });
     };
 
+    const deleteCompanyChangeHandler = (event) => {
+        setConfirmDelete((prevState) => {
+            return { ...prevState, phrase: event.target.value };
+        });
+    };
+
     const addButtonClicked = async () => {
         setAddCompanyPopover(!addComapnyPopover);
         addCompanies({
@@ -81,13 +90,17 @@ const NewCompanyEntryForm = () => {
         editCompanyPopoverHandler({ id: "", name: "" });
     };
 
-    const deleteButtonClicked = async (id) => {
-        deleteCompany({ id });
-        if (globalCompany.id == id) {
-            dispatch(globalCompanyActions.deselectComapny());
+    const deleteButtonClicked = async () => {
+        if (confirmDelete.phrase == "confirm") {
+            deleteCompany({ id: confirmDelete.id });
+            setDeleteCompanyPopover(false)
+            if (globalCompany.id == confirmDelete.id) {
+                dispatch(globalCompanyActions.deselectComapny());
+            }
         }
+        
     };
-
+    console.log(confirmDelete);
     const columns = useMemo(
         () => [
             {
@@ -114,7 +127,10 @@ const NewCompanyEntryForm = () => {
                     <div className="flex justify-center gap-4">
                         <div
                             className="p-1.5 dark:bg-redAccent-700 rounded bg-redAccent-500 dark:hover:bg-redAccent-500 hover:bg-redAccent-700"
-                            onClick={() => deleteButtonClicked(row.values.id)}
+                            onClick={() => {
+                                setConfirmDelete({ id: row.values.id, phrase: "" });
+                                setDeleteCompanyPopover(true);
+                            }}
                         >
                             <FaRegTrashAlt className="h-4" />
                         </div>
@@ -155,7 +171,7 @@ const NewCompanyEntryForm = () => {
                     </div>
                     <button
                         className="dark:bg-teal-700 my-4 rounded p-2 text-base font-medium bg-teal-500 hover:bg-teal-600 dark:hover:bg-teal-600"
-                        onClick={addCompanyPopoverHandler}
+                        onClick={() => setAddCompanyPopover(true)}
                     >
                         Add Company
                     </button>
@@ -209,7 +225,7 @@ const NewCompanyEntryForm = () => {
                     }}
                 >
                     <AddCompany
-                        addCompanyPopoverHandler={addCompanyPopoverHandler}
+                        setAddCompanyPopover={setAddCompanyPopover}
                         addCompanyChangeHandler={addCompanyChangeHandler}
                         addButtonClicked={addButtonClicked}
                     />
@@ -231,6 +247,25 @@ const NewCompanyEntryForm = () => {
                         updateButtonClicked={updateButtonClicked}
                     />
                 </ReactModal>
+
+                <ReactModal
+                    className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
+                    isOpen={deleteCompanyPopover}
+                    onRequestClose={() => setDeleteCompanyPopover(false)}
+                    style={{
+                        overlay: {
+                            backgroundColor: "rgba(0, 0, 0, 0.75)",
+                        },
+                    }}
+                >
+                    <DeleteCompany
+                        deleteCompanyChangeHandler={deleteCompanyChangeHandler}
+                        deleteButtonClicked={deleteButtonClicked}
+                        setConfirmDelete={setConfirmDelete}
+                        setDeleteCompanyPopover={setDeleteCompanyPopover}
+                    />
+                </ReactModal>
+
                 <div
                     className={classNames(
                         isAddingCompany || isDeletingComapny || isUpdatingCompany ? "" : "hidden",

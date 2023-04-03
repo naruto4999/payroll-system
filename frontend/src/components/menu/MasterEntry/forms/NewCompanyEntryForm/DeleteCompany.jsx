@@ -1,16 +1,21 @@
 import React from "react";
 
-const AddCompany = ({ setAddCompanyPopover, addCompanyChangeHandler, addButtonClicked }) => {
+const DeleteCompany = ({
+    deleteCompanyChangeHandler,
+    deleteButtonClicked,
+    setConfirmDelete,
+    setDeleteCompanyPopover
+}) => {
     return (
         <div className="text-gray-900 dark:text-slate-100">
-            <h1 className="font-medium text-2xl mb-2">Add New Company</h1>
+            <h1 className="font-medium text-2xl mb-2">Delete Company</h1>
 
             <form action="" className="flex flex-col gap-2 justify-center">
                 <label
                     htmlFor="company-name"
                     className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
                 >
-                    Company Name
+                    Please type "confirm" to delete
                 </label>
                 <div className="relative">
                     <input
@@ -19,20 +24,23 @@ const AddCompany = ({ setAddCompanyPopover, addCompanyChangeHandler, addButtonCl
                         id="company-name"
                         name="company-name"
                         placeholder=" "
-                        onChange={addCompanyChangeHandler}
+                        onChange={deleteCompanyChangeHandler}
                     />
                 </div>
             </form>
             <section className="flex flex-row gap-4 mt-4 mb-2">
                 <button
-                    className="bg-teal-500 hover:bg-teal-600 dark:bg-teal-700 rounded w-20 p-2 text-base font-medium dark:hover:bg-teal-600"
-                    onClick={addButtonClicked}
+                    className="bg-redAccent-500 dark:bg-redAccent-700 rounded w-20 p-2 text-base font-medium dark:hover:bg-redAccent-500 hover:bg-redAccent-700"
+                    onClick={deleteButtonClicked}
                 >
-                    Add
+                    Delete
                 </button>
                 <button
                     className="bg-zinc-400 hover:bg-zinc-500 dark:bg-zinc-600 rounded w-20 p-2 text-base font-medium dark:hover:bg-zinc-700"
-                    onClick={() => setAddCompanyPopover(false)}
+                    onClick={() => {
+                        setConfirmDelete({id: "", phrase: ""});
+                        setDeleteCompanyPopover(false)
+                    }}
                 >
                     Cancel
                 </button>
@@ -41,4 +49,4 @@ const AddCompany = ({ setAddCompanyPopover, addCompanyChangeHandler, addButtonCl
     );
 };
 
-export default AddCompany;
+export default DeleteCompany;
