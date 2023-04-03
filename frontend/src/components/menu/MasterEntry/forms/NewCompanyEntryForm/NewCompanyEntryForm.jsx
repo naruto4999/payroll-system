@@ -23,7 +23,7 @@ const classNames = (...classes) => {
 
 const NewCompanyEntryForm = () => {
     //using RTK query
-    const { data: fetchedData, isLoading, isSuccess, isError, error } = useGetCompaniesQuery();
+    const { data: fetchedData, isLoading, isSuccess, isError, error, isFetching } = useGetCompaniesQuery();
     // console.log(fetchedData);
     // console.log(error);
     const [addCompanies, { isLoading: isAddingCompany }] = useAddCompaniesMutation();
@@ -31,10 +31,10 @@ const NewCompanyEntryForm = () => {
     const [updateCompany, { isLoading: isUpdatingCompany }] = useUpdateCompaniesMutation();
     const [addComapnyPopover, setAddCompanyPopover] = useState(false);
     const [editCompanyPopover, setEditCompanyPopover] = useState(false);
-    const [showLoadingBar, setShowLoadingBar] = useOutletContext()
+    const [showLoadingBar, setShowLoadingBar] = useOutletContext();
     const dispatch = useDispatch();
 
-    const globalCompany = useSelector((state) => state.globalCompany)
+    const globalCompany = useSelector((state) => state.globalCompany);
     const [newCompany, setNewCompany] = useState("");
     const [updatedCompany, setUpdatedCompany] = useState({
         id: "",
@@ -44,9 +44,9 @@ const NewCompanyEntryForm = () => {
     const addComapnyPopoverHandler = () => {
         setAddCompanyPopover(!addComapnyPopover);
     };
-
+    // console.log(isFetching)
     const editCompanyPopoverHandler = (company) => {
-        console.log(company);
+        // console.log(company);
         setUpdatedCompany((prevState) => {
             return { ...prevState, id: company.id };
         });
@@ -56,7 +56,7 @@ const NewCompanyEntryForm = () => {
     const newCompanyChangeHandler = (event) => {
         setNewCompany(event.target.value);
     };
-    console.log(updatedCompany)
+    // console.log(updatedCompany)
     const updateCompanyChangeHandler = (event) => {
         setUpdatedCompany((prevState) => {
             return { ...prevState, name: event.target.value };
@@ -75,19 +75,19 @@ const NewCompanyEntryForm = () => {
     };
 
     const updateButtonClicked = async () => {
-        console.log(updatedCompany);
+        // console.log(updatedCompany);
         updateCompany({
             id: updatedCompany.id,
             name: updatedCompany.name,
         });
-        editCompanyPopoverHandler({id: "", name: ""});
+        editCompanyPopoverHandler({ id: "", name: "" });
     };
 
     const deleteButtonClicked = async (id) => {
-        console.log(id);
+        // console.log(id);
         deleteCompany({ id });
         if (globalCompany.id == id) {
-            dispatch(globalCompanyActions.deselectComapny())
+            dispatch(globalCompanyActions.deselectComapny());
         }
     };
 
@@ -136,10 +136,10 @@ const NewCompanyEntryForm = () => {
     const tableInstance = useTable({ columns, data }, tableHooks);
     const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } = tableInstance;
 
-    console.log(showLoadingBar)
+    // console.log(showLoadingBar)
     useEffect(() => {
-        setShowLoadingBar(isAddingCompany || isDeletingComapny || isUpdatingCompany)
-    }, [isAddingCompany, isDeletingComapny, isUpdatingCompany])
+        setShowLoadingBar(isAddingCompany || isDeletingComapny || isUpdatingCompany);
+    }, [isAddingCompany, isDeletingComapny, isUpdatingCompany]);
 
     if (isLoading) {
         return (
@@ -150,14 +150,14 @@ const NewCompanyEntryForm = () => {
         );
     } else {
         return (
-            <section className="relative">
-                <div className="flex flex-row place-content-between mx-5 mt-2">
+            <section className="mx-5 mt-2">
+                <div className="flex flex-row place-content-between">
                     <div className="">
                         <h1 className="text-3xl font-medium">Companies</h1>
                         <p className="text-sm my-2">Add more companies here</p>
                     </div>
                     <button
-                        className="dark:bg-teal-700 m-4 rounded p-2 text-base font-medium bg-teal-500 hover:bg-teal-600 dark:hover:bg-teal-600"
+                        className="dark:bg-teal-700 my-4 rounded p-2 text-base font-medium bg-teal-500 hover:bg-teal-600 dark:hover:bg-teal-600"
                         onClick={addComapnyPopoverHandler}
                     >
                         Add Company
@@ -209,13 +209,13 @@ const NewCompanyEntryForm = () => {
                 </div>
                 {/* Popover End */}
 
-                <div className={`overflow-hidden rounded border border-black border-opacity-50 shadow-md m-5`}>
+                <div className={`overflow-hidden rounded border border-black border-opacity-50 shadow-md m-5 mx-auto`}>
                     <table className="w-full border-collapse text-center text-sm" {...getTableProps()}>
                         <thead className="bg-blueAccent-600 dark:bg-blueAccent-700">
                             {headerGroups.map((headerGroup) => (
                                 <tr {...headerGroup.getHeaderGroupProps()}>
                                     {headerGroup.headers.map((column) => (
-                                        <th scope="col" className="px-6 py-4 font-medium" {...column.getHeaderProps()}>
+                                        <th scope="col" className="px-4 py-4 font-medium" {...column.getHeaderProps()}>
                                             {column.render("Header")}
                                         </th>
                                     ))}
@@ -232,7 +232,7 @@ const NewCompanyEntryForm = () => {
                                     <tr className="dark:hover:bg-zinc-800 hover:bg-zinc-200" {...row.getRowProps()}>
                                         {row.cells.map((cell) => {
                                             return (
-                                                <td className="px-6 py-4 font-normal" {...cell.getCellProps()}>
+                                                <td className="px-4 py-4 font-normal" {...cell.getCellProps()}>
                                                     <div className="text-sm">
                                                         <div className="font-medium">{cell.render("Cell")}</div>
                                                     </div>

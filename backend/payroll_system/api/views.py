@@ -90,6 +90,21 @@ class DepartmentListCreateAPIView(generics.ListCreateAPIView):
         serializer.save(user=self.request.user, company=company)
 
 
+class DepartmentRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes= [IsAuthenticated]
+    serializer_class = DepartmentSerializer
+    lookup_field = 'id'
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        user = self.request.user
+        departments = user.departments.filter(company=company_id)
+        print(departments)
+        return departments
+    
+    def perform_update(self, serializer):
+        serializer.save(user=self.request.user)
+
 #Viewsets
 class UserViewSet(viewsets.ModelViewSet):
     http_method_names = ['get']
