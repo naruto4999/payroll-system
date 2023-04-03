@@ -7,6 +7,7 @@ import EditCompany from "./EditCompany";
 import { useOutletContext } from "react-router-dom";
 import { useEffect } from "react";
 import { globalCompanyActions } from "../../../../authentication/store/slices/globalCompany";
+import AddCompany from "./AddCompany";
 
 //imports after using RTK query
 import {
@@ -16,6 +17,9 @@ import {
     useUpdateCompaniesMutation,
 } from "../../../../authentication/api/newCompanyEntryApiSlice";
 import { useUpdateCompanyDetailsMutation } from "../../../../authentication/api/companyEntryApiSlice";
+import ReactModal from "react-modal";
+
+ReactModal.setAppElement("#root");
 
 const classNames = (...classes) => {
     return classes.filter(Boolean).join(" ");
@@ -24,8 +28,6 @@ const classNames = (...classes) => {
 const NewCompanyEntryForm = () => {
     //using RTK query
     const { data: fetchedData, isLoading, isSuccess, isError, error, isFetching } = useGetCompaniesQuery();
-    // console.log(fetchedData);
-    // console.log(error);
     const [addCompanies, { isLoading: isAddingCompany }] = useAddCompaniesMutation();
     const [deleteCompany, { isLoading: isDeletingComapny }] = useDeleteCompanyMutation();
     const [updateCompany, { isLoading: isUpdatingCompany }] = useUpdateCompaniesMutation();
@@ -41,30 +43,27 @@ const NewCompanyEntryForm = () => {
         name: "",
     });
 
-    const addComapnyPopoverHandler = () => {
+    const addCompanyPopoverHandler = () => {
         setAddCompanyPopover(!addComapnyPopover);
     };
-    // console.log(isFetching)
+
     const editCompanyPopoverHandler = (company) => {
-        // console.log(company);
         setUpdatedCompany((prevState) => {
             return { ...prevState, id: company.id };
         });
         setEditCompanyPopover(!editCompanyPopover);
     };
 
-    const newCompanyChangeHandler = (event) => {
+    const addCompanyChangeHandler = (event) => {
         setNewCompany(event.target.value);
     };
-    // console.log(updatedCompany)
-    const updateCompanyChangeHandler = (event) => {
+
+    const updatedCompanyChangeHandler = (event) => {
         setUpdatedCompany((prevState) => {
             return { ...prevState, name: event.target.value };
         });
     };
 
-    // console.log(newCompany);
-    // console.log(isAddingCompany);
     const addButtonClicked = async () => {
         setAddCompanyPopover(!addComapnyPopover);
         addCompanies({
@@ -75,7 +74,6 @@ const NewCompanyEntryForm = () => {
     };
 
     const updateButtonClicked = async () => {
-        // console.log(updatedCompany);
         updateCompany({
             id: updatedCompany.id,
             name: updatedCompany.name,
@@ -84,7 +82,6 @@ const NewCompanyEntryForm = () => {
     };
 
     const deleteButtonClicked = async (id) => {
-        // console.log(id);
         deleteCompany({ id });
         if (globalCompany.id == id) {
             dispatch(globalCompanyActions.deselectComapny());
@@ -158,56 +155,11 @@ const NewCompanyEntryForm = () => {
                     </div>
                     <button
                         className="dark:bg-teal-700 my-4 rounded p-2 text-base font-medium bg-teal-500 hover:bg-teal-600 dark:hover:bg-teal-600"
-                        onClick={addComapnyPopoverHandler}
+                        onClick={addCompanyPopoverHandler}
                     >
                         Add Company
                     </button>
                 </div>
-
-                {/* Popover */}
-                <div
-                    className={classNames(
-                        addComapnyPopover == false ? "hidden" : "",
-                        "fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300  dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
-                    )}
-                >
-                    <h1 className="font-medium text-2xl mb-2">Add New Company</h1>
-
-                    <form action="" className="flex flex-col gap-2 justify-center">
-                        <label
-                            htmlFor="comapny-name"
-                            className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
-                        >
-                            Company Name
-                        </label>
-                        <div className="relative">
-                            <input
-                                className="rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2 border-gray-800 border-opacity-25 dark:border-opacity-25 dark:border-slate-100 p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
-                                type="text"
-                                id="comapny-name"
-                                name="comapny-name"
-                                value={newCompany}
-                                placeholder=" "
-                                onChange={newCompanyChangeHandler}
-                            />
-                        </div>
-                    </form>
-                    <section className="flex flex-row gap-4 mt-4 mb-2">
-                        <button
-                            className="bg-teal-500 hover:bg-teal-600 dark:bg-teal-700 rounded w-20 p-2 text-base font-medium dark:hover:bg-teal-600"
-                            onClick={addButtonClicked}
-                        >
-                            Add
-                        </button>
-                        <button
-                            className="bg-zinc-400 hover:bg-zinc-500 dark:bg-zinc-600 rounded w-20 p-2 text-base font-medium dark:hover:bg-zinc-700"
-                            onClick={addComapnyPopoverHandler}
-                        >
-                            Cancel
-                        </button>
-                    </section>
-                </div>
-                {/* Popover End */}
 
                 <div className={`overflow-hidden rounded border border-black border-opacity-50 shadow-md m-5 mx-auto`}>
                     <table className="w-full border-collapse text-center text-sm" {...getTableProps()}>
@@ -245,15 +197,40 @@ const NewCompanyEntryForm = () => {
                         </tbody>
                     </table>
                 </div>
-                {editCompanyPopover ? (
+
+                <ReactModal
+                    className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
+                    isOpen={addComapnyPopover}
+                    onRequestClose={() => setAddCompanyPopover(false)}
+                    style={{
+                        overlay: {
+                            backgroundColor: "rgba(0, 0, 0, 0.75)",
+                        },
+                    }}
+                >
+                    <AddCompany
+                        addCompanyPopoverHandler={addCompanyPopoverHandler}
+                        addCompanyChangeHandler={addCompanyChangeHandler}
+                        addButtonClicked={addButtonClicked}
+                    />
+                </ReactModal>
+
+                <ReactModal
+                    className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
+                    isOpen={editCompanyPopover}
+                    onRequestClose={() => setEditCompanyPopover(false)}
+                    style={{
+                        overlay: {
+                            backgroundColor: "rgba(0, 0, 0, 0.75)",
+                        },
+                    }}
+                >
                     <EditCompany
                         editCompanyPopoverHandler={editCompanyPopoverHandler}
-                        updateCompanyChangeHandler={updateCompanyChangeHandler}
+                        updatedCompanyChangeHandler={updatedCompanyChangeHandler}
                         updateButtonClicked={updateButtonClicked}
                     />
-                ) : (
-                    ""
-                )}
+                </ReactModal>
                 <div
                     className={classNames(
                         isAddingCompany || isDeletingComapny || isUpdatingCompany ? "" : "hidden",
