@@ -12,8 +12,12 @@ import AddDepartment from "./AddDepartment";
 import EditDepartment from "./EditDepartment";
 import { useOutletContext } from "react-router-dom";
 import ReactModal from "react-modal";
+import { Formik, Field, Form } from "formik";
+import CustomInput from "./CustomInput";
+import { addDepartmentSchema } from "./DepartmentEntrySchema";
 
-ReactModal.setAppElement('#root')
+ReactModal.setAppElement("#root");
+
 
 const DepartmentEntryForm = () => {
     const globalCompany = useSelector((state) => state.globalCompany);
@@ -33,48 +37,42 @@ const DepartmentEntryForm = () => {
     const [updateDepartment, { isLoading: isUpdatingDepartment }] = useUpdateDepartmentMutation();
     const [deleteDepartment, { isLoading: isDeletingDepartment }] = useDeleteDepartmentMutation();
     const [addDepartmentPopover, setAddDepartmentPopover] = useState(false);
-    const [newDepartment, setNewDepartment] = useState("");
     const [showLoadingBar, setShowLoadingBar] = useOutletContext();
     const [editDepartmentPopover, setEditDepartmentPopover] = useState(false);
-    const [updatedDepartment, setUpdatedDepartment] = useState({
-        id: "",
-        name: "",
-    });
+    const [updateDepartmentId, setUpdateDepartmentId] = useState("");
 
-    console.log(isFetching);
-    const addDepartmentChangeHandler = (event) => {
-        setNewDepartment(event.target.value);
-    };
+    console.log(updateDepartmentId);
 
     const editDepartmentPopoverHandler = (department) => {
-        console.log(department);
-        setUpdatedDepartment((prevState) => {
-            return { ...prevState, id: department.id };
-        });
+        // console.log(department);
+        setUpdateDepartmentId(department.id);
         setEditDepartmentPopover(!editDepartmentPopover);
     };
 
-    const updatedDepartmentChangeHandler = (event) => {
-        setUpdatedDepartment((prevState) => {
+    const updateDepartmentIdChangeHandler = (event) => {
+        setUpdateDepartmentId((prevState) => {
             return { ...prevState, name: event.target.value };
         });
     };
 
-    const addButtonClicked = async () => {
+    const addButtonClicked = async (values, formikBag) => {
+        console.log(values)
+        console.log(formikBag)
+        formikBag.resetForm()
         setAddDepartmentPopover(!addDepartmentPopover);
         addDepartment({
             company: globalCompany.id,
-            name: newDepartment,
+            name: values.newDepartment,
         });
         console.log(isAddingDepartment);
-        setNewDepartment("");
+        // setNewDepartment("");
     };
 
     const updateButtonClicked = async () => {
-        console.log(updatedDepartment);
+        console.log(updateDepartmentId);
         updateDepartment({
-            id: updatedDepartment.id,
-            name: updatedDepartment.name,
+            id: updateDepartmentId.id,
+            name: updateDepartmentId.name,
             company: globalCompany.id,
         });
         editDepartmentPopoverHandler({ id: "", name: "" });
@@ -100,7 +98,7 @@ const DepartmentEntryForm = () => {
 
     const data = useMemo(() => (fetchedData ? [...fetchedData] : []), [fetchedData]);
     // console.log(newDepartment);
-
+    // console.log(fullname)
     const tableHooks = (hooks) => {
         hooks.visibleColumns.push((columns) => [
             ...columns,
@@ -160,7 +158,6 @@ const DepartmentEntryForm = () => {
                         Add Department
                     </button>
                 </div>
-
                 <div className="overflow-hidden rounded border border-black border-opacity-50 shadow-md m-5 max-w-5xl mx-auto">
                     <table className="w-full border-collapse text-center text-sm" {...getTableProps()}>
                         <thead className="bg-blueAccent-600 dark:bg-blueAccent-700">
@@ -197,7 +194,7 @@ const DepartmentEntryForm = () => {
                         </tbody>
                     </table>
                 </div>
-
+              
                 <ReactModal
                     className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
                     isOpen={addDepartmentPopover}
@@ -208,17 +205,22 @@ const DepartmentEntryForm = () => {
                         },
                     }}
                 >
-                    <AddDepartment
-                        setAddDepartmentPopover={setAddDepartmentPopover}
-                        addDepartmentChangeHandler={addDepartmentChangeHandler}
-                        addButtonClicked={addButtonClicked}
+                    <Formik
+                        initialValues={{ newDepartment: "" }}
+                        validationSchema={addDepartmentSchema}
+                        onSubmit={addButtonClicked}
+                        component={(props) => (
+                            <CustomInput
+                                {...props}
+                                setAddDepartmentPopover={setAddDepartmentPopover}
+                            />
+                        )}
                     />
                 </ReactModal>
-
                 <ReactModal
                     className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
                     isOpen={editDepartmentPopover}
-                    onRequestClose={() => setEditDepartmentPopover(false)}
+                    onRequestClose={() => editDepartmentPopoverHandler({id: "", name: ""})}
                     style={{
                         overlay: {
                             backgroundColor: "rgba(0, 0, 0, 0.75)",
@@ -227,12 +229,13 @@ const DepartmentEntryForm = () => {
                 >
                     <EditDepartment
                         editDepartmentPopoverHandler={editDepartmentPopoverHandler}
-                        updatedDepartmentChangeHandler={updatedDepartmentChangeHandler}
+                        updateDepartmentIdChangeHandler={updateDepartmentIdChangeHandler}
                         updateButtonClicked={updateButtonClicked}
                     />
                 </ReactModal>
             </section>
         );
+
     }
 };
 
