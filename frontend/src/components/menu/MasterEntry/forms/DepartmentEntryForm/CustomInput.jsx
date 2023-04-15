@@ -1,14 +1,13 @@
-import { useField } from "formik";
 
 const classNames = (...classes) => {
     return classes.filter(Boolean).join(" ");
 };
 
-const CustomInput = ({ handleSubmit, handleChange, handleBlur, values, errors, setAddDepartmentPopover, isValid }) => {
+const CustomInput = ({ handleSubmit, handleChange, handleBlur, values, errors, editDepartmentPopoverHandler, isValid }) => {
     console.log(values)
     return (
         <div className="text-gray-900 dark:text-slate-100">
-            <h1 className="font-medium text-2xl mb-2">Add Department</h1>
+            <h1 className="font-medium text-2xl mb-2">Edit Department</h1>
 
             <form action="" className="flex flex-col gap-2 justify-center">
                 <label
@@ -34,11 +33,11 @@ const CustomInput = ({ handleSubmit, handleChange, handleBlur, values, errors, s
                     onClick={handleSubmit}
                     type="submit"
                 >
-                    Add
+                    Update
                 </button>
                 <button
                     className="bg-zinc-400 hover:bg-zinc-500 dark:bg-zinc-600 rounded w-20 p-2 text-base font-medium dark:hover:bg-zinc-700"
-                    onClick={() => setAddDepartmentPopover(false)}         
+                    onClick={() => editDepartmentPopoverHandler({id: "", name: ""})}         
                 >
                     Cancel
                 </button>

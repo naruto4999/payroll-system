@@ -8,13 +8,13 @@ import {
     useDeleteDepartmentMutation,
     useUpdateDepartmentMutation,
 } from "../../../../authentication/api/departmentEntryApiSlice";
-import AddDepartment from "./AddDepartment";
 import EditDepartment from "./EditDepartment";
 import { useOutletContext } from "react-router-dom";
 import ReactModal from "react-modal";
 import { Formik, Field, Form } from "formik";
-import CustomInput from "./CustomInput";
+import AddDepartment from "./AddDepartment";
 import { addDepartmentSchema } from "./DepartmentEntrySchema";
+import CustomInput from "./CustomInput";
 
 ReactModal.setAppElement("#root");
 
@@ -210,14 +210,14 @@ const DepartmentEntryForm = () => {
                         validationSchema={addDepartmentSchema}
                         onSubmit={addButtonClicked}
                         component={(props) => (
-                            <CustomInput
+                            <AddDepartment
                                 {...props}
                                 setAddDepartmentPopover={setAddDepartmentPopover}
                             />
                         )}
                     />
                 </ReactModal>
-                <ReactModal
+                {/* <ReactModal
                     className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
                     isOpen={editDepartmentPopover}
                     onRequestClose={() => editDepartmentPopoverHandler({id: "", name: ""})}
@@ -228,6 +228,22 @@ const DepartmentEntryForm = () => {
                     }}
                 >
                     <EditDepartment
+                        editDepartmentPopoverHandler={editDepartmentPopoverHandler}
+                        updateDepartmentIdChangeHandler={updateDepartmentIdChangeHandler}
+                        updateButtonClicked={updateButtonClicked}
+                    />
+                </ReactModal> */}
+                <ReactModal
+                    className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
+                    isOpen={editDepartmentPopover}
+                    onRequestClose={() => editDepartmentPopoverHandler({id: "", name: ""})}
+                    style={{
+                        overlay: {
+                            backgroundColor: "rgba(0, 0, 0, 0.75)",
+                        },
+                    }}
+                >
+                    <CustomInput
                         editDepartmentPopoverHandler={editDepartmentPopoverHandler}
                         updateDepartmentIdChangeHandler={updateDepartmentIdChangeHandler}
                         updateButtonClicked={updateButtonClicked}

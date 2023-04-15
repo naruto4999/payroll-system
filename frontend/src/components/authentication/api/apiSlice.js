@@ -2,7 +2,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { authActions } from "../store/slices/auth";
 
 const baseQuery = fetchBaseQuery({
-    baseUrl: "https://7d5a-103-248-94-39.ngrok-free.app",
+    baseUrl: "https://6ea2-103-248-94-39.ngrok-free.app",
     prepareHeaders: (headers, { getState }) => {
         const token = getState().auth.token;
         if (token) {
