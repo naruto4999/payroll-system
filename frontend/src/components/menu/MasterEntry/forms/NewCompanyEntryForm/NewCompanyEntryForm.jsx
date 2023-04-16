@@ -9,10 +9,7 @@ import { useEffect } from "react";
 import { globalCompanyActions } from "../../../../authentication/store/slices/globalCompany";
 import AddCompany from "./AddCompany";
 import DeleteCompany from "./DeleteCompany";
-import {
-    addCompanySchema,
-    editCompanySchema,
-} from "./NewCompanyEntrySchema"
+import { addCompanySchema, editCompanySchema } from "./NewCompanyEntrySchema";
 
 //imports after using RTK query
 import {
@@ -56,26 +53,11 @@ const NewCompanyEntryForm = () => {
 
     const globalCompany = useSelector((state) => state.globalCompany);
     const [newCompany, setNewCompany] = useState("");
-    const [updatedCompany, setUpdatedCompany] = useState({
-        id: "",
-        name: "",
-    });
+    const [updatedCompanyId, setUpdatedCompanyId] = useState();
 
     const editCompanyPopoverHandler = (company) => {
-        setUpdatedCompany((prevState) => {
-            return { ...prevState, id: company.id };
-        });
+        setUpdatedCompanyId(company.id);
         setEditCompanyPopover(!editCompanyPopover);
-    };
-
-    const addCompanyChangeHandler = (event) => {
-        setNewCompany(event.target.value);
-    };
-
-    const updatedCompanyChangeHandler = (event) => {
-        setUpdatedCompany((prevState) => {
-            return { ...prevState, name: event.target.value };
-        });
     };
 
     const deleteCompanyChangeHandler = (event) => {
@@ -86,19 +68,21 @@ const NewCompanyEntryForm = () => {
 
     const addButtonClicked = async (values, formikBag) => {
         setAddCompanyPopover(!addCompanyPopover);
-        console.log(values)
+        console.log(values);
         addCompanies({
             name: values.newCompany,
         });
         formikBag.resetForm();
     };
 
-    const updateButtonClicked = async () => {
+    const updateButtonClicked = async (values, formikBag) => {
+        console.log(values)
         updateCompany({
-            id: updatedCompany.id,
-            name: updatedCompany.name,
+            id: updatedCompanyId,
+            name: values.updatedCompany,
         });
-        editCompanyPopoverHandler({ id: "", name: "" });
+        formikBag.resetForm()
+        editCompanyPopoverHandler({ id: "" });
     };
 
     const deleteButtonClicked = async () => {
@@ -254,23 +238,6 @@ const NewCompanyEntryForm = () => {
                     </table>
                 </div>
 
-                {/* <ReactModal
-                    className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
-                    isOpen={addCompanyPopover}
-                    onRequestClose={() => setAddCompanyPopover(false)}
-                    style={{
-                        overlay: {
-                            backgroundColor: "rgba(0, 0, 0, 0.75)",
-                        },
-                    }}
-                >
-                    <AddCompany
-                        setAddCompanyPopover={setAddCompanyPopover}
-                        addCompanyChangeHandler={addCompanyChangeHandler}
-                        addButtonClicked={addButtonClicked}
-                    />
-                </ReactModal> */}
-
                 <ReactModal
                     className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
                     isOpen={addCompanyPopover}
@@ -288,15 +255,13 @@ const NewCompanyEntryForm = () => {
                         component={(props) => (
                             <AddCompany
                                 {...props}
-                                setAddCompanyPopover={
-                                    setAddCompanyPopover
-                                }
+                                setAddCompanyPopover={setAddCompanyPopover}
                             />
                         )}
                     />
                 </ReactModal>
 
-                <ReactModal
+                {/* <ReactModal
                     className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
                     isOpen={editCompanyPopover}
                     onRequestClose={() => setEditCompanyPopover(false)}
@@ -312,6 +277,33 @@ const NewCompanyEntryForm = () => {
                             updatedCompanyChangeHandler
                         }
                         updateButtonClicked={updateButtonClicked}
+                    />
+                </ReactModal> */}
+
+                <ReactModal
+                    className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
+                    isOpen={editCompanyPopover}
+                    onRequestClose={() =>
+                        editCompanyPopoverHandler({ id: "" })
+                    }
+                    style={{
+                        overlay: {
+                            backgroundColor: "rgba(0, 0, 0, 0.75)",
+                        },
+                    }}
+                >
+                    <Formik
+                        initialValues={{ updatedCompany: "" }}
+                        validationSchema={editCompanySchema}
+                        onSubmit={updateButtonClicked}
+                        component={(props) => (
+                            <EditCompany
+                                {...props}
+                                editCompanyPopoverHandler={
+                                    editCompanyPopoverHandler
+                                }
+                            />
+                        )}
                     />
                 </ReactModal>
 

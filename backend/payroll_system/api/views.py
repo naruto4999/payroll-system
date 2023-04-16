@@ -1,7 +1,7 @@
 from django.forms import ValidationError
 from django.shortcuts import render
 from rest_framework import generics, status, mixins
-from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer
+from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer
 from .models import Company, CompanyDetails, User
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
@@ -139,6 +139,39 @@ class DesignationRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIV
     def perform_update(self, serializer):
         serializer.save(user=self.request.user)
 
+class SalaryGradeListCreateAPIView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    # queryset = Company.objects.all()
+    serializer_class = SalaryGradeSerializer
+    lookup_field = 'company_id'
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        user = self.request.user
+        salary_grades = user.salary_grades.filter(company=company_id)
+        print(salary_grades)
+        return salary_grades
+    
+    def perform_create(self, serializer):
+        company_id = self.kwargs.get('company_id')
+        company = Company.objects.get(id=company_id)
+        serializer.save(user=self.request.user, company=company)
+
+class SalaryGradeRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes= [IsAuthenticated]
+    serializer_class = SalaryGradeSerializer
+    lookup_field = 'id'
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        user = self.request.user
+        salary_grades = user.salary_grades.filter(company=company_id)
+        print(salary_grades)
+        return salary_grades
+    
+    def perform_update(self, serializer):
+        serializer.save(user=self.request.user)
+        
 #Viewsets
 class UserViewSet(viewsets.ModelViewSet):
     http_method_names = ['get']
