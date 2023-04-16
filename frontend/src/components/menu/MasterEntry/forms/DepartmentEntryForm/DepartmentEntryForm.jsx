@@ -17,7 +17,6 @@ import {
     addDepartmentSchema,
     editDepartmentSchema,
 } from "./DepartmentEntrySchema";
-import CustomInput from "./CustomInput";
 
 ReactModal.setAppElement("#root");
 
@@ -292,7 +291,7 @@ const DepartmentEntryForm = () => {
                         validationSchema={editDepartmentSchema}
                         onSubmit={updateButtonClicked}
                         component={(props) => (
-                            <CustomInput
+                            <EditDepartment
                                 {...props}
                                 editDepartmentPopoverHandler={
                                     editDepartmentPopoverHandler
