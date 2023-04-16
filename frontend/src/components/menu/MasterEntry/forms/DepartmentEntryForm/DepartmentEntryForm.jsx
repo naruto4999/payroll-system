@@ -13,11 +13,13 @@ import { useOutletContext } from "react-router-dom";
 import ReactModal from "react-modal";
 import { Formik, Field, Form } from "formik";
 import AddDepartment from "./AddDepartment";
-import { addDepartmentSchema } from "./DepartmentEntrySchema";
+import {
+    addDepartmentSchema,
+    editDepartmentSchema,
+} from "./DepartmentEntrySchema";
 import CustomInput from "./CustomInput";
 
 ReactModal.setAppElement("#root");
-
 
 const DepartmentEntryForm = () => {
     const globalCompany = useSelector((state) => state.globalCompany);
@@ -33,9 +35,12 @@ const DepartmentEntryForm = () => {
         refetch,
     } = useGetDepartmentsQuery(globalCompany);
     // console.log(fetchedData)
-    const [addDepartment, { isLoading: isAddingDepartment }] = useAddDepartmentMutation();
-    const [updateDepartment, { isLoading: isUpdatingDepartment }] = useUpdateDepartmentMutation();
-    const [deleteDepartment, { isLoading: isDeletingDepartment }] = useDeleteDepartmentMutation();
+    const [addDepartment, { isLoading: isAddingDepartment }] =
+        useAddDepartmentMutation();
+    const [updateDepartment, { isLoading: isUpdatingDepartment }] =
+        useUpdateDepartmentMutation();
+    const [deleteDepartment, { isLoading: isDeletingDepartment }] =
+        useDeleteDepartmentMutation();
     const [addDepartmentPopover, setAddDepartmentPopover] = useState(false);
     const [showLoadingBar, setShowLoadingBar] = useOutletContext();
     const [editDepartmentPopover, setEditDepartmentPopover] = useState(false);
@@ -44,7 +49,7 @@ const DepartmentEntryForm = () => {
     console.log(updateDepartmentId);
 
     const editDepartmentPopoverHandler = (department) => {
-        // console.log(department);
+        console.log(department);
         setUpdateDepartmentId(department.id);
         setEditDepartmentPopover(!editDepartmentPopover);
     };
@@ -56,9 +61,9 @@ const DepartmentEntryForm = () => {
     };
 
     const addButtonClicked = async (values, formikBag) => {
-        console.log(values)
-        console.log(formikBag)
-        formikBag.resetForm()
+        console.log(values);
+        console.log(formikBag);
+        formikBag.resetForm();
         setAddDepartmentPopover(!addDepartmentPopover);
         addDepartment({
             company: globalCompany.id,
@@ -68,14 +73,14 @@ const DepartmentEntryForm = () => {
         // setNewDepartment("");
     };
 
-    const updateButtonClicked = async () => {
-        console.log(updateDepartmentId);
+    const updateButtonClicked = async (values, formikBag) => {
+        console.log(values);
         updateDepartment({
-            id: updateDepartmentId.id,
-            name: updateDepartmentId.name,
+            id: updateDepartmentId,
+            name: values.updatedDepartment,
             company: globalCompany.id,
         });
-        editDepartmentPopoverHandler({ id: "", name: "" });
+        editDepartmentPopoverHandler({ id: "" });
     };
 
     const deleteButtonClicked = async (id) => {
@@ -96,7 +101,10 @@ const DepartmentEntryForm = () => {
         []
     );
 
-    const data = useMemo(() => (fetchedData ? [...fetchedData] : []), [fetchedData]);
+    const data = useMemo(
+        () => (fetchedData ? [...fetchedData] : []),
+        [fetchedData]
+    );
     // console.log(newDepartment);
     // console.log(fullname)
     const tableHooks = (hooks) => {
@@ -115,7 +123,9 @@ const DepartmentEntryForm = () => {
                         </div>
                         <div
                             className="p-1.5 dark:bg-teal-700 rounded bg-teal-600 dark:hover:bg-teal-600 hover:bg-teal-700"
-                            onClick={() => editDepartmentPopoverHandler(row.values)}
+                            onClick={() =>
+                                editDepartmentPopoverHandler(row.values)
+                            }
                         >
                             <FaPen className="h-4" />
                         </div>
@@ -126,11 +136,22 @@ const DepartmentEntryForm = () => {
     };
 
     const tableInstance = useTable({ columns, data }, tableHooks);
-    const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } = tableInstance;
+    const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } =
+        tableInstance;
 
     useEffect(() => {
-        setShowLoadingBar(isLoading || isAddingDepartment || isDeletingDepartment || isUpdatingDepartment);
-    }, [isLoading, isAddingDepartment, isDeletingDepartment, isUpdatingDepartment]);
+        setShowLoadingBar(
+            isLoading ||
+                isAddingDepartment ||
+                isDeletingDepartment ||
+                isUpdatingDepartment
+        );
+    }, [
+        isLoading,
+        isAddingDepartment,
+        isDeletingDepartment,
+        isUpdatingDepartment,
+    ]);
 
     if (globalCompany.id == null) {
         return (
@@ -149,7 +170,9 @@ const DepartmentEntryForm = () => {
                 <div className="flex flex-row place-content-between flex-wrap">
                     <div className="mr-4">
                         <h1 className="text-3xl font-medium">Departments</h1>
-                        <p className="text-sm my-2">Add more departments here</p>
+                        <p className="text-sm my-2">
+                            Add more departments here
+                        </p>
                     </div>
                     <button
                         className="dark:bg-teal-700 my-auto rounded p-2 text-base font-medium bg-teal-500 hover:bg-teal-600 dark:hover:bg-teal-600 whitespace-nowrap"
@@ -159,12 +182,19 @@ const DepartmentEntryForm = () => {
                     </button>
                 </div>
                 <div className="overflow-hidden rounded border border-black border-opacity-50 shadow-md m-5 max-w-5xl mx-auto">
-                    <table className="w-full border-collapse text-center text-sm" {...getTableProps()}>
+                    <table
+                        className="w-full border-collapse text-center text-sm"
+                        {...getTableProps()}
+                    >
                         <thead className="bg-blueAccent-600 dark:bg-blueAccent-700">
                             {headerGroups.map((headerGroup) => (
                                 <tr {...headerGroup.getHeaderGroupProps()}>
                                     {headerGroup.headers.map((column) => (
-                                        <th scope="col" className="px-4 py-4 font-medium" {...column.getHeaderProps()}>
+                                        <th
+                                            scope="col"
+                                            className="px-4 py-4 font-medium"
+                                            {...column.getHeaderProps()}
+                                        >
                                             {column.render("Header")}
                                         </th>
                                     ))}
@@ -178,12 +208,22 @@ const DepartmentEntryForm = () => {
                             {rows.map((row) => {
                                 prepareRow(row);
                                 return (
-                                    <tr className="dark:hover:bg-zinc-800 hover:bg-zinc-200" {...row.getRowProps()}>
+                                    <tr
+                                        className="dark:hover:bg-zinc-800 hover:bg-zinc-200"
+                                        {...row.getRowProps()}
+                                    >
                                         {row.cells.map((cell) => {
                                             return (
-                                                <td className="px-4 py-4 font-normal" {...cell.getCellProps()}>
+                                                <td
+                                                    className="px-4 py-4 font-normal"
+                                                    {...cell.getCellProps()}
+                                                >
                                                     <div className="text-sm">
-                                                        <div className="font-medium">{cell.render("Cell")}</div>
+                                                        <div className="font-medium">
+                                                            {cell.render(
+                                                                "Cell"
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </td>
                                             );
@@ -194,7 +234,7 @@ const DepartmentEntryForm = () => {
                         </tbody>
                     </table>
                 </div>
-              
+
                 <ReactModal
                     className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
                     isOpen={addDepartmentPopover}
@@ -212,7 +252,9 @@ const DepartmentEntryForm = () => {
                         component={(props) => (
                             <AddDepartment
                                 {...props}
-                                setAddDepartmentPopover={setAddDepartmentPopover}
+                                setAddDepartmentPopover={
+                                    setAddDepartmentPopover
+                                }
                             />
                         )}
                     />
@@ -236,22 +278,31 @@ const DepartmentEntryForm = () => {
                 <ReactModal
                     className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
                     isOpen={editDepartmentPopover}
-                    onRequestClose={() => editDepartmentPopoverHandler({id: "", name: ""})}
+                    onRequestClose={() =>
+                        editDepartmentPopoverHandler({ id: "" })
+                    }
                     style={{
                         overlay: {
                             backgroundColor: "rgba(0, 0, 0, 0.75)",
                         },
                     }}
                 >
-                    <CustomInput
-                        editDepartmentPopoverHandler={editDepartmentPopoverHandler}
-                        updateDepartmentIdChangeHandler={updateDepartmentIdChangeHandler}
-                        updateButtonClicked={updateButtonClicked}
+                    <Formik
+                        initialValues={{ updatedDepartment: "" }}
+                        validationSchema={editDepartmentSchema}
+                        onSubmit={updateButtonClicked}
+                        component={(props) => (
+                            <CustomInput
+                                {...props}
+                                editDepartmentPopoverHandler={
+                                    editDepartmentPopoverHandler
+                                }
+                            />
+                        )}
                     />
                 </ReactModal>
             </section>
         );
-
     }
 };
 
