@@ -17,7 +17,6 @@ import {
     editDesignationSchema,
 } from "./DesignationEntrySchema";
 import { Formik } from "formik";
-import CustomInput from "./CustomInput";
 
 ReactModal.setAppElement("#root");
 
@@ -268,7 +267,7 @@ const DesignationEntryForm = () => {
                         validationSchema={editDesignationSchema}
                         onSubmit={updateButtonClicked}
                         component={(props) => (
-                            <CustomInput
+                            <EditDesignation
                                 {...props}
                                 editDesignationPopoverHandler={
                                     editDesignationPopoverHandler

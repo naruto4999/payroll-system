@@ -9,6 +9,10 @@ import { useEffect } from "react";
 import { globalCompanyActions } from "../../../../authentication/store/slices/globalCompany";
 import AddCompany from "./AddCompany";
 import DeleteCompany from "./DeleteCompany";
+import {
+    addCompanySchema,
+    editCompanySchema,
+} from "./NewCompanyEntrySchema"
 
 //imports after using RTK query
 import {
@@ -19,6 +23,7 @@ import {
 } from "../../../../authentication/api/newCompanyEntryApiSlice";
 import { useUpdateCompanyDetailsMutation } from "../../../../authentication/api/companyEntryApiSlice";
 import ReactModal from "react-modal";
+import { Formik } from "formik";
 
 ReactModal.setAppElement("#root");
 
@@ -28,11 +33,21 @@ const classNames = (...classes) => {
 
 const NewCompanyEntryForm = () => {
     //using RTK query
-    const { data: fetchedData, isLoading, isSuccess, isError, error, isFetching } = useGetCompaniesQuery();
-    const [addCompanies, { isLoading: isAddingCompany }] = useAddCompaniesMutation();
-    const [deleteCompany, { isLoading: isDeletingComapny }] = useDeleteCompanyMutation();
-    const [updateCompany, { isLoading: isUpdatingCompany }] = useUpdateCompaniesMutation();
-    const [addComapnyPopover, setAddCompanyPopover] = useState(false);
+    const {
+        data: fetchedData,
+        isLoading,
+        isSuccess,
+        isError,
+        error,
+        isFetching,
+    } = useGetCompaniesQuery();
+    const [addCompanies, { isLoading: isAddingCompany }] =
+        useAddCompaniesMutation();
+    const [deleteCompany, { isLoading: isDeletingComapny }] =
+        useDeleteCompanyMutation();
+    const [updateCompany, { isLoading: isUpdatingCompany }] =
+        useUpdateCompaniesMutation();
+    const [addCompanyPopover, setAddCompanyPopover] = useState(false);
     const [editCompanyPopover, setEditCompanyPopover] = useState(false);
     const [deleteCompanyPopover, setDeleteCompanyPopover] = useState(false);
     const [showLoadingBar, setShowLoadingBar] = useOutletContext();
@@ -69,13 +84,13 @@ const NewCompanyEntryForm = () => {
         });
     };
 
-    const addButtonClicked = async () => {
-        setAddCompanyPopover(!addComapnyPopover);
+    const addButtonClicked = async (values, formikBag) => {
+        setAddCompanyPopover(!addCompanyPopover);
+        console.log(values)
         addCompanies({
-            name: newCompany,
+            name: values.newCompany,
         });
-        console.log(isAddingCompany);
-        setNewCompany("");
+        formikBag.resetForm();
     };
 
     const updateButtonClicked = async () => {
@@ -89,12 +104,11 @@ const NewCompanyEntryForm = () => {
     const deleteButtonClicked = async () => {
         if (confirmDelete.phrase == "confirm") {
             deleteCompany({ id: confirmDelete.id });
-            setDeleteCompanyPopover(false)
+            setDeleteCompanyPopover(false);
             if (globalCompany.id == confirmDelete.id) {
                 dispatch(globalCompanyActions.deselectComapny());
             }
         }
-        
     };
     console.log(confirmDelete);
     const columns = useMemo(
@@ -111,7 +125,10 @@ const NewCompanyEntryForm = () => {
         []
     );
 
-    const data = useMemo(() => (fetchedData ? [...fetchedData] : []), [fetchedData]);
+    const data = useMemo(
+        () => (fetchedData ? [...fetchedData] : []),
+        [fetchedData]
+    );
 
     const tableHooks = (hooks) => {
         hooks.visibleColumns.push((columns) => [
@@ -124,7 +141,10 @@ const NewCompanyEntryForm = () => {
                         <div
                             className="p-1.5 dark:bg-redAccent-700 rounded bg-redAccent-500 dark:hover:bg-redAccent-500 hover:bg-redAccent-700"
                             onClick={() => {
-                                setConfirmDelete({ id: row.values.id, phrase: "" });
+                                setConfirmDelete({
+                                    id: row.values.id,
+                                    phrase: "",
+                                });
                                 setDeleteCompanyPopover(true);
                             }}
                         >
@@ -132,7 +152,9 @@ const NewCompanyEntryForm = () => {
                         </div>
                         <div
                             className="p-1.5 dark:bg-teal-700 rounded bg-teal-600 dark:hover:bg-teal-600 hover:bg-teal-700"
-                            onClick={() => editCompanyPopoverHandler(row.values)}
+                            onClick={() =>
+                                editCompanyPopoverHandler(row.values)
+                            }
                         >
                             <FaPen className="h-4" />
                         </div>
@@ -143,11 +165,14 @@ const NewCompanyEntryForm = () => {
     };
 
     const tableInstance = useTable({ columns, data }, tableHooks);
-    const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } = tableInstance;
+    const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } =
+        tableInstance;
 
     // console.log(showLoadingBar)
     useEffect(() => {
-        setShowLoadingBar(isAddingCompany || isDeletingComapny || isUpdatingCompany);
+        setShowLoadingBar(
+            isAddingCompany || isDeletingComapny || isUpdatingCompany
+        );
     }, [isAddingCompany, isDeletingComapny, isUpdatingCompany]);
 
     if (isLoading) {
@@ -173,13 +198,22 @@ const NewCompanyEntryForm = () => {
                     </button>
                 </div>
 
-                <div className={`overflow-hidden rounded border border-black border-opacity-50 shadow-md m-5 mx-auto`}>
-                    <table className="w-full border-collapse text-center text-sm" {...getTableProps()}>
+                <div
+                    className={`overflow-hidden rounded border border-black border-opacity-50 shadow-md m-5 mx-auto`}
+                >
+                    <table
+                        className="w-full border-collapse text-center text-sm"
+                        {...getTableProps()}
+                    >
                         <thead className="bg-blueAccent-600 dark:bg-blueAccent-700">
                             {headerGroups.map((headerGroup) => (
                                 <tr {...headerGroup.getHeaderGroupProps()}>
                                     {headerGroup.headers.map((column) => (
-                                        <th scope="col" className="px-4 py-4 font-medium" {...column.getHeaderProps()}>
+                                        <th
+                                            scope="col"
+                                            className="px-4 py-4 font-medium"
+                                            {...column.getHeaderProps()}
+                                        >
                                             {column.render("Header")}
                                         </th>
                                     ))}
@@ -193,12 +227,22 @@ const NewCompanyEntryForm = () => {
                             {rows.map((row) => {
                                 prepareRow(row);
                                 return (
-                                    <tr className="dark:hover:bg-zinc-800 hover:bg-zinc-200" {...row.getRowProps()}>
+                                    <tr
+                                        className="dark:hover:bg-zinc-800 hover:bg-zinc-200"
+                                        {...row.getRowProps()}
+                                    >
                                         {row.cells.map((cell) => {
                                             return (
-                                                <td className="px-4 py-4 font-normal" {...cell.getCellProps()}>
+                                                <td
+                                                    className="px-4 py-4 font-normal"
+                                                    {...cell.getCellProps()}
+                                                >
                                                     <div className="text-sm">
-                                                        <div className="font-medium">{cell.render("Cell")}</div>
+                                                        <div className="font-medium">
+                                                            {cell.render(
+                                                                "Cell"
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </td>
                                             );
@@ -210,9 +254,9 @@ const NewCompanyEntryForm = () => {
                     </table>
                 </div>
 
-                <ReactModal
+                {/* <ReactModal
                     className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
-                    isOpen={addComapnyPopover}
+                    isOpen={addCompanyPopover}
                     onRequestClose={() => setAddCompanyPopover(false)}
                     style={{
                         overlay: {
@@ -224,6 +268,31 @@ const NewCompanyEntryForm = () => {
                         setAddCompanyPopover={setAddCompanyPopover}
                         addCompanyChangeHandler={addCompanyChangeHandler}
                         addButtonClicked={addButtonClicked}
+                    />
+                </ReactModal> */}
+
+                <ReactModal
+                    className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
+                    isOpen={addCompanyPopover}
+                    onRequestClose={() => setAddCompanyPopover(false)}
+                    style={{
+                        overlay: {
+                            backgroundColor: "rgba(0, 0, 0, 0.75)",
+                        },
+                    }}
+                >
+                    <Formik
+                        initialValues={{ newCompany: "" }}
+                        validationSchema={addCompanySchema}
+                        onSubmit={addButtonClicked}
+                        component={(props) => (
+                            <AddCompany
+                                {...props}
+                                setAddCompanyPopover={
+                                    setAddCompanyPopover
+                                }
+                            />
+                        )}
                     />
                 </ReactModal>
 
@@ -239,7 +308,9 @@ const NewCompanyEntryForm = () => {
                 >
                     <EditCompany
                         editCompanyPopoverHandler={editCompanyPopoverHandler}
-                        updatedCompanyChangeHandler={updatedCompanyChangeHandler}
+                        updatedCompanyChangeHandler={
+                            updatedCompanyChangeHandler
+                        }
                         updateButtonClicked={updateButtonClicked}
                     />
                 </ReactModal>
@@ -264,7 +335,11 @@ const NewCompanyEntryForm = () => {
 
                 <div
                     className={classNames(
-                        isAddingCompany || isDeletingComapny || isUpdatingCompany ? "" : "hidden",
+                        isAddingCompany ||
+                            isDeletingComapny ||
+                            isUpdatingCompany
+                            ? ""
+                            : "hidden",
                         "bg-indigo-600 w-fit h-fit rounded flex p-2 items-center font-medium z-50 mx-auto"
                     )}
                 >
