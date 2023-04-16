@@ -11,7 +11,7 @@ import {
 import EditDepartment from "./EditDepartment";
 import { useOutletContext } from "react-router-dom";
 import ReactModal from "react-modal";
-import { Formik, Field, Form } from "formik";
+import { Formik } from "formik";
 import AddDepartment from "./AddDepartment";
 import {
     addDepartmentSchema,
@@ -53,12 +53,6 @@ const DepartmentEntryForm = () => {
         setEditDepartmentPopover(!editDepartmentPopover);
     };
 
-    const updateDepartmentIdChangeHandler = (event) => {
-        setUpdateDepartmentId((prevState) => {
-            return { ...prevState, name: event.target.value };
-        });
-    };
-
     const addButtonClicked = async (values, formikBag) => {
         console.log(values);
         console.log(formikBag);
@@ -79,6 +73,7 @@ const DepartmentEntryForm = () => {
             name: values.updatedDepartment,
             company: globalCompany.id,
         });
+        formikBag.resetForm();
         editDepartmentPopoverHandler({ id: "" });
     };
 
@@ -104,8 +99,6 @@ const DepartmentEntryForm = () => {
         () => (fetchedData ? [...fetchedData] : []),
         [fetchedData]
     );
-    // console.log(newDepartment);
-    // console.log(fullname)
     const tableHooks = (hooks) => {
         hooks.visibleColumns.push((columns) => [
             ...columns,
@@ -258,22 +251,7 @@ const DepartmentEntryForm = () => {
                         )}
                     />
                 </ReactModal>
-                {/* <ReactModal
-                    className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
-                    isOpen={editDepartmentPopover}
-                    onRequestClose={() => editDepartmentPopoverHandler({id: "", name: ""})}
-                    style={{
-                        overlay: {
-                            backgroundColor: "rgba(0, 0, 0, 0.75)",
-                        },
-                    }}
-                >
-                    <EditDepartment
-                        editDepartmentPopoverHandler={editDepartmentPopoverHandler}
-                        updateDepartmentIdChangeHandler={updateDepartmentIdChangeHandler}
-                        updateButtonClicked={updateButtonClicked}
-                    />
-                </ReactModal> */}
+                
                 <ReactModal
                     className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
                     isOpen={editDepartmentPopover}

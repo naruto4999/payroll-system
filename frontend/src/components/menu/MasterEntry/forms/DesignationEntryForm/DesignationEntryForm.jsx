@@ -12,13 +12,17 @@ import AddDesignation from "./AddDesignation";
 import EditDesignation from "./EditDesignation";
 import { useOutletContext } from "react-router-dom";
 import ReactModal from "react-modal";
+import {
+    addDesignationSchema,
+    editDesignationSchema,
+} from "./DesignationEntrySchema";
+import { Formik } from "formik";
 
 ReactModal.setAppElement("#root");
 
 const DesignationEntryForm = () => {
     const globalCompany = useSelector((state) => state.globalCompany);
 
-    console.log(globalCompany);
     const {
         data: fetchedData,
         isLoading,
@@ -29,9 +33,12 @@ const DesignationEntryForm = () => {
         refetch,
     } = useGetDesignationsQuery(globalCompany);
     // console.log(fetchedData)
-    const [addDesignation, { isLoading: isAddingDesignation }] = useAddDesignationMutation();
-    const [updateDesignation, { isLoading: isUpdatingDesignation }] = useUpdateDesignationMutation();
-    const [deleteDesignation, { isLoading: isDeletingDesignation }] = useDeleteDesignationMutation();
+    const [addDesignation, { isLoading: isAddingDesignation }] =
+        useAddDesignationMutation();
+    const [updateDesignation, { isLoading: isUpdatingDesignation }] =
+        useUpdateDesignationMutation();
+    const [deleteDesignation, { isLoading: isDeletingDesignation }] =
+        useDeleteDesignationMutation();
     const [addDesignationPopover, setAddDesignationPopover] = useState(false);
     const [newDesignation, setNewDesignation] = useState("");
     const [showLoadingBar, setShowLoadingBar] = useOutletContext();
@@ -42,9 +49,6 @@ const DesignationEntryForm = () => {
     });
 
     console.log(isFetching);
-    const addDesignationChangeHandler = (event) => {
-        setNewDesignation(event.target.value);
-    };
 
     const editDesignationPopoverHandler = (designation) => {
         console.log(designation);
@@ -60,14 +64,13 @@ const DesignationEntryForm = () => {
         });
     };
 
-    const addButtonClicked = async () => {
+    const addButtonClicked = async (values, formikBag) => {
         setAddDesignationPopover(!addDesignationPopover);
         addDesignation({
             company: globalCompany.id,
-            name: newDesignation,
+            name: values.newDesignation,
         });
-        console.log(isAddingDesignation);
-        setNewDesignation("");
+        formikBag.resetForm()
     };
 
     const updateButtonClicked = async () => {
@@ -98,7 +101,10 @@ const DesignationEntryForm = () => {
         []
     );
 
-    const data = useMemo(() => (fetchedData ? [...fetchedData] : []), [fetchedData]);
+    const data = useMemo(
+        () => (fetchedData ? [...fetchedData] : []),
+        [fetchedData]
+    );
     // console.log(newDesignation);
 
     const tableHooks = (hooks) => {
@@ -117,7 +123,9 @@ const DesignationEntryForm = () => {
                         </div>
                         <div
                             className="p-1.5 dark:bg-teal-700 rounded bg-teal-600 dark:hover:bg-teal-600 hover:bg-teal-700"
-                            onClick={() => editDesignationPopoverHandler(row.values)}
+                            onClick={() =>
+                                editDesignationPopoverHandler(row.values)
+                            }
                         >
                             <FaPen className="h-4" />
                         </div>
@@ -128,11 +136,22 @@ const DesignationEntryForm = () => {
     };
 
     const tableInstance = useTable({ columns, data }, tableHooks);
-    const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } = tableInstance;
+    const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } =
+        tableInstance;
 
     useEffect(() => {
-        setShowLoadingBar(isLoading || isAddingDesignation || isDeletingDesignation || isUpdatingDesignation);
-    }, [isLoading, isAddingDesignation, isDeletingDesignation, isUpdatingDesignation]);
+        setShowLoadingBar(
+            isLoading ||
+                isAddingDesignation ||
+                isDeletingDesignation ||
+                isUpdatingDesignation
+        );
+    }, [
+        isLoading,
+        isAddingDesignation,
+        isDeletingDesignation,
+        isUpdatingDesignation,
+    ]);
 
     if (globalCompany.id == null) {
         return (
@@ -151,7 +170,9 @@ const DesignationEntryForm = () => {
                 <div className="flex flex-row place-content-between flex-wrap">
                     <div className="mr-4">
                         <h1 className="text-3xl font-medium">Designations</h1>
-                        <p className="text-sm my-2">Add more Designations here</p>
+                        <p className="text-sm my-2">
+                            Add more Designations here
+                        </p>
                     </div>
                     <button
                         className="dark:bg-teal-700 my-auto rounded p-2 text-base font-medium bg-teal-500 hover:bg-teal-600 dark:hover:bg-teal-600 whitespace-nowrap"
@@ -162,12 +183,19 @@ const DesignationEntryForm = () => {
                 </div>
 
                 <div className="overflow-hidden rounded border border-black border-opacity-50 shadow-md m-5 max-w-5xl mx-auto">
-                    <table className="w-full border-collapse text-center text-sm" {...getTableProps()}>
+                    <table
+                        className="w-full border-collapse text-center text-sm"
+                        {...getTableProps()}
+                    >
                         <thead className="bg-blueAccent-600 dark:bg-blueAccent-700">
                             {headerGroups.map((headerGroup) => (
                                 <tr {...headerGroup.getHeaderGroupProps()}>
                                     {headerGroup.headers.map((column) => (
-                                        <th scope="col" className="px-4 py-4 font-medium" {...column.getHeaderProps()}>
+                                        <th
+                                            scope="col"
+                                            className="px-4 py-4 font-medium"
+                                            {...column.getHeaderProps()}
+                                        >
                                             {column.render("Header")}
                                         </th>
                                     ))}
@@ -181,12 +209,22 @@ const DesignationEntryForm = () => {
                             {rows.map((row) => {
                                 prepareRow(row);
                                 return (
-                                    <tr className="dark:hover:bg-zinc-800 hover:bg-zinc-200" {...row.getRowProps()}>
+                                    <tr
+                                        className="dark:hover:bg-zinc-800 hover:bg-zinc-200"
+                                        {...row.getRowProps()}
+                                    >
                                         {row.cells.map((cell) => {
                                             return (
-                                                <td className="px-4 py-4 font-normal" {...cell.getCellProps()}>
+                                                <td
+                                                    className="px-4 py-4 font-normal"
+                                                    {...cell.getCellProps()}
+                                                >
                                                     <div className="text-sm">
-                                                        <div className="font-medium">{cell.render("Cell")}</div>
+                                                        <div className="font-medium">
+                                                            {cell.render(
+                                                                "Cell"
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </td>
                                             );
@@ -208,10 +246,18 @@ const DesignationEntryForm = () => {
                         },
                     }}
                 >
-                    <AddDesignation
-                        setAddDesignationPopover={setAddDesignationPopover}
-                        addDesignationChangeHandler={addDesignationChangeHandler}
-                        addButtonClicked={addButtonClicked}
+                    <Formik
+                        initialValues={{ newDesignation: "" }}
+                        validationSchema={addDesignationSchema}
+                        onSubmit={addButtonClicked}
+                        component={(props) => (
+                            <AddDesignation
+                                {...props}
+                                setAddDesignationPopover={
+                                    setAddDesignationPopover
+                                }
+                            />
+                        )}
                     />
                 </ReactModal>
 
@@ -226,8 +272,12 @@ const DesignationEntryForm = () => {
                     }}
                 >
                     <EditDesignation
-                        editDesignationPopoverHandler={editDesignationPopoverHandler}
-                        updatedDesignationChangeHandler={updatedDesignationChangeHandler}
+                        editDesignationPopoverHandler={
+                            editDesignationPopoverHandler
+                        }
+                        updatedDesignationChangeHandler={
+                            updatedDesignationChangeHandler
+                        }
                         updateButtonClicked={updateButtonClicked}
                     />
                 </ReactModal>
