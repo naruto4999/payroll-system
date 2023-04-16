@@ -17,6 +17,7 @@ import {
     editDesignationSchema,
 } from "./DesignationEntrySchema";
 import { Formik } from "formik";
+import CustomInput from "./CustomInput";
 
 ReactModal.setAppElement("#root");
 
@@ -43,25 +44,14 @@ const DesignationEntryForm = () => {
     const [newDesignation, setNewDesignation] = useState("");
     const [showLoadingBar, setShowLoadingBar] = useOutletContext();
     const [editDesignationPopover, setEditDesignationPopover] = useState(false);
-    const [updatedDesignation, setUpdatedDesignation] = useState({
-        id: "",
-        name: "",
-    });
+    const [updatedDesignationId, setUpdatedDesignationId] = useState( "" );
 
     console.log(isFetching);
 
     const editDesignationPopoverHandler = (designation) => {
         console.log(designation);
-        setUpdatedDesignation((prevState) => {
-            return { ...prevState, id: designation.id };
-        });
+        setUpdatedDesignationId(designation.id);
         setEditDesignationPopover(!editDesignationPopover);
-    };
-
-    const updatedDesignationChangeHandler = (event) => {
-        setUpdatedDesignation((prevState) => {
-            return { ...prevState, name: event.target.value };
-        });
     };
 
     const addButtonClicked = async (values, formikBag) => {
@@ -70,17 +60,17 @@ const DesignationEntryForm = () => {
             company: globalCompany.id,
             name: values.newDesignation,
         });
-        formikBag.resetForm()
+        formikBag.resetForm();
     };
 
-    const updateButtonClicked = async () => {
-        console.log(updatedDesignation);
+    const updateButtonClicked = async (values, formikBag) => {
+        console.log(values);
         updateDesignation({
-            id: updatedDesignation.id,
-            name: updatedDesignation.name,
+            id: updatedDesignationId,
+            name: values.updatedDesignation,
             company: globalCompany.id,
         });
-        editDesignationPopoverHandler({ id: "", name: "" });
+        editDesignationPopoverHandler({ id: "" });
     };
 
     const deleteButtonClicked = async (id) => {
@@ -264,21 +254,27 @@ const DesignationEntryForm = () => {
                 <ReactModal
                     className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
                     isOpen={editDesignationPopover}
-                    onRequestClose={() => setEditDesignationPopover(false)}
+                    onRequestClose={() =>
+                        editDesignationPopoverHandler({ id: "" })
+                    }
                     style={{
                         overlay: {
                             backgroundColor: "rgba(0, 0, 0, 0.75)",
                         },
                     }}
                 >
-                    <EditDesignation
-                        editDesignationPopoverHandler={
-                            editDesignationPopoverHandler
-                        }
-                        updatedDesignationChangeHandler={
-                            updatedDesignationChangeHandler
-                        }
-                        updateButtonClicked={updateButtonClicked}
+                    <Formik
+                        initialValues={{ updatedDesignation: "" }}
+                        validationSchema={editDesignationSchema}
+                        onSubmit={updateButtonClicked}
+                        component={(props) => (
+                            <CustomInput
+                                {...props}
+                                editDesignationPopoverHandler={
+                                    editDesignationPopoverHandler
+                                }
+                            />
+                        )}
                     />
                 </ReactModal>
             </section>
