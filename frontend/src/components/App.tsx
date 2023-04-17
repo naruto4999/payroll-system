@@ -17,6 +17,7 @@ import SelectCompany from "./menu/MasterEntry/forms/SelectCompany/SelectCompany"
 import CompanyEntryForm from "./menu/MasterEntry/forms/CompanyEntryForm/CompanyEntryForm";
 import DepartmentEntryForm from "./menu/MasterEntry/forms/DepartmentEntryForm/DepartmentEntryForm";
 import DesignationEntryForm from "./menu/MasterEntry/forms/DesignationEntryForm/DesignationEntryForm";
+import SalaryGradeEntryForm from "./menu/MasterEntry/forms/SalaryGradeEntryForm/SalaryGradeEntryForm";
 
 // import store, { persistor } from "./authentication/store/index"
 // import { PersistGate } from "redux-persist/integration/react";
@@ -66,13 +67,13 @@ function App() {
                     <Route path="company-entry" element={<CompanyEntryForm/>} />
                     <Route path="department-entry" element={<DepartmentEntryForm/>} />
                     <Route path="designation-entry" element={<DesignationEntryForm/>} />
+                    <Route path="salary-grade-entry" element={<SalaryGradeEntryForm />} />
                     {/* <Route path="bank-entry" element={<BankEntryForm />} />
                     <Route path="category-entry" element={<CategoryEntryForm />} />
                     <Route path="department-entry" element={<DepartmentEntryForm />} />
                     <Route path="designation-entry" element={<DesignationEntryForm />} />
                     <Route path="employee-entry" element={<EmployeeEntryForm />} />
                     <Route path="holiday-entry" element={<HolidayEntryForm />} />
-                    <Route path="salary-grade-entry" element={<SalaryGradeEntryForm />} />
                     <Route path="shift-entry" element={<ShiftEntryForm />} /> */}
                     
                 </Route>

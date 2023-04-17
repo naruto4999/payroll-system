@@ -12,7 +12,7 @@ export const salaryGradeEntryApiSlice = apiSlice.injectEndpoints({
         }),
         addSalaryGrade: builder.mutation({
             query: salaryGrade => ({
-                url: `/api/salary-grade/${salary-grade.company}`,
+                url: `/api/salary-grade/${salaryGrade.company}`,
                 method: 'POST',
                 body: salaryGrade,
             }),
