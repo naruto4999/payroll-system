@@ -80,8 +80,9 @@ class DepartmentListCreateAPIView(generics.ListCreateAPIView):
     def get_queryset(self, *args, **kwargs):
         company_id = self.kwargs.get('company_id')
         user = self.request.user
+        print(user.username)
         departments = user.departments.filter(company=company_id)
-        print(departments)
+        # print(departments)
         return departments
     
     def perform_create(self, serializer):
@@ -99,7 +100,7 @@ class DepartmentRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIVi
         company_id = self.kwargs.get('company_id')
         user = self.request.user
         departments = user.departments.filter(company=company_id)
-        print(departments)
+        # print(departments)
         return departments
     
     def perform_update(self, serializer):

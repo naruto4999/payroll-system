@@ -33,6 +33,13 @@ class UserManager(BaseUserManager):
 
 class User(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(db_index=True, max_length=255, unique=True)
+    # MANAGER = 1
+    # REGULAR = 2
+
+    # ROLE_CHOICES = (
+    #     (MANAGER, 'Manager'),
+    #     (REGULAR, 'Regular')
+    # )
     email = models.EmailField(db_index=True, unique=True,  null=True, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
@@ -49,7 +56,7 @@ class Company(models.Model):
     id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length=256, null=False, unique=True)
     def __str__(self):
-        return self.name
+        return f"{self.user.email} -> {self.name}"
 
 
 class CompanyDetails(models.Model):
@@ -70,13 +77,19 @@ class Deparment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="departments")
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="deparments")
     name = models.CharField(max_length=256, null=False, blank=False)
+    def __str__(self):
+        return f"{self.user.email} -> {self.company.name}: {self.name}"
 
 class Designation(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="designations")
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="designations")
     name = models.CharField(max_length=256, null=False, blank=False)
+    def __str__(self):
+        return f"{self.user.email} -> {self.company.name}: {self.name}"
 
 class SalaryGrade(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="salary_grades")
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="salary_grades")
     name = models.CharField(max_length=256, null=False, blank=False)
+    def __str__(self):
+        return f"{self.user.email} -> {self.company.name}: {self.name}"
