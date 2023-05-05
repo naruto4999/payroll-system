@@ -11,12 +11,14 @@ const baseQuery = fetchBaseQuery({
             headers.set("ngrok-skip-browser-warning", "69420")
             // 'Content-Type': 'application/json',
         }
+        console.log(token)
         return headers;
     },
 });
 
 const baseQueryWithReauth = async (args, api, extraOptions) => {
     let result = await baseQuery(args, api, extraOptions);
+    console.log(args)
 
     console.log(result);
 

@@ -1,4 +1,4 @@
-import { FaUserTie, FaPlus, FaPen, FaHome, FaThLarge, FaLevelUpAlt, FaMoneyCheckAlt } from "react-icons/fa";
+import { FaUserTie, FaPlus, FaPen, FaHome, FaThLarge, FaLevelUpAlt, FaMoneyCheckAlt, FaCogs } from "react-icons/fa";
 
 const items = [
     {
@@ -29,6 +29,11 @@ const items = [
                 title: "Salary Grade Entry",
                 icon: FaMoneyCheckAlt,
                 path: "/home/salary-grade-entry"
+            },
+            {
+                title: "Settings",
+                icon: FaCogs,
+                path: "/home/settings"
             },
         ],
     },

@@ -11,6 +11,7 @@ const RegisterForm = () => {
         password: "",
         passConfirm: "",
         username: "",
+        phone_no: "",
     });
 
     console.log(userDetails);
@@ -29,6 +30,8 @@ const RegisterForm = () => {
                     email: userDetails.email,
                     password: userDetails.password,
                     username: userDetails.username,
+                    phone_no: userDetails.phone_no,
+
                 }).unwrap();
                 console.log(data);
                 
@@ -37,6 +40,7 @@ const RegisterForm = () => {
                     password: "",
                     passConfirm: "",
                     username: "",
+                    phone_no: "",
                 });
             } catch (err) {
                 console.log(err);
@@ -95,6 +99,24 @@ const RegisterForm = () => {
                                 className="text-gray-900 text-opacity-70 dark:text-white dark:text-opacity-70 absolute left-0 top-1 cursor-text peer-focus:text-xs peer-focus:-top-4 peer-[&:not(:placeholder-shown)]:text-xs peer-[&:not(:placeholder-shown)]:-top-4 transition-all italic"
                             >
                                 Email
+                            </label>
+                        </div>
+
+                        <div className="relative">
+                            <input
+                                className="bg-transparent  border-b-2 border-gray-800 border-opacity-25 dark:border-opacity-25 dark:border-slate-100 md:p-2 p-1 outline-none focus:border-opacity-75 transition w-full peer"
+                                type="tel"
+                                id="phone_no"
+                                name="phone_no"
+                                placeholder=" "
+                                onChange={changeHandler}
+                                maxLength={10}
+                            />
+                            <label
+                                htmlFor="phone_no"
+                                className="text-gray-900 text-opacity-70 dark:text-white dark:text-opacity-70 absolute left-0 top-1 cursor-text peer-focus:text-xs peer-focus:-top-4 peer-[&:not(:placeholder-shown)]:text-xs peer-[&:not(:placeholder-shown)]:-top-4 transition-all italic"
+                            >
+                                Phone Number
                             </label>
                         </div>
 

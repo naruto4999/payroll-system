@@ -1,7 +1,7 @@
 from dataclasses import field
 from rest_framework import serializers
 
-from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade
+from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular
 from rest_framework import serializers
 
 
@@ -9,7 +9,7 @@ from rest_framework import serializers
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'is_active']
+        fields = ['id', 'username', 'email', 'is_active', 'phone_no']
         read_only_field = ['is_active']
 
 class CompanySerializer(serializers.ModelSerializer):
@@ -64,3 +64,18 @@ class SalaryGradeSerializer(serializers.ModelSerializer):
     class Meta:
         model = SalaryGrade
         fields = ('id', 'user', 'company', 'name')
+
+class RegularRegisterSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(max_length=128, min_length=8, write_only=True, required=True)
+    email = serializers.EmailField(required=True, write_only=True, max_length=128)
+    owner = UserSerializer(read_only=True)
+
+
+    class Meta:
+        model = Regular
+        fields = ['id', 'username', 'email', 'password', 'is_active', 'owner']
+
+    def create(self, validated_data):
+        user = Regular.objects.create_user(**validated_data)
+        print(user)
+        return user

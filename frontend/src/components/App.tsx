@@ -1,5 +1,5 @@
 import Sidebar from "./menu/Sidebar";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useParams } from "react-router-dom";
 // import CompanyEntryForm from "./menu/MasterEntry/forms/CompanyEntryForm";
 // import BankEntryForm from "./menu/MasterEntry/forms/BankEntryForm";
 // import CategoryEntryForm from "./menu/MasterEntry/forms/CategoryEntryForm";
@@ -12,12 +12,15 @@ import { Routes, Route } from "react-router-dom";
 import LoginForm from "./authentication/Login";
 import Profile from "./authentication/Profile";
 import RegisterForm from "./authentication/Register";
+import ForgotPassform from "./authentication/ForgotPassform";
+import PassConfirmForm from "./authentication/PassConfirmForm";
 import NewCompanyEntryForm from "./menu/MasterEntry/forms/NewCompanyEntryForm/NewCompanyEntryForm";
 import SelectCompany from "./menu/MasterEntry/forms/SelectCompany/SelectCompany";
 import CompanyEntryForm from "./menu/MasterEntry/forms/CompanyEntryForm/CompanyEntryForm";
 import DepartmentEntryForm from "./menu/MasterEntry/forms/DepartmentEntryForm/DepartmentEntryForm";
 import DesignationEntryForm from "./menu/MasterEntry/forms/DesignationEntryForm/DesignationEntryForm";
 import SalaryGradeEntryForm from "./menu/MasterEntry/forms/SalaryGradeEntryForm/SalaryGradeEntryForm";
+import SettingsForm from "./menu/MasterEntry/forms/SettingsForm/SettingsForm";
 
 // import store, { persistor } from "./authentication/store/index"
 // import { PersistGate } from "redux-persist/integration/react";
@@ -39,7 +42,8 @@ function App() {
             setTheme("light");
         }
     }, []);
-
+    let { uid } = useParams();
+    let { token } = useParams();
     useEffect(() => {
         if (theme == "dark") {
             document.documentElement.classList.add("dark");
@@ -68,6 +72,7 @@ function App() {
                     <Route path="department-entry" element={<DepartmentEntryForm/>} />
                     <Route path="designation-entry" element={<DesignationEntryForm/>} />
                     <Route path="salary-grade-entry" element={<SalaryGradeEntryForm />} />
+                    <Route path="settings" element={<SettingsForm />} />
                     {/* <Route path="bank-entry" element={<BankEntryForm />} />
                     <Route path="category-entry" element={<CategoryEntryForm />} />
                     <Route path="department-entry" element={<DepartmentEntryForm />} />
@@ -79,6 +84,8 @@ function App() {
                 </Route>
                 <Route path="login" element={<LoginForm />} />
                 <Route path="register" element={<RegisterForm />} />
+                <Route path="forgot-password" element={<ForgotPassform />} />
+                <Route path="pass-confirm/:uid/:token" element={<PassConfirmForm />} />
             </Routes>
         </div>
     );

@@ -1,14 +1,14 @@
 from django.forms import ValidationError
 from django.shortcuts import render
 from rest_framework import generics, status, mixins
-from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer
-from .models import Company, CompanyDetails, User
+from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer
+from .models import Company, CompanyDetails, User, OwnerToRegular
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
+
 
 
 
@@ -80,7 +80,6 @@ class DepartmentListCreateAPIView(generics.ListCreateAPIView):
     def get_queryset(self, *args, **kwargs):
         company_id = self.kwargs.get('company_id')
         user = self.request.user
-        print(user.username)
         departments = user.departments.filter(company=company_id)
         # print(departments)
         return departments
@@ -190,3 +189,23 @@ class UserViewSet(viewsets.ModelViewSet):
         self.check_object_permissions(self.request, obj)
 
         return obj
+    
+class RegularRegisterView(generics.CreateAPIView):
+    serializer_class = RegularRegisterSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        owner = self.request.user
+        regular = serializer.save()
+        OwnerToRegular.objects.create(user=regular, owner=owner)
+        # refresh = RefreshToken.for_user(regular)
+        # res = {
+        #     "refresh": str(refresh),
+        #     "access": str(refresh.access_token),
+        # }
+
+        # return Response({
+        #     "user": serializer.data,
+        #     "refresh": res["refresh"],
+        #     "token": res["access"]
+        # }, status=status.HTTP_201_CREATED)
