@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { authActions } from "./store/slices/auth";
 import { useDispatch, useSelector } from "react-redux";
 import jwt_decode from "jwt-decode";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import {  useNavigate, useParams } from "react-router-dom";
 import { FaCircleNotch } from "react-icons/fa";
 //After using createApi from Redux toolkit
 import { useConfirmPasswordMutation } from "./api/confirmPassFormApiSlice";
@@ -166,12 +166,6 @@ const PassConfirmForm = (props) => {
                         </button>
                     </form>
 
-                    <Link
-                        to="/register"
-                        className="md:text-base text-sm text-gray-900 text-opacity-70 dark:text-white dark:text-opacity-70 text-center bottom-0 hover:text-opacity-100 dark:hover:text-opacity-100 transition-all"
-                    >
-                        Don't have an account? Register Now
-                    </Link>
                 </div>
                 <div
                     className={classNames(

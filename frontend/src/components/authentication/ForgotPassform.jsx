@@ -136,9 +136,15 @@ const ForgotPassform = () => {
 
                     <Link
                         to="/register"
-                        className="md:text-base text-sm text-gray-900 text-opacity-70 dark:text-white dark:text-opacity-70 text-center bottom-0 hover:text-opacity-100 dark:hover:text-opacity-100 transition-all"
+                        className="my-5 md:text-base text-sm text-gray-900 text-opacity-70 dark:text-white dark:text-opacity-70 text-center bottom-0 hover:text-opacity-100 dark:hover:text-opacity-100 transition-all"
                     >
                         Don't have an account? Register Now
+                    </Link>
+                    <Link
+                        to="/login"
+                        className="md:text-base text-sm text-gray-900 text-opacity-70 dark:text-white dark:text-opacity-70 text-center bottom-0 hover:text-opacity-100 transition-all"
+                    >
+                        Already have an account? Sign in
                     </Link>
                 </div>
                 <div

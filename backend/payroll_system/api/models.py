@@ -88,7 +88,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = ['email', 'phone_no']
-    phone_no = models.PositiveBigIntegerField(null=False)
+    phone_no = models.PositiveBigIntegerField(null=False, unique=True)
     # is_superuser = models.BooleanField(default=False)
 
 
