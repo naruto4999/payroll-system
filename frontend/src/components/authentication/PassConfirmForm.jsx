@@ -6,6 +6,9 @@ import {  useNavigate, useParams } from "react-router-dom";
 import { FaCircleNotch } from "react-icons/fa";
 //After using createApi from Redux toolkit
 import { useConfirmPasswordMutation } from "./api/confirmPassFormApiSlice";
+import { Formik } from "formik";
+import { passConfirm } from "./AuthSchema";
+
 
 const classNames = (...classes) => {
     return classes.filter(Boolean).join(" ");
@@ -105,6 +108,8 @@ const PassConfirmForm = (props) => {
                     <h1 className="text-gray-900 text-opacity-70 dark:text-opacity-70 dark:text-slate-100 text-4xl text-center mb-8 font-medium">
                         Set New Password
                     </h1>
+
+                    
                     <form
                         action=""
                         className="flex flex-col mx-6 md:text-base text-sm gap-4 justify-center"

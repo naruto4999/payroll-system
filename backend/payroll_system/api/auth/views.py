@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from rest_framework import generics, views
-from .serializers import LoginSerializer, RegisterSerializer, MyTokenObtainPairSerializer, PasswordResetSerializer, PasswordResetConfirmSerializer
+from .serializers import LoginSerializer, RegisterSerializer, MyTokenObtainPairSerializer, PasswordResetSerializer, PasswordResetConfirmSerializer, OTPSerializer
 from django.utils.translation import gettext as _
 from django.contrib.auth.views import (
     PasswordResetView as BasePasswordResetView,
@@ -17,6 +17,13 @@ from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth import get_user_model
 from rest_framework.response import Response
 from rest_framework.renderers import JSONRenderer,TemplateHTMLRenderer
+from api.models import OTP
+from django.core.mail import send_mail
+import random
+from datetime import timedelta
+from django.conf import settings
+from django.utils import timezone
+
 
 # extra
 from django.contrib.auth.tokens import default_token_generator
@@ -47,6 +54,40 @@ User = get_user_model()
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
 
+class VerifyOTPView(APIView):
+    permission_classes = (AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+        print(request.data)
+        serializer = OTPSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data['email']
+        otp = serializer.validated_data['otp']
+        otp_obj = OTP.objects.filter(email=email).last()
+
+        if not otp_obj:
+            return Response({
+                'detail': 'Invalid OTP.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if not otp_obj.is_valid() or otp_obj.otp != otp:
+            return Response({
+                'detail': 'Invalid OTP.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Create user account
+        # 'id', 'username', 'email', 'password', 'is_active', 'phone_no'
+        user_data = serializer.validated_data
+        del user_data['otp']
+        print(f'user data: {user_data}')
+
+        user = User.objects.create_user(**user_data)
+        # refresh = RefreshToken.for_user(user)
+        # access_token = str(refresh.access_token)
+
+        return Response({
+            'detail': "Account Successfuly Created"
+        }, status=status.HTTP_201_CREATED)
 
 
 class LoginView(generics.CreateAPIView, MyTokenObtainPairView):
@@ -72,19 +113,34 @@ class RegisterView(generics.CreateAPIView, MyTokenObtainPairView):
         print(request.data)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.save()
+        # user = serializer.save()
         # refresh = RefreshToken.for_user(user)
         # res = {
         #     "refresh": str(refresh),
         #     "access": str(refresh.access_token),
         # }
+         # Generate and send OTP
+        email = serializer.validated_data['email']
+        otp = str(random.randint(100000, 999999))
+        expires_at = timezone.now() + timedelta(minutes=5)
+        OTP.objects.create(email=email, otp=otp, expires_at=expires_at)
+        send_mail(
+            'Your OTP for registration',
+            f'Your OTP is {otp}. This OTP will expire in 5 minutes.',
+            settings.EMAIL_HOST_USER,
+            [email],
+            fail_silently=False,
+        )
 
         return Response({
-            "detail": "Account created successfully",
+            'detail': 'An OTP has been sent to your email address.'
+        }, status=status.HTTP_200_OK)
+        # return Response({
+            # "detail": "Account created successfully",
             # "user": serializer.data,
             # "refresh": res["refresh"],
             # "token": res["access"]
-        }, status=status.HTTP_201_CREATED)
+        # }, status=status.HTTP_201_CREATED)
 
 
 class RefreshView(generics.CreateAPIView, TokenRefreshView):

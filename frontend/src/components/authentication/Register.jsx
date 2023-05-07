@@ -3,34 +3,50 @@ import authSlice from "./store/slices/auth";
 import { useDispatch } from "react-redux";
 import { Link } from "react-router-dom";
 import { FaCircleNotch } from "react-icons/fa";
-import { useRegisterMutation } from "./api/registerApiSlice";
+import {
+    useRegisterMutation,
+    useSendOtpMutation,
+} from "./api/registerApiSlice";
 import { Formik } from "formik";
-import { registerSchema } from "./api/AuthSchema";
+import { registerSchema } from "./AuthSchema";
 import { useRef } from "react";
+import ReactModal from "react-modal";
+import OtpForm from "./OtpForm";
 
 const classNames = (...classes) => {
     return classes.filter(Boolean).join(" ");
 };
 const RegisterForm = () => {
     const [register, { isLoading, isError, isSuccess }] = useRegisterMutation(); //use the isLoading later
-    // const [userDetails, setUserDetails] = useState({
-    //     email: "",
-    //     password: "",
-    //     passConfirm: "",
-    //     username: "",
-    //     phone_no: "",
-    // });
+    const [
+        sendOtp,
+        {
+            isLoading: isLoadingOtp,
+            isError: sendOtpError,
+            isSuccess: sendOtpSuccess,
+        },
+    ] = useSendOtpMutation(); //use the isLoading later
     const [msg, setMsg] = useState("");
+    const [otpMsg, setOtpMsg] = useState("");
     const formRef = useRef(null);
+    const [otpFormPopover, setOtpFormPopover] = useState(false);
+    const [otp, setOtp] = useState("");
+
+    const [userDetails, setUserDetails] = useState(null);
 
     // const changeHandler = (event) => {
     //     setUserDetails((prevState) => {
     //         return { ...prevState, [event.target.name]: event.target.value };
     //     });
     // };
+    console.log(userDetails);
+    const otpChangeHandler = (event) => {
+        setOtp(event.target.value);
+    };
 
     const submitButtonClicked = async (values, formikBag) => {
-        console.log(values);
+        setOtpMsg("");
+
         // console.log(formikBag.resetForm)
 
         try {
@@ -40,21 +56,21 @@ const RegisterForm = () => {
                 username: values.username,
                 phone_no: values.phone_no,
             }).unwrap();
-            formikBag.resetForm({
-                values: {
-                    // the type of `values` inferred to be Blog
-                    email: "",
-                    password: "",
-                    passConfirm: "",
-                    username: "",
-                    phone_no: "",
-                },
-            });
-            formRef.current.reset();
-            console.log(data);
+            // formikBag.resetForm({
+            //     values: {
+            //         // the type of `values` inferred to be Blog
+            //         email: "",
+            //         password: "",
+            //         passConfirm: "",
+            //         username: "",
+            //         phone_no: "",
+            //     },
+            // });
+            // formRef.current.reset();
+            // formRef.current.reset();
+            setOtpFormPopover(true);
             setMsg(data.detail);
         } catch (err) {
-            console.log(err);
             if (err.data.hasOwnProperty("username")) {
                 setMsg(err.data.username);
             } else if (err.data.hasOwnProperty("email")) {
@@ -64,6 +80,27 @@ const RegisterForm = () => {
             } else if (err.data.hasOwnProperty("password")) {
                 setMsg("Ensure password is at least 8 characters long.");
             }
+        }
+        setUserDetails(values);
+      
+    };
+    console.log(otpMsg);
+    const submitOtpButtonCliked = async (e) => {
+        e.preventDefault();
+        // console.log(otp);
+        // console.log(userDetails);
+        const credentials = { ...userDetails, otp: otp };
+        console.log(credentials);
+        try {
+            const data = await sendOtp(credentials).unwrap();
+            console.log(data);
+            setMsg(data.detail);
+
+            setUserDetails(null);
+            setOtpFormPopover(false);
+        } catch (err) {
+            console.log(err);
+            setOtpMsg(err.data.detail);
         }
     };
 
@@ -282,6 +319,39 @@ const RegisterForm = () => {
                         <FaCircleNotch className="animate-spin text-white mr-2" />
                         Processing...
                     </div>
+
+                    {/* OTP popup */}
+                    <ReactModal
+                        className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
+                        isOpen={otpFormPopover}
+                        onRequestClose={() => setOtpFormPopover(false)}
+                        style={{
+                            overlay: {
+                                backgroundColor: "rgba(0, 0, 0, 0.75)",
+                            },
+                        }}
+                    >
+                        {/* <Formik
+                            initialValues={{ newDepartment: "" }}
+                            validationSchema={addDepartmentSchema}
+                            onSubmit={addButtonClicked}
+                            component={(props) => (
+                                <AddDepartment
+                                    {...props}
+                                    setAddDepartmentPopover={
+                                        setAddDepartmentPopover
+                                    }
+                                />
+                            )}
+                        /> */}
+                        <OtpForm
+                            setOtpFormPopover={setOtpFormPopover}
+                            submitOtpButtonCliked={submitOtpButtonCliked}
+                            otpChangeHandler={otpChangeHandler}
+                            otpMsg={otpMsg}
+                            sendOtpError={sendOtpError}
+                        />
+                    </ReactModal>
                 </div>
             </section>
         </main>

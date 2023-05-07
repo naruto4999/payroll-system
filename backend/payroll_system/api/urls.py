@@ -1,6 +1,6 @@
 from django.urls import path, include
 from .views import CompanyListCreateAPIView, CompanyDetailsMixinView, CompanyRetrieveUpdateDestroyAPIView, DepartmentListCreateAPIView, DepartmentRetrieveUpdateDestroyAPIView, DesignationListCreateAPIView, DesignationRetrieveUpdateDestroyAPIView, SalaryGradeListCreateAPIView, SalaryGradeRetrieveUpdateDestroyAPIView, RegularRegisterView
-from .auth.views import LoginView, RegisterView, RefreshView, PasswordResetAPIView, PasswordResetConfirmView
+from .auth.views import LoginView, RegisterView, RefreshView, PasswordResetAPIView, PasswordResetConfirmView, VerifyOTPView
 from django.contrib.auth.views import PasswordResetCompleteView
 
 
@@ -19,6 +19,8 @@ urlpatterns = [
     path('salary-grade/<int:company_id>/<int:id>', SalaryGradeRetrieveUpdateDestroyAPIView.as_view()),
     path('auth/login/', LoginView.as_view(), name='login'),
     path('auth/register/', RegisterView.as_view(), name='register'),
+    path('auth/register/otp', VerifyOTPView.as_view(), name='otp'),
+    
     path('auth/refresh/', RefreshView.as_view(), name='refresh'),
     path('auth/regular-register/', RegularRegisterView.as_view()),
     path('auth/password/reset/', PasswordResetAPIView.as_view(), name='password_reset'),

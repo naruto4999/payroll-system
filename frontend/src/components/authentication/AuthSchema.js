@@ -21,10 +21,11 @@ export const registerSchema = yup.object().shape({
         .string()
         .required("Username is required")
         .min(3, "Username must be at least 3 characters long"),
-    phone_no: yup.string()
+    phone_no: yup
+        .string()
         .required("Phone number is required")
         .matches(/^[0-9]{10}$/, "Phone number must be 10 digits"),
-})
+});
 
 // export const editDepartmentSchema = yup.object().shape({
 //     updatedDepartment: yup
@@ -32,3 +33,17 @@ export const registerSchema = yup.object().shape({
 //         .min(3, "Department name must be atleast 3 characters long")
 //         .required("Required"),
 // });
+export const passConfirm = yup.object().shape({
+    new_password1: yup
+        .string()
+        .required("Password is required")
+        .min(8, "Password must be at least 8 characters long")
+        .matches(
+            /^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%^&*])/,
+            "Password must contain at least one letter, one number, and one special symbol"
+        ),
+    new_password2: yup
+        .string()
+        .required("Please confirm your password")
+        .oneOf([yup.ref("password")], "Passwords do not match"),
+});

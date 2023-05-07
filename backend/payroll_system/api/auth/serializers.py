@@ -74,6 +74,14 @@ class RegisterSerializer(UserSerializer):
         user = User.objects.create_user(**validated_data)
         print(user)
         return user
+    
+
+class OTPSerializer(RegisterSerializer):
+    otp = serializers.CharField(required=True, max_length=6)
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'password', 'is_active', 'phone_no', 'otp']
 
 # class PasswordResetSerializer(serializers.Serializer):
 #     email = serializers.EmailField()

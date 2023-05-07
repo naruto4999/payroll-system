@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.conf import settings
+from django.utils import timezone
+
 # from django.db.models.signals import post_save
 # from django.dispatch import receiver
 
@@ -109,6 +111,17 @@ class Regular(User):
     def welcome(self):
         return "Only for Regular"
     
+
+class OTP(models.Model):
+    email = models.EmailField()
+    otp = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    def is_valid(self):
+        return self.expires_at > timezone.now()
+    
+
 class OwnerToRegular(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='regulars')
     owner = models.OneToOneField(User, on_delete=models.CASCADE, related_name='owners')
