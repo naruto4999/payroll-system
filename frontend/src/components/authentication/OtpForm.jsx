@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+
 const classNames = (...classes) => {
     return classes.filter(Boolean).join(" ");
 };
@@ -9,17 +11,25 @@ const OtpForm = ({
     otpMsg,
     sendOtpError,
 }) => {
-    console.log(sendOtpError)
+    const inputRef = useRef(null);
+    useEffect(() => {
+        inputRef.current.focus();
+    }, []);
+    console.log(sendOtpError);
     return (
         <div className="text-gray-900 dark:text-slate-100">
             <h1 className="font-medium text-2xl mb-2">Enter OTP</h1>
 
-            <form action="" className="flex flex-col gap-2 justify-center">
+            <form
+                action=""
+                className="flex flex-col gap-2 justify-center"
+                onSubmit={submitOtpButtonCliked}
+            >
                 <label
                     htmlFor="comapny-name"
                     className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
                 >
-                    OTP
+                    Enter the OTP sent to your email.
                 </label>
                 <div className="relative">
                     <input
@@ -28,6 +38,7 @@ const OtpForm = ({
                         id="newDepartment"
                         name="newDepartment"
                         onChange={otpChangeHandler}
+                        ref={inputRef}
                     />
                     {/* {isValid ? "" :<p className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">{errors.newDepartment}</p>} */}
                 </div>
@@ -45,22 +56,22 @@ const OtpForm = ({
                 ) : (
                     ""
                 )}
+                <section className="flex flex-row gap-4 mt-4 mb-2">
+                    <button
+                        className="dark:hover:bg-teal-600  hover:bg-teal-600 dark:bg-teal-700 rounded w-20 p-2 text-base font-medium bg-teal-500"
+                        // onClick={submitOtpButtonCliked}
+                        type="submit"
+                    >
+                        Submit
+                    </button>
+                    <button
+                        className="bg-zinc-400 hover:bg-zinc-500 dark:bg-zinc-600 rounded w-20 p-2 text-base font-medium dark:hover:bg-zinc-700"
+                        onClick={() => setOtpFormPopover(false)}
+                    >
+                        Cancel
+                    </button>
+                </section>
             </form>
-            <section className="flex flex-row gap-4 mt-4 mb-2">
-                <button
-                    className="dark:hover:bg-teal-600  hover:bg-teal-600 dark:bg-teal-700 rounded w-20 p-2 text-base font-medium bg-teal-500"
-                    onClick={submitOtpButtonCliked}
-                    type="submit"
-                >
-                    Add
-                </button>
-                <button
-                    className="bg-zinc-400 hover:bg-zinc-500 dark:bg-zinc-600 rounded w-20 p-2 text-base font-medium dark:hover:bg-zinc-700"
-                    onClick={() => setOtpFormPopover(false)}
-                >
-                    Cancel
-                </button>
-            </section>
         </div>
     );
 };

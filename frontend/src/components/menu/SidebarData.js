@@ -1,4 +1,4 @@
-import { FaUserTie, FaPlus, FaPen, FaHome, FaThLarge, FaLevelUpAlt, FaMoneyCheckAlt, FaCogs } from "react-icons/fa";
+import { FaUserTie, FaPlus, FaPen, FaHome, FaThLarge, FaLevelUpAlt, FaMoneyCheckAlt, FaCogs,FaUserShield , FaUsersCog} from "react-icons/fa";
 
 const items = [
     {
@@ -30,12 +30,25 @@ const items = [
                 icon: FaMoneyCheckAlt,
                 path: "/home/salary-grade-entry"
             },
-            {
-                title: "Settings",
-                icon: FaCogs,
-                path: "/home/settings"
-            },
         ],
     },
+    {
+        title: "Settings",
+        icon: FaCogs,
+        children: [
+            
+        ]
+    },
+    {
+        title: "Admin Controls",
+        icon: FaUserShield,
+        children: [
+            {
+                title: "Create SubUser",
+                icon: FaUsersCog,
+                path: "/admin-controls/regular-registration"
+            }
+        ]
+    }
 ];
 export default items;

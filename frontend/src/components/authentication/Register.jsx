@@ -12,6 +12,7 @@ import { registerSchema } from "./AuthSchema";
 import { useRef } from "react";
 import ReactModal from "react-modal";
 import OtpForm from "./OtpForm";
+import { confirmPassFormApiSlice } from "./api/confirmPassFormApiSlice";
 
 const classNames = (...classes) => {
     return classes.filter(Boolean).join(" ");
@@ -31,7 +32,7 @@ const RegisterForm = () => {
     const formRef = useRef(null);
     const [otpFormPopover, setOtpFormPopover] = useState(false);
     const [otp, setOtp] = useState("");
-
+    console.log(otp)
     const [userDetails, setUserDetails] = useState(null);
 
     // const changeHandler = (event) => {
@@ -68,26 +69,31 @@ const RegisterForm = () => {
             // });
             // formRef.current.reset();
             // formRef.current.reset();
+            console.log(data);
             setOtpFormPopover(true);
             setMsg(data.detail);
         } catch (err) {
-            if (err.data.hasOwnProperty("username")) {
-                setMsg(err.data.username);
-            } else if (err.data.hasOwnProperty("email")) {
-                setMsg(err.data.email);
-            } else if (err.data.hasOwnProperty("phone_no")) {
-                setMsg(err.data.phone_no);
-            } else if (err.data.hasOwnProperty("password")) {
-                setMsg("Ensure password is at least 8 characters long.");
+            console.log(err);
+            if (err.hasOwnProperty("data")) {
+                if (err.data.hasOwnProperty("username")) {
+                    setMsg(err.data.username);
+                } else if (err.data.hasOwnProperty("email")) {
+                    setMsg(err.data.email);
+                } else if (err.data.hasOwnProperty("phone_no")) {
+                    setMsg(err.data.phone_no);
+                } else if (err.data.hasOwnProperty("password")) {
+                    setMsg("Ensure password is at least 8 characters long.");
+                }
+            } else {
+                setMsg("Server Down");
             }
         }
         setUserDetails(values);
-      
     };
-    console.log(otpMsg);
+    console.log(msg);
     const submitOtpButtonCliked = async (e) => {
         e.preventDefault();
-        // console.log(otp);
+        console.log(otp);
         // console.log(userDetails);
         const credentials = { ...userDetails, otp: otp };
         console.log(credentials);
@@ -145,6 +151,7 @@ const RegisterForm = () => {
                             values,
                             errors,
                             touched,
+                            isValid
                         }) => (
                             <form
                                 action=""
@@ -295,7 +302,9 @@ const RegisterForm = () => {
                                 )}
                                 <button
                                     type="submit"
-                                    className="w-full bg-teal-500 hover:bg-teal-600 active:bg-teal-700 dark:bg-teal-700 dark:hover:bg-teal-600 dark:active:bg-teal-500 rounded-lg p-2 my-2 text-gray-900 dark:text-slate-100 dark:text-opacity-70 text-opacity-70"
+                                    className={classNames(isValid ? "dark:hover:bg-teal-600  hover:bg-teal-600" : "opacity-40","w-full bg-teal-500  active:bg-teal-700 dark:bg-teal-700 dark:active:bg-teal-500 rounded-lg p-2 my-2 text-gray-900 dark:text-slate-100 dark:text-opacity-70 text-opacity-70")}
+                                    disabled={!isValid}
+                                    // className={classNames(isValid ? "dark:hover:bg-teal-600  hover:bg-teal-600" : "opacity-40", "dark:bg-teal-700 rounded w-20 p-2 text-base font-medium bg-teal-500")}
                                 >
                                     Register
                                 </button>

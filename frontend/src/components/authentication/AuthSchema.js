@@ -45,5 +45,5 @@ export const passConfirm = yup.object().shape({
     new_password2: yup
         .string()
         .required("Please confirm your password")
-        .oneOf([yup.ref("password")], "Passwords do not match"),
+        .oneOf([yup.ref("new_password1")], "Passwords do not match"),
 });

@@ -2,13 +2,12 @@ import React, { useState, useEffect } from "react";
 import { authActions } from "./store/slices/auth";
 import { useDispatch, useSelector } from "react-redux";
 import jwt_decode from "jwt-decode";
-import {  useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { FaCircleNotch } from "react-icons/fa";
 //After using createApi from Redux toolkit
 import { useConfirmPasswordMutation } from "./api/confirmPassFormApiSlice";
 import { Formik } from "formik";
 import { passConfirm } from "./AuthSchema";
-
 
 const classNames = (...classes) => {
     return classes.filter(Boolean).join(" ");
@@ -22,16 +21,16 @@ const PassConfirmForm = (props) => {
     const auth = useSelector((state) => state.auth);
     const [confirmPassword, { isLoading, isSuccess, isError }] =
         useConfirmPasswordMutation(); //use the isLoading later
-    const [newPass, setNewPass] = useState({
-        new_password1: "",
-        new_password2: "",
-    });
+    // const [newPass, setNewPass] = useState({
+    //     new_password1: "",
+    //     new_password2: "",
+    // });
     const [msg, setMsg] = useState("");
     const { uid } = useParams();
     const { token } = useParams();
     console.log(uid);
     console.log(token);
-    console.log(newPass);
+    // console.log(newPass);
 
     useEffect(() => {
         if (auth.account != null) {
@@ -42,49 +41,33 @@ const PassConfirmForm = (props) => {
     console.log(isError);
     console.log(isSuccess);
     console.log(msg);
-    const changeHandler = (event) => {
-        setNewPass((prevState) => {
-            return { ...prevState, [event.target.name]: event.target.value };
-        });
-    };
+    // const changeHandler = (event) => {
+    //     setNewPass((prevState) => {
+    //         return { ...prevState, [event.target.name]: event.target.value };
+    //     });
+    // };
     const dispatch = useDispatch();
 
-    const submitButtonClicked = async (e) => {
-        e.preventDefault();
+    const submitButtonClicked = async (values, formikBag) => {
+        // e.preventDefault();
         // console.log(username);
         const details = {
-            new_password1: newPass.new_password1,
-            new_password2: newPass.new_password2,
-            uidb64 : uid,
-            token : token,
-        }
-        console.log(details)
+            new_password1: values.new_password1,
+            new_password2: values.new_password2,
+            uidb64: uid,
+            token: token,
+        };
+        console.log(details);
         try {
             const data = await confirmPassword(details).unwrap();
             console.log(data);
             setMsg(data.detail);
-            // dispatch(
-            //     authActions.setAuthTokens({
-            //         token: data.access,
-            //         refreshToken: data.refresh,
-            //     })
-            // );
-            // let decoded = jwt_decode(data.access);
-            // const user = {
-            //     id: decoded.user_id,
-            //     // email: decoded.email,
-            //     username: decoded.username,
-            // };
-            // dispatch(authActions.setAccount(user));
-            // navigate("/home");
-            setNewPass({
-                new_password1: "",
-                new_password2: "",
-            });
+            
         } catch (err) {
             console.log(err);
             setMsg(err.data.detail);
         }
+        formikBag.resetForm()
     };
 
     return (
@@ -109,68 +92,101 @@ const PassConfirmForm = (props) => {
                         Set New Password
                     </h1>
 
-                    
-                    <form
-                        action=""
-                        className="flex flex-col mx-6 md:text-base text-sm gap-4 justify-center"
+                    {/* formik Implimentation */}
+                    <Formik
+                        initialValues={{
+                            new_password1: "",
+                            new_password2: "",
+                        }}
+                        validationSchema={passConfirm}
                         onSubmit={submitButtonClicked}
                     >
-                        {/* using an empty space as a placeholder so when placeholder
+                        {({
+                            handleSubmit,
+                            handleChange,
+                            handleBlur,
+                            values,
+                            errors,
+                            touched,
+                        }) => (
+                            <form
+                                action=""
+                                className="flex flex-col mx-6 md:text-base text-sm gap-4 justify-center"
+                                onSubmit={handleSubmit}
+                            >
+                                {/* using an empty space as a placeholder so when placeholder
                     dissapears if user enter something then the label stays on top
                     we are using 'placeholder-shown' pseudo class butt it's not available in taiwind */}
-                        <div className="relative">
-                            <input
-                                className="bg-transparent  border-b-2 border-gray-800 border-opacity-25 dark:border-opacity-25 dark:border-slate-100 md:p-2 p-1 outline-none focus:border-opacity-75 transition w-full peer"
-                                type="password"
-                                id="new_password1"
-                                name="new_password1"
-                                placeholder=" "
-                                onChange={changeHandler}
-                            />
-                            <label
-                                htmlFor="new_password1"
-                                className="text-gray-900 text-opacity-70 dark:text-white dark:text-opacity-70 absolute left-0 top-1 cursor-text peer-focus:text-xs peer-focus:-top-4 peer-[&:not(:placeholder-shown)]:text-xs peer-[&:not(:placeholder-shown)]:-top-4 transition-all italic"
-                            >
-                                New Password
-                            </label>
-                        </div>
+                                <div className="relative">
+                                    <input
+                                        className="bg-transparent  border-b-2 border-gray-800 border-opacity-25 dark:border-opacity-25 dark:border-slate-100 md:p-2 p-1 outline-none focus:border-opacity-75 transition w-full peer"
+                                        type="password"
+                                        id="new_password1"
+                                        name="new_password1"
+                                        placeholder=" "
+                                        onChange={handleChange}
+                                        onBlur={handleBlur}
+                                        value={values.name}
+                                    />
+                                    <label
+                                        htmlFor="new_password1"
+                                        className="text-gray-900 text-opacity-70 dark:text-white dark:text-opacity-70 absolute left-0 top-1 cursor-text peer-focus:text-xs peer-focus:-top-4 peer-[&:not(:placeholder-shown)]:text-xs peer-[&:not(:placeholder-shown)]:-top-4 transition-all italic"
+                                    >
+                                        New Password
+                                    </label>
+                                    {errors.new_password1 && touched.new_password1 && (
+                                        <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                            {errors.new_password1}
+                                        </div>
+                                    )}
+                                </div>
 
-                        <div className="relative">
-                            <input
-                                className="bg-transparent  border-b-2 border-gray-800 border-opacity-25 dark:border-opacity-25 dark:border-slate-100 md:p-2 p-1 outline-none focus:border-opacity-75 transition w-full peer"
-                                type="password"
-                                id="new_password2"
-                                name="new_password2"
-                                placeholder=" "
-                                onChange={changeHandler}
-                            />
-                            <label
-                                htmlFor="new_password2"
-                                className="text-gray-900 text-opacity-70 dark:text-white dark:text-opacity-70 absolute left-0 top-1 cursor-text peer-focus:text-xs peer-focus:-top-4 peer-[&:not(:placeholder-shown)]:text-xs peer-[&:not(:placeholder-shown)]:-top-4 transition-all italic"
-                            >
-                                Confirm New Password
-                            </label>
-                        </div>
-                        {isError || isSuccess ? (
-                            <p
-                                className={classNames(
-                                    isError
-                                        ? "text-red-500 dark:text-red-700"
-                                        : "text-green-500 dark:text-green-700",
-                                    "mt-1 text-sm font-bold"
+                                <div className="relative">
+                                    <input
+                                        className="bg-transparent  border-b-2 border-gray-800 border-opacity-25 dark:border-opacity-25 dark:border-slate-100 md:p-2 p-1 outline-none focus:border-opacity-75 transition w-full peer"
+                                        type="password"
+                                        id="new_password2"
+                                        name="new_password2"
+                                        placeholder=" "
+                                        onChange={handleChange}
+                                        onBlur={handleBlur}
+                                        value={values.name}
+                                    />
+                                    <label
+                                        htmlFor="new_password2"
+                                        className="text-gray-900 text-opacity-70 dark:text-white dark:text-opacity-70 absolute left-0 top-1 cursor-text peer-focus:text-xs peer-focus:-top-4 peer-[&:not(:placeholder-shown)]:text-xs peer-[&:not(:placeholder-shown)]:-top-4 transition-all italic"
+                                    >
+                                        Confirm New Password
+                                    </label>
+                                    {errors.new_password2 && touched.new_password2 && (
+                                        <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                            {errors.new_password2}
+                                        </div>
+                                    )}
+                                </div>
+                                {isError || isSuccess ? (
+                                    <p
+                                        className={classNames(
+                                            isError
+                                                ? "text-red-500 dark:text-red-700"
+                                                : "text-green-500 dark:text-green-700",
+                                            "mt-1 text-sm font-bold"
+                                        )}
+                                    >
+                                        {msg}
+                                    </p>
+                                ) : (
+                                    ""
                                 )}
-                            >
-                                {msg}
-                            </p>
-                        ) : (
-                            ""
+
+                                <button type="submit" className="w-full bg-teal-500 hover:bg-teal-600 active:bg-teal-700 dark:bg-teal-700 dark:hover:bg-teal-600 dark:active:bg-teal-500 rounded-lg p-2 my-2 text-gray-900 dark:text-slate-100 dark:text-opacity-70 text-opacity-70">
+                                    Reset
+                                </button>
+                                {console.log(errors)}
+                                {console.log(values)}
+                            </form>
                         )}
-
-                        <button className="w-full bg-teal-500 hover:bg-teal-600 active:bg-teal-700 dark:bg-teal-700 dark:hover:bg-teal-600 dark:active:bg-teal-500 rounded-lg p-2 my-2 text-gray-900 dark:text-slate-100 dark:text-opacity-70 text-opacity-70">
-                            Reset
-                        </button>
-                    </form>
-
+                    </Formik>
                 </div>
                 <div
                     className={classNames(
