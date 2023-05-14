@@ -1,6 +1,6 @@
-import { FaUserTie, FaPlus, FaPen, FaHome, FaThLarge, FaLevelUpAlt, FaMoneyCheckAlt, FaCogs,FaUserShield , FaUsersCog} from "react-icons/fa";
+import { FaUserTie, FaPlus, FaPen, FaHome, FaThLarge, FaLevelUpAlt, FaMoneyCheckAlt, FaCogs,FaUserShield , FaUsersCog, FaEye} from "react-icons/fa";
 
-const items = [
+const menuItems = [
     {
         title: "Master Entry",
         icon: FaUserTie,
@@ -44,11 +44,16 @@ const items = [
         icon: FaUserShield,
         children: [
             {
-                title: "Create SubUser",
+                title: "Create / Manage SubUser",
                 icon: FaUsersCog,
                 path: "/admin-controls/regular-registration"
+            },
+            {
+                title: "Visible Companies",
+                icon: FaEye,
+                path: "/admin-controls/visible-companies"
             }
         ]
     }
 ];
-export default items;
+export default menuItems;

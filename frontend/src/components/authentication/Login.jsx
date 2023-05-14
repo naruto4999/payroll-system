@@ -49,10 +49,11 @@ const LoginForm = () => {
                 })
             );
             let decoded = jwt_decode(data.access);
+            console.log(decoded)
             const user = {
                 id: decoded.user_id,
-                // email: decoded.email,
-                username: decoded.username,
+                role: decoded.role,
+                username: decoded.username, 
             };
             dispatch(authActions.setAccount(user));
             navigate("/home");

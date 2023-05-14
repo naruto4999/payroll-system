@@ -1,11 +1,12 @@
 from django.urls import path, include
-from .views import CompanyListCreateAPIView, CompanyDetailsMixinView, CompanyRetrieveUpdateDestroyAPIView, DepartmentListCreateAPIView, DepartmentRetrieveUpdateDestroyAPIView, DesignationListCreateAPIView, DesignationRetrieveUpdateDestroyAPIView, SalaryGradeListCreateAPIView, SalaryGradeRetrieveUpdateDestroyAPIView, RegularRegisterView
+from .views import CompanyListCreateAPIView, CompanyDetailsMixinView, CompanyRetrieveUpdateDestroyAPIView, DepartmentListCreateAPIView, DepartmentRetrieveUpdateDestroyAPIView, DesignationListCreateAPIView, DesignationRetrieveUpdateDestroyAPIView, SalaryGradeListCreateAPIView, SalaryGradeRetrieveUpdateDestroyAPIView, RegularRegisterListCreateAPIViewView, RegularRetrieveDestroyAPIView, CompanyVisibilityPatchAPIView
 from .auth.views import LoginView, RegisterView, RefreshView, PasswordResetAPIView, PasswordResetConfirmView, VerifyOTPView
 from django.contrib.auth.views import PasswordResetCompleteView
 
 
 urlpatterns = [
     path('company', CompanyListCreateAPIView.as_view()),
+    path('company-visible', CompanyVisibilityPatchAPIView.as_view()),
     path('edit-company/<int:id>', CompanyRetrieveUpdateDestroyAPIView.as_view()),
     
     path('company-details', CompanyDetailsMixinView.as_view()),
@@ -22,7 +23,8 @@ urlpatterns = [
     path('auth/register/otp', VerifyOTPView.as_view(), name='otp'),
     
     path('auth/refresh/', RefreshView.as_view(), name='refresh'),
-    path('auth/regular-register/', RegularRegisterView.as_view()),
+    path('auth/regular-register/', RegularRegisterListCreateAPIViewView.as_view()),
+    path('regular', RegularRetrieveDestroyAPIView.as_view()),
     path('auth/password/reset/', PasswordResetAPIView.as_view(), name='password_reset'),
     # path('auth/password/reset/confirm/<uidb64>/<token>/', PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     path('auth/password/reset-confirm/<uidb64>/<token>', PasswordResetConfirmView.as_view(), name='password_reset_confirm'),

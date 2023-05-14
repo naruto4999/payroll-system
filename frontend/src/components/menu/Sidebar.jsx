@@ -5,7 +5,7 @@ import { authActions } from "../authentication/store/slices/auth";
 import { globalCompanyActions } from "../authentication/store/slices/globalCompany";
 import { FaRegWindowClose, FaRegBuilding, FaChevronDown, FaBars, FaSignOutAlt } from "react-icons/fa";
 import SidebarItem from "./SidebarItem";
-import items from "./SidebarData";
+import menuItems from "./SidebarData";
 import { Outlet } from "react-router-dom";
 import { NavLink } from "react-router-dom";
 
@@ -20,6 +20,12 @@ const Sidebar = () => {
         dispatch(globalCompanyActions.deselectComapny());
     };
     const auth = useSelector((state) => state.auth);
+    let items = menuItems.filter((item) => item.title !== "Admin Controls")
+    console.log(auth)
+    if (auth.account.role == "OWNER") {
+        items = menuItems
+        // const items = itemsWithoutAdminControl
+    }
     const [showSidebar, setShowSidebar] = useState(true);
     const [showLoadingBar, setShowLoadingBar] = useState(false);
     const sidebarHandler = () => {

@@ -41,6 +41,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         # Add custom claims
         token['username'] = user.username
         token['email'] = user.email
+        token['role'] = user.role
         # ...
 
         return token
@@ -64,7 +65,7 @@ class LoginSerializer(MyTokenObtainPairSerializer):
 
 class RegisterSerializer(UserSerializer):
     password = serializers.CharField(max_length=128, min_length=8, write_only=True, required=True)
-    email = serializers.EmailField(required=True, write_only=True, max_length=128)
+    email = serializers.EmailField(required=True, write_only=False, max_length=128)
 
     class Meta:
         model = User

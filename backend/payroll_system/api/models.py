@@ -48,7 +48,7 @@ class UserManager(BaseUserManager):
         if email is None:
             raise TypeError("Users must have an email")
         if phone_no is None:
-            raise TypeError('Use must have a phone number.')
+            raise TypeError('Users must have a phone number.')
         user = self.model(username=username, email=self.normalize_email(email), phone_no=phone_no)
         user.set_password(password)
         user.save(using=self._db)
@@ -120,17 +120,18 @@ class OTP(models.Model):
 
     def is_valid(self):
         return self.expires_at > timezone.now()
-    
+
 
 class OwnerToRegular(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='regulars')
-    owner = models.OneToOneField(User, on_delete=models.CASCADE, related_name='owners')
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='owners')
+    owner = models.OneToOneField(User, on_delete=models.CASCADE, related_name='regulars')
 
 
 class Company(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="companies")
     id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length=256, null=False, unique=True)
+    visible = models.BooleanField(default=False)
     def __str__(self):
         return f"{self.user.email} -> {self.name}"
 

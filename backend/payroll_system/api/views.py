@@ -2,12 +2,14 @@ from django.forms import ValidationError
 from django.shortcuts import render
 from rest_framework import generics, status, mixins
 from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer
-from .models import Company, CompanyDetails, User, OwnerToRegular
+from .models import Company, CompanyDetails, User, OwnerToRegular, Regular
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import viewsets
 from rest_framework.viewsets import ModelViewSet
+from rest_framework.exceptions import NotFound
+from .auth.views import MyTokenObtainPairView
 
 
 
@@ -21,6 +23,7 @@ class CompanyListCreateAPIView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
+        print(user.role == "OWNER")
         return user.companies.all()
     
     def perform_create(self, serializer):
@@ -38,6 +41,30 @@ class CompanyRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView)
         return user.companies.all()
     def perform_update(self, serializer):
         serializer.save(user=self.request.user)
+
+class CompanyVisibilityPatchAPIView(APIView):
+    def patch(self, request):
+        company_ids = request.data.get('company_ids', [])
+        visible_values = request.data.get('visible_values', [])
+
+        if len(company_ids) != len(visible_values):
+            return Response(
+                {'error': 'company_ids and visible_values must have the same length'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        for i in range(len(company_ids)):
+            try:
+                company = Company.objects.get(id=company_ids[i])
+                company.visible = visible_values[i]
+                company.save()
+            except Company.DoesNotExist:
+                return Response(
+                    {'error': f'Company with id {company_ids[i]} does not exist'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        return Response(status=status.HTTP_200_OK)
 
 class CompanyDetailsMixinView(generics.GenericAPIView,
 mixins.CreateModelMixin,
@@ -190,14 +217,68 @@ class UserViewSet(viewsets.ModelViewSet):
 
         return obj
     
-class RegularRegisterView(generics.CreateAPIView):
+class RegularRetrieveDestroyAPIView(generics.RetrieveDestroyAPIView):
+    serializer_class = RegularRegisterSerializer
+
+    def get_object(self):
+        # Get the primary key from the URL kwargs
+        user = self.request.user
+        # Retrieve the instance using a custom lookup field
+        try:
+            instance = OwnerToRegular.objects.get(owner=user)
+        except OwnerToRegular.DoesNotExist:
+            raise NotFound("Regular user not found")
+        instance = OwnerToRegular.objects.get(owner=user)
+        # Return the instance
+        return instance.user
+    
+    def get(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+        except NotFound as exc:
+            return Response({
+                "detail": "Sub User Not Found"
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    def perform_destroy(self, instance):
+        # delete the instance
+        instance.delete()
+
+        # return a custom response
+        return Response({"detail": "Sub User deleted successfully."}, status=status.HTTP_200_OK)
+    
+    
+class RegularRegisterListCreateAPIViewView(generics.ListCreateAPIView):
     serializer_class = RegularRegisterSerializer
     permission_classes = [IsAuthenticated]
+    
+    def create(self, request, *args, **kwargs):
+        owner = request.user
 
-    def perform_create(self, serializer):
-        owner = self.request.user
-        regular = serializer.save()
+         # check if the user already exists
+        if OwnerToRegular.objects.filter(owner=owner).exists():
+            return Response({
+                "detail": "Sub User already exists"
+            }, status=status.HTTP_409_CONFLICT)
+
+        # create a new user
+        print(request.data)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        print(serializer.validated_data)
+        regular = Regular.objects.create_user(**serializer.validated_data)
+
+        # create a new owner to regular mapping
         OwnerToRegular.objects.create(user=regular, owner=owner)
+
+        # return a custom response
+        return Response({
+            "detail": "Sub User successfuly created"
+        }, status=status.HTTP_201_CREATED)
+    
         # refresh = RefreshToken.for_user(regular)
         # res = {
         #     "refresh": str(refresh),

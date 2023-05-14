@@ -21,6 +21,7 @@ import DepartmentEntryForm from "./menu/MasterEntry/forms/DepartmentEntryForm/De
 import DesignationEntryForm from "./menu/MasterEntry/forms/DesignationEntryForm/DesignationEntryForm";
 import SalaryGradeEntryForm from "./menu/MasterEntry/forms/SalaryGradeEntryForm/SalaryGradeEntryForm";
 import RegularRegisterForm from "./menu/AdminControlsForm/RegularRegisterForm";
+import VisibleCompaniesForm from "./menu/AdminControlsForm/VisibleCompaniesForm";
 
 // import store, { persistor } from "./authentication/store/index"
 // import { PersistGate } from "redux-persist/integration/react";
@@ -110,7 +111,14 @@ function App() {
                         </ProtectedRoute>
                     }
                 >
-                    <Route path="regular-registration" element={<RegularRegisterForm />} />
+                    <Route
+                        path="regular-registration"
+                        element={<RegularRegisterForm />}
+                    />
+                    <Route
+                        path="visible-companies"
+                        element={<VisibleCompaniesForm />}
+                    />
                 </Route>
                 <Route path="login" element={<LoginForm />} />
                 <Route path="register" element={<RegisterForm />} />

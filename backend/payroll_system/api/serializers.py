@@ -18,12 +18,11 @@ class CompanySerializer(serializers.ModelSerializer):
         model = Company
         fields =  ('id', 'name', 'user')
 
-        # def to_representation(self, instance):
-        #     response = super().to_representation(instance)
-        #     response['user'] = UserSerializer(instance.user).data
-        #     print(response)
-        #     return response
-
+class CompanyVisibilitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Company
+        fields = ['id', 'visible']
+        
 class CreateCompanySerializer(serializers.ModelSerializer):
     class Meta:
         model = Company
@@ -67,15 +66,14 @@ class SalaryGradeSerializer(serializers.ModelSerializer):
 
 class RegularRegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(max_length=128, min_length=8, write_only=True, required=True)
-    email = serializers.EmailField(required=True, write_only=True, max_length=128)
+    email = serializers.EmailField(required=True, write_only=False, max_length=128)
     owner = UserSerializer(read_only=True)
 
 
     class Meta:
         model = Regular
-        fields = ['id', 'username', 'email', 'password', 'is_active', 'owner']
+        fields = ['id', 'username', 'email', 'password', 'is_active', 'owner', 'phone_no']
 
-    def create(self, validated_data):
-        user = Regular.objects.create_user(**validated_data)
-        print(user)
-        return user
+    # def create(self, validated_data):
+    #     user = Regular.objects.create_user(**validated_data)
+    #     return user
