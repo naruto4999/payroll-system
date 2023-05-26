@@ -16,7 +16,7 @@ class CompanySerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     class Meta:
         model = Company
-        fields =  ('id', 'name', 'user')
+        fields =  ('id', 'name', 'user', 'visible')
 
 class CompanyVisibilitySerializer(serializers.ModelSerializer):
     class Meta:

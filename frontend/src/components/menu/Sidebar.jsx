@@ -22,7 +22,7 @@ const Sidebar = () => {
     const auth = useSelector((state) => state.auth);
     let items = menuItems.filter((item) => item.title !== "Admin Controls")
     console.log(auth)
-    if (auth.account.role == "OWNER") {
+    if (auth.account.role == "OWNER" && auth.account.is_staff == true) {
         items = menuItems
         // const items = itemsWithoutAdminControl
     }

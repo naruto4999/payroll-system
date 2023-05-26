@@ -4,7 +4,7 @@ from rest_framework import generics, status, mixins
 from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer
 from .models import Company, CompanyDetails, User, OwnerToRegular, Regular
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework import viewsets
 from rest_framework.viewsets import ModelViewSet
@@ -23,8 +23,12 @@ class CompanyListCreateAPIView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        print(user.role == "OWNER")
-        return user.companies.all()
+        if user.role == "OWNER":
+            return user.companies.all()
+        instance = OwnerToRegular.objects.get(user=user)
+        a = Company.objects.filter(visible=True, user=instance.owner)
+        print(a)
+        return a
     
     def perform_create(self, serializer):
         # print(self.request.user)
@@ -44,27 +48,56 @@ class CompanyRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView)
 
 class CompanyVisibilityPatchAPIView(APIView):
     def patch(self, request):
-        company_ids = request.data.get('company_ids', [])
-        visible_values = request.data.get('visible_values', [])
-
-        if len(company_ids) != len(visible_values):
-            return Response(
-                {'error': 'company_ids and visible_values must have the same length'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        for i in range(len(company_ids)):
-            try:
-                company = Company.objects.get(id=company_ids[i])
-                company.visible = visible_values[i]
-                company.save()
-            except Company.DoesNotExist:
-                return Response(
-                    {'error': f'Company with id {company_ids[i]} does not exist'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
+        print(Company.objects.all())
+        all_companies_instances = Company.objects.all()
+        companies_visible_list = request.data
+        company_visible_ids = [item['company_id'] for item in companies_visible_list]
+        
+        for company_instance in all_companies_instances:
+            if company_instance.id in company_visible_ids:
+                company_instance.visible = True
+                print(company_instance)
+                company_instance.save()
+            else:
+                company_instance.visible = False
+                company_instance.save()
         return Response(status=status.HTTP_200_OK)
+
+        # for company in companies_list:
+        #     try:
+        #         company_instance = Company.objects.get(id=company["company_id"])
+        #         company_instance.visible = company["visible"]
+        #         company_instance.save()
+        #         print(company_instance)
+
+        #     except:
+        #         return Response(
+        #             {'error': f'Company with id {company["company_id"]} does not exist'},
+        #             status=status.HTTP_400_BAD_REQUEST
+        #         )
+        # return Response(status=status.HTTP_200_OK)
+
+        # company_ids = request.data.get('company_ids', [])
+        # visible_values = request.data.get('visible_values', [])
+
+        # if len(company_ids) != len(visible_values):
+        #     return Response(
+        #         {'error': 'company_ids and visible_values must have the same length'},
+        #         status=status.HTTP_400_BAD_REQUEST
+        #     )
+
+        # for i in range(len(company_ids)):
+        #     try:
+        #         company = Company.objects.get(id=company_ids[i])
+        #         company.visible = visible_values[i]
+        #         company.save()
+        #     except Company.DoesNotExist:
+        #         return Response(
+        #             {'error': f'Company with id {company_ids[i]} does not exist'},
+        #             status=status.HTTP_400_BAD_REQUEST
+        #         )
+
+        # return Response(status=status.HTTP_200_OK)
 
 class CompanyDetailsMixinView(generics.GenericAPIView,
 mixins.CreateModelMixin,
@@ -219,6 +252,7 @@ class UserViewSet(viewsets.ModelViewSet):
     
 class RegularRetrieveDestroyAPIView(generics.RetrieveDestroyAPIView):
     serializer_class = RegularRegisterSerializer
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def get_object(self):
         # Get the primary key from the URL kwargs
@@ -253,7 +287,7 @@ class RegularRetrieveDestroyAPIView(generics.RetrieveDestroyAPIView):
     
 class RegularRegisterListCreateAPIViewView(generics.ListCreateAPIView):
     serializer_class = RegularRegisterSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminUser]
     
     def create(self, request, *args, **kwargs):
         owner = request.user

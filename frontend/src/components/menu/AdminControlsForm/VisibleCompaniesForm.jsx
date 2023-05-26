@@ -7,7 +7,10 @@ import { useOutletContext } from "react-router-dom";
 import { useEffect } from "react";
 
 //imports after using RTK query
-import { useGetCompaniesQuery } from "../../authentication/api/newCompanyEntryApiSlice";
+import {
+    useGetCompaniesQuery,
+    useVisibleCompanyMutation,
+} from "../../authentication/api/newCompanyEntryApiSlice";
 import ReactModal from "react-modal";
 import { Formik } from "formik";
 
@@ -28,7 +31,12 @@ const IndeterminateCheckbox = React.forwardRef(
 
         return (
             <>
-                <input type="checkbox" ref={resolvedRef} {...rest} className="w-4 h-4"/>
+                <input
+                    type="checkbox"
+                    ref={resolvedRef}
+                    {...rest}
+                    className="w-4 h-4"
+                />
             </>
         );
     }
@@ -44,6 +52,9 @@ const VisibleCompaniesForm = () => {
         error,
         isFetching,
     } = useGetCompaniesQuery();
+    console.log(fetchedData);
+    const [visibleCompany, { isLoading: isUpdatingVisibleCompanies }] =
+        useVisibleCompanyMutation();
     const [showLoadingBar, setShowLoadingBar] = useOutletContext();
     const [confirmDelete, setConfirmDelete] = useState({ id: "", phrase: "" });
     const dispatch = useDispatch();
@@ -53,6 +64,27 @@ const VisibleCompaniesForm = () => {
     const editCompanyPopoverHandler = (company) => {
         setUpdatedCompanyId(company.id);
         setEditCompanyPopover(!editCompanyPopover);
+    };
+
+    const saveButtonClicked = async () => {
+        const body = [];
+        console.log(selectedFlatRows);
+        for (let i = 0; i < selectedFlatRows.length; i++) {
+            const original = selectedFlatRows[i].original;
+            // Do something with the original property, for example:
+            // console.log(original);
+            body.push({
+                company_id: original.id,
+                visible: true,
+            });
+        }
+        console.log(body);
+        try {
+            const data = await visibleCompany(body).unwrap();
+            console.log(data);
+        } catch (err) {
+            console.log(err);
+        }
     };
 
     const columns = useMemo(
@@ -108,13 +140,30 @@ const VisibleCompaniesForm = () => {
         state: { selectedRowIds },
     } = tableInstance;
 
-
-    console.log(selectedFlatRows)
-    console.log(selectedRowIds)
+    console.log(rows);
+    console.log(selectedRowIds);
     // console.log(showLoadingBar)
     useEffect(() => {
-        setShowLoadingBar(isLoading);
-    }, [isLoading]);
+        setShowLoadingBar(isLoading || isUpdatingVisibleCompanies);
+        // if (rows.length > 0) {
+        //     for (let i = 0; i < rows.length; i++) {
+        //         console.log(`${rows[0].original.id} fetched data: ${fetchedData[0].id}`)
+        //         if (rows[i].original.id == fetchedData[i].id) {
+        //             rows[i].toggleRowSelected(fetchedData[i].visible)
+        //         }
+        //     }
+        // }
+    }, [isLoading, tableInstance, rows, isUpdatingVisibleCompanies]);
+    useEffect(() => {
+        if (rows.length > 0) {
+            for (let i = 0; i < rows.length; i++) {
+                console.log(`${rows[0].original.id} fetched data: ${fetchedData[0].id}`)
+                if (rows[i].original.id == fetchedData[i].id) {
+                    rows[i].toggleRowSelected(fetchedData[i].visible)
+                }
+            }
+        }
+    }, [fetchedData])
 
     if (isLoading) {
         return (
@@ -133,9 +182,9 @@ const VisibleCompaniesForm = () => {
                     </div>
                     <button
                         className="dark:bg-teal-700 my-4 rounded p-2 text-base font-medium bg-teal-500 hover:bg-teal-600 dark:hover:bg-teal-600"
-                        onClick={() => setAddCompanyPopover(true)}
+                        onClick={saveButtonClicked}
                     >
-                        Add Company
+                        Save
                     </button>
                 </div>
 

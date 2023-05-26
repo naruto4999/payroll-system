@@ -53,7 +53,8 @@ const LoginForm = () => {
             const user = {
                 id: decoded.user_id,
                 role: decoded.role,
-                username: decoded.username, 
+                username: decoded.username,
+                is_staff: decoded.is_staff
             };
             dispatch(authActions.setAccount(user));
             navigate("/home");

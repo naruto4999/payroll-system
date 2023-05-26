@@ -18,6 +18,14 @@ export const newCompanyEntryApiSlice = apiSlice.injectEndpoints({
             }),
             invalidatesTags: ['Companies']
         }),
+        visibleCompany: builder.mutation({
+            query: (body) => ({
+                url:'/api/company-visible',
+                method: 'PATCH',
+                body: body,
+            }),
+            invalidatesTags: ['Companies']
+        }),
         updateCompanies: builder.mutation({
             query: company => ({
                 url:`/api/edit-company/${company.id}`,
@@ -33,6 +41,7 @@ export const newCompanyEntryApiSlice = apiSlice.injectEndpoints({
             }),
             invalidatesTags: ['Companies']
         }),
+        
     })
 });
 
@@ -41,4 +50,5 @@ export const {
     useAddCompaniesMutation,
     useUpdateCompaniesMutation,
     useDeleteCompanyMutation,
+    useVisibleCompanyMutation
 } = newCompanyEntryApiSlice
