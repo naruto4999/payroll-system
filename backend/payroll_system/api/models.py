@@ -170,3 +170,10 @@ class SalaryGrade(models.Model):
     name = models.CharField(max_length=256, null=False, blank=False)
     def __str__(self):
         return f"{self.user.email} -> {self.company.name}: {self.name}"
+
+class Category(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="categories")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="categories")
+    name = models.CharField(max_length=256, null=False, blank=False)
+    def __str__(self):
+        return f"{self.user.email} -> {self.company.name}: {self.name}"

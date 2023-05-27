@@ -2,7 +2,7 @@ import React, { useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useState } from "react";
 import { useTable, useRowSelect } from "react-table";
-import { FaRegTrashAlt, FaPen, FaCircleNotch } from "react-icons/fa";
+import { FaRegTrashAlt, FaPen, FaCircleNotch, FaCheck, FaWindowMinimize } from "react-icons/fa";
 import { useOutletContext } from "react-router-dom";
 import { useEffect } from "react";
 
@@ -30,14 +30,17 @@ const IndeterminateCheckbox = React.forwardRef(
         }, [resolvedRef, indeterminate]);
 
         return (
-            <>
+            <label className="cursor-pointer relative flex flex-col ">
                 <input
                     type="checkbox"
                     ref={resolvedRef}
+                    className="appearance-none border border-slate-400 rounded-md w-5 h-5 peer"
                     {...rest}
-                    className="w-4 h-4"
                 />
-            </>
+                { indeterminate ? (<FaWindowMinimize className="absolute text-teal-600 dark:text-teal-500 left-[3px] bottom-[7px]"/>) : (<FaCheck className="absolute text-teal-600 dark:text-teal-500 left-[3px] bottom-[3px] peer-[&:not(:checked)]:hidden"/>)}
+                {console.log(rest)}
+                {console.log(indeterminate)}
+            </label>
         );
     }
 );
@@ -115,6 +118,7 @@ const VisibleCompaniesForm = () => {
                     <div>
                         <IndeterminateCheckbox
                             {...getToggleAllRowsSelectedProps()}
+
                         />
                     </div>
                 ),

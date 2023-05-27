@@ -77,3 +77,9 @@ class RegularRegisterSerializer(serializers.ModelSerializer):
     # def create(self, validated_data):
     #     user = Regular.objects.create_user(**validated_data)
     #     return user
+
+class CategorySerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    class Meta:
+        model = SalaryGrade
+        fields = ('id', 'user', 'company', 'name')

@@ -16,7 +16,7 @@ const EditDepartment = ({
         <div className="text-gray-900 dark:text-slate-100">
             <h1 className="font-medium text-2xl mb-2">Edit Department</h1>
 
-            <form action="" className="flex flex-col gap-2 justify-center">
+            <form action="" className="flex flex-col gap-2 justify-center" onSubmit={handleSubmit}>
                 <label
                     htmlFor="comapny-name"
                     className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
@@ -54,7 +54,6 @@ const EditDepartment = ({
                             : "opacity-40",
                         "dark:bg-teal-700 rounded w-20 p-2 text-base font-medium bg-teal-500"
                     )}
-                    onClick={handleSubmit}
                     type="submit"
                     disabled={!isValid}
                 >

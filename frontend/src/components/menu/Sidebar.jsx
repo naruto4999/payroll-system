@@ -98,7 +98,7 @@ const Sidebar = () => {
             <div
                 className={classNames(
                     showLoadingBar == true ? "" : "hidden",
-                    "fixed w-10 sm:w-14 top-0 h-1 bg-orange-700 dark:bg-orange-200 md:animate-loading-bar animate-[loading-bar_1s_infinite_linear] sm:animate-[loading-bar_1.5s_infinite_linear] overflow-x:hidden z-50"
+                    "fixed w-10 sm:w-14 top-0 h-1 rounded bg-orange-700 dark:bg-orange-200 md:animate-loading-bar animate-[loading-bar_1s_infinite_linear] sm:animate-[loading-bar_1.5s_infinite_linear] overflow-x:hidden z-50"
                 )}
             ></div>
 
