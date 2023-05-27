@@ -22,6 +22,7 @@ import DesignationEntryForm from "./menu/MasterEntry/forms/DesignationEntryForm/
 import SalaryGradeEntryForm from "./menu/MasterEntry/forms/SalaryGradeEntryForm/SalaryGradeEntryForm";
 import RegularRegisterForm from "./menu/AdminControlsForm/RegularRegisterForm";
 import VisibleCompaniesForm from "./menu/AdminControlsForm/VisibleCompaniesForm";
+import CategoryEntryForm from "./menu/MasterEntry/forms/CategoryEntryForm/CategoryEntryForm";
 
 // import store, { persistor } from "./authentication/store/index"
 // import { PersistGate } from "redux-persist/integration/react";
@@ -93,6 +94,10 @@ function App() {
                     <Route
                         path="salary-grade-entry"
                         element={<SalaryGradeEntryForm />}
+                    />
+                    <Route
+                        path="category-entry"
+                        element={<CategoryEntryForm />}
                     />
                     {/* <Route path="bank-entry" element={<BankEntryForm />} />
                     <Route path="category-entry" element={<CategoryEntryForm />} />

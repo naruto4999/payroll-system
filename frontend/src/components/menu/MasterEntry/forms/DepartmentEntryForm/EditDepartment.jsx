@@ -1,3 +1,5 @@
+import {useRef, useEffect} from 'react';
+
 const classNames = (...classes) => {
     return classes.filter(Boolean).join(" ");
 };
@@ -12,11 +14,19 @@ const EditDepartment = ({
     isValid,
 }) => {
     console.log(errors);
+    const inputRef = useRef(null);
+    useEffect(() => {
+        inputRef.current.focus();
+    }, []);
     return (
         <div className="text-gray-900 dark:text-slate-100">
             <h1 className="font-medium text-2xl mb-2">Edit Department</h1>
 
-            <form action="" className="flex flex-col gap-2 justify-center" onSubmit={handleSubmit}>
+            <form
+                action=""
+                className="flex flex-col gap-2 justify-center"
+                onSubmit={handleSubmit}
+            >
                 <label
                     htmlFor="comapny-name"
                     className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
@@ -36,6 +46,7 @@ const EditDepartment = ({
                         name="updatedDepartment"
                         onChange={handleChange}
                         onBlur={handleBlur}
+                        ref={inputRef}
                     />
                     {isValid ? (
                         ""
@@ -56,6 +67,7 @@ const EditDepartment = ({
                     )}
                     type="submit"
                     disabled={!isValid}
+                    onClick={handleSubmit}
                 >
                     Update
                 </button>

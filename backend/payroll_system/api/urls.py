@@ -1,5 +1,5 @@
 from django.urls import path, include
-from .views import CompanyListCreateAPIView, CompanyDetailsMixinView, CompanyRetrieveUpdateDestroyAPIView, DepartmentListCreateAPIView, DepartmentRetrieveUpdateDestroyAPIView, DesignationListCreateAPIView, DesignationRetrieveUpdateDestroyAPIView, SalaryGradeListCreateAPIView, SalaryGradeRetrieveUpdateDestroyAPIView, RegularRegisterListCreateAPIViewView, RegularRetrieveDestroyAPIView, CompanyVisibilityPatchAPIView
+from .views import CompanyListCreateAPIView, CompanyDetailsMixinView, CompanyRetrieveUpdateDestroyAPIView, DepartmentListCreateAPIView, DepartmentRetrieveUpdateDestroyAPIView, DesignationListCreateAPIView, DesignationRetrieveUpdateDestroyAPIView, SalaryGradeListCreateAPIView, SalaryGradeRetrieveUpdateDestroyAPIView, RegularRegisterListCreateAPIViewView, RegularRetrieveDestroyAPIView, CompanyVisibilityPatchAPIView, CategoryListCreateAPIView, CategoryRetrieveUpdateDestroyAPIView
 from .auth.views import LoginView, RegisterView, RefreshView, PasswordResetAPIView, PasswordResetConfirmView, VerifyOTPView
 from django.contrib.auth.views import PasswordResetCompleteView
 
@@ -18,6 +18,8 @@ urlpatterns = [
     path('designation/<int:company_id>/<int:id>', DesignationRetrieveUpdateDestroyAPIView.as_view()),
     path('salary-grade/<int:company_id>', SalaryGradeListCreateAPIView.as_view()),
     path('salary-grade/<int:company_id>/<int:id>', SalaryGradeRetrieveUpdateDestroyAPIView.as_view()),
+    path('category/<int:company_id>', CategoryListCreateAPIView.as_view()),
+    path('category/<int:company_id>/<int:id>', CategoryRetrieveUpdateDestroyAPIView.as_view()),
     path('auth/login/', LoginView.as_view(), name='login'),
     path('auth/register/', RegisterView.as_view(), name='register'),
     path('auth/register/otp', VerifyOTPView.as_view(), name='otp'),

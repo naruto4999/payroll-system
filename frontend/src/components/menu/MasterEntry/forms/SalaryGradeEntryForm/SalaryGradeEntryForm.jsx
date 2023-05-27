@@ -44,6 +44,7 @@ const SalaryGradeEntryForm = () => {
     const [showLoadingBar, setShowLoadingBar] = useOutletContext();
     const [editSalaryGradePopover, setEditSalaryGradePopover] = useState(false);
     const [updateSalaryGradeId, setUpdateSalaryGradeId] = useState("");
+    const [msg, setMsg] = useState("");
 
     console.log(updateSalaryGradeId);
 
@@ -56,21 +57,33 @@ const SalaryGradeEntryForm = () => {
     const addButtonClicked = async (values, formikBag) => {
         console.log(values);
         console.log(formikBag);
-        formikBag.resetForm();
+        
+        try {
+            const data = await addSalaryGrade({
+                company: globalCompany.id,
+                name: values.newSalaryGrade,
+            }).unwrap();
+            console.log(data);
+        } catch (err) {
+            console.log(err);
+        }
         setAddSalaryGradePopover(!addSalaryGradePopover);
-        addSalaryGrade({
-            company: globalCompany.id,
-            name: values.newSalaryGrade,
-        });
+        formikBag.resetForm();
     };
 
     const updateButtonClicked = async (values, formikBag) => {
         console.log(values);
-        updateSalaryGrade({
-            id: updateSalaryGradeId,
-            name: values.updatedSalaryGrade,
-            company: globalCompany.id,
-        });
+        try {
+            const data = await updateSalaryGrade({
+                id: updateSalaryGradeId,
+                name: values.updatedSalaryGrade,
+                company: globalCompany.id,
+            }).unwrap();
+            console.log(data);
+        } catch (err) {
+            console.log(err);
+        }
+
         formikBag.resetForm();
         editSalaryGradePopoverHandler({ id: "" });
     };
@@ -249,7 +262,7 @@ const SalaryGradeEntryForm = () => {
                         )}
                     />
                 </ReactModal>
-                
+
                 <ReactModal
                     className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
                     isOpen={editSalaryGradePopover}

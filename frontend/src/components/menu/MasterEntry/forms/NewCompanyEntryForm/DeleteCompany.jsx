@@ -1,4 +1,4 @@
-import React from "react";
+import { useRef, useEffect } from "react";
 
 const DeleteCompany = ({
     deleteCompanyChangeHandler,
@@ -6,11 +6,15 @@ const DeleteCompany = ({
     setConfirmDelete,
     setDeleteCompanyPopover
 }) => {
+    const inputRef = useRef(null);
+    useEffect(() => {
+        inputRef.current.focus();
+    }, []);
     return (
         <div className="text-gray-900 dark:text-slate-100">
             <h1 className="font-medium text-2xl mb-2">Delete Company</h1>
 
-            <form action="" className="flex flex-col gap-2 justify-center">
+            <form action="" className="flex flex-col gap-2 justify-center" onSubmit={deleteButtonClicked}>
                 <label
                     htmlFor="company-name"
                     className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
@@ -25,6 +29,7 @@ const DeleteCompany = ({
                         name="company-name"
                         placeholder=" "
                         onChange={deleteCompanyChangeHandler}
+                        ref={inputRef}
                     />
                 </div>
             </form>
@@ -32,6 +37,7 @@ const DeleteCompany = ({
                 <button
                     className="bg-redAccent-500 dark:bg-redAccent-700 rounded w-20 p-2 text-base font-medium dark:hover:bg-redAccent-500 hover:bg-redAccent-700"
                     onClick={deleteButtonClicked}
+                    type="submit"
                 >
                     Delete
                 </button>

@@ -1,7 +1,7 @@
 from dataclasses import field
 from rest_framework import serializers
 
-from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular
+from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category
 from rest_framework import serializers
 
 
@@ -81,5 +81,5 @@ class RegularRegisterSerializer(serializers.ModelSerializer):
 class CategorySerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     class Meta:
-        model = SalaryGrade
+        model = Category
         fields = ('id', 'user', 'company', 'name')

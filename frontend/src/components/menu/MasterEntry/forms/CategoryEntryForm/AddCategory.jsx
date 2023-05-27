@@ -4,31 +4,31 @@ const classNames = (...classes) => {
     return classes.filter(Boolean).join(" ");
 };
 
-const AddSalaryGrade = ({ handleSubmit, handleChange, handleBlur, values, errors, setAddSalaryGradePopover, isValid }) => {
+const AddCategory = ({ handleSubmit, handleChange, handleBlur, values, errors, setAddCategoryPopover, isValid }) => {
     const inputRef = useRef(null);
     useEffect(() => {
         inputRef.current.focus();
     }, []);
     return (
         <div className="text-gray-900 dark:text-slate-100">
-            <h1 className="font-medium text-2xl mb-2">Add SalaryGrade</h1>
+            <h1 className="font-medium text-2xl mb-2">Add Category</h1>
 
             <form action="" className="flex flex-col gap-2 justify-center" onSubmit={handleSubmit}>
                 <label
                     htmlFor="comapny-name"
                     className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
                 >
-                    Salary Grade Name
+                    Category Name
                 </label>
                 <div className="relative">
                     <input
                         className={classNames(isValid ? "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25" : "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75", "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full")}
                         type="text"
-                        id="newSalaryGrade"
-                        name="newSalaryGrade" 
+                        id="newCategory"
+                        name="newCategory" 
                         onChange={handleChange} onBlur={handleBlur} value={values.name} ref={inputRef}
                     />
-                    {isValid ? "" :<p className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">{errors.newSalaryGrade}</p>}
+                    {isValid ? "" :<p className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">{errors.newCategory}</p>}
                 </div>
             </form>
             <section className="flex flex-row gap-4 mt-4 mb-2">
@@ -42,7 +42,7 @@ const AddSalaryGrade = ({ handleSubmit, handleChange, handleBlur, values, errors
                 </button>
                 <button
                     className="bg-zinc-400 hover:bg-zinc-500 dark:bg-zinc-600 rounded w-20 p-2 text-base font-medium dark:hover:bg-zinc-700"
-                    onClick={() => setAddSalaryGradePopover(false)}         
+                    onClick={() => setAddCategoryPopover(false)}         
                 >
                     Cancel
                 </button>
@@ -50,4 +50,4 @@ const AddSalaryGrade = ({ handleSubmit, handleChange, handleBlur, values, errors
         </div>
     );
 };
-export default AddSalaryGrade;
+export default AddCategory;

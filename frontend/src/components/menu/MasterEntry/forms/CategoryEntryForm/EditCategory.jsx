@@ -4,13 +4,13 @@ const classNames = (...classes) => {
     return classes.filter(Boolean).join(" ");
 };
 
-const EditCompany = ({
+const EditCategory = ({
     handleSubmit,
     handleChange,
     handleBlur,
     values,
     errors,
-    editCompanyPopoverHandler,
+    editCategoryPopoverHandler,
     isValid,
 }) => {
     console.log(errors);
@@ -20,18 +20,14 @@ const EditCompany = ({
     }, []);
     return (
         <div className="text-gray-900 dark:text-slate-100">
-            <h1 className="font-medium text-2xl mb-2">Edit Company</h1>
+            <h1 className="font-medium text-2xl mb-2">Edit Category</h1>
 
-            <form
-                action=""
-                className="flex flex-col gap-2 justify-center"
-                onSubmit={handleSubmit}
-            >
+            <form action="" className="flex flex-col gap-2 justify-center" onSubmit={handleSubmit}>
                 <label
                     htmlFor="comapny-name"
                     className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
                 >
-                    Company Name
+                    Category Name
                 </label>
                 <div className="relative">
                     <input
@@ -42,8 +38,8 @@ const EditCompany = ({
                             "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
                         )}
                         type="text"
-                        id="updatedCompany"
-                        name="updatedCompany"
+                        id="updatedCategory"
+                        name="updatedCategory"
                         onChange={handleChange}
                         onBlur={handleBlur}
                         ref={inputRef}
@@ -52,7 +48,7 @@ const EditCompany = ({
                         ""
                     ) : (
                         <p className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                            {errors.updatedCompany}
+                            {errors.updatedCategory}
                         </p>
                     )}
                 </div>
@@ -65,15 +61,15 @@ const EditCompany = ({
                             : "opacity-40",
                         "dark:bg-teal-700 rounded w-20 p-2 text-base font-medium bg-teal-500"
                     )}
-                    onClick={handleSubmit}
                     type="submit"
                     disabled={!isValid}
+                    onClick={handleSubmit}
                 >
                     Update
                 </button>
                 <button
                     className="bg-zinc-400 hover:bg-zinc-500 dark:bg-zinc-600 rounded w-20 p-2 text-base font-medium dark:hover:bg-zinc-700"
-                    onClick={() => editCompanyPopoverHandler({ id: "" })}
+                    onClick={() => editCategoryPopoverHandler({ id: "" })}
                 >
                     Cancel
                 </button>
@@ -81,4 +77,4 @@ const EditCompany = ({
         </div>
     );
 };
-export default EditCompany;
+export default EditCategory;

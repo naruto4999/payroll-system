@@ -1,3 +1,5 @@
+import { useRef, useEffect } from "react";
+
 const classNames = (...classes) => {
     return classes.filter(Boolean).join(" ");
 };
@@ -12,6 +14,10 @@ const EditSalaryGrade = ({
     isValid,
 }) => {
     console.log(errors);
+    const inputRef = useRef(null);
+    useEffect(() => {
+        inputRef.current.focus();
+    }, []);
     return (
         <div className="text-gray-900 dark:text-slate-100">
             <h1 className="font-medium text-2xl mb-2">Edit Salary Grade</h1>
@@ -36,6 +42,7 @@ const EditSalaryGrade = ({
                         name="updatedSalaryGrade"
                         onChange={handleChange}
                         onBlur={handleBlur}
+                        ref={inputRef}
                     />
                     {isValid ? (
                         ""
@@ -56,6 +63,7 @@ const EditSalaryGrade = ({
                     )}
                     type="submit"
                     disabled={!isValid}
+                    onClick={handleSubmit}
                 >
                     Update
                 </button>

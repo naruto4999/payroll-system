@@ -57,18 +57,6 @@ const RegisterForm = () => {
                 username: values.username,
                 phone_no: values.phone_no,
             }).unwrap();
-            // formikBag.resetForm({
-            //     values: {
-            //         // the type of `values` inferred to be Blog
-            //         email: "",
-            //         password: "",
-            //         passConfirm: "",
-            //         username: "",
-            //         phone_no: "",
-            //     },
-            // });
-            // formRef.current.reset();
-            // formRef.current.reset();
             console.log(data);
             setOtpFormPopover(true);
             setMsg(data.detail);

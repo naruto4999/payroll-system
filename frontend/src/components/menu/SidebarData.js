@@ -30,6 +30,11 @@ const menuItems = [
                 icon: FaMoneyCheckAlt,
                 path: "/home/salary-grade-entry"
             },
+            {
+                title: "Category Entry",
+                icon: FaMoneyCheckAlt,
+                path: "/home/category-entry"
+            },
         ],
     },
     {

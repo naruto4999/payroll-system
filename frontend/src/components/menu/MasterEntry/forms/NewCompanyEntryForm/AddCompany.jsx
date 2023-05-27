@@ -1,3 +1,4 @@
+import {useRef, useEffect} from 'react';
 
 const classNames = (...classes) => {
     return classes.filter(Boolean).join(" ");
@@ -5,11 +6,16 @@ const classNames = (...classes) => {
 
 const AddCompany = ({ handleSubmit, handleChange, handleBlur, values, errors, setAddCompanyPopover, isValid }) => {
     console.log(values)
+    const inputRef = useRef(null);
+    useEffect(() => {
+        inputRef.current.focus();
+    }, []);
+
     return (
         <div className="text-gray-900 dark:text-slate-100">
             <h1 className="font-medium text-2xl mb-2">Add Company</h1>
 
-            <form action="" className="flex flex-col gap-2 justify-center">
+            <form action="" className="flex flex-col gap-2 justify-center" onSubmit={handleSubmit}>
                 <label
                     htmlFor="comapny-name"
                     className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
@@ -23,6 +29,7 @@ const AddCompany = ({ handleSubmit, handleChange, handleBlur, values, errors, se
                         id="newCompany"
                         name="newCompany" 
                         onChange={handleChange} onBlur={handleBlur} value={values.name}
+                        ref={inputRef}
                     />
                     {isValid ? "" :<p className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">{errors.newCompany}</p>}
                 </div>
@@ -30,9 +37,9 @@ const AddCompany = ({ handleSubmit, handleChange, handleBlur, values, errors, se
             <section className="flex flex-row gap-4 mt-4 mb-2">
                 <button
                 className={classNames(isValid ? "dark:hover:bg-teal-600  hover:bg-teal-600" : "opacity-40", "dark:bg-teal-700 rounded w-20 p-2 text-base font-medium bg-teal-500")}
-                    onClick={handleSubmit}
                     type="submit"
                     disabled={!isValid}
+                    onClick={handleSubmit}
                 >
                     Add
                 </button>
