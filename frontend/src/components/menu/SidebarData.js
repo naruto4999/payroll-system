@@ -35,6 +35,11 @@ const menuItems = [
                 icon: FaMoneyCheckAlt,
                 path: "/home/category-entry"
             },
+            {
+                title: "Bank Entry",
+                icon: FaMoneyCheckAlt,
+                path: "/home/bank-entry"
+            },
         ],
     },
     {

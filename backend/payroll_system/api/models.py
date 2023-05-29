@@ -177,3 +177,10 @@ class Category(models.Model):
     name = models.CharField(max_length=256, null=False, blank=False)
     def __str__(self):
         return f"{self.user.email} -> {self.company.name}: {self.name}"
+    
+class Bank(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="banks")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="banks")
+    name = models.CharField(max_length=256, null=False, blank=False)
+    def __str__(self):
+        return f"{self.user.email} -> {self.company.name}: {self.name}"
