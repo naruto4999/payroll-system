@@ -1,7 +1,7 @@
 from dataclasses import field
 from rest_framework import serializers
 
-from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank
+from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade
 from rest_framework import serializers
 
 
@@ -89,3 +89,9 @@ class BankSerializer(serializers.ModelSerializer):
     class Meta:
         model = Bank
         fields = ('id', 'user', 'company', 'name')
+
+class LeaveGradeSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    class Meta:
+        model = LeaveGrade
+        fields = ('id', 'user', 'company', 'name' ,'limit', 'mandatory_leave')

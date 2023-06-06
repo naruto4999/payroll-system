@@ -3,6 +3,10 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 from django.conf import settings
 from django.utils import timezone
 
+#imports for signals
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
 # from django.db.models.signals import post_save
 # from django.dispatch import receiver
 
@@ -184,3 +188,35 @@ class Bank(models.Model):
     name = models.CharField(max_length=256, null=False, blank=False)
     def __str__(self):
         return f"{self.user.email} -> {self.company.name}: {self.name}"
+    
+class LeaveGrade(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="leave_grades")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="leave_grades")
+    name = models.CharField(max_length=256, null=False, blank=False)
+    limit = models.PositiveSmallIntegerField(default=0, null=False, blank=False)
+    mandatory_leave = models.BooleanField(default=False, null=False, blank=False)
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'company', 'name'], name='unique_leave_grade_name_per_user')
+        ]
+    def __str__(self):
+        return f"{self.user.email} -> {self.company.name}: {self.name}"
+    
+
+@receiver(post_save, sender=Company)
+def create_default_leave_grades_for_company(sender, instance, created, **kwargs):
+    print("reciever ran")
+    print(sender)
+    print(instance)
+    if created:
+        company = instance  # Assign the instance to a variable
+        user = company.user
+        print("reciever ran")
+        # Create the first row for the new user
+        LeaveGrade.objects.create(user=user,company=company, name='CL', limit=7, mandatory_leave=True)
+        
+        # Create the second row for the new user
+        LeaveGrade.objects.create(user=user,company=company, name='EL', limit=15, mandatory_leave=True)
+        
+        # Create the third row for the new user
+        LeaveGrade.objects.create(user=user,company=company, name='SL', limit=7, mandatory_leave=True)

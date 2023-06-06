@@ -41,6 +41,7 @@ const AddBank = ({ handleSubmit, handleChange, handleBlur, values, errors, setAd
                     Add
                 </button>
                 <button
+                    type="button"
                     className="bg-zinc-400 hover:bg-zinc-500 dark:bg-zinc-600 rounded w-20 p-2 text-base font-medium dark:hover:bg-zinc-700"
                     onClick={() => setAddBankPopover(false)}         
                 >

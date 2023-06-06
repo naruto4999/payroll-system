@@ -1,7 +1,7 @@
 from django.forms import ValidationError
 from django.shortcuts import render
 from rest_framework import generics, status, mixins
-from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer
+from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer
 from .models import Company, CompanyDetails, User, OwnerToRegular, Regular
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -374,6 +374,55 @@ class BankRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
             serializer.save(user=self.request.user)
         instance = OwnerToRegular.objects.get(user=user)
         serializer.save(user=instance.owner)
+
+class LeaveGradeListCreateAPIView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    # queryset = Company.objects.all()
+    serializer_class = LeaveGradeSerializer
+    lookup_field = 'company_id'
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        user = self.request.user
+        if user.role == "OWNER":
+            return user.leave_grades.filter(company=company_id)
+        instance = OwnerToRegular.objects.get(user=user)
+        return instance.owner.leave_grades.filter(company=company_id)
+    
+    def perform_create(self, serializer):
+        user = self.request.user
+        company_id = self.kwargs.get('company_id')
+        company = Company.objects.get(id=company_id)
+        if user.role == "OWNER":
+            return serializer.save(user=user, company=company)
+        instance = OwnerToRegular.objects.get(user=user)
+        return serializer.save(user=instance.owner, company=company)
+
+class LeaveGradeRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes= [IsAuthenticated]
+    serializer_class = LeaveGradeSerializer
+    lookup_field = 'id'
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        user = self.request.user
+        if user.role == "OWNER":
+            return user.leave_grades.filter(company=company_id)
+        instance = OwnerToRegular.objects.get(user=user)
+        return instance.owner.leave_grades.filter(company=company_id)
+    
+    def perform_update(self, serializer):
+        user = self.request.user
+        if user.role == "OWNER":
+            serializer.save(user=self.request.user)
+        instance = OwnerToRegular.objects.get(user=user)
+        serializer.save(user=instance.owner)
+    
+    def perform_destroy(self, instance):
+        if instance.mandatory_leave:
+            return Response({"detail": "Cannot delete a mandatory leave grade."}, status=status.HTTP_403_FORBIDDEN)
+        instance.delete()
+
 #Viewsets
 class UserViewSet(viewsets.ModelViewSet):
     http_method_names = ['get']

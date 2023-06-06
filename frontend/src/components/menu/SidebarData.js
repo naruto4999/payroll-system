@@ -40,6 +40,11 @@ const menuItems = [
                 icon: FaMoneyCheckAlt,
                 path: "/home/bank-entry"
             },
+            {
+                title: "Leave Grade Entry",
+                icon: FaMoneyCheckAlt,
+                path: "/home/leave-grade-entry"
+            },
         ],
     },
     {

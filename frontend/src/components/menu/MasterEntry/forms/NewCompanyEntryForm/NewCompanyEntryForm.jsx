@@ -1,7 +1,12 @@
 import React, { useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useState } from "react";
-import { useTable } from "react-table";
+import {
+    createColumnHelper,
+    flexRender,
+    getCoreRowModel,
+    useReactTable,
+} from "@tanstack/react-table";
 import { FaRegTrashAlt, FaPen, FaCircleNotch } from "react-icons/fa";
 import EditCompany from "./EditCompany";
 import { useOutletContext } from "react-router-dom";
@@ -62,7 +67,7 @@ const NewCompanyEntryForm = () => {
 
     const deleteCompanyChangeHandler = (event) => {
         setConfirmDelete((prevState) => {
-            return { ...prevState, phrase: event.target.value };
+            return { ...prevState, phrase: event.target.value.toLowerCase() };
         });
     };
 
@@ -76,12 +81,12 @@ const NewCompanyEntryForm = () => {
     };
 
     const updateButtonClicked = async (values, formikBag) => {
-        console.log(values)
+        console.log(values);
         updateCompany({
             id: updatedCompanyId,
             name: values.updatedCompany,
         });
-        formikBag.resetForm()
+        formikBag.resetForm();
         editCompanyPopoverHandler({ id: "" });
     };
 
@@ -95,64 +100,61 @@ const NewCompanyEntryForm = () => {
         }
     };
     console.log(confirmDelete);
-    const columns = useMemo(
-        () => [
-            {
-                Header: "ID",
-                accessor: "id",
-            },
-            {
-                Header: "Company Name",
-                accessor: "name",
-            },
-        ],
-        []
-    );
+
+    const columnHelper = createColumnHelper();
+
+    const columns = [
+        columnHelper.accessor("id", {
+            header: () => "ID",
+            cell: (props) => props.renderValue(),
+            //   footer: props => props.column.id,
+        }),
+        columnHelper.accessor("name", {
+            header: () => "Bank Name",
+            cell: (props) => props.renderValue(),
+            //   footer: info => info.column.id,
+        }),
+        columnHelper.display({
+            id: "actions",
+            header: () => "Actions",
+            cell: (props) => (
+                <div className="flex justify-center gap-4">
+                    <div
+                        className="p-1.5 dark:bg-redAccent-700 rounded bg-redAccent-500 dark:hover:bg-redAccent-500 hover:bg-redAccent-700"
+                        onClick={() => {
+                            setConfirmDelete({
+                                id: props.row.original.id,
+                                phrase: "",
+                            });
+                            setDeleteCompanyPopover(true);
+                        }}
+                    >
+                        <FaRegTrashAlt className="h-4" />
+                    </div>
+                    <div
+                        className="p-1.5 dark:bg-teal-700 rounded bg-teal-600 dark:hover:bg-teal-600 hover:bg-teal-700"
+                        onClick={() =>
+                            editCompanyPopoverHandler(props.row.original)
+                        }
+                    >
+                        <FaPen className="h-4" />
+                    </div>
+                </div>
+            ),
+        }),
+    ];
 
     const data = useMemo(
         () => (fetchedData ? [...fetchedData] : []),
         [fetchedData]
     );
 
-    const tableHooks = (hooks) => {
-        hooks.visibleColumns.push((columns) => [
-            ...columns,
-            {
-                id: "actions",
-                Header: "Actions",
-                Cell: ({ row }) => (
-                    <div className="flex justify-center gap-4">
-                        <div
-                            className="p-1.5 dark:bg-redAccent-700 rounded bg-redAccent-500 dark:hover:bg-redAccent-500 hover:bg-redAccent-700"
-                            onClick={() => {
-                                setConfirmDelete({
-                                    id: row.values.id,
-                                    phrase: "",
-                                });
-                                setDeleteCompanyPopover(true);
-                            }}
-                        >
-                            <FaRegTrashAlt className="h-4" />
-                        </div>
-                        <div
-                            className="p-1.5 dark:bg-teal-700 rounded bg-teal-600 dark:hover:bg-teal-600 hover:bg-teal-700"
-                            onClick={() =>
-                                editCompanyPopoverHandler(row.values)
-                            }
-                        >
-                            <FaPen className="h-4" />
-                        </div>
-                    </div>
-                ),
-            },
-        ]);
-    };
+    const table = useReactTable({
+        data,
+        columns,
+        getCoreRowModel: getCoreRowModel(),
+    });
 
-    const tableInstance = useTable({ columns, data }, tableHooks);
-    const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } =
-        tableInstance;
-
-    // console.log(showLoadingBar)
     useEffect(() => {
         setShowLoadingBar(
             isAddingCompany || isDeletingComapny || isUpdatingCompany
@@ -185,55 +187,52 @@ const NewCompanyEntryForm = () => {
                 <div
                     className={`overflow-hidden rounded border border-black border-opacity-50 shadow-md m-5 mx-auto`}
                 >
-                    <table
-                        className="w-full border-collapse text-center text-sm"
-                        {...getTableProps()}
-                    >
+                    <table className="w-full border-collapse text-center text-sm">
                         <thead className="bg-blueAccent-600 dark:bg-blueAccent-700">
-                            {headerGroups.map((headerGroup) => (
-                                <tr {...headerGroup.getHeaderGroupProps()}>
-                                    {headerGroup.headers.map((column) => (
+                            {table.getHeaderGroups().map((headerGroup) => (
+                                <tr key={headerGroup.id}>
+                                    {headerGroup.headers.map((header) => (
                                         <th
+                                            key={header.id}
                                             scope="col"
                                             className="px-4 py-4 font-medium"
-                                            {...column.getHeaderProps()}
                                         >
-                                            {column.render("Header")}
+                                            {header.isPlaceholder
+                                                ? null
+                                                : flexRender(
+                                                      header.column.columnDef
+                                                          .header,
+                                                      header.getContext()
+                                                  )}
                                         </th>
                                     ))}
                                 </tr>
                             ))}
                         </thead>
-                        <tbody
-                            className="divide-y divide-black divide-opacity-50 border-t border-black border-opacity-50"
-                            {...getTableBodyProps()}
-                        >
-                            {rows.map((row) => {
-                                prepareRow(row);
-                                return (
-                                    <tr
-                                        className="dark:hover:bg-zinc-800 hover:bg-zinc-200"
-                                        {...row.getRowProps()}
-                                    >
-                                        {row.cells.map((cell) => {
-                                            return (
-                                                <td
-                                                    className="px-4 py-4 font-normal"
-                                                    {...cell.getCellProps()}
-                                                >
-                                                    <div className="text-sm">
-                                                        <div className="font-medium">
-                                                            {cell.render(
-                                                                "Cell"
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                            );
-                                        })}
-                                    </tr>
-                                );
-                            })}
+                        <tbody className="divide-y divide-black divide-opacity-50 border-t border-black border-opacity-50">
+                            {table.getRowModel().rows.map((row) => (
+                                <tr
+                                    className="dark:hover:bg-zinc-800 hover:bg-zinc-200"
+                                    key={row.id}
+                                >
+                                    {row.getVisibleCells().map((cell) => (
+                                        <td
+                                            className="px-4 py-4 font-normal"
+                                            key={cell.id}
+                                        >
+                                            <div className="text-sm">
+                                                <div className="font-medium">
+                                                    {flexRender(
+                                                        cell.column.columnDef
+                                                            .cell,
+                                                        cell.getContext()
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </td>
+                                    ))}
+                                </tr>
+                            ))}
                         </tbody>
                     </table>
                 </div>
@@ -283,9 +282,7 @@ const NewCompanyEntryForm = () => {
                 <ReactModal
                     className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
                     isOpen={editCompanyPopover}
-                    onRequestClose={() =>
-                        editCompanyPopoverHandler({ id: "" })
-                    }
+                    onRequestClose={() => editCompanyPopoverHandler({ id: "" })}
                     style={{
                         overlay: {
                             backgroundColor: "rgba(0, 0, 0, 0.75)",

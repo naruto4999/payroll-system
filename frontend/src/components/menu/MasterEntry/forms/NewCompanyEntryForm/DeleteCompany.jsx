@@ -32,8 +32,7 @@ const DeleteCompany = ({
                         ref={inputRef}
                     />
                 </div>
-            </form>
-            <section className="flex flex-row gap-4 mt-4 mb-2">
+                <section className="flex flex-row gap-4 mt-4 mb-2">
                 <button
                     className="bg-redAccent-500 dark:bg-redAccent-700 rounded w-20 p-2 text-base font-medium dark:hover:bg-redAccent-500 hover:bg-redAccent-700"
                     onClick={deleteButtonClicked}
@@ -43,6 +42,7 @@ const DeleteCompany = ({
                 </button>
                 <button
                     className="bg-zinc-400 hover:bg-zinc-500 dark:bg-zinc-600 rounded w-20 p-2 text-base font-medium dark:hover:bg-zinc-700"
+                    type="button"
                     onClick={() => {
                         setConfirmDelete({id: "", phrase: ""});
                         setDeleteCompanyPopover(false)
@@ -51,6 +51,8 @@ const DeleteCompany = ({
                     Cancel
                 </button>
             </section>
+            </form>
+            
         </div>
     );
 };

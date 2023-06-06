@@ -21,9 +21,10 @@ import DepartmentEntryForm from "./menu/MasterEntry/forms/DepartmentEntryForm/De
 import DesignationEntryForm from "./menu/MasterEntry/forms/DesignationEntryForm/DesignationEntryForm";
 import SalaryGradeEntryForm from "./menu/MasterEntry/forms/SalaryGradeEntryForm/SalaryGradeEntryForm";
 import RegularRegisterForm from "./menu/AdminControlsForm/RegularRegisterForm";
-import VisibleCompaniesForm from "./menu/AdminControlsForm/VisibleCompaniesForm";
+// import VisibleCompaniesForm from "./menu/AdminControlsForm/VisibleCompaniesForm";
 import CategoryEntryForm from "./menu/MasterEntry/forms/CategoryEntryForm/CategoryEntryForm";
 import BankEntryForm from "./menu/MasterEntry/forms/BankEntryForm/BankEntryForm";
+import LeaveGradeEntryForm from "./menu/MasterEntry/forms/LeaveGradeEntryForm/LeaveGradeEntryForm";
 
 // import store, { persistor } from "./authentication/store/index"
 // import { PersistGate } from "redux-persist/integration/react";
@@ -104,6 +105,10 @@ function App() {
                         path="bank-entry"
                         element={<BankEntryForm />}
                     />
+                    <Route
+                        path="leave-grade-entry"
+                        element={<LeaveGradeEntryForm />}
+                    />
                     {/* <Route path="bank-entry" element={<BankEntryForm />} />
                     <Route path="category-entry" element={<CategoryEntryForm />} />
                     <Route path="department-entry" element={<DepartmentEntryForm />} />
@@ -125,10 +130,10 @@ function App() {
                         path="regular-registration"
                         element={<RegularRegisterForm />}
                     />
-                    <Route
+                    {/* <Route
                         path="visible-companies"
                         element={<VisibleCompaniesForm />}
-                    />
+                    /> */}
                 </Route>
                 <Route path="login" element={<LoginForm />} />
                 <Route path="register" element={<RegisterForm />} />

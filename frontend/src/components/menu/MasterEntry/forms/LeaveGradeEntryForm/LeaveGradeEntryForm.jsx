@@ -8,24 +8,24 @@ import {
 import { FaRegTrashAlt, FaPen } from "react-icons/fa";
 import { useSelector } from "react-redux";
 import {
-    useGetBanksQuery,
-    useAddBankMutation,
-    useUpdateBankMutation,
-    useDeleteBankMutation,
-} from "../../../../authentication/api/bankEntryApiSlice";
-import EditBank from "./EditBank";
+    useGetLeaveGradesQuery,
+    useAddLeaveGradeMutation,
+    useUpdateLeaveGradeMutation,
+    useDeleteLeaveGradeMutation,
+} from "../../../../authentication/api/leaveGradeEntryApiSlice";
+import EditLeaveGrade from "./EditLeaveGrade";
 import { useOutletContext } from "react-router-dom";
 import ReactModal from "react-modal";
 import { Formik } from "formik";
-import AddBank from "./AddBank";
-import { addBankSchema, editBankSchema } from "./BankEntrySchema";
+import AddLeaveGrade from "./AddLeaveGrade";
+import { LeaveGradeSchema } from "./LeaveGradeSchema";
 
 ReactModal.setAppElement("#root");
 
-const BankEntryForm = () => {
+const LeaveGradeEntryForm = () => {
     const globalCompany = useSelector((state) => state.globalCompany);
 
-    console.log(globalCompany);
+    // console.log(globalCompany);
     const {
         data: fetchedData,
         isLoading,
@@ -34,23 +34,31 @@ const BankEntryForm = () => {
         error,
         isFetching,
         refetch,
-    } = useGetBanksQuery(globalCompany);
-    // console.log(fetchedData)
-    const [addBank, { isLoading: isAddingBank }] = useAddBankMutation();
-    const [updateBank, { isLoading: isUpdatingBank }] = useUpdateBankMutation();
-    const [deleteBank, { isLoading: isDeletingBank }] = useDeleteBankMutation();
-    const [addBankPopover, setAddBankPopover] = useState(false);
+    } = useGetLeaveGradesQuery(globalCompany);
+    console.log(fetchedData);
+    const [addLeaveGrade, { isLoading: isAddingLeaveGrade }] =
+        useAddLeaveGradeMutation();
+    const [updateLeaveGrade, { isLoading: isUpdatingLeaveGrade }] =
+        useUpdateLeaveGradeMutation();
+    const [deleteLeaveGrade, { isLoading: isDeletingLeaveGrade }] =
+        useDeleteLeaveGradeMutation();
+    const [addLeaveGradePopover, setAddLeaveGradePopover] = useState(false);
     const [showLoadingBar, setShowLoadingBar] = useOutletContext();
-    const [editBankPopover, setEditBankPopover] = useState(false);
-    const [updateBankId, setUpdateBankId] = useState("");
+    const [editLeaveGradePopover, setEditLeaveGradePopover] = useState(false);
+    const [updateLeaveGradeId, setUpdateLeaveGradeId] = useState("");
+    const [disabledEdit, setDisableEdit] = useState(false);
     const [msg, setMsg] = useState("");
 
-    console.log(updateBankId);
+    // console.log(fetchedData.find(
+    //     (grade) => grade.id === updateLeaveGradeId
+    // )?.mandatory_leave);
 
-    const editBankPopoverHandler = (bank) => {
-        console.log(bank);
-        setUpdateBankId(bank.id);
-        setEditBankPopover(!editBankPopover);
+    const editLeaveGradePopoverHandler = (LeaveGrade) => {
+        console.log(LeaveGrade);
+        console.log(LeaveGrade.mandatory_leave);
+        setUpdateLeaveGradeId(LeaveGrade.id);
+        setDisableEdit(LeaveGrade.mandatory_leave);
+        setEditLeaveGradePopover(!editLeaveGradePopover);
     };
 
     const addButtonClicked = async (values, formikBag) => {
@@ -58,15 +66,16 @@ const BankEntryForm = () => {
         console.log(formikBag);
 
         try {
-            const data = await addBank({
+            const data = await addLeaveGrade({
                 company: globalCompany.id,
-                name: values.newBank,
+                name: values.leaveGradeName.toUpperCase(),
+                limit: values.leaveGradeLimit,
             }).unwrap();
             console.log(data);
         } catch (err) {
             console.log(err);
         }
-        setAddBankPopover(!addBankPopover);
+        setAddLeaveGradePopover(!addLeaveGradePopover);
         4;
         formikBag.resetForm();
     };
@@ -74,10 +83,11 @@ const BankEntryForm = () => {
     const updateButtonClicked = async (values, formikBag) => {
         console.log(values);
         try {
-            const data = await updateBank({
-                id: updateBankId,
-                name: values.updatedBank,
+            const data = await updateLeaveGrade({
+                id: updateLeaveGradeId,
+                name: values.leaveGradeName.toUpperCase(),
                 company: globalCompany.id,
+                limit: values.leaveGradeLimit,
             }).unwrap();
             console.log(data);
         } catch (err) {
@@ -85,16 +95,37 @@ const BankEntryForm = () => {
         }
 
         formikBag.resetForm();
-        editBankPopoverHandler({ id: "" });
+        editLeaveGradePopoverHandler({ id: "", mandatory_leave: false });
     };
 
     const deleteButtonClicked = async (id) => {
         console.log(id);
-        deleteBank({ id: id, company: globalCompany.id });
+        deleteLeaveGrade({ id: id, company: globalCompany.id });
     };
 
     const columnHelper = createColumnHelper();
 
+    // const columns = useMemo(
+    //     () => [
+    //         {
+    //             Header: "ID",
+    //             accessor: "id",
+    //         },
+    //         {
+    //             Header: "Leave Grade Name",
+    //             accessor: "name",
+    //         },
+    //         {
+    //             Header: "Limit",
+    //             accessor: "limit",
+    //         },
+    //         {
+    //             Header: "Mandatory",
+    //             accessor: "mandatory_leave",
+    //         },
+    //     ],
+    //     []
+    // );
     const columns = [
         columnHelper.accessor("id", {
             header: () => "ID",
@@ -102,8 +133,19 @@ const BankEntryForm = () => {
             //   footer: props => props.column.id,
         }),
         columnHelper.accessor("name", {
-            header: () => "Bank Name",
+            header: () => "Leave Grade Name",
             cell: (props) => props.renderValue(),
+            //   footer: info => info.column.id,
+        }),
+        columnHelper.accessor("limit", {
+            header: () => "Limit",
+            cell: (props) => props.renderValue(),
+            //   footer: info => info.column.id,
+        }),
+        columnHelper.accessor("mandatory_leave", {
+            header: () => "Mandatory",
+            cell: (props) => props.renderValue(),
+            enableHiding: true,
             //   footer: info => info.column.id,
         }),
         columnHelper.display({
@@ -111,18 +153,22 @@ const BankEntryForm = () => {
             header: () => "Actions",
             cell: (props) => (
                 <div className="flex justify-center gap-4">
-                    <div
-                        className="p-1.5 dark:bg-redAccent-700 rounded bg-redAccent-500 dark:hover:bg-redAccent-500 hover:bg-redAccent-700"
-                        onClick={() =>
-                            deleteButtonClicked(props.row.original.id)
-                        }
-                    >
-                        <FaRegTrashAlt className="h-4" />
-                    </div>
+                    {props.row.original.mandatory_leave ? (
+                        ""
+                    ) : (
+                        <div
+                            className="p-1.5 dark:bg-redAccent-700 rounded bg-redAccent-500 dark:hover:bg-redAccent-500 hover:bg-redAccent-700"
+                            onClick={() =>
+                                deleteButtonClicked(props.row.original.id)
+                            }
+                        >
+                            <FaRegTrashAlt className="h-4" />
+                        </div>
+                    )}
                     <div
                         className="p-1.5 dark:bg-teal-700 rounded bg-teal-600 dark:hover:bg-teal-600 hover:bg-teal-700"
                         onClick={() =>
-                            editBankPopoverHandler(props.row.original)
+                            editLeaveGradePopoverHandler(props.row.original)
                         }
                     >
                         <FaPen className="h-4" />
@@ -136,18 +182,62 @@ const BankEntryForm = () => {
         () => (fetchedData ? [...fetchedData] : []),
         [fetchedData]
     );
+    // const tableHooks = (hooks) => {
+    //     hooks.visibleColumns.push((columns) => [
+    //         ...columns,
+    //         {
+    //             id: "actions",
+    //             Header: "Actions",
+    //             Cell: ({ row }) => (
+    //                 <div className="flex justify-center gap-4">
+    //                     {row.values.mandatory_leave ? "" : (<div
+    //                         className="p-1.5 dark:bg-redAccent-700 rounded bg-redAccent-500 dark:hover:bg-redAccent-500 hover:bg-redAccent-700"
+    //                         onClick={() => deleteButtonClicked(row.values.id)}
+    //                     >
+    //                         <FaRegTrashAlt className="h-4" />
+    //                     </div>)}
+    //                     <div
+    //                         className="p-1.5 dark:bg-teal-700 rounded bg-teal-600 dark:hover:bg-teal-600 hover:bg-teal-700"
+    //                         onClick={() =>
+    //                             editLeaveGradePopoverHandler(row.values)
+    //                             // console.log(row.values)
+    //                         }
+    //                     >
+    //                         <FaPen className="h-4" />
+    //                     </div>
+    //                 </div>
+    //             ),
+    //         },
+    //     ]);
+    // };
 
+    // const tableInstance = useTable({ columns, data, initialState: {
+    //     hiddenColumns: ['mandatory_leave']
+    //   } }, tableHooks);
+    // const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } =
+    //     tableInstance;
     const table = useReactTable({
         data,
         columns,
+        initialState: {
+            columnVisibility: { mandatory_leave: false },
+        },
         getCoreRowModel: getCoreRowModel(),
     });
-
+    // console.log(tableInstance)
     useEffect(() => {
         setShowLoadingBar(
-            isLoading || isAddingBank || isDeletingBank || isUpdatingBank
+            isLoading ||
+                isAddingLeaveGrade ||
+                isDeletingLeaveGrade ||
+                isUpdatingLeaveGrade
         );
-    }, [isLoading, isAddingBank, isDeletingBank, isUpdatingBank]);
+    }, [
+        isLoading,
+        isAddingLeaveGrade,
+        isDeletingLeaveGrade,
+        isUpdatingLeaveGrade,
+    ]);
 
     if (globalCompany.id == null) {
         return (
@@ -165,14 +255,16 @@ const BankEntryForm = () => {
             <section className="mx-5 mt-2">
                 <div className="flex flex-row place-content-between flex-wrap">
                     <div className="mr-4">
-                        <h1 className="text-3xl font-medium">Banks</h1>
-                        <p className="text-sm my-2">Add more banks here</p>
+                        <h1 className="text-3xl font-medium">Leave Grades</h1>
+                        <p className="text-sm my-2">
+                            Add more leave grades here
+                        </p>
                     </div>
                     <button
                         className="dark:bg-teal-700 my-auto rounded p-2 text-base font-medium bg-teal-500 hover:bg-teal-600 dark:hover:bg-teal-600 whitespace-nowrap"
-                        onClick={() => setAddBankPopover(true)}
+                        onClick={() => setAddLeaveGradePopover(true)}
                     >
-                        Add Bank
+                        Add Leave Grade
                     </button>
                 </div>
                 <div className="overflow-hidden rounded border border-black border-opacity-50 shadow-md m-5 max-w-5xl mx-auto">
@@ -228,8 +320,8 @@ const BankEntryForm = () => {
 
                 <ReactModal
                     className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
-                    isOpen={addBankPopover}
-                    onRequestClose={() => setAddBankPopover(false)}
+                    isOpen={addLeaveGradePopover}
+                    onRequestClose={() => setAddLeaveGradePopover(false)}
                     style={{
                         overlay: {
                             backgroundColor: "rgba(0, 0, 0, 0.75)",
@@ -237,13 +329,18 @@ const BankEntryForm = () => {
                     }}
                 >
                     <Formik
-                        initialValues={{ newBank: "" }}
-                        validationSchema={addBankSchema}
+                        initialValues={{
+                            leaveGradeName: "",
+                            leaveGradeLimit: "",
+                        }}
+                        validationSchema={LeaveGradeSchema}
                         onSubmit={addButtonClicked}
                         component={(props) => (
-                            <AddBank
+                            <AddLeaveGrade
                                 {...props}
-                                setAddBankPopover={setAddBankPopover}
+                                setAddLeaveGradePopover={
+                                    setAddLeaveGradePopover
+                                }
                             />
                         )}
                     />
@@ -251,8 +348,13 @@ const BankEntryForm = () => {
 
                 <ReactModal
                     className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
-                    isOpen={editBankPopover}
-                    onRequestClose={() => editBankPopoverHandler({ id: "" })}
+                    isOpen={editLeaveGradePopover}
+                    onRequestClose={() =>
+                        editLeaveGradePopoverHandler({
+                            id: "",
+                            mandatory_leave: false,
+                        })
+                    }
                     style={{
                         overlay: {
                             backgroundColor: "rgba(0, 0, 0, 0.75)",
@@ -260,13 +362,27 @@ const BankEntryForm = () => {
                     }}
                 >
                     <Formik
-                        initialValues={{ updatedBank: "" }}
-                        validationSchema={editBankSchema}
+                        initialValues={{
+                            leaveGradeName: updateLeaveGradeId
+                                ? fetchedData.find(
+                                      (grade) => grade.id === updateLeaveGradeId
+                                  )?.name
+                                : "",
+                            leaveGradeLimit: updateLeaveGradeId
+                                ? fetchedData.find(
+                                      (grade) => grade.id === updateLeaveGradeId
+                                  )?.limit
+                                : 0,
+                        }}
+                        validationSchema={LeaveGradeSchema}
                         onSubmit={updateButtonClicked}
                         component={(props) => (
-                            <EditBank
+                            <EditLeaveGrade
                                 {...props}
-                                editBankPopoverHandler={editBankPopoverHandler}
+                                editLeaveGradePopoverHandler={
+                                    editLeaveGradePopoverHandler
+                                }
+                                disableEdit={disabledEdit}
                             />
                         )}
                     />
@@ -276,4 +392,4 @@ const BankEntryForm = () => {
     }
 };
 
-export default BankEntryForm;
+export default LeaveGradeEntryForm;

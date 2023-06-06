@@ -1,5 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useTable } from "react-table";
+import {
+    createColumnHelper,
+    flexRender,
+    getCoreRowModel,
+    useReactTable,
+} from "@tanstack/react-table";
 import { FaRegTrashAlt, FaPen } from "react-icons/fa";
 import { useSelector } from "react-redux";
 import {
@@ -43,7 +48,7 @@ const DesignationEntryForm = () => {
     const [newDesignation, setNewDesignation] = useState("");
     const [showLoadingBar, setShowLoadingBar] = useOutletContext();
     const [editDesignationPopover, setEditDesignationPopover] = useState(false);
-    const [updatedDesignationId, setUpdatedDesignationId] = useState( "" );
+    const [updatedDesignationId, setUpdatedDesignationId] = useState("");
 
     console.log(isFetching);
 
@@ -76,57 +81,55 @@ const DesignationEntryForm = () => {
         console.log(id);
         deleteDesignation({ id: id, company: globalCompany.id });
     };
-    const columns = useMemo(
-        () => [
-            {
-                Header: "ID",
-                accessor: "id",
-            },
-            {
-                Header: "Designation Name",
-                accessor: "name",
-            },
-        ],
-        []
-    );
+    const columnHelper = createColumnHelper();
+
+    const columns = [
+        columnHelper.accessor("id", {
+            header: () => "ID",
+            cell: (props) => props.renderValue(),
+            //   footer: props => props.column.id,
+        }),
+        columnHelper.accessor("name", {
+            header: () => "Designation Name",
+            cell: (props) => props.renderValue(),
+            //   footer: info => info.column.id,
+        }),
+        columnHelper.display({
+            id: "actions",
+            header: () => "Actions",
+            cell: (props) => (
+                <div className="flex justify-center gap-4">
+                    <div
+                        className="p-1.5 dark:bg-redAccent-700 rounded bg-redAccent-500 dark:hover:bg-redAccent-500 hover:bg-redAccent-700"
+                        onClick={() =>
+                            deleteButtonClicked(props.row.original.id)
+                        }
+                    >
+                        <FaRegTrashAlt className="h-4" />
+                    </div>
+                    <div
+                        className="p-1.5 dark:bg-teal-700 rounded bg-teal-600 dark:hover:bg-teal-600 hover:bg-teal-700"
+                        onClick={() =>
+                            editDesignationPopoverHandler(props.row.original)
+                        }
+                    >
+                        <FaPen className="h-4" />
+                    </div>
+                </div>
+            ),
+        }),
+    ];
 
     const data = useMemo(
         () => (fetchedData ? [...fetchedData] : []),
         [fetchedData]
     );
-    // console.log(newDesignation);
 
-    const tableHooks = (hooks) => {
-        hooks.visibleColumns.push((columns) => [
-            ...columns,
-            {
-                id: "actions",
-                Header: "Actions",
-                Cell: ({ row }) => (
-                    <div className="flex justify-center gap-4">
-                        <div
-                            className="p-1.5 dark:bg-redAccent-700 rounded bg-redAccent-500 dark:hover:bg-redAccent-500 hover:bg-redAccent-700"
-                            onClick={() => deleteButtonClicked(row.values.id)}
-                        >
-                            <FaRegTrashAlt className="h-4" />
-                        </div>
-                        <div
-                            className="p-1.5 dark:bg-teal-700 rounded bg-teal-600 dark:hover:bg-teal-600 hover:bg-teal-700"
-                            onClick={() =>
-                                editDesignationPopoverHandler(row.values)
-                            }
-                        >
-                            <FaPen className="h-4" />
-                        </div>
-                    </div>
-                ),
-            },
-        ]);
-    };
-
-    const tableInstance = useTable({ columns, data }, tableHooks);
-    const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } =
-        tableInstance;
+    const table = useReactTable({
+        data,
+        columns,
+        getCoreRowModel: getCoreRowModel(),
+    });
 
     useEffect(() => {
         setShowLoadingBar(
@@ -172,55 +175,52 @@ const DesignationEntryForm = () => {
                 </div>
 
                 <div className="overflow-hidden rounded border border-black border-opacity-50 shadow-md m-5 max-w-5xl mx-auto">
-                    <table
-                        className="w-full border-collapse text-center text-sm"
-                        {...getTableProps()}
-                    >
+                    <table className="w-full border-collapse text-center text-sm">
                         <thead className="bg-blueAccent-600 dark:bg-blueAccent-700">
-                            {headerGroups.map((headerGroup) => (
-                                <tr {...headerGroup.getHeaderGroupProps()}>
-                                    {headerGroup.headers.map((column) => (
+                            {table.getHeaderGroups().map((headerGroup) => (
+                                <tr key={headerGroup.id}>
+                                    {headerGroup.headers.map((header) => (
                                         <th
+                                            key={header.id}
                                             scope="col"
                                             className="px-4 py-4 font-medium"
-                                            {...column.getHeaderProps()}
                                         >
-                                            {column.render("Header")}
+                                            {header.isPlaceholder
+                                                ? null
+                                                : flexRender(
+                                                      header.column.columnDef
+                                                          .header,
+                                                      header.getContext()
+                                                  )}
                                         </th>
                                     ))}
                                 </tr>
                             ))}
                         </thead>
-                        <tbody
-                            className="divide-y divide-black divide-opacity-50 border-t border-black border-opacity-50"
-                            {...getTableBodyProps()}
-                        >
-                            {rows.map((row) => {
-                                prepareRow(row);
-                                return (
-                                    <tr
-                                        className="dark:hover:bg-zinc-800 hover:bg-zinc-200"
-                                        {...row.getRowProps()}
-                                    >
-                                        {row.cells.map((cell) => {
-                                            return (
-                                                <td
-                                                    className="px-4 py-4 font-normal"
-                                                    {...cell.getCellProps()}
-                                                >
-                                                    <div className="text-sm">
-                                                        <div className="font-medium">
-                                                            {cell.render(
-                                                                "Cell"
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                            );
-                                        })}
-                                    </tr>
-                                );
-                            })}
+                        <tbody className="divide-y divide-black divide-opacity-50 border-t border-black border-opacity-50">
+                            {table.getRowModel().rows.map((row) => (
+                                <tr
+                                    className="dark:hover:bg-zinc-800 hover:bg-zinc-200"
+                                    key={row.id}
+                                >
+                                    {row.getVisibleCells().map((cell) => (
+                                        <td
+                                            className="px-4 py-4 font-normal"
+                                            key={cell.id}
+                                        >
+                                            <div className="text-sm">
+                                                <div className="font-medium">
+                                                    {flexRender(
+                                                        cell.column.columnDef
+                                                            .cell,
+                                                        cell.getContext()
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </td>
+                                    ))}
+                                </tr>
+                            ))}
                         </tbody>
                     </table>
                 </div>

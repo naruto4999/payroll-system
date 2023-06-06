@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useState } from "react";
-import { useTable, useRowSelect } from "react-table";
+import { useReactTable, useRowSelect } from '@tanstack/react-table'
 import { FaRegTrashAlt, FaPen, FaCircleNotch, FaCheck, FaWindowMinimize } from "react-icons/fa";
 import { useOutletContext } from "react-router-dom";
 import { useEffect } from "react";

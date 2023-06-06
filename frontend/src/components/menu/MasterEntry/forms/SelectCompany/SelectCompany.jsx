@@ -13,14 +13,14 @@ const classNames = (...classes) => {
 const SelectCompany = () => {
     const { data: fetchedData, isLoading, isSuccess, isError, error } = useGetCompaniesQuery();
     const [showLoadingBar, setShowLoadingBar] = useOutletContext();
-    console.log(fetchedData);
+    // console.log(fetchedData);
     const globalCompany = useSelector((state) => state.globalCompany);
     const dispatch = useDispatch();
-    console.log(globalCompany);
+    // console.log(globalCompany);
 
     const val = 1;
     const handler = (company) => {
-        console.log(company);
+        // console.log(company);
         dispatch(globalCompanyActions.setCompany({ id: company.id, name: company.name }));
     };
 
