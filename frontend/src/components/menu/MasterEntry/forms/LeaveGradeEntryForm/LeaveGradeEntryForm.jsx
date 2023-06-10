@@ -4,8 +4,9 @@ import {
     flexRender,
     getCoreRowModel,
     useReactTable,
+    getSortedRowModel,
 } from "@tanstack/react-table";
-import { FaRegTrashAlt, FaPen } from "react-icons/fa";
+import { FaRegTrashAlt, FaPen, FaAngleUp, FaAngleDown } from "react-icons/fa";
 import { useSelector } from "react-redux";
 import {
     useGetLeaveGradesQuery,
@@ -22,10 +23,13 @@ import { LeaveGradeSchema } from "./LeaveGradeSchema";
 
 ReactModal.setAppElement("#root");
 
+const classNames = (...classes) => {
+    return classes.filter(Boolean).join(" ");
+};
+
 const LeaveGradeEntryForm = () => {
     const globalCompany = useSelector((state) => state.globalCompany);
 
-    // console.log(globalCompany);
     const {
         data: fetchedData,
         isLoading,
@@ -105,27 +109,6 @@ const LeaveGradeEntryForm = () => {
 
     const columnHelper = createColumnHelper();
 
-    // const columns = useMemo(
-    //     () => [
-    //         {
-    //             Header: "ID",
-    //             accessor: "id",
-    //         },
-    //         {
-    //             Header: "Leave Grade Name",
-    //             accessor: "name",
-    //         },
-    //         {
-    //             Header: "Limit",
-    //             accessor: "limit",
-    //         },
-    //         {
-    //             Header: "Mandatory",
-    //             accessor: "mandatory_leave",
-    //         },
-    //     ],
-    //     []
-    // );
     const columns = [
         columnHelper.accessor("id", {
             header: () => "ID",
@@ -182,47 +165,16 @@ const LeaveGradeEntryForm = () => {
         () => (fetchedData ? [...fetchedData] : []),
         [fetchedData]
     );
-    // const tableHooks = (hooks) => {
-    //     hooks.visibleColumns.push((columns) => [
-    //         ...columns,
-    //         {
-    //             id: "actions",
-    //             Header: "Actions",
-    //             Cell: ({ row }) => (
-    //                 <div className="flex justify-center gap-4">
-    //                     {row.values.mandatory_leave ? "" : (<div
-    //                         className="p-1.5 dark:bg-redAccent-700 rounded bg-redAccent-500 dark:hover:bg-redAccent-500 hover:bg-redAccent-700"
-    //                         onClick={() => deleteButtonClicked(row.values.id)}
-    //                     >
-    //                         <FaRegTrashAlt className="h-4" />
-    //                     </div>)}
-    //                     <div
-    //                         className="p-1.5 dark:bg-teal-700 rounded bg-teal-600 dark:hover:bg-teal-600 hover:bg-teal-700"
-    //                         onClick={() =>
-    //                             editLeaveGradePopoverHandler(row.values)
-    //                             // console.log(row.values)
-    //                         }
-    //                     >
-    //                         <FaPen className="h-4" />
-    //                     </div>
-    //                 </div>
-    //             ),
-    //         },
-    //     ]);
-    // };
-
-    // const tableInstance = useTable({ columns, data, initialState: {
-    //     hiddenColumns: ['mandatory_leave']
-    //   } }, tableHooks);
-    // const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } =
-    //     tableInstance;
     const table = useReactTable({
         data,
         columns,
         initialState: {
+            sorting: [{ id: "name", desc: false }],
             columnVisibility: { mandatory_leave: false },
         },
         getCoreRowModel: getCoreRowModel(),
+        getSortedRowModel: getSortedRowModel(),
+        enableSortingRemoval: false,
     });
     // console.log(tableInstance)
     useEffect(() => {
@@ -278,13 +230,55 @@ const LeaveGradeEntryForm = () => {
                                             scope="col"
                                             className="px-4 py-4 font-medium"
                                         >
-                                            {header.isPlaceholder
-                                                ? null
-                                                : flexRender(
-                                                      header.column.columnDef
-                                                          .header,
-                                                      header.getContext()
-                                                  )}
+                                            {header.isPlaceholder ? null : (
+                                                <div className="">
+                                                    <div
+                                                        {...{
+                                                            className:
+                                                                header.column.getCanSort()
+                                                                    ? "cursor-pointer select-none flex flex-row justify-center"
+                                                                    : "",
+                                                            onClick:
+                                                                header.column.getToggleSortingHandler(),
+                                                        }}
+                                                    >
+                                                        {flexRender(
+                                                            header.column
+                                                                .columnDef
+                                                                .header,
+                                                            header.getContext()
+                                                        )}
+
+                                                        {console.log(
+                                                            header.column.getIsSorted()
+                                                        )}
+                                                        {header.column.getCanSort() ? (
+                                                            <div className="relative pl-2">
+                                                                <FaAngleUp
+                                                                    className={classNames(
+                                                                        header.column.getIsSorted() ==
+                                                                            "asc"
+                                                                            ? "text-teal-700"
+                                                                            : "",
+                                                                        "absolute text-lg -translate-y-2"
+                                                                    )}
+                                                                />
+                                                                <FaAngleDown
+                                                                    className={classNames(
+                                                                        header.column.getIsSorted() ==
+                                                                            "desc"
+                                                                            ? "text-teal-700"
+                                                                            : "",
+                                                                        "absolute text-lg translate-y-2"
+                                                                    )}
+                                                                />
+                                                            </div>
+                                                        ) : (
+                                                            ""
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </th>
                                     ))}
                                 </tr>

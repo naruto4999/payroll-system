@@ -50,7 +50,8 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
                 //retry the original query with new access token
                 result = await baseQuery(args, api, extraOptions);
             } else {
-                api.dispatch(logout());
+                console.log(api)
+                api.dispatch(authActions.logout());
             }
         }
     }

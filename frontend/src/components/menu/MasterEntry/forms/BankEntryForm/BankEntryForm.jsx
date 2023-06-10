@@ -4,8 +4,9 @@ import {
     flexRender,
     getCoreRowModel,
     useReactTable,
+    getSortedRowModel,
 } from "@tanstack/react-table";
-import { FaRegTrashAlt, FaPen } from "react-icons/fa";
+import { FaRegTrashAlt, FaPen, FaAngleUp, FaAngleDown } from "react-icons/fa";
 import { useSelector } from "react-redux";
 import {
     useGetBanksQuery,
@@ -21,6 +22,10 @@ import AddBank from "./AddBank";
 import { addBankSchema, editBankSchema } from "./BankEntrySchema";
 
 ReactModal.setAppElement("#root");
+
+const classNames = (...classes) => {
+    return classes.filter(Boolean).join(" ");
+};
 
 const BankEntryForm = () => {
     const globalCompany = useSelector((state) => state.globalCompany);
@@ -140,7 +145,12 @@ const BankEntryForm = () => {
     const table = useReactTable({
         data,
         columns,
+        initialState: {
+            sorting: [{ id: "name", desc: false }],
+        },
         getCoreRowModel: getCoreRowModel(),
+        getSortedRowModel: getSortedRowModel(),
+        enableSortingRemoval: false,
     });
 
     useEffect(() => {
@@ -186,13 +196,55 @@ const BankEntryForm = () => {
                                             scope="col"
                                             className="px-4 py-4 font-medium"
                                         >
-                                            {header.isPlaceholder
-                                                ? null
-                                                : flexRender(
-                                                      header.column.columnDef
-                                                          .header,
-                                                      header.getContext()
-                                                  )}
+                                            {header.isPlaceholder ? null : (
+                                                <div className="">
+                                                    <div
+                                                        {...{
+                                                            className:
+                                                                header.column.getCanSort()
+                                                                    ? "cursor-pointer select-none flex flex-row justify-center"
+                                                                    : "",
+                                                            onClick:
+                                                                header.column.getToggleSortingHandler(),
+                                                        }}
+                                                    >
+                                                        {flexRender(
+                                                            header.column
+                                                                .columnDef
+                                                                .header,
+                                                            header.getContext()
+                                                        )}
+
+                                                        {console.log(
+                                                            header.column.getIsSorted()
+                                                        )}
+                                                        {header.column.getCanSort() ? (
+                                                            <div className="relative pl-2">
+                                                                <FaAngleUp
+                                                                    className={classNames(
+                                                                        header.column.getIsSorted() ==
+                                                                            "asc"
+                                                                            ? "text-teal-700"
+                                                                            : "",
+                                                                        "absolute text-lg -translate-y-2"
+                                                                    )}
+                                                                />
+                                                                <FaAngleDown
+                                                                    className={classNames(
+                                                                        header.column.getIsSorted() ==
+                                                                            "desc"
+                                                                            ? "text-teal-700"
+                                                                            : "",
+                                                                        "absolute text-lg translate-y-2"
+                                                                    )}
+                                                                />
+                                                            </div>
+                                                        ) : (
+                                                            ""
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </th>
                                     ))}
                                 </tr>
