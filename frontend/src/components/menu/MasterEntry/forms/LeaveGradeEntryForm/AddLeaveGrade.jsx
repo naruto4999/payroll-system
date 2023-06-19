@@ -28,7 +28,7 @@ const AddLeaveGrade = ({
                 onSubmit={handleSubmit}
             >
                 <label
-                    htmlFor="leave-grade-name"
+                    htmlFor="leaveGradeName"
                     className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
                 >
                     Leave Grade Name
@@ -58,7 +58,7 @@ const AddLeaveGrade = ({
                     )}
                 </div>
                 <label
-                    htmlFor="leave-grade-limit"
+                    htmlFor="leaveGradeLimit"
                     className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
                 >
                     Limit

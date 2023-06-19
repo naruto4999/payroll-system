@@ -1,7 +1,7 @@
 from django.forms import ValidationError
 from django.shortcuts import render
 from rest_framework import generics, status, mixins
-from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer
+from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer
 from .models import Company, CompanyDetails, User, OwnerToRegular, Regular
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -422,6 +422,29 @@ class LeaveGradeRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIVi
         if instance.mandatory_leave:
             return Response({"detail": "Cannot delete a mandatory leave grade."}, status=status.HTTP_403_FORBIDDEN)
         instance.delete()
+
+class ShiftListCreateAPIView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = ShiftSerializer
+    lookup_field = 'company_id'
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        user = self.request.user
+        if user.role == "OWNER":
+            return user.shifts.filter(company=company_id)
+        instance = OwnerToRegular.objects.get(user=user)
+        return instance.owner.shifts.filter(company=company_id)
+    
+    def perform_create(self, serializer):
+        user = self.request.user
+        company_id = self.kwargs.get('company_id')
+        company = Company.objects.get(id=company_id)
+        if user.role == "OWNER":
+            return serializer.save(user=user, company=company)
+        instance = OwnerToRegular.objects.get(user=user)
+        return serializer.save(user=instance.owner, company=company)
+
 
 #Viewsets
 class UserViewSet(viewsets.ModelViewSet):

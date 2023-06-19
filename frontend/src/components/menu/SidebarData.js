@@ -1,4 +1,4 @@
-import { FaUserTie, FaPlus, FaPen, FaHome, FaThLarge, FaLevelUpAlt, FaMoneyCheckAlt, FaCogs,FaUserShield , FaUsersCog, FaEye} from "react-icons/fa";
+import { FaUserTie, FaPlus, FaPen, FaHome, FaThLarge, FaLevelUpAlt, FaMoneyCheckAlt, FaCogs,FaUserShield , FaUsersCog, FaEye, FaBusinessTime} from "react-icons/fa";
 
 const menuItems = [
     {
@@ -44,6 +44,11 @@ const menuItems = [
                 title: "Leave Grade Entry",
                 icon: FaMoneyCheckAlt,
                 path: "/home/leave-grade-entry"
+            },
+            {
+                title: "Shift Entry",
+                icon: FaBusinessTime,
+                path: "/home/shift-entry"
             },
         ],
     },

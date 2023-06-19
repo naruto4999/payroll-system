@@ -1,5 +1,5 @@
 from django.urls import path, include
-from .views import CompanyListCreateAPIView, CompanyDetailsMixinView, CompanyRetrieveUpdateDestroyAPIView, DepartmentListCreateAPIView, DepartmentRetrieveUpdateDestroyAPIView, DesignationListCreateAPIView, DesignationRetrieveUpdateDestroyAPIView, SalaryGradeListCreateAPIView, SalaryGradeRetrieveUpdateDestroyAPIView, RegularRegisterListCreateAPIViewView, RegularRetrieveDestroyAPIView, CompanyVisibilityPatchAPIView, CategoryListCreateAPIView, CategoryRetrieveUpdateDestroyAPIView, BankListCreateAPIView, BankRetrieveUpdateDestroyAPIView, LeaveGradeListCreateAPIView, LeaveGradeRetrieveUpdateDestroyAPIView
+from .views import CompanyListCreateAPIView, CompanyDetailsMixinView, CompanyRetrieveUpdateDestroyAPIView, DepartmentListCreateAPIView, DepartmentRetrieveUpdateDestroyAPIView, DesignationListCreateAPIView, DesignationRetrieveUpdateDestroyAPIView, SalaryGradeListCreateAPIView, SalaryGradeRetrieveUpdateDestroyAPIView, RegularRegisterListCreateAPIViewView, RegularRetrieveDestroyAPIView, CompanyVisibilityPatchAPIView, CategoryListCreateAPIView, CategoryRetrieveUpdateDestroyAPIView, BankListCreateAPIView, BankRetrieveUpdateDestroyAPIView, LeaveGradeListCreateAPIView, LeaveGradeRetrieveUpdateDestroyAPIView, ShiftListCreateAPIView
 from .auth.views import LoginView, RegisterView, RefreshView, PasswordResetAPIView, PasswordResetConfirmView, VerifyOTPView
 from django.contrib.auth.views import PasswordResetCompleteView
 
@@ -24,6 +24,8 @@ urlpatterns = [
     path('bank/<int:company_id>/<int:id>', BankRetrieveUpdateDestroyAPIView.as_view()),
     path('leave-grade/<int:company_id>', LeaveGradeListCreateAPIView.as_view()),
     path('leave-grade/<int:company_id>/<int:id>', LeaveGradeRetrieveUpdateDestroyAPIView.as_view()),
+    path('shift/<int:company_id>', ShiftListCreateAPIView.as_view()),
+
 
     path('auth/login/', LoginView.as_view(), name='login'),
     path('auth/register/', RegisterView.as_view(), name='register'),

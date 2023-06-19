@@ -202,6 +202,28 @@ class LeaveGrade(models.Model):
     def __str__(self):
         return f"{self.user.email} -> {self.company.name}: {self.name}"
     
+class Shift(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="shifts")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="shifts")
+    name = models.CharField(max_length=256, null=False, blank=False)
+    beginning_time = models.TimeField(null=False, blank=False)
+    end_time = models.TimeField(null=False, blank=False)
+    lunch_time = models.PositiveSmallIntegerField(default=0, null=False, blank=False) # In minutes
+    tea_time = models.PositiveSmallIntegerField(default=0, null=False, blank=False) # In minutes
+    late_grace = models.PositiveSmallIntegerField(default=0, null=False, blank=False) # In minutes
+    ot_begin_after = models.PositiveSmallIntegerField(default=0, null=False, blank=False) # In minutes (minimum number of minutes that needs to fulfilled for Over Time to be applied)
+    next_shift_dealy = models.PositiveSmallIntegerField(default=0, null=False, blank=False)
+    accidental_punch_buffer = models.PositiveSmallIntegerField(default=0, null=False, blank=False)
+    half_day_minimum_minutes = models.PositiveSmallIntegerField(null=False, blank=False)
+    full_day_minimum_minutes = models.PositiveSmallIntegerField(null=False, blank=False)
+    short_leaves = models.PositiveSmallIntegerField(default=0, null=False, blank=False) # Number of Short Leaves allowed per month
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'company', 'name'], name='unique_shift_name_per_user')
+        ]
+    def __str__(self):
+        return f"{self.user.email} -> {self.company.name}: {self.name}"
+    
 
 @receiver(post_save, sender=Company)
 def create_default_leave_grades_for_company(sender, instance, created, **kwargs):
