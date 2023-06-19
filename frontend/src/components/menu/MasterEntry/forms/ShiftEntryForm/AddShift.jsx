@@ -12,6 +12,7 @@ const AddShift = ({
     errors,
     setAddShiftPopover,
     isValid,
+    touched,
 }) => {
     const inputRef = useRef(null);
     useEffect(() => {
@@ -36,7 +37,7 @@ const AddShift = ({
                         <div className="relative">
                             <input
                                 className={classNames(
-                                    errors.shiftName
+                                    errors.shiftName && touched.shiftName
                                         ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
                                         : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
                                     "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
@@ -49,12 +50,10 @@ const AddShift = ({
                                 value={values.name}
                                 ref={inputRef}
                             />
-                            {errors.shiftName ? (
-                                <p className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                            {errors.shiftName && touched.shiftName && (
+                                <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
                                     {errors.shiftName}
-                                </p>
-                            ) : (
-                                ""
+                                </div>
                             )}
                         </div>
                         <label
@@ -66,7 +65,8 @@ const AddShift = ({
                         <div className="relative">
                             <input
                                 className={classNames(
-                                    errors.shiftBeginningTime
+                                    errors.shiftBeginningTime &&
+                                        touched.shiftBeginningTime
                                         ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
                                         : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
                                     "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
@@ -78,13 +78,12 @@ const AddShift = ({
                                 onBlur={handleBlur}
                                 value={values.name}
                             />
-                            {errors.shiftBeginningTime ? (
-                                <p className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                                    {errors.shiftBeginningTime}
-                                </p>
-                            ) : (
-                                ""
-                            )}
+                            {errors.shiftBeginningTime &&
+                                touched.shiftBeginningTime && (
+                                    <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                        {errors.shiftBeginningTime}
+                                    </div>
+                                )}
                         </div>
 
                         <label
@@ -96,7 +95,7 @@ const AddShift = ({
                         <div className="relative">
                             <input
                                 className={classNames(
-                                    errors.shiftEndTime
+                                    errors.shiftEndTime && touched.shiftEndTime
                                         ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
                                         : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
                                     "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
@@ -108,13 +107,12 @@ const AddShift = ({
                                 onBlur={handleBlur}
                                 value={values.name}
                             />
-                            {errors.shiftEndTime ? (
-                                <p className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                                    {errors.shiftEndTime}
-                                </p>
-                            ) : (
-                                ""
-                            )}
+                            {errors.shiftEndTime &&
+                                touched.shiftEndTime && (
+                                    <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                        {errors.shiftEndTime}
+                                    </div>
+                                )}
                         </div>
 
                         <label
@@ -126,7 +124,7 @@ const AddShift = ({
                         <div className="relative">
                             <input
                                 className={classNames(
-                                    errors.lunchTime
+                                    errors.lunchTime && touched.lunchTime
                                         ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
                                         : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
                                     "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
@@ -138,13 +136,11 @@ const AddShift = ({
                                 onBlur={handleBlur}
                                 value={values.name}
                             />
-                            {errors.lunchTime ? (
-                                <p className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                                    {errors.lunchTime}
-                                </p>
-                            ) : (
-                                ""
-                            )}
+                            {errors.lunchTime && touched.lunchTime && (
+                                        <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                            {errors.lunchTime}
+                                        </div>
+                                    )}
                         </div>
 
                         <label
@@ -156,7 +152,7 @@ const AddShift = ({
                         <div className="relative">
                             <input
                                 className={classNames(
-                                    errors.teaTime
+                                    errors.teaTime && touched.teaTime
                                         ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
                                         : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
                                     "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
@@ -168,13 +164,11 @@ const AddShift = ({
                                 onBlur={handleBlur}
                                 value={values.name}
                             />
-                            {errors.teaTime ? (
-                                <p className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                                    {errors.teaTime}
-                                </p>
-                            ) : (
-                                ""
-                            )}
+                            {errors.teaTime && touched.teaTime && (
+                                        <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                            {errors.teaTime}
+                                        </div>
+                                    )}
                         </div>
 
                         <label
@@ -186,7 +180,7 @@ const AddShift = ({
                         <div className="relative">
                             <input
                                 className={classNames(
-                                    errors.lateGrace
+                                    errors.lateGrace && touched.lateGrace
                                         ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
                                         : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
                                     "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
@@ -198,13 +192,11 @@ const AddShift = ({
                                 onBlur={handleBlur}
                                 value={values.name}
                             />
-                            {errors.lateGrace ? (
-                                <p className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                                    {errors.lateGrace}
-                                </p>
-                            ) : (
-                                ""
-                            )}
+                            {errors.lateGrace && touched.lateGrace && (
+                                        <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                            {errors.lateGrace}
+                                        </div>
+                                    )}
                         </div>
                     </div>
                     <div className="w-full">
@@ -218,7 +210,7 @@ const AddShift = ({
                         <div className="relative">
                             <input
                                 className={classNames(
-                                    errors.otBeginAfter
+                                    errors.otBeginAfter && touched.otBeginAfter
                                         ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
                                         : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
                                     "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
@@ -230,13 +222,11 @@ const AddShift = ({
                                 onBlur={handleBlur}
                                 value={values.name}
                             />
-                            {errors.otBeginAfter ? (
-                                <p className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                                    {errors.otBeginAfter}
-                                </p>
-                            ) : (
-                                ""
-                            )}
+                            {errors.otBeginAfter && touched.otBeginAfter && (
+                                        <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                            {errors.otBeginAfter}
+                                        </div>
+                                    )}
                         </div>
 
                         <label
@@ -248,7 +238,7 @@ const AddShift = ({
                         <div className="relative">
                             <input
                                 className={classNames(
-                                    errors.nextShiftDelay
+                                    errors.nextShiftDelay && touched.nextShiftDelay
                                         ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
                                         : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
                                     "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
@@ -260,13 +250,11 @@ const AddShift = ({
                                 onBlur={handleBlur}
                                 value={values.name}
                             />
-                            {errors.nextShiftDelay ? (
-                                <p className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                                    {errors.nextShiftDelay}
-                                </p>
-                            ) : (
-                                ""
-                            )}
+                            {errors.nextShiftDelay && touched.nextShiftDelay && (
+                                        <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                            {errors.nextShiftDelay}
+                                        </div>
+                                    )}
                         </div>
 
                         <label
@@ -278,7 +266,7 @@ const AddShift = ({
                         <div className="relative">
                             <input
                                 className={classNames(
-                                    errors.accidentalPunchBuffer
+                                    errors.accidentalPunchBuffer && touched.accidentalPunchBuffer
                                         ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
                                         : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
                                     "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
@@ -290,13 +278,11 @@ const AddShift = ({
                                 onBlur={handleBlur}
                                 value={values.name}
                             />
-                            {errors.accidentalPunchBuffer ? (
-                                <p className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                                    {errors.accidentalPunchBuffer}
-                                </p>
-                            ) : (
-                                ""
-                            )}
+                            {errors.accidentalPunchBuffer && touched.accidentalPunchBuffer && (
+                                        <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                            {errors.accidentalPunchBuffer}
+                                        </div>
+                                    )}
                         </div>
 
                         <label
@@ -308,7 +294,7 @@ const AddShift = ({
                         <div className="relative">
                             <input
                                 className={classNames(
-                                    errors.halfDayMinimumMinutes
+                                    errors.halfDayMinimumMinutes && touched.halfDayMinimumMinutes
                                         ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
                                         : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
                                     "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
@@ -320,13 +306,11 @@ const AddShift = ({
                                 onBlur={handleBlur}
                                 value={values.name}
                             />
-                            {errors.halfDayMinimumMinutes ? (
-                                <p className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                                    {errors.halfDayMinimumMinutes}
-                                </p>
-                            ) : (
-                                ""
-                            )}
+                            {errors.halfDayMinimumMinutes && touched.halfDayMinimumMinutes && (
+                                        <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                            {errors.halfDayMinimumMinutes}
+                                        </div>
+                                    )}
                         </div>
 
                         <label
@@ -338,7 +322,7 @@ const AddShift = ({
                         <div className="relative">
                             <input
                                 className={classNames(
-                                    errors.fullDayMinimumMinutes
+                                    errors.fullDayMinimumMinutes && touched.fullDayMinimumMinutes
                                         ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
                                         : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
                                     "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
@@ -350,13 +334,11 @@ const AddShift = ({
                                 onBlur={handleBlur}
                                 value={values.name}
                             />
-                            {errors.fullDayMinimumMinutes ? (
-                                <p className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                                    {errors.fullDayMinimumMinutes}
-                                </p>
-                            ) : (
-                                ""
-                            )}
+                            {errors.fullDayMinimumMinutes && touched.fullDayMinimumMinutes && (
+                                        <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                            {errors.fullDayMinimumMinutes}
+                                        </div>
+                                    )}
                         </div>
 
                         <label
@@ -368,7 +350,7 @@ const AddShift = ({
                         <div className="relative">
                             <input
                                 className={classNames(
-                                    errors.shortLeaves
+                                    errors.shortLeaves && touched.shortLeaves
                                         ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
                                         : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
                                     "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
@@ -380,13 +362,11 @@ const AddShift = ({
                                 onBlur={handleBlur}
                                 value={values.name}
                             />
-                            {errors.shortLeaves ? (
-                                <p className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                                    {errors.shortLeaves}
-                                </p>
-                            ) : (
-                                ""
-                            )}
+                            {errors.shortLeaves && touched.shortLeaves && (
+                                        <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                            {errors.shortLeaves}
+                                        </div>
+                                    )}
                         </div>
                     </div>
                 </section>
