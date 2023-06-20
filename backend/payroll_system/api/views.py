@@ -197,9 +197,9 @@ class DepartmentRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIVi
     def perform_update(self, serializer):
         user = self.request.user
         if user.role == "OWNER":
-            serializer.save(user=self.request.user)
+            return serializer.save(user=self.request.user)
         instance = OwnerToRegular.objects.get(user=user)
-        serializer.save(user=instance.owner)
+        return serializer.save(user=instance.owner)
 
 
 class DesignationListCreateAPIView(generics.ListCreateAPIView):
@@ -242,9 +242,9 @@ class DesignationRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIV
     def perform_update(self, serializer):
         user = self.request.user
         if user.role == "OWNER":
-            serializer.save(user=self.request.user)
+            return serializer.save(user=self.request.user)
         instance = OwnerToRegular.objects.get(user=user)
-        serializer.save(user=instance.owner)
+        return serializer.save(user=instance.owner)
 
 class SalaryGradeListCreateAPIView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
@@ -285,9 +285,9 @@ class SalaryGradeRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIV
     def perform_update(self, serializer):
         user = self.request.user
         if user.role == "OWNER":
-            serializer.save(user=self.request.user)
+            return serializer.save(user=self.request.user)
         instance = OwnerToRegular.objects.get(user=user)
-        serializer.save(user=instance.owner)
+        return serializer.save(user=instance.owner)
 
 class CategoryListCreateAPIView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
@@ -328,9 +328,9 @@ class CategoryRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView
     def perform_update(self, serializer):
         user = self.request.user
         if user.role == "OWNER":
-            serializer.save(user=self.request.user)
+            return serializer.save(user=self.request.user)
         instance = OwnerToRegular.objects.get(user=user)
-        serializer.save(user=instance.owner)
+        return serializer.save(user=instance.owner)
         
 class BankListCreateAPIView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
@@ -371,9 +371,9 @@ class BankRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     def perform_update(self, serializer):
         user = self.request.user
         if user.role == "OWNER":
-            serializer.save(user=self.request.user)
+            return serializer.save(user=self.request.user)
         instance = OwnerToRegular.objects.get(user=user)
-        serializer.save(user=instance.owner)
+        return serializer.save(user=instance.owner)
 
 class LeaveGradeListCreateAPIView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
@@ -414,9 +414,9 @@ class LeaveGradeRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIVi
     def perform_update(self, serializer):
         user = self.request.user
         if user.role == "OWNER":
-            serializer.save(user=self.request.user)
+            return serializer.save(user=self.request.user)
         instance = OwnerToRegular.objects.get(user=user)
-        serializer.save(user=instance.owner)
+        return serializer.save(user=instance.owner)
     
     def perform_destroy(self, instance):
         if instance.mandatory_leave:
@@ -444,6 +444,27 @@ class ShiftListCreateAPIView(generics.ListCreateAPIView):
             return serializer.save(user=user, company=company)
         instance = OwnerToRegular.objects.get(user=user)
         return serializer.save(user=instance.owner, company=company)
+    
+class ShiftRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes= [IsAuthenticated]
+    serializer_class = ShiftSerializer
+    lookup_field = 'id'
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        user = self.request.user
+        if user.role == "OWNER":
+            return user.shifts.filter(company=company_id)
+        instance = OwnerToRegular.objects.get(user=user)
+        return instance.owner.shifts.filter(company=company_id)
+    
+    def perform_update(self, serializer):
+        user = self.request.user
+        if user.role == "OWNER":
+            return serializer.save(user=self.request.user)
+        instance = OwnerToRegular.objects.get(user=user)
+        return serializer.save(user=instance.owner)
+    
 
 
 #Viewsets

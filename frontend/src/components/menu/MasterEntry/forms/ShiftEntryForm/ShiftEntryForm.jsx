@@ -14,8 +14,13 @@ import {
     FaEye,
 } from "react-icons/fa";
 import { useSelector } from "react-redux";
-import { useGetShiftsQuery, useAddShiftMutation } from "../../../../authentication/api/shiftEntryApiSlice";
-// import EditBank from "./EditBank";
+import {
+    useGetShiftsQuery,
+    useAddShiftMutation,
+    useUpdateShiftMutation,
+} from "../../../../authentication/api/shiftEntryApiSlice";
+import EditShift from "./EditShift";
+import ViewShift from "./ViewShift";
 import { useOutletContext } from "react-router-dom";
 import ReactModal from "react-modal";
 import { Formik } from "formik";
@@ -43,22 +48,31 @@ const ShiftEntryForm = () => {
     } = useGetShiftsQuery(globalCompany);
     // console.log(fetchedData)
     const [addShift, { isLoading: isAddingShift }] = useAddShiftMutation();
-    // const [updateShift, { isLoading: isUpdatingShift }] = useUpdateShiftMutation();
+    const [updateShift, { isLoading: isUpdatingShift }] =
+        useUpdateShiftMutation();
     // const [deleteShift, { isLoading: isDeletingShift }] = useDeleteShiftMutation();
     const [addShiftPopover, setAddShiftPopover] = useState(false);
     const [showLoadingBar, setShowLoadingBar] = useOutletContext();
     const [editShiftPopover, setEditShiftPopover] = useState(false);
+    const [viewShiftPopover, setViewShiftPopover] = useState(false);
     const [updateShiftId, setUpdateShiftId] = useState("");
     const [msg, setMsg] = useState("");
+    const [viewShiftId, setViewShiftId] = useState("");
 
     const editShiftPopoverHandler = (shift) => {
         console.log(shift);
-        // setUpdateBankId(bank.id);
-        // setEditBankPopover(!editBankPopover);
+        setUpdateShiftId(shift.id);
+        setEditShiftPopover(!editShiftPopover);
     };
-    console.log(fetchedData)
+
+    const viewShiftPopoverHandler = (shift) => {
+        console.log(shift);
+        setViewShiftPopover(!viewShiftPopover);
+        setViewShiftId(shift.id);
+    };
+
+    console.log(viewShiftPopover);
     const addButtonClicked = async (values, formikBag) => {
-        // console.log(values);
         console.log(formikBag);
         const toSend = {
             company: globalCompany.id,
@@ -74,8 +88,8 @@ const ShiftEntryForm = () => {
             half_day_minimum_minutes: values.halfDayMinimumMinutes,
             full_day_minimum_minutes: values.fullDayMinimumMinutes,
             short_leaves: values.shortLeaves,
-        }
-        console.log(toSend)
+        };
+        console.log(toSend);
         try {
             const data = await addShift(toSend).unwrap();
             console.log(data);
@@ -91,8 +105,19 @@ const ShiftEntryForm = () => {
         try {
             const data = await updateShift({
                 id: updateShiftId,
-                name: values.updatedShift,
+                name: values.shiftName,
                 company: globalCompany.id,
+                beginning_time: values.shiftBeginningTime + ":00",
+                end_time: values.shiftEndTime + ":00",
+                lunch_time: values.lunchTime,
+                tea_time: values.teaTime,
+                late_grace: values.lateGrace,
+                ot_begin_after: values.otBeginAfter,
+                next_shift_dealy: values.nextShiftDelay,
+                accidental_punch_buffer: values.accidentalPunchBuffer,
+                half_day_minimum_minutes: values.halfDayMinimumMinutes,
+                full_day_minimum_minutes: values.fullDayMinimumMinutes,
+                short_leaves: values.shortLeaves,
             }).unwrap();
             console.log(data);
         } catch (err) {
@@ -145,7 +170,7 @@ const ShiftEntryForm = () => {
                     <div
                         className="p-1.5 dark:bg-blueAccent-600 rounded bg-blueAccent-600 dark:hover:bg-blueAccent-500 hover:bg-blueAccent-700"
                         onClick={() =>
-                            editShiftPopoverHandler(props.row.original)
+                            viewShiftPopoverHandler(props.row.original)
                         }
                     >
                         <FaEye className="h-4" />
@@ -160,6 +185,27 @@ const ShiftEntryForm = () => {
         [fetchedData]
     );
 
+    const shiftForEdit = () => {
+        const shift = fetchedData.find((shift) => shift.id === updateShiftId);
+        return {
+            shiftName: shift.name,
+            shiftBeginningTime: shift.beginning_time
+                .split(":")
+                .slice(0, 2)
+                .join(":"),
+            shiftEndTime: shift.end_time.split(":").slice(0, 2).join(":"),
+            lunchTime: shift.lunch_time,
+            teaTime: shift.tea_time,
+            lateGrace: shift.late_grace,
+            otBeginAfter: shift.ot_begin_after,
+            nextShiftDelay: shift.next_shift_dealy,
+            accidentalPunchBuffer: shift.accidental_punch_buffer,
+            halfDayMinimumMinutes: shift.half_day_minimum_minutes,
+            fullDayMinimumMinutes: shift.full_day_minimum_minutes,
+            shortLeaves: shift.short_leaves,
+        };
+    };
+
     const table = useReactTable({
         data,
         columns,
@@ -173,8 +219,8 @@ const ShiftEntryForm = () => {
 
     useEffect(() => {
         // Add more for adding, editing and deleting later on
-        setShowLoadingBar(isLoading);
-    }, [isLoading]);
+        setShowLoadingBar(isLoading || isAddingShift || isUpdatingShift);
+    }, [isLoading, isAddingShift, isUpdatingShift]);
 
     if (globalCompany.id == null) {
         return (
@@ -325,21 +371,18 @@ const ShiftEntryForm = () => {
                         component={(props) => (
                             <AddShift
                                 {...props}
-                                setAddShiftPopover={
-                                    setAddShiftPopover
-                                }
+                                setAddShiftPopover={setAddShiftPopover}
                             />
                         )}
                     />
                 </ReactModal>
 
-                {/* <ReactModal
-                    className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
+                <ReactModal
+                    className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-2xl h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
                     isOpen={editShiftPopover}
                     onRequestClose={() =>
                         editShiftPopoverHandler({
                             id: "",
-                            mandatory_leave: false,
                         })
                     }
                     style={{
@@ -349,18 +392,24 @@ const ShiftEntryForm = () => {
                     }}
                 >
                     <Formik
-                        initialValues={{
-                            shiftName: updateShiftId
-                                ? fetchedData.find(
-                                      (grade) => grade.id === updateShiftId
-                                  )?.name
-                                : "",
-                            shiftLimit: updateShiftId
-                                ? fetchedData.find(
-                                      (grade) => grade.id === updateShiftId
-                                  )?.limit
-                                : 0,
-                        }}
+                        initialValues={
+                            updateShiftId
+                                ? shiftForEdit(updateShiftId)
+                                : {
+                                      shiftName: "",
+                                      shiftBeginningTime: "",
+                                      shiftEndTime: "",
+                                      lunchTime: "",
+                                      teaTime: "",
+                                      lateGrace: "",
+                                      otBeginAfter: "",
+                                      nextShiftDelay: "",
+                                      accidentalPunchBuffer: "",
+                                      halfDayMinimumMinutes: "",
+                                      fullDayMinimumMinutes: "",
+                                      shortLeaves: "",
+                                  }
+                        }
                         validationSchema={ShiftSchema}
                         onSubmit={updateButtonClicked}
                         component={(props) => (
@@ -369,57 +418,30 @@ const ShiftEntryForm = () => {
                                 editShiftPopoverHandler={
                                     editShiftPopoverHandler
                                 }
-                                disableEdit={disabledEdit}
                             />
                         )}
                     />
-                </ReactModal> */}
+                </ReactModal>
 
-                {/* <ReactModal
-                    className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
-                    isOpen={addShiftPopover}
-                    onRequestClose={() => setAddShiftPopover(false)}
+                <ReactModal
+                    className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-2xl h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
+                    isOpen={viewShiftPopover}
+                    onRequestClose={() =>
+                        viewShiftPopoverHandler({
+                            id: null
+                        })
+                    }
                     style={{
                         overlay: {
                             backgroundColor: "rgba(0, 0, 0, 0.75)",
                         },
                     }}
                 >
-                    <Formik
-                        initialValues={{ newShift: "" }}
-                        validationSchema={addShiftSchema}
-                        onSubmit={addButtonClicked}
-                        component={(props) => (
-                            <AddShift
-                                {...props}
-                                setAddShiftPopover={setAddShiftPopover}
-                            />
-                        )}
+                    <ViewShift
+                        shift={viewShiftId ? fetchedData.find((shift) => shift.id === viewShiftId) : null}
+                        viewShiftPopoverHandler={viewShiftPopoverHandler}
                     />
-                </ReactModal> */}
-
-                {/* <ReactModal
-                    className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
-                    isOpen={editShiftPopover}
-                    onRequestClose={() => editShiftPopoverHandler({ id: "" })}
-                    style={{
-                        overlay: {
-                            backgroundColor: "rgba(0, 0, 0, 0.75)",
-                        },
-                    }}
-                >
-                    <Formik
-                        initialValues={{ updatedShift: "" }}
-                        validationSchema={editShiftSchema}
-                        onSubmit={updateButtonClicked}
-                        component={(props) => (
-                            <EditShift
-                                {...props}
-                                editShiftPopoverHandler={editShiftPopoverHandler}
-                            />
-                        )}
-                    />
-                </ReactModal> */}
+                </ReactModal>
             </section>
         );
     }

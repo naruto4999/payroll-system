@@ -13,7 +13,7 @@ const classNames = (...classes) => {
 const SelectCompany = () => {
     const { data: fetchedData, isLoading, isSuccess, isError, error } = useGetCompaniesQuery();
     const [showLoadingBar, setShowLoadingBar] = useOutletContext();
-    // console.log(fetchedData);
+    console.log(fetchedData);
     const globalCompany = useSelector((state) => state.globalCompany);
     const dispatch = useDispatch();
     // console.log(globalCompany);

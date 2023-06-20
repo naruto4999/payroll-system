@@ -18,14 +18,14 @@ export const shiftEntryApiSlice = apiSlice.injectEndpoints({
             }),
             invalidatesTags: ['Shifts']
         }),
-        // updateBank: builder.mutation({
-        //     query: bank => ({
-        //         url: `/api/bank/${bank.company}/${bank.id}`,
-        //         method: 'PUT',
-        //         body: bank,
-        //     }),
-        //     invalidatesTags: ['Shifts']
-        // }),
+        updateShift: builder.mutation({
+            query: shift => ({
+                url: `/api/shift/${shift.company}/${shift.id}`,
+                method: 'PUT',
+                body: shift,
+            }),
+            invalidatesTags: ['Shifts']
+        }),
         // deleteBank: builder.mutation({
         //     query: bank => ({
         //         url: `/api/bank/${bank.company}/${bank.id}`,
@@ -39,4 +39,5 @@ export const shiftEntryApiSlice = apiSlice.injectEndpoints({
 export const {
     useGetShiftsQuery,
     useAddShiftMutation,
+    useUpdateShiftMutation,
 } = shiftEntryApiSlice

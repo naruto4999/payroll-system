@@ -4,13 +4,13 @@ const classNames = (...classes) => {
     return classes.filter(Boolean).join(" ");
 };
 
-const AddShift = ({
+const EditShift = ({
     handleSubmit,
     handleChange,
     handleBlur,
     values,
     errors,
-    setAddShiftPopover,
+    editShiftPopoverHandler,
     isValid,
     touched,
 }) => {
@@ -20,7 +20,7 @@ const AddShift = ({
     }, []);
     return (
         <div className="text-gray-900 dark:text-slate-100">
-            <h1 className="font-medium text-2xl mb-2">Add Shift</h1>
+            <h1 className="font-medium text-2xl mb-2">Edit Shift</h1>
             <form
                 action=""
                 className="flex flex-col gap-2 justify-center"
@@ -382,12 +382,12 @@ const AddShift = ({
                         disabled={!isValid}
                         onClick={handleSubmit}
                     >
-                        Add
+                        Update
                     </button>
                     <button
                         type="button"
                         className="bg-zinc-400 hover:bg-zinc-500 dark:bg-zinc-600 rounded w-20 p-2 text-base font-medium dark:hover:bg-zinc-700"
-                        onClick={() => setAddShiftPopover(false)}
+                        onClick={() => editShiftPopoverHandler({ id: ""})}
                     >
                         Cancel
                     </button>
@@ -396,4 +396,4 @@ const AddShift = ({
         </div>
     );
 };
-export default AddShift;
+export default EditShift;
