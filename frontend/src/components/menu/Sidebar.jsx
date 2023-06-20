@@ -55,7 +55,7 @@ const Sidebar = () => {
                 <div
                     className={classNames(
                         showSidebar == false ? "-ml-80" : "md:flex-shrink-0",
-                        "md:sticky fixed h-screen top-0 bottom-0 p-2 w-[300px] overflow-y-auto dark:bg-black md:dark:bg-opacity-40 dark:bg-opacity-90 bg-zinc-200 bg-opacity-70 transition-all duration-300 z-20"
+                        "md:sticky fixed h-screen top-0 bottom-0 p-2 w-[300px] overflow-y-auto dark:bg-black md:dark:bg-opacity-40 dark:bg-opacity-90 bg-zinc-200 bg-opacity-70 transition-all duration-300 z-20 scrollbar"
                     )}
                 >
                     <div className="text-xl">
@@ -80,7 +80,7 @@ const Sidebar = () => {
                     </NavLink>
 
                     <div className="my-4 bg-gray-600 h-[1px]"></div>
-
+                    
                     {/* Sidebar Items go here */}
                     {items.map((item, index) => (
                         <SidebarItem key={index} item={item} />

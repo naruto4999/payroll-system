@@ -8,3 +8,26 @@
       margin: 0;
     }
   };
+  @layer utilities {
+    .scrollbar::-webkit-scrollbar {
+      width: 5px;
+      /* height: 10px; */
+    }
+  
+    .scrollbar::-webkit-scrollbar-thumb {
+      background: rgb(161 161 170);
+      border-radius: 100vh;
+    }
+  
+    .scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgb(113 113 122)
+    }
+
+    .dark .scrollbar::-webkit-scrollbar-thumb {
+      background: rgb(82 82 91);
+    }
+  
+    .dark .scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgb(113 113 122)
+    }
+  }
