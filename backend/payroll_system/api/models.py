@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.conf import settings
 from django.utils import timezone
+from django.core.exceptions import ValidationError
+
 
 #imports for signals
 from django.db.models.signals import post_save
@@ -201,6 +203,10 @@ class LeaveGrade(models.Model):
         ]
     def __str__(self):
         return f"{self.user.email} -> {self.company.name}: {self.name}"
+    # def clean(self):
+    #     # Check if the unique constraint is violated
+    #     if LeaveGrade.objects.filter(user=self.user, company=self.company, name=self.name).exists():
+    #         raise ValidationError("Leave grade with this name already exists for the user and company.")
     
 class Shift(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="shifts")
@@ -220,6 +226,20 @@ class Shift(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=['user', 'company', 'name'], name='unique_shift_name_per_user')
+        ]
+    def __str__(self):
+        return f"{self.user.email} -> {self.company.name}: {self.name}"
+    
+
+class Holiday(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="holidays")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="holidays")
+    name = models.CharField(max_length=256, null=False, blank=False)
+    date = models.DateField(null=False, blank=False)
+    mandatory_holiday = models.BooleanField(default=False, null=False, blank=False)
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'company', 'name'], name='unique_hodiday_name_per_user')
         ]
     def __str__(self):
         return f"{self.user.email} -> {self.company.name}: {self.name}"

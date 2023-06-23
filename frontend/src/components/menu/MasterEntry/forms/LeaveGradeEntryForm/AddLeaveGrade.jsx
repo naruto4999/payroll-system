@@ -12,8 +12,13 @@ const AddLeaveGrade = ({
     errors,
     setAddLeaveGradePopover,
     isValid,
+    errorMessage,
+    setErrorMessage,
+    touched,
 }) => {
+    console.log(values)
     const inputRef = useRef(null);
+    console.log(errorMessage);
     console.log(errors);
     useEffect(() => {
         inputRef.current.focus();
@@ -36,7 +41,7 @@ const AddLeaveGrade = ({
                 <div className="relative">
                     <input
                         className={classNames(
-                            errors.leaveGradeName
+                            errors.leaveGradeName && touched.leaveGradeName
                                 ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
                                 : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
                             "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
@@ -46,15 +51,18 @@ const AddLeaveGrade = ({
                         name="leaveGradeName"
                         onChange={handleChange}
                         onBlur={handleBlur}
-                        value={values.name}
+                        value={values.leaveGradeName}
                         ref={inputRef}
                     />
-                    {errors.leaveGradeName ? (
+                    {errors.leaveGradeName && touched.leaveGradeName && (
+                                <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                    {errors.leaveGradeName}
+                                </div>
+                            )}
+                    {errorMessage && (
                         <p className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                            {errors.leaveGradeName}
+                            {errorMessage}
                         </p>
-                    ) : (
-                        ""
                     )}
                 </div>
                 <label
@@ -66,37 +74,29 @@ const AddLeaveGrade = ({
                 <div className="relative">
                     <input
                         className={classNames(
-                            errors.leaveGradeLimit
+                            errors.leaveGradeLimit && touched.leaveGradeLimit
                                 ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
                                 : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
-                            "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
+                            "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full custom-number-input"
                         )}
-                        type="text"
+                        type="number"
                         id="leaveGradeLimit"
                         name="leaveGradeLimit"
                         onChange={handleChange}
                         onBlur={handleBlur}
-                        value={values.name}
+                        value={values.leaveGradeLimit}
                     />
-                    {errors.leaveGradeLimit ? (
-                        <p className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                            {errors.leaveGradeLimit}
-                        </p>
-                    ) : (
-                        ""
-                    )}
+                    {errors.leaveGradeLimit && touched.leaveGradeLimit && (
+                                <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                    {errors.leaveGradeLimit}
+                                </div>
+                            )}
                 </div>
 
                 <section className="flex flex-row gap-4 mt-4 mb-2">
                     <button
-                        className={classNames(
-                            isValid
-                                ? "dark:hover:bg-teal-600  hover:bg-teal-600"
-                                : "opacity-40",
-                            "dark:bg-teal-700 rounded w-20 p-2 text-base font-medium bg-teal-500"
-                        )}
+                        className="dark:bg-teal-700 rounded w-20 p-2 text-base font-medium bg-teal-500 dark:hover:bg-teal-600  hover:bg-teal-600"
                         type="submit"
-                        disabled={!isValid}
                         onClick={handleSubmit}
                     >
                         Add
@@ -104,7 +104,10 @@ const AddLeaveGrade = ({
                     <button
                         type="button"
                         className="bg-zinc-400 hover:bg-zinc-500 dark:bg-zinc-600 rounded w-20 p-2 text-base font-medium dark:hover:bg-zinc-700"
-                        onClick={() => setAddLeaveGradePopover(false)}
+                        onClick={() => {
+                            setAddLeaveGradePopover(false);
+                            setErrorMessage("");
+                        }}
                     >
                         Cancel
                     </button>

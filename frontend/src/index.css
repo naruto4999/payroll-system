@@ -1,17 +1,16 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@layer base {
+/* @layer base {
     input[type="number"]::-webkit-inner-spin-button,
     input[type="number"]::-webkit-outer-spin-button {
       -webkit-appearance: none;
       margin: 0;
     }
-  };
+  }; */
   @layer utilities {
     .scrollbar::-webkit-scrollbar {
       width: 5px;
-      /* height: 10px; */
     }
   
     .scrollbar::-webkit-scrollbar-thumb {
@@ -29,5 +28,16 @@
   
     .dark .scrollbar::-webkit-scrollbar-thumb:hover {
       background: rgb(113 113 122)
+    }
+
+    .custom-number-input {
+      -moz-appearance: textfield;
+      appearance: textfield;
+    }
+    
+    .custom-number-input::-webkit-inner-spin-button,
+    .custom-number-input::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
     }
   }

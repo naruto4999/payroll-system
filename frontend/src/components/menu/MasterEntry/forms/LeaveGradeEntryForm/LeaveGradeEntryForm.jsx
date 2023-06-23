@@ -51,7 +51,8 @@ const LeaveGradeEntryForm = () => {
     const [editLeaveGradePopover, setEditLeaveGradePopover] = useState(false);
     const [updateLeaveGradeId, setUpdateLeaveGradeId] = useState("");
     const [disabledEdit, setDisableEdit] = useState(false);
-    const [msg, setMsg] = useState("");
+    // const [msg, setMsg] = useState("");
+    const [errorMessage, setErrorMessage] = useState("");
 
     // console.log(fetchedData.find(
     //     (grade) => grade.id === updateLeaveGradeId
@@ -76,12 +77,19 @@ const LeaveGradeEntryForm = () => {
                 limit: values.leaveGradeLimit,
             }).unwrap();
             console.log(data);
+            setErrorMessage("");
+            setAddLeaveGradePopover(!addLeaveGradePopover);
+            formikBag.resetForm();
         } catch (err) {
             console.log(err);
+            if (err.status === 400) {
+                setErrorMessage("Leave grade with this name already exists");
+            } else {
+                console.log(err);
+            }
         }
-        setAddLeaveGradePopover(!addLeaveGradePopover);
-        4;
-        formikBag.resetForm();
+
+        console.log(values);
     };
 
     const updateButtonClicked = async (values, formikBag) => {
@@ -94,12 +102,17 @@ const LeaveGradeEntryForm = () => {
                 limit: values.leaveGradeLimit,
             }).unwrap();
             console.log(data);
+            setErrorMessage("");
+            formikBag.resetForm();
+            editLeaveGradePopoverHandler({ id: "", mandatory_leave: false });
         } catch (err) {
             console.log(err);
+            if (err.status === 400) {
+                setErrorMessage("Leave grade with this name already exists");
+            } else {
+                console.log(err);
+            }
         }
-
-        formikBag.resetForm();
-        editLeaveGradePopoverHandler({ id: "", mandatory_leave: false });
     };
 
     const deleteButtonClicked = async (id) => {
@@ -249,9 +262,6 @@ const LeaveGradeEntryForm = () => {
                                                             header.getContext()
                                                         )}
 
-                                                        {console.log(
-                                                            header.column.getIsSorted()
-                                                        )}
                                                         {header.column.getCanSort() ? (
                                                             <div className="relative pl-2">
                                                                 <FaAngleUp
@@ -332,6 +342,8 @@ const LeaveGradeEntryForm = () => {
                         component={(props) => (
                             <AddLeaveGrade
                                 {...props}
+                                errorMessage={errorMessage}
+                                setErrorMessage={setErrorMessage}
                                 setAddLeaveGradePopover={
                                     setAddLeaveGradePopover
                                 }
@@ -373,6 +385,7 @@ const LeaveGradeEntryForm = () => {
                         component={(props) => (
                             <EditLeaveGrade
                                 {...props}
+                                errorMessage={errorMessage}
                                 editLeaveGradePopoverHandler={
                                     editLeaveGradePopoverHandler
                                 }

@@ -127,7 +127,7 @@ const AddShift = ({
                                     errors.lunchTime && touched.lunchTime
                                         ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
                                         : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
-                                    "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
+                                    "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full custom-number-input"
                                 )}
                                 type="number"
                                 id="lunchTime"
@@ -155,7 +155,7 @@ const AddShift = ({
                                     errors.teaTime && touched.teaTime
                                         ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
                                         : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
-                                    "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
+                                    "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full custom-number-input"
                                 )}
                                 type="number"
                                 id="teaTime"
@@ -183,7 +183,7 @@ const AddShift = ({
                                     errors.lateGrace && touched.lateGrace
                                         ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
                                         : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
-                                    "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
+                                    "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full custom-number-input"
                                 )}
                                 type="number"
                                 id="lateGrace"
@@ -213,7 +213,7 @@ const AddShift = ({
                                     errors.otBeginAfter && touched.otBeginAfter
                                         ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
                                         : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
-                                    "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
+                                    "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full custom-number-input"
                                 )}
                                 type="number"
                                 id="otBeginAfter"
@@ -241,7 +241,7 @@ const AddShift = ({
                                     errors.nextShiftDelay && touched.nextShiftDelay
                                         ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
                                         : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
-                                    "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
+                                    "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full custom-number-input"
                                 )}
                                 type="number"
                                 id="nextShiftDelay"
@@ -269,7 +269,7 @@ const AddShift = ({
                                     errors.accidentalPunchBuffer && touched.accidentalPunchBuffer
                                         ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
                                         : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
-                                    "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
+                                    "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full custom-number-input"
                                 )}
                                 type="number"
                                 id="accidentalPunchBuffer"
@@ -297,7 +297,7 @@ const AddShift = ({
                                     errors.halfDayMinimumMinutes && touched.halfDayMinimumMinutes
                                         ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
                                         : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
-                                    "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
+                                    "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full custom-number-input"
                                 )}
                                 type="number"
                                 id="halfDayMinimumMinutes"
@@ -325,7 +325,7 @@ const AddShift = ({
                                     errors.fullDayMinimumMinutes && touched.fullDayMinimumMinutes
                                         ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
                                         : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
-                                    "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
+                                    "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full custom-number-input"
                                 )}
                                 type="number"
                                 id="fullDayMinimumMinutes"
@@ -353,7 +353,7 @@ const AddShift = ({
                                     errors.shortLeaves && touched.shortLeaves
                                         ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
                                         : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
-                                    "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
+                                    "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full custom-number-input"
                                 )}
                                 type="number"
                                 id="shortLeaves"

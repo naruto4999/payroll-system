@@ -19,6 +19,7 @@ const Sidebar = () => {
         dispatch(authActions.logout());
         dispatch(globalCompanyActions.deselectComapny());
     };
+  
     const auth = useSelector((state) => state.auth);
     let items = menuItems.filter((item) => item.title !== "Admin Controls")
     // console.log(auth)

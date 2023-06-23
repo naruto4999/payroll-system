@@ -1,8 +1,8 @@
 from django.forms import ValidationError
 from django.shortcuts import render
 from rest_framework import generics, status, mixins
-from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer
-from .models import Company, CompanyDetails, User, OwnerToRegular, Regular
+from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer
+from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
@@ -389,14 +389,38 @@ class LeaveGradeListCreateAPIView(generics.ListCreateAPIView):
         instance = OwnerToRegular.objects.get(user=user)
         return instance.owner.leave_grades.filter(company=company_id)
     
-    def perform_create(self, serializer):
+    # def perform_create(self, serializer):
+    #     user = self.request.user
+    #     company_id = self.kwargs.get('company_id')
+    #     company = Company.objects.get(id=company_id)
+    #     name = serializer.validated_data.get('name')
+    #     if LeaveGrade.objects.filter(user=user, company=company, name=name).exists():
+    #         raise ValidationError("Leave grade with this name already exists for the user and company.")
+    #     if user.role == "OWNER":
+    #         return serializer.save(user=user, company=company)
+    #     instance = OwnerToRegular.objects.get(user=user)
+    #     return serializer.save(user=instance.owner, company=company)
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
         user = self.request.user
         company_id = self.kwargs.get('company_id')
         company = Company.objects.get(id=company_id)
+        name = serializer.validated_data.get('name')
+
+        # Check uniqueness
+        if LeaveGrade.objects.filter(user=user, company=company, name=name).exists():
+            error_message = "Leave grade with this name already exists."
+            return Response({"error": error_message}, status=status.HTTP_400_BAD_REQUEST)
+
         if user.role == "OWNER":
-            return serializer.save(user=user, company=company)
-        instance = OwnerToRegular.objects.get(user=user)
-        return serializer.save(user=instance.owner, company=company)
+            serializer.save(user=user, company=company)
+        else:
+            instance = OwnerToRegular.objects.get(user=user)
+            serializer.save(user=instance.owner, company=company)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 class LeaveGradeRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes= [IsAuthenticated]
@@ -413,10 +437,38 @@ class LeaveGradeRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIVi
     
     def perform_update(self, serializer):
         user = self.request.user
+        name = serializer.validated_data.get('name')
+        existing_leave_grades = self.get_queryset().filter(name=name)
+        print(existing_leave_grades)
+        if existing_leave_grades.exists():
+            print("in if")
+            error_message = "Leave grade with this name already exists."
+            return Response({"error": error_message}, status=status.HTTP_400_BAD_REQUEST)
         if user.role == "OWNER":
             return serializer.save(user=self.request.user)
         instance = OwnerToRegular.objects.get(user=user)
         return serializer.save(user=instance.owner)
+    
+    def update(self, request, *args, **kwargs):
+        user = self.request.user
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        name = serializer.validated_data.get('name')
+        existing_leave_grades = self.get_queryset().filter(name=name).exclude(id=instance.id)
+        
+        if existing_leave_grades.exists():
+            error_message = "Leave grade with this name already exists."
+            return Response({"error": error_message}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if user.role == "OWNER":
+            serializer.save(user=self.request.user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        instance = OwnerToRegular.objects.get(user=user)
+        serializer.save(user=instance.owner)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     
     def perform_destroy(self, instance):
         if instance.mandatory_leave:
@@ -465,6 +517,28 @@ class ShiftRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
         instance = OwnerToRegular.objects.get(user=user)
         return serializer.save(user=instance.owner)
     
+class HolidayListCreateAPIView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    # queryset = Company.objects.all()
+    serializer_class = HolidaySerializer
+    lookup_field = 'company_id'
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        user = self.request.user
+        if user.role == "OWNER":
+            return user.holidays.filter(company=company_id)
+        instance = OwnerToRegular.objects.get(user=user)
+        return instance.owner.holidays.filter(company=company_id)
+    
+    def perform_create(self, serializer):
+        user = self.request.user
+        company_id = self.kwargs.get('company_id')
+        company = Company.objects.get(id=company_id)
+        if user.role == "OWNER":
+            return serializer.save(user=user, company=company)
+        instance = OwnerToRegular.objects.get(user=user)
+        return serializer.save(user=instance.owner, company=company)
 
 
 #Viewsets

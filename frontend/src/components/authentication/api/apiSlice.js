@@ -2,7 +2,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { authActions } from "../store/slices/auth";
 
 const baseQuery = fetchBaseQuery({
-    baseUrl: "https://fe56-103-248-94-173.ngrok-free.app",
+    baseUrl: "http://127.0.0.1:8000/",
     prepareHeaders: (headers, { getState }) => {
         const token = getState().auth.token;
         if (token) {
@@ -60,6 +60,6 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
 
 export const apiSlice = createApi({
     baseQuery: baseQueryWithReauth,
-    tagTypes: ["Departments", "Companies", "CompanyDetails", "Regular","SalaryGrades", "Categories", "Banks", "LeaveGrades", "Shifts"],
+    tagTypes: ["Departments", "Companies", "CompanyDetails", "Regular","SalaryGrades", "Categories", "Banks", "LeaveGrades", "Shifts", "Holidays"],
     endpoints: (builder) => ({}),
 });
