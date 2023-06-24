@@ -19,7 +19,7 @@ import { useOutletContext } from "react-router-dom";
 import ReactModal from "react-modal";
 import { Formik } from "formik";
 import AddBank from "./AddBank";
-import { addBankSchema, editBankSchema } from "./BankEntrySchema";
+import { BankSchema } from "./BankEntrySchema";
 
 ReactModal.setAppElement("#root");
 
@@ -48,7 +48,8 @@ const BankEntryForm = () => {
     const [showLoadingBar, setShowLoadingBar] = useOutletContext();
     const [editBankPopover, setEditBankPopover] = useState(false);
     const [updateBankId, setUpdateBankId] = useState("");
-    const [msg, setMsg] = useState("");
+    // const [msg, setMsg] = useState("");
+    const [errorMessage, setErrorMessage] = useState("");
 
     console.log(updateBankId);
 
@@ -65,15 +66,20 @@ const BankEntryForm = () => {
         try {
             const data = await addBank({
                 company: globalCompany.id,
-                name: values.newBank,
+                name: values.bankName,
             }).unwrap();
             console.log(data);
+            setErrorMessage("");
+            setAddBankPopover(!addBankPopover);
+            formikBag.resetForm();
         } catch (err) {
             console.log(err);
+            if (err.status === 400) {
+                setErrorMessage("Bank with this name already exists");
+            } else {
+                console.log(err);
+            }
         }
-        setAddBankPopover(!addBankPopover);
-        4;
-        formikBag.resetForm();
     };
 
     const updateButtonClicked = async (values, formikBag) => {
@@ -81,16 +87,21 @@ const BankEntryForm = () => {
         try {
             const data = await updateBank({
                 id: updateBankId,
-                name: values.updatedBank,
+                name: values.bankName,
                 company: globalCompany.id,
             }).unwrap();
             console.log(data);
+            setErrorMessage("");
+            formikBag.resetForm();
+            editBankPopoverHandler({ id: "" });
         } catch (err) {
             console.log(err);
+            if (err.status === 400) {
+                setErrorMessage("Bank with this name already exists");
+            } else {
+                console.log(err);
+            }
         }
-
-        formikBag.resetForm();
-        editBankPopoverHandler({ id: "" });
     };
 
     const deleteButtonClicked = async (id) => {
@@ -289,12 +300,14 @@ const BankEntryForm = () => {
                     }}
                 >
                     <Formik
-                        initialValues={{ newBank: "" }}
-                        validationSchema={addBankSchema}
+                        initialValues={{ bankName: "" }}
+                        validationSchema={BankSchema}
                         onSubmit={addButtonClicked}
                         component={(props) => (
                             <AddBank
                                 {...props}
+                                errorMessage={errorMessage}
+                                setErrorMessage={setErrorMessage}
                                 setAddBankPopover={setAddBankPopover}
                             />
                         )}
@@ -312,12 +325,18 @@ const BankEntryForm = () => {
                     }}
                 >
                     <Formik
-                        initialValues={{ updatedBank: "" }}
-                        validationSchema={editBankSchema}
+                        initialValues={{ bankName: updateBankId
+                            ? fetchedData.find(
+                                  (bank) => bank.id === updateBankId
+                              )?.name
+                            : "", }}
+                        validationSchema={BankSchema}
                         onSubmit={updateButtonClicked}
                         component={(props) => (
                             <EditBank
                                 {...props}
+                                errorMessage={errorMessage}
+                                setErrorMessage={setErrorMessage}
                                 editBankPopoverHandler={editBankPopoverHandler}
                             />
                         )}
