@@ -1,7 +1,7 @@
 from django.forms import ValidationError
 from django.shortcuts import render
 from rest_framework import generics, status, mixins
-from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer
+from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer
 from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -346,15 +346,6 @@ class BankListCreateAPIView(generics.ListCreateAPIView):
             return user.banks.filter(company=company_id)
         instance = OwnerToRegular.objects.get(user=user)
         return instance.owner.banks.filter(company=company_id)
-    
-    # def perform_create(self, serializer):
-    #     user = self.request.user
-    #     company_id = self.kwargs.get('company_id')
-    #     company = Company.objects.get(id=company_id)
-    #     if user.role == "OWNER":
-    #         return serializer.save(user=user, company=company)
-    #     instance = OwnerToRegular.objects.get(user=user)
-    #     return serializer.save(user=instance.owner, company=company)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -392,12 +383,6 @@ class BankRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
         instance = OwnerToRegular.objects.get(user=user)
         return instance.owner.banks.filter(company=company_id)
     
-    # def perform_update(self, serializer):
-    #     user = self.request.user
-    #     if user.role == "OWNER":
-    #         return serializer.save(user=self.request.user)
-    #     instance = OwnerToRegular.objects.get(user=user)
-    #     return serializer.save(user=instance.owner)
     def update(self, request, *args, **kwargs):
         user = self.request.user
         instance = self.get_object()
@@ -646,12 +631,6 @@ class HolidayRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView)
             serializer.save(user=instance.owner)
             return Response(serializer.data, status=status.HTTP_200_OK)
         
-    # def perform_destroy(self, instance):
-    #     if instance.mandatory_holiday:
-    #         print("yes")
-    #         return Response({"detail": "Cannot delete a mandatory holiday."}, status=status.HTTP_403_FORBIDDEN)
-    #     instance.delete()
-
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         if instance.mandatory_holiday:
@@ -661,6 +640,78 @@ class HolidayRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView)
         self.perform_destroy(instance)
         return Response({"detail": "Successfully deleted."}, status=status.HTTP_204_NO_CONTENT)
         
+class EarningsHeadListCreateAPIView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    # queryset = Company.objects.all()
+    serializer_class = EarningsHeadSerializer
+    lookup_field = 'company_id'
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        user = self.request.user
+        if user.role == "OWNER":
+            return user.earnings_heads.filter(company=company_id)
+        instance = OwnerToRegular.objects.get(user=user)
+        return instance.owner.earnings_heads.filter(company=company_id)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = self.request.user
+        company_id = self.kwargs.get('company_id')
+        company = Company.objects.get(id=company_id)
+        name = serializer.validated_data.get('name').lower()
+        
+        # Check uniqueness
+        clashing_names = self.get_queryset().annotate(lower_name=Lower('name')).filter(lower_name=name)
+        if clashing_names.exists():
+            error_message = "Earnings Head with this name already exists."
+            return Response({"error": error_message}, status=status.HTTP_400_BAD_REQUEST)
+
+        if user.role == "OWNER":
+            serializer.save(user=user, company=company)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            instance = OwnerToRegular.objects.get(user=user)
+            serializer.save(user=instance.owner, company=company)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+
+class EarningsHeadRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes= [IsAuthenticated]
+    serializer_class = EarningsHeadSerializer
+    lookup_field = 'id'
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        user = self.request.user
+        if user.role == "OWNER":
+            return user.earnings_heads.filter(company=company_id)
+        instance = OwnerToRegular.objects.get(user=user)
+        return instance.owner.earnings_heads.filter(company=company_id)
+    
+    def update(self, request, *args, **kwargs):
+        user = self.request.user
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        name = serializer.validated_data.get('name').lower()
+
+        # Check uniqueness
+        clashing_names = self.get_queryset().annotate(lower_name=Lower('name')).filter(lower_name=name).exclude(id=instance.id)
+        if clashing_names.exists():
+            print(clashing_names)
+            error_message = "Bank with this name already exists."
+            return Response({"error": error_message}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if user.role == "OWNER":
+            serializer.save(user=self.request.user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        else:
+            instance = OwnerToRegular.objects.get(user=user)
+            serializer.save(user=instance.owner)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
 #Viewsets
 class UserViewSet(viewsets.ModelViewSet):

@@ -1,7 +1,7 @@
 from dataclasses import field
 from rest_framework import serializers
 
-from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday
+from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead
 from rest_framework import serializers
 
 
@@ -109,3 +109,9 @@ class HolidaySerializer(serializers.ModelSerializer):
         model = Holiday
         fields = ('id', 'user', 'company', 'name' ,'date', 'mandatory_holiday')
         read_only_fields = ('mandatory_holiday',)
+
+class EarningsHeadSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    class Meta:
+        model = EarningsHead
+        fields = ('id', 'user', 'company', 'name')

@@ -245,7 +245,13 @@ class Holiday(models.Model):
     def __str__(self):
         return f"{self.user.email} -> {self.company.name}: {self.name}"
     
-
+class EarningsHead(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="earnings_heads")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="earnings_heads")
+    name = models.CharField(max_length=256, null=False, blank=False)
+    def __str__(self):
+        return f"{self.user.email} -> {self.company.name}: {self.name}"
+    
 @receiver(post_save, sender=Company)
 def create_default_leave_grades_for_company(sender, instance, created, **kwargs):
     print("reciever ran")
