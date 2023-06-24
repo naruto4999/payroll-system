@@ -10,32 +10,35 @@ export const holidayEntryApiSlice = apiSlice.injectEndpoints({
             keepUnusedDataFor: 1,
             providesTags: ["Holidays"],
         }),
-        // addLeaveGrade: builder.mutation({
-        //     query: (leaveGrade) => ({
-        //         url: `/api/leave-grade/${leaveGrade.company}`,
-        //         method: "POST",
-        //         body: leaveGrade,
-        //     }),
-        //     invalidatesTags: ["Holidays"],
-        // }),
-        // updateLeaveGrade: builder.mutation({
-        //     query: (leaveGrade) => ({
-        //         url: `/api/leave-grade/${leaveGrade.company}/${leaveGrade.id}`,
-        //         method: "PUT",
-        //         body: leaveGrade,
-        //     }),
-        //     invalidatesTags: ["Holidays"],
-        // }),
-        // deleteLeaveGrade: builder.mutation({
-        //     query: (leaveGrade) => ({
-        //         url: `/api/leave-grade/${leaveGrade.company}/${leaveGrade.id}`,
-        //         method: "DELETE",
-        //     }),
-        //     invalidatesTags: ["Holidays"],
-        // }),
+        addHoliday: builder.mutation({
+            query: (holiday) => ({
+                url: `/api/holiday/${holiday.company}`,
+                method: "POST",
+                body: holiday,
+            }),
+            invalidatesTags: ["Holidays"],
+        }),
+        updateHoliday: builder.mutation({
+            query: (holiday) => ({
+                url: `/api/holiday/${holiday.company}/${holiday.id}`,
+                method: "PUT",
+                body: holiday,
+            }),
+            invalidatesTags: ["Holidays"],
+        }),
+        deleteHoliday: builder.mutation({
+            query: (holiday) => ({
+                url: `/api/holiday/${holiday.company}/${holiday.id}`,
+                method: "DELETE",
+            }),
+            invalidatesTags: ["Holidays"],
+        }),
     }),
 });
 
 export const {
     useGetHolidaysQuery,
+    useAddHolidayMutation,
+    useUpdateHolidayMutation,
+    useDeleteHolidayMutation,
 } = holidayEntryApiSlice;

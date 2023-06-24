@@ -9,17 +9,17 @@ import {
 import { FaRegTrashAlt, FaPen, FaAngleUp, FaAngleDown } from "react-icons/fa";
 import { useSelector } from "react-redux";
 import {
-    useGetLeaveGradesQuery,
-    useAddLeaveGradeMutation,
-    useUpdateLeaveGradeMutation,
-    useDeleteLeaveGradeMutation,
-} from "../../../../authentication/api/leaveGradeEntryApiSlice";
-import EditLeaveGrade from "./EditLeaveGrade";
+    useGetHolidaysQuery,
+    useAddHolidayMutation,
+    useUpdateHolidayMutation,
+    useDeleteHolidayMutation,
+} from "../../../../authentication/api/holidayEntryApiSlice";
+import EditHoliday from "./EditHoliday";
 import { useOutletContext } from "react-router-dom";
 import ReactModal from "react-modal";
 import { Formik } from "formik";
-import AddLeaveGrade from "./AddLeaveGrade";
-import { LeaveGradeSchema } from "./LeaveGradeSchema";
+import AddHoliday from "./AddHoliday";
+import { HolidaySchema } from "./HolidaySchema";
 
 ReactModal.setAppElement("#root");
 
@@ -27,7 +27,7 @@ const classNames = (...classes) => {
     return classes.filter(Boolean).join(" ");
 };
 
-const LeaveGradeEntryForm = () => {
+const HolidayEntryForm = () => {
     const globalCompany = useSelector((state) => state.globalCompany);
 
     const {
@@ -38,32 +38,32 @@ const LeaveGradeEntryForm = () => {
         error,
         isFetching,
         refetch,
-    } = useGetLeaveGradesQuery(globalCompany);
+    } = useGetHolidaysQuery(globalCompany);
     console.log(fetchedData);
-    const [addLeaveGrade, { isLoading: isAddingLeaveGrade }] =
-        useAddLeaveGradeMutation();
-    const [updateLeaveGrade, { isLoading: isUpdatingLeaveGrade }] =
-        useUpdateLeaveGradeMutation();
-    const [deleteLeaveGrade, { isLoading: isDeletingLeaveGrade }] =
-        useDeleteLeaveGradeMutation();
-    const [addLeaveGradePopover, setAddLeaveGradePopover] = useState(false);
+    const [addHoliday, { isLoading: isAddingHoliday }] =
+        useAddHolidayMutation();
+    const [updateHoliday, { isLoading: isUpdatingHoliday }] =
+        useUpdateHolidayMutation();
+    const [deleteHoliday, { isLoading: isDeletingHoliday }] =
+        useDeleteHolidayMutation();
+    const [addHolidayPopover, setAddHolidayPopover] = useState(false);
     const [showLoadingBar, setShowLoadingBar] = useOutletContext();
-    const [editLeaveGradePopover, setEditLeaveGradePopover] = useState(false);
-    const [updateLeaveGradeId, setUpdateLeaveGradeId] = useState("");
+    const [editHolidayPopover, setEditHolidayPopover] = useState(false);
+    const [updateHolidayId, setUpdateHolidayId] = useState("");
     const [disabledEdit, setDisableEdit] = useState(false);
     // const [msg, setMsg] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
 
     // console.log(fetchedData.find(
-    //     (grade) => grade.id === updateLeaveGradeId
-    // )?.mandatory_leave);
+    //     (grade) => grade.id === updateHolidayId
+    // )?.mandatory_holiday);
 
-    const editLeaveGradePopoverHandler = (LeaveGrade) => {
-        console.log(LeaveGrade);
-        console.log(LeaveGrade.mandatory_leave);
-        setUpdateLeaveGradeId(LeaveGrade.id);
-        setDisableEdit(LeaveGrade.mandatory_leave);
-        setEditLeaveGradePopover(!editLeaveGradePopover);
+    const editHolidayPopoverHandler = (Holiday) => {
+        console.log(Holiday);
+        console.log(Holiday.mandatory_holiday);
+        setUpdateHolidayId(Holiday.id);
+        setDisableEdit(Holiday.mandatory_holiday);
+        setEditHolidayPopover(!editHolidayPopover);
     };
 
     const addButtonClicked = async (values, formikBag) => {
@@ -71,19 +71,19 @@ const LeaveGradeEntryForm = () => {
         console.log(formikBag);
 
         try {
-            const data = await addLeaveGrade({
+            const data = await addHoliday({
                 company: globalCompany.id,
-                name: values.leaveGradeName.toUpperCase(),
-                limit: values.leaveGradeLimit,
+                name: values.holidayName,
+                date: values.holidayDate,
             }).unwrap();
             console.log(data);
             setErrorMessage("");
-            setAddLeaveGradePopover(!addLeaveGradePopover);
+            setAddHolidayPopover(!addHolidayPopover);
             formikBag.resetForm();
         } catch (err) {
             console.log(err);
             if (err.status === 400) {
-                setErrorMessage("Leave grade with this name already exists");
+                setErrorMessage("Holiday with this name already exists");
             } else {
                 console.log(err);
             }
@@ -95,20 +95,20 @@ const LeaveGradeEntryForm = () => {
     const updateButtonClicked = async (values, formikBag) => {
         console.log(values);
         try {
-            const data = await updateLeaveGrade({
-                id: updateLeaveGradeId,
-                name: values.leaveGradeName.toUpperCase(),
+            const data = await updateHoliday({
+                id: updateHolidayId,
+                name: values.holidayName,
                 company: globalCompany.id,
-                limit: values.leaveGradeLimit,
+                date: values.holidayDate,
             }).unwrap();
             console.log(data);
             setErrorMessage("");
             formikBag.resetForm();
-            editLeaveGradePopoverHandler({ id: "", mandatory_leave: false });
+            editHolidayPopoverHandler({ id: "", mandatory_holiday: false });
         } catch (err) {
             console.log(err);
             if (err.status === 400) {
-                setErrorMessage("Leave grade with this name already exists");
+                setErrorMessage("Holiday with this name already exists");
             } else {
                 console.log(err);
             }
@@ -117,7 +117,15 @@ const LeaveGradeEntryForm = () => {
 
     const deleteButtonClicked = async (id) => {
         console.log(id);
-        deleteLeaveGrade({ id: id, company: globalCompany.id });
+        try {
+            const data = await deleteHoliday({
+                id: id,
+                company: globalCompany.id,
+            }).unwrap();
+            console.log(data);
+        } catch (err) {
+            console.log(err);
+        }
     };
 
     const columnHelper = createColumnHelper();
@@ -129,16 +137,16 @@ const LeaveGradeEntryForm = () => {
             //   footer: props => props.column.id,
         }),
         columnHelper.accessor("name", {
-            header: () => "Leave Grade Name",
+            header: () => "Holiday Name",
             cell: (props) => props.renderValue(),
             //   footer: info => info.column.id,
         }),
-        columnHelper.accessor("limit", {
-            header: () => "Limit",
+        columnHelper.accessor("date", {
+            header: () => "Date",
             cell: (props) => props.renderValue(),
             //   footer: info => info.column.id,
         }),
-        columnHelper.accessor("mandatory_leave", {
+        columnHelper.accessor("mandatory_holiday", {
             header: () => "Mandatory",
             cell: (props) => props.renderValue(),
             enableHiding: true,
@@ -149,26 +157,31 @@ const LeaveGradeEntryForm = () => {
             header: () => "Actions",
             cell: (props) => (
                 <div className="flex justify-center gap-4">
-                    {props.row.original.mandatory_leave ? (
+                    {props.row.original.mandatory_holiday ? (
                         ""
                     ) : (
-                        <div
-                            className="p-1.5 dark:bg-redAccent-700 rounded bg-redAccent-500 dark:hover:bg-redAccent-500 hover:bg-redAccent-700"
-                            onClick={() =>
-                                deleteButtonClicked(props.row.original.id)
-                            }
-                        >
-                            <FaRegTrashAlt className="h-4" />
-                        </div>
+                        <>
+                            <div
+                                className="p-1.5 dark:bg-redAccent-700 rounded bg-redAccent-500 dark:hover:bg-redAccent-500 hover:bg-redAccent-700"
+                                onClick={() =>
+                                    deleteButtonClicked(props.row.original.id)
+                                }
+                            >
+                                <FaRegTrashAlt className="h-4" />
+                            </div>
+
+                            <div
+                                className="p-1.5 dark:bg-teal-700 rounded bg-teal-600 dark:hover:bg-teal-600 hover:bg-teal-700"
+                                onClick={() =>
+                                    editHolidayPopoverHandler(
+                                        props.row.original
+                                    )
+                                }
+                            >
+                                <FaPen className="h-4" />
+                            </div>
+                        </>
                     )}
-                    <div
-                        className="p-1.5 dark:bg-teal-700 rounded bg-teal-600 dark:hover:bg-teal-600 hover:bg-teal-700"
-                        onClick={() =>
-                            editLeaveGradePopoverHandler(props.row.original)
-                        }
-                    >
-                        <FaPen className="h-4" />
-                    </div>
                 </div>
             ),
         }),
@@ -183,7 +196,7 @@ const LeaveGradeEntryForm = () => {
         columns,
         initialState: {
             sorting: [{ id: "name", desc: false }],
-            columnVisibility: { mandatory_leave: false },
+            columnVisibility: { mandatory_holiday: false },
         },
         getCoreRowModel: getCoreRowModel(),
         getSortedRowModel: getSortedRowModel(),
@@ -191,18 +204,8 @@ const LeaveGradeEntryForm = () => {
     });
     // console.log(tableInstance)
     useEffect(() => {
-        setShowLoadingBar(
-            isLoading ||
-                isAddingLeaveGrade ||
-                isDeletingLeaveGrade ||
-                isUpdatingLeaveGrade
-        );
-    }, [
-        isLoading,
-        isAddingLeaveGrade,
-        isDeletingLeaveGrade,
-        isUpdatingLeaveGrade,
-    ]);
+        setShowLoadingBar(isLoading);
+    }, [isLoading]);
 
     if (globalCompany.id == null) {
         return (
@@ -220,16 +223,14 @@ const LeaveGradeEntryForm = () => {
             <section className="mx-5 mt-2">
                 <div className="flex flex-row place-content-between flex-wrap">
                     <div className="mr-4">
-                        <h1 className="text-3xl font-medium">Leave Grades</h1>
-                        <p className="text-sm my-2">
-                            Add more leave grades here
-                        </p>
+                        <h1 className="text-3xl font-medium">Holiday</h1>
+                        <p className="text-sm my-2">Add more holidays here</p>
                     </div>
                     <button
                         className="dark:bg-teal-700 my-auto rounded p-2 text-base font-medium bg-teal-500 hover:bg-teal-600 dark:hover:bg-teal-600 whitespace-nowrap"
-                        onClick={() => setAddLeaveGradePopover(true)}
+                        onClick={() => setAddHolidayPopover(true)}
                     >
-                        Add Leave Grade
+                        Add Holiday
                     </button>
                 </div>
                 <div className="overflow-hidden rounded border border-black border-opacity-50 shadow-md m-5 max-w-5xl mx-auto">
@@ -324,8 +325,8 @@ const LeaveGradeEntryForm = () => {
 
                 <ReactModal
                     className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
-                    isOpen={addLeaveGradePopover}
-                    onRequestClose={() => setAddLeaveGradePopover(false)}
+                    isOpen={addHolidayPopover}
+                    onRequestClose={() => setAddHolidayPopover(false)}
                     style={{
                         overlay: {
                             backgroundColor: "rgba(0, 0, 0, 0.75)",
@@ -334,19 +335,17 @@ const LeaveGradeEntryForm = () => {
                 >
                     <Formik
                         initialValues={{
-                            leaveGradeName: "",
-                            leaveGradeLimit: "",
+                            holidayName: "",
+                            holidayDate: "",
                         }}
-                        validationSchema={LeaveGradeSchema}
+                        validationSchema={HolidaySchema}
                         onSubmit={addButtonClicked}
                         component={(props) => (
-                            <AddLeaveGrade
+                            <AddHoliday
                                 {...props}
                                 errorMessage={errorMessage}
                                 setErrorMessage={setErrorMessage}
-                                setAddLeaveGradePopover={
-                                    setAddLeaveGradePopover
-                                }
+                                setAddHolidayPopover={setAddHolidayPopover}
                             />
                         )}
                     />
@@ -354,11 +353,11 @@ const LeaveGradeEntryForm = () => {
 
                 <ReactModal
                     className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
-                    isOpen={editLeaveGradePopover}
+                    isOpen={editHolidayPopover}
                     onRequestClose={() =>
-                        editLeaveGradePopoverHandler({
+                        editHolidayPopoverHandler({
                             id: "",
-                            mandatory_leave: false,
+                            mandatory_holiday: false,
                         })
                     }
                     style={{
@@ -369,26 +368,28 @@ const LeaveGradeEntryForm = () => {
                 >
                     <Formik
                         initialValues={{
-                            leaveGradeName: updateLeaveGradeId
+                            holidayName: updateHolidayId
                                 ? fetchedData.find(
-                                      (grade) => grade.id === updateLeaveGradeId
+                                      (holiday) =>
+                                          holiday.id === updateHolidayId
                                   )?.name
                                 : "",
-                            leaveGradeLimit: updateLeaveGradeId
+                            holidayDate: updateHolidayId
                                 ? fetchedData.find(
-                                      (grade) => grade.id === updateLeaveGradeId
-                                  )?.limit
+                                      (holiday) =>
+                                          holiday.id === updateHolidayId
+                                  )?.date
                                 : 0,
                         }}
-                        validationSchema={LeaveGradeSchema}
+                        validationSchema={HolidaySchema}
                         onSubmit={updateButtonClicked}
                         component={(props) => (
-                            <EditLeaveGrade
+                            <EditHoliday
                                 {...props}
                                 errorMessage={errorMessage}
                                 setErrorMessage={setErrorMessage}
-                                editLeaveGradePopoverHandler={
-                                    editLeaveGradePopoverHandler
+                                editHolidayPopoverHandler={
+                                    editHolidayPopoverHandler
                                 }
                                 disableEdit={disabledEdit}
                             />
@@ -400,4 +401,4 @@ const LeaveGradeEntryForm = () => {
     }
 };
 
-export default LeaveGradeEntryForm;
+export default HolidayEntryForm;

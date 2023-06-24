@@ -26,6 +26,7 @@ import CategoryEntryForm from "./menu/MasterEntry/forms/CategoryEntryForm/Catego
 import BankEntryForm from "./menu/MasterEntry/forms/BankEntryForm/BankEntryForm";
 import LeaveGradeEntryForm from "./menu/MasterEntry/forms/LeaveGradeEntryForm/LeaveGradeEntryForm";
 import ShiftEntryForm from "./menu/MasterEntry/forms/ShiftEntryForm/ShiftEntryForm";
+import HolidayEntryForm from "./menu/MasterEntry/forms/HolidayEntryForm/HolidayEntryForm";
 
 // import store, { persistor } from "./authentication/store/index"
 // import { PersistGate } from "redux-persist/integration/react";
@@ -113,6 +114,10 @@ function App() {
                     <Route
                         path="shift-entry"
                         element={<ShiftEntryForm />}
+                    />
+                    <Route
+                        path="holiday-entry"
+                        element={<HolidayEntryForm />}
                     />
                     {/* <Route path="bank-entry" element={<BankEntryForm />} />
                     <Route path="category-entry" element={<CategoryEntryForm />} />

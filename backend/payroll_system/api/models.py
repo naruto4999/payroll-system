@@ -3,6 +3,7 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 from django.conf import settings
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+from datetime import datetime, timedelta
 
 
 #imports for signals
@@ -262,3 +263,25 @@ def create_default_leave_grades_for_company(sender, instance, created, **kwargs)
         
         # Create the third row for the new user
         LeaveGrade.objects.create(user=user,company=company, name='SL', limit=7, mandatory_leave=True)
+
+@receiver(post_save, sender=Company)
+def create_default_holidays_for_company(sender, instance, created, **kwargs):
+    print("reciever ran")
+    print(sender)
+    print(instance)
+    if created:
+        company = instance  # Assign the instance to a variable
+        user = company.user
+        print("reciever ran")
+        current_year = datetime.now().year
+        gandhi_jayanti = datetime(current_year, 10, 2)
+        republic_day = datetime(current_year, 1, 26)
+        independence_day = datetime(current_year, 8, 15)
+        # Create the first row for the new user
+        Holiday.objects.create(user=user,company=company, name='Gandhi Jayanti', date=gandhi_jayanti, mandatory_holiday=True)
+        
+        # Create the second row for the new user
+        Holiday.objects.create(user=user,company=company, name='Republic Day', date=republic_day, mandatory_holiday=True)
+        
+        # Create the third row for the new user
+        Holiday.objects.create(user=user,company=company, name='Independence Day', date=independence_day, mandatory_holiday=True)

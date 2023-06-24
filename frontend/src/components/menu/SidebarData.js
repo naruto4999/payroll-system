@@ -1,4 +1,6 @@
 import { FaUserTie, FaPlus, FaPen, FaHome, FaThLarge, FaLevelUpAlt, FaMoneyCheckAlt, FaCogs,FaUserShield , FaUsersCog, FaEye, FaBusinessTime} from "react-icons/fa";
+import { FaMountainSun, FaMoneyBill1, FaDollarSign } from "react-icons/fa6";
+
 
 const menuItems = [
     {
@@ -49,6 +51,22 @@ const menuItems = [
                 title: "Shift Entry",
                 icon: FaBusinessTime,
                 path: "/home/shift-entry"
+            },
+            {
+                title: "Holiday Entry",
+                icon: FaMountainSun,
+                path: "/home/holiday-entry"
+            },
+            {
+                title: "Heads Entry",
+                icon: FaMoneyBill1,
+                children: [
+                    {
+                        title: "Earnings",
+                        icon: FaDollarSign,
+                        path: "/home/earning-heads-entry"
+                    },
+                ]
             },
         ],
     },

@@ -13,6 +13,8 @@ const EditShift = ({
     editShiftPopoverHandler,
     isValid,
     touched,
+    errorMessage,
+    setErrorMessage,
 }) => {
     const inputRef = useRef(null);
     useEffect(() => {
@@ -54,6 +56,11 @@ const EditShift = ({
                                 <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
                                     {errors.shiftName}
                                 </div>
+                            )}
+                            {errorMessage && (
+                                <p className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                    {errorMessage}
+                                </p>
                             )}
                         </div>
                         <label
@@ -107,12 +114,11 @@ const EditShift = ({
                                 onBlur={handleBlur}
                                 value={values.shiftEndTime}
                             />
-                            {errors.shiftEndTime &&
-                                touched.shiftEndTime && (
-                                    <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                                        {errors.shiftEndTime}
-                                    </div>
-                                )}
+                            {errors.shiftEndTime && touched.shiftEndTime && (
+                                <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                    {errors.shiftEndTime}
+                                </div>
+                            )}
                         </div>
 
                         <label
@@ -137,10 +143,10 @@ const EditShift = ({
                                 value={values.lunchTime}
                             />
                             {errors.lunchTime && touched.lunchTime && (
-                                        <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                                            {errors.lunchTime}
-                                        </div>
-                                    )}
+                                <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                    {errors.lunchTime}
+                                </div>
+                            )}
                         </div>
 
                         <label
@@ -165,10 +171,10 @@ const EditShift = ({
                                 value={values.teaTime}
                             />
                             {errors.teaTime && touched.teaTime && (
-                                        <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                                            {errors.teaTime}
-                                        </div>
-                                    )}
+                                <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                    {errors.teaTime}
+                                </div>
+                            )}
                         </div>
 
                         <label
@@ -193,10 +199,10 @@ const EditShift = ({
                                 value={values.lateGrace}
                             />
                             {errors.lateGrace && touched.lateGrace && (
-                                        <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                                            {errors.lateGrace}
-                                        </div>
-                                    )}
+                                <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                    {errors.lateGrace}
+                                </div>
+                            )}
                         </div>
                     </div>
                     <div className="w-full">
@@ -223,10 +229,10 @@ const EditShift = ({
                                 value={values.otBeginAfter}
                             />
                             {errors.otBeginAfter && touched.otBeginAfter && (
-                                        <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                                            {errors.otBeginAfter}
-                                        </div>
-                                    )}
+                                <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                    {errors.otBeginAfter}
+                                </div>
+                            )}
                         </div>
 
                         <label
@@ -238,7 +244,8 @@ const EditShift = ({
                         <div className="relative">
                             <input
                                 className={classNames(
-                                    errors.nextShiftDelay && touched.nextShiftDelay
+                                    errors.nextShiftDelay &&
+                                        touched.nextShiftDelay
                                         ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
                                         : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
                                     "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
@@ -250,11 +257,12 @@ const EditShift = ({
                                 onBlur={handleBlur}
                                 value={values.nextShiftDelay}
                             />
-                            {errors.nextShiftDelay && touched.nextShiftDelay && (
-                                        <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                                            {errors.nextShiftDelay}
-                                        </div>
-                                    )}
+                            {errors.nextShiftDelay &&
+                                touched.nextShiftDelay && (
+                                    <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                        {errors.nextShiftDelay}
+                                    </div>
+                                )}
                         </div>
 
                         <label
@@ -266,7 +274,8 @@ const EditShift = ({
                         <div className="relative">
                             <input
                                 className={classNames(
-                                    errors.accidentalPunchBuffer && touched.accidentalPunchBuffer
+                                    errors.accidentalPunchBuffer &&
+                                        touched.accidentalPunchBuffer
                                         ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
                                         : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
                                     "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
@@ -278,11 +287,12 @@ const EditShift = ({
                                 onBlur={handleBlur}
                                 value={values.accidentalPunchBuffer}
                             />
-                            {errors.accidentalPunchBuffer && touched.accidentalPunchBuffer && (
-                                        <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                                            {errors.accidentalPunchBuffer}
-                                        </div>
-                                    )}
+                            {errors.accidentalPunchBuffer &&
+                                touched.accidentalPunchBuffer && (
+                                    <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                        {errors.accidentalPunchBuffer}
+                                    </div>
+                                )}
                         </div>
 
                         <label
@@ -294,7 +304,8 @@ const EditShift = ({
                         <div className="relative">
                             <input
                                 className={classNames(
-                                    errors.halfDayMinimumMinutes && touched.halfDayMinimumMinutes
+                                    errors.halfDayMinimumMinutes &&
+                                        touched.halfDayMinimumMinutes
                                         ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
                                         : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
                                     "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
@@ -306,11 +317,12 @@ const EditShift = ({
                                 onBlur={handleBlur}
                                 value={values.halfDayMinimumMinutes}
                             />
-                            {errors.halfDayMinimumMinutes && touched.halfDayMinimumMinutes && (
-                                        <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                                            {errors.halfDayMinimumMinutes}
-                                        </div>
-                                    )}
+                            {errors.halfDayMinimumMinutes &&
+                                touched.halfDayMinimumMinutes && (
+                                    <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                        {errors.halfDayMinimumMinutes}
+                                    </div>
+                                )}
                         </div>
 
                         <label
@@ -322,7 +334,8 @@ const EditShift = ({
                         <div className="relative">
                             <input
                                 className={classNames(
-                                    errors.fullDayMinimumMinutes && touched.fullDayMinimumMinutes
+                                    errors.fullDayMinimumMinutes &&
+                                        touched.fullDayMinimumMinutes
                                         ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
                                         : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
                                     "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
@@ -334,11 +347,12 @@ const EditShift = ({
                                 onBlur={handleBlur}
                                 value={values.fullDayMinimumMinutes}
                             />
-                            {errors.fullDayMinimumMinutes && touched.fullDayMinimumMinutes && (
-                                        <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                                            {errors.fullDayMinimumMinutes}
-                                        </div>
-                                    )}
+                            {errors.fullDayMinimumMinutes &&
+                                touched.fullDayMinimumMinutes && (
+                                    <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                        {errors.fullDayMinimumMinutes}
+                                    </div>
+                                )}
                         </div>
 
                         <label
@@ -363,10 +377,10 @@ const EditShift = ({
                                 value={values.shortLeaves}
                             />
                             {errors.shortLeaves && touched.shortLeaves && (
-                                        <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                                            {errors.shortLeaves}
-                                        </div>
-                                    )}
+                                <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                    {errors.shortLeaves}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </section>
@@ -387,7 +401,10 @@ const EditShift = ({
                     <button
                         type="button"
                         className="bg-zinc-400 hover:bg-zinc-500 dark:bg-zinc-600 rounded w-20 p-2 text-base font-medium dark:hover:bg-zinc-700"
-                        onClick={() => editShiftPopoverHandler({ id: ""})}
+                        onClick={() => {
+                            editShiftPopoverHandler({ id: "" });
+                            setErrorMessage("");
+                        }}
                     >
                         Cancel
                     </button>

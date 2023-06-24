@@ -35,7 +35,7 @@ const DeleteCompany = ({
                 <section className="flex flex-row gap-4 mt-4 mb-2">
                 <button
                     className="bg-redAccent-500 dark:bg-redAccent-700 rounded w-20 p-2 text-base font-medium dark:hover:bg-redAccent-500 hover:bg-redAccent-700"
-                    onClick={deleteButtonClicked}
+                    // onClick={deleteButtonClicked}
                     type="submit"
                 >
                     Delete

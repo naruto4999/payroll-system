@@ -90,7 +90,8 @@ const NewCompanyEntryForm = () => {
         editCompanyPopoverHandler({ id: "" });
     };
 
-    const deleteButtonClicked = async () => {
+    const deleteButtonClicked = async (e) => {
+        e.preventDefault()
         if (confirmDelete.phrase == "confirm") {
             deleteCompany({ id: confirmDelete.id });
             setDeleteCompanyPopover(false);

@@ -4,13 +4,13 @@ const classNames = (...classes) => {
     return classes.filter(Boolean).join(" ");
 };
 
-const EditLeaveGrade = ({
+const EditHoliday = ({
     handleSubmit,
     handleChange,
     handleBlur,
     values,
     errors,
-    editLeaveGradePopoverHandler,
+    editHolidayPopoverHandler,
     isValid,
     disableEdit,
     errorMessage,
@@ -24,7 +24,7 @@ const EditLeaveGrade = ({
     }, []);
     return (
         <div className="text-gray-900 dark:text-slate-100">
-            <h1 className="font-medium text-2xl mb-2">Edit Leave Grade</h1>
+            <h1 className="font-medium text-2xl mb-2">Edit Holiday</h1>
 
             <form
                 action=""
@@ -32,10 +32,10 @@ const EditLeaveGrade = ({
                 onSubmit={handleSubmit}
             >
                 <label
-                    htmlFor="leave-grade-name"
+                    htmlFor="holiday-name"
                     className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
                 >
-                    Leave Grade Name
+                    Holiday Name
                 </label>
                 <div className="relative">
                     <input
@@ -45,25 +45,25 @@ const EditLeaveGrade = ({
                                       "dark:text-slate-100 text-gray-900 text-opacity-50 dark:text-opacity-50  border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25 rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2 p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
                                   )
                                 : classNames(
-                                      errors.leaveGradeName &&
-                                          touched.leaveGradeName
+                                      errors.holidayName &&
+                                          touched.holidayName
                                           ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
                                           : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
                                       "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
                                   )
                         }
                         type="text"
-                        id="leaveGradeName"
-                        name="leaveGradeName"
+                        id="holidayName"
+                        name="holidayName"
                         onChange={handleChange}
                         onBlur={handleBlur}
-                        value={values.leaveGradeName}
+                        value={values.holidayName}
                         disabled={disableEdit}
                         ref={inputRef}
                     />
-                    {errors.leaveGradeName && touched.leaveGradeName && (
+                    {errors.holidayName && touched.holidayName && (
                         <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                            {errors.leaveGradeName}
+                            {errors.holidayName}
                         </div>
                     )}
                     {errorMessage && (
@@ -73,29 +73,29 @@ const EditLeaveGrade = ({
                     )}
                 </div>
                 <label
-                    htmlFor="leave-grade-limit"
+                    htmlFor="holidayDate"
                     className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
                 >
-                    Limit
+                    Date
                 </label>
                 <div className="relative">
                     <input
                         className={classNames(
-                            errors.leaveGradeLimit && touched.leaveGradeLimit
+                            errors.holidayDate && touched.holidayDate
                                 ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
                                 : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
                             "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full custom-number-input"
                         )}
-                        type="number"
-                        id="leaveGradeLimit"
-                        name="leaveGradeLimit"
+                        type="date"
+                        id="holidayDate"
+                        name="holidayDate"
                         onChange={handleChange}
                         onBlur={handleBlur}
-                        value={values.leaveGradeLimit}
+                        value={values.holidayDate}
                     />
-                    {errors.leaveGradeLimit && touched.leaveGradeLimit && (
+                    {errors.holidayDate && touched.holidayDate && (
                         <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                            {errors.leaveGradeLimit}
+                            {errors.holidayDate}
                         </div>
                     )}
                 </div>
@@ -111,9 +111,9 @@ const EditLeaveGrade = ({
                         type="button"
                         className="bg-zinc-400 hover:bg-zinc-500 dark:bg-zinc-600 rounded w-20 p-2 text-base font-medium dark:hover:bg-zinc-700"
                         onClick={() => {
-                            editLeaveGradePopoverHandler({
+                            editHolidayPopoverHandler({
                                 id: "",
-                                mandatory_leave: false,
+                                mandatory_holiday: false,
                             });
                             setErrorMessage("");
                         }}
@@ -125,4 +125,4 @@ const EditLeaveGrade = ({
         </div>
     );
 };
-export default EditLeaveGrade;
+export default EditHoliday;

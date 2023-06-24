@@ -18,6 +18,7 @@ import {
     useGetShiftsQuery,
     useAddShiftMutation,
     useUpdateShiftMutation,
+    useDeleteShiftMutation,
 } from "../../../../authentication/api/shiftEntryApiSlice";
 import EditShift from "./EditShift";
 import ViewShift from "./ViewShift";
@@ -50,13 +51,16 @@ const ShiftEntryForm = () => {
     const [addShift, { isLoading: isAddingShift }] = useAddShiftMutation();
     const [updateShift, { isLoading: isUpdatingShift }] =
         useUpdateShiftMutation();
-    // const [deleteShift, { isLoading: isDeletingShift }] = useDeleteShiftMutation();
+    const [deleteShift, { isLoading: isDeletingShift }] =
+        useDeleteShiftMutation();
     const [addShiftPopover, setAddShiftPopover] = useState(false);
     const [showLoadingBar, setShowLoadingBar] = useOutletContext();
     const [editShiftPopover, setEditShiftPopover] = useState(false);
     const [viewShiftPopover, setViewShiftPopover] = useState(false);
     const [updateShiftId, setUpdateShiftId] = useState("");
-    const [msg, setMsg] = useState("");
+    // const [msg, setMsg] = useState("");
+    const [errorMessage, setErrorMessage] = useState("");
+
     const [viewShiftId, setViewShiftId] = useState("");
 
     const editShiftPopoverHandler = (shift) => {
@@ -71,7 +75,6 @@ const ShiftEntryForm = () => {
         setViewShiftId(shift.id);
     };
 
-    console.log(viewShiftPopover);
     const addButtonClicked = async (values, formikBag) => {
         console.log(formikBag);
         const toSend = {
@@ -89,15 +92,20 @@ const ShiftEntryForm = () => {
             full_day_minimum_minutes: values.fullDayMinimumMinutes,
             short_leaves: values.shortLeaves,
         };
-        console.log(toSend);
         try {
             const data = await addShift(toSend).unwrap();
             console.log(data);
+            setErrorMessage("");
+            setAddShiftPopover(!addShiftPopover);
+            formikBag.resetForm();
         } catch (err) {
             console.log(err);
+            if (err.status === 400) {
+                setErrorMessage("Shift with this name already exists");
+            } else {
+                console.log(err);
+            }
         }
-        setAddShiftPopover(!addShiftPopover);
-        formikBag.resetForm();
     };
 
     const updateButtonClicked = async (values, formikBag) => {
@@ -120,12 +128,17 @@ const ShiftEntryForm = () => {
                 short_leaves: values.shortLeaves,
             }).unwrap();
             console.log(data);
+            setErrorMessage("");
+            formikBag.resetForm();
+            editShiftPopoverHandler({ id: "" });
         } catch (err) {
             console.log(err);
+            if (err.status === 400) {
+                setErrorMessage("Shift with this name already exists");
+            } else {
+                console.log(err);
+            }
         }
-
-        formikBag.resetForm();
-        editShiftPopoverHandler({ id: "" });
     };
 
     const deleteButtonClicked = async (id) => {
@@ -219,8 +232,10 @@ const ShiftEntryForm = () => {
 
     useEffect(() => {
         // Add more for adding, editing and deleting later on
-        setShowLoadingBar(isLoading || isAddingShift || isUpdatingShift);
-    }, [isLoading, isAddingShift, isUpdatingShift]);
+        setShowLoadingBar(
+            isLoading || isAddingShift || isUpdatingShift || isDeletingShift
+        );
+    }, [isLoading, isAddingShift, isUpdatingShift, isDeletingShift]);
 
     if (globalCompany.id == null) {
         return (
@@ -371,6 +386,8 @@ const ShiftEntryForm = () => {
                         component={(props) => (
                             <AddShift
                                 {...props}
+                                errorMessage={errorMessage}
+                                setErrorMessage={setErrorMessage}
                                 setAddShiftPopover={setAddShiftPopover}
                             />
                         )}
@@ -415,6 +432,8 @@ const ShiftEntryForm = () => {
                         component={(props) => (
                             <EditShift
                                 {...props}
+                                errorMessage={errorMessage}
+                                setErrorMessage={setErrorMessage}
                                 editShiftPopoverHandler={
                                     editShiftPopoverHandler
                                 }
@@ -428,7 +447,7 @@ const ShiftEntryForm = () => {
                     isOpen={viewShiftPopover}
                     onRequestClose={() =>
                         viewShiftPopoverHandler({
-                            id: null
+                            id: null,
                         })
                     }
                     style={{
@@ -438,7 +457,13 @@ const ShiftEntryForm = () => {
                     }}
                 >
                     <ViewShift
-                        shift={viewShiftId ? fetchedData.find((shift) => shift.id === viewShiftId) : null}
+                        shift={
+                            viewShiftId
+                                ? fetchedData.find(
+                                      (shift) => shift.id === viewShiftId
+                                  )
+                                : null
+                        }
                         viewShiftPopoverHandler={viewShiftPopoverHandler}
                     />
                 </ReactModal>

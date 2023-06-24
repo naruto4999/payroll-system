@@ -26,13 +26,13 @@ export const shiftEntryApiSlice = apiSlice.injectEndpoints({
             }),
             invalidatesTags: ['Shifts']
         }),
-        // deleteBank: builder.mutation({
-        //     query: bank => ({
-        //         url: `/api/bank/${bank.company}/${bank.id}`,
-        //         method: 'DELETE',
-        //     }),
-        //     invalidatesTags: ['Shifts']
-        // }),
+        deleteShift: builder.mutation({
+            query: shift => ({
+                url: `/api/shift/${shift.company}/${shift.id}`,
+                method: 'DELETE',
+            }),
+            invalidatesTags: ['Shifts']
+        }),
     })
 })
 
@@ -40,4 +40,5 @@ export const {
     useGetShiftsQuery,
     useAddShiftMutation,
     useUpdateShiftMutation,
+    useDeleteShiftMutation,
 } = shiftEntryApiSlice
