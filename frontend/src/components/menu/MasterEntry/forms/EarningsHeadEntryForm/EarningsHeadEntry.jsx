@@ -41,12 +41,16 @@ const EarningsHeadEntry = () => {
         refetch,
     } = useGetEarningsHeadsQuery(globalCompany);
     // console.log(fetchedData)
-    const [addEarningsHead, { isLoading: isAddingEarningsHead }] = useAddEarningsHeadMutation();
-    const [updateEarningsHead, { isLoading: isUpdatingEarningsHead }] = useUpdateEarningsHeadMutation();
-    const [deleteEarningsHead, { isLoading: isDeletingEarningsHead }] = useDeleteEarningsHeadMutation();
+    const [addEarningsHead, { isLoading: isAddingEarningsHead }] =
+        useAddEarningsHeadMutation();
+    const [updateEarningsHead, { isLoading: isUpdatingEarningsHead }] =
+        useUpdateEarningsHeadMutation();
+    const [deleteEarningsHead, { isLoading: isDeletingEarningsHead }] =
+        useDeleteEarningsHeadMutation();
     const [addEarningsHeadPopover, setAddEarningsHeadPopover] = useState(false);
     const [showLoadingBar, setShowLoadingBar] = useOutletContext();
-    const [editEarningsHeadPopover, setEditEarningsHeadPopover] = useState(false);
+    const [editEarningsHeadPopover, setEditEarningsHeadPopover] =
+        useState(false);
     const [updateEarningsHeadId, setUpdateEarningsHeadId] = useState("");
     // const [msg, setMsg] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
@@ -127,22 +131,30 @@ const EarningsHeadEntry = () => {
             header: () => "Actions",
             cell: (props) => (
                 <div className="flex justify-center gap-4">
-                    <div
-                        className="p-1.5 dark:bg-redAccent-700 rounded bg-redAccent-500 dark:hover:bg-redAccent-500 hover:bg-redAccent-700"
-                        onClick={() =>
-                            deleteButtonClicked(props.row.original.id)
-                        }
-                    >
-                        <FaRegTrashAlt className="h-4" />
-                    </div>
-                    <div
-                        className="p-1.5 dark:bg-teal-700 rounded bg-teal-600 dark:hover:bg-teal-600 hover:bg-teal-700"
-                        onClick={() =>
-                            editEarningsHeadPopoverHandler(props.row.original)
-                        }
-                    >
-                        <FaPen className="h-4" />
-                    </div>
+                    {props.row.original.mandatory_earning ? (
+                        ""
+                    ) : (
+                        <>
+                            <div
+                                className="p-1.5 dark:bg-redAccent-700 rounded bg-redAccent-500 dark:hover:bg-redAccent-500 hover:bg-redAccent-700"
+                                onClick={() =>
+                                    deleteButtonClicked(props.row.original.id)
+                                }
+                            >
+                                <FaRegTrashAlt className="h-4" />
+                            </div>
+                            <div
+                                className="p-1.5 dark:bg-teal-700 rounded bg-teal-600 dark:hover:bg-teal-600 hover:bg-teal-700"
+                                onClick={() =>
+                                    editEarningsHeadPopoverHandler(
+                                        props.row.original
+                                    )
+                                }
+                            >
+                                <FaPen className="h-4" />
+                            </div>
+                        </>
+                    )}
                 </div>
             ),
         }),
@@ -166,9 +178,17 @@ const EarningsHeadEntry = () => {
 
     useEffect(() => {
         setShowLoadingBar(
-            isLoading || isAddingEarningsHead || isDeletingEarningsHead || isUpdatingEarningsHead
+            isLoading ||
+                isAddingEarningsHead ||
+                isDeletingEarningsHead ||
+                isUpdatingEarningsHead
         );
-    }, [isLoading, isAddingEarningsHead, isDeletingEarningsHead, isUpdatingEarningsHead]);
+    }, [
+        isLoading,
+        isAddingEarningsHead,
+        isDeletingEarningsHead,
+        isUpdatingEarningsHead,
+    ]);
 
     if (globalCompany.id == null) {
         return (
@@ -187,7 +207,9 @@ const EarningsHeadEntry = () => {
                 <div className="flex flex-row place-content-between flex-wrap">
                     <div className="mr-4">
                         <h1 className="text-3xl font-medium">Earnings Head</h1>
-                        <p className="text-sm my-2">Add more earnings head here</p>
+                        <p className="text-sm my-2">
+                            Add more earnings head here
+                        </p>
                     </div>
                     <button
                         className="dark:bg-teal-700 my-auto rounded p-2 text-base font-medium bg-teal-500 hover:bg-teal-600 dark:hover:bg-teal-600 whitespace-nowrap"
@@ -308,7 +330,9 @@ const EarningsHeadEntry = () => {
                                 {...props}
                                 errorMessage={errorMessage}
                                 setErrorMessage={setErrorMessage}
-                                setAddEarningsHeadPopover={setAddEarningsHeadPopover}
+                                setAddEarningsHeadPopover={
+                                    setAddEarningsHeadPopover
+                                }
                             />
                         )}
                     />
@@ -317,7 +341,9 @@ const EarningsHeadEntry = () => {
                 <ReactModal
                     className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-lg h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
                     isOpen={editEarningsHeadPopover}
-                    onRequestClose={() => editEarningsHeadPopoverHandler({ id: "" })}
+                    onRequestClose={() =>
+                        editEarningsHeadPopoverHandler({ id: "" })
+                    }
                     style={{
                         overlay: {
                             backgroundColor: "rgba(0, 0, 0, 0.75)",
@@ -325,11 +351,15 @@ const EarningsHeadEntry = () => {
                     }}
                 >
                     <Formik
-                        initialValues={{ earningsHeadName: updateEarningsHeadId
-                            ? fetchedData.find(
-                                  (earningsHead) => earningsHead.id === updateEarningsHeadId
-                              )?.name
-                            : "", }}
+                        initialValues={{
+                            earningsHeadName: updateEarningsHeadId
+                                ? fetchedData.find(
+                                      (earningsHead) =>
+                                          earningsHead.id ===
+                                          updateEarningsHeadId
+                                  )?.name
+                                : "",
+                        }}
                         validationSchema={EarningsHeadSchema}
                         onSubmit={updateButtonClicked}
                         component={(props) => (
@@ -337,7 +367,9 @@ const EarningsHeadEntry = () => {
                                 {...props}
                                 errorMessage={errorMessage}
                                 setErrorMessage={setErrorMessage}
-                                editEarningsHeadPopoverHandler={editEarningsHeadPopoverHandler}
+                                editEarningsHeadPopoverHandler={
+                                    editEarningsHeadPopoverHandler
+                                }
                             />
                         )}
                     />

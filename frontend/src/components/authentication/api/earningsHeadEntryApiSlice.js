@@ -8,7 +8,7 @@ export const earningsHeadEntryApiSlice = apiSlice.injectEndpoints({
                 method: 'GET',
             }),
             keepUnusedDataFor: 1,
-            providesTags: ['EarningsHead']
+            providesTags: ['EarningsHeads']
         }),
         addEarningsHead: builder.mutation({
             query: earningsHead => ({
@@ -16,7 +16,7 @@ export const earningsHeadEntryApiSlice = apiSlice.injectEndpoints({
                 method: 'POST',
                 body: earningsHead,
             }),
-            invalidatesTags: ['EarningsHead']
+            invalidatesTags: ['EarningsHeads']
         }),
         updateEarningsHead: builder.mutation({
             query: earningsHead => ({
@@ -24,14 +24,14 @@ export const earningsHeadEntryApiSlice = apiSlice.injectEndpoints({
                 method: 'PUT',
                 body: earningsHead,
             }),
-            invalidatesTags: ['EarningsHead']
+            invalidatesTags: ['EarningsHeads']
         }),
         deleteEarningsHead: builder.mutation({
             query: earningsHead => ({
                 url: `/api/earnings-head/${earningsHead.company}/${earningsHead.id}`,
                 method: 'DELETE',
             }),
-            invalidatesTags: ['EarningsHead']
+            invalidatesTags: ['EarningsHeads']
         }),
     })
 })

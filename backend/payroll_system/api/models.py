@@ -150,7 +150,7 @@ class CompanyDetails(models.Model):
     key_person = models.CharField(max_length=64, blank=True)
     involving_industry = models.CharField(max_length=64, blank=True)
     phone_no = models.PositiveBigIntegerField()
-    email = models.EmailField(max_length=254)
+    email = models.EmailField(max_length=150)
     pf_no = models.CharField(max_length=30)
     esi_no = models.PositiveBigIntegerField()
     head_office_address = models.TextField()
@@ -249,6 +249,59 @@ class EarningsHead(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="earnings_heads")
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="earnings_heads")
     name = models.CharField(max_length=256, null=False, blank=False)
+    mandatory_earning = models.BooleanField(default=False, null=False, blank=False)
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'company', 'name'], name='unique_earnings_head_name_per_user')
+        ]
+    def __str__(self):
+        return f"{self.user.email} -> {self.company.name}: {self.name}"
+    
+class DeductionsHead(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="deductions_head")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="deductions_head")
+    name = models.CharField(max_length=256, null=False, blank=False)
+    mandatory_deduction = models.BooleanField(default=False, null=False, blank=False)
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'company', 'name'], name='unique_deductions_head_name_per_user')
+        ]
+    def __str__(self):
+        return f"{self.user.email} -> {self.company.name}: {self.name}"
+    
+
+# Employee related models
+
+#Employee personal details
+class EmployeePersonalDetail(models.Model):
+    GENDER_CHOICES = (
+        ('M', 'Male'),
+        ('F', 'Female'),
+        ('O', 'Other'),
+    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="employee_personal_detail")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="employee_personal_detail")
+    name = models.CharField(max_length=256, null=False, blank=False)
+    paycode = models.PositiveSmallIntegerField(null=False, blank=False)
+    attendance_card_no = models.PositiveSmallIntegerField(null=False, blank=False)
+    father_or_husband_name = models.CharField(max_length=256, null=True, blank=True)
+    mother_name = models.CharField(max_length=256, null=True, blank=True)
+    wife_name = models.CharField(max_length=256, null=True, blank=True)
+    dob = models.DateField(null=True, blank=True)
+    phone_number = models.CharField(max_length=10, null=True, blank=True)
+    email = models.EmailField(max_length=150, null=True, blank=True)
+    pan_number = models.CharField(max_length=10, null=True, blank=True)
+    driving_licence = models.CharField(max_length=15, null=True, blank=True) #cross check the number of digits
+    passport = models.CharField(max_length=8, null=True, blank=True)
+    aadhaar = models.CharField(max_length=12, null=True, blank=True)
+    gender = models.CharField(max_length=10, null=True, blank=True)
+    gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
+
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'company', 'paycode'], name='unique_paycode_per_employee_within_each_company_and_user')
+        ]
     def __str__(self):
         return f"{self.user.email} -> {self.company.name}: {self.name}"
     
@@ -291,3 +344,29 @@ def create_default_holidays_for_company(sender, instance, created, **kwargs):
         
         # Create the third row for the new user
         Holiday.objects.create(user=user,company=company, name='Independence Day', date=independence_day, mandatory_holiday=True)
+
+@receiver(post_save, sender=Company)
+def create_default_deductions_for_company(sender, instance, created, **kwargs):
+    if created:
+        company = instance  # Assign the instance to a variable
+        user = company.user
+        # Create the default deduction on post save for company
+        DeductionsHead.objects.create(user=user,company=company, name='PF', mandatory_deduction=True)
+        DeductionsHead.objects.create(user=user,company=company, name='ESI', mandatory_deduction=True)
+        DeductionsHead.objects.create(user=user,company=company, name='VPF', mandatory_deduction=True)
+        DeductionsHead.objects.create(user=user,company=company, name='Loan', mandatory_deduction=True)
+        DeductionsHead.objects.create(user=user,company=company, name='Advance', mandatory_deduction=True)
+        DeductionsHead.objects.create(user=user,company=company, name='TDS', mandatory_deduction=True)
+        DeductionsHead.objects.create(user=user,company=company, name='Others', mandatory_deduction=True)
+
+@receiver(post_save, sender=Company)
+def create_default_earning_for_company(sender, instance, created, **kwargs):
+    if created:
+        company = instance  # Assign the instance to a variable
+        user = company.user
+        # Create the default earning on post save for company
+        EarningsHead.objects.create(user=user,company=company, name='Basic', mandatory_earning=True)
+        EarningsHead.objects.create(user=user,company=company, name='HRA', mandatory_earning=True)
+        EarningsHead.objects.create(user=user,company=company, name='Conveyance', mandatory_earning=True)
+        EarningsHead.objects.create(user=user,company=company, name='Other', mandatory_earning=True)
+        EarningsHead.objects.create(user=user,company=company, name='Medical', mandatory_earning=True)

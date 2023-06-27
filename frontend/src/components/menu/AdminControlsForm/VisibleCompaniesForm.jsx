@@ -1,8 +1,22 @@
 import React, { useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useState } from "react";
-import { useReactTable, useRowSelect } from '@tanstack/react-table'
-import { FaRegTrashAlt, FaPen, FaCircleNotch, FaCheck, FaWindowMinimize } from "react-icons/fa";
+import {
+    createColumnHelper,
+    flexRender,
+    getCoreRowModel,
+    useReactTable,
+    getSortedRowModel,
+} from "@tanstack/react-table";
+import {
+    FaRegTrashAlt,
+    FaPen,
+    FaCircleNotch,
+    FaCheck,
+    FaWindowMinimize,
+    FaAngleUp,
+    FaAngleDown,
+} from "react-icons/fa";
 import { useOutletContext } from "react-router-dom";
 import { useEffect } from "react";
 
@@ -37,9 +51,13 @@ const IndeterminateCheckbox = React.forwardRef(
                     className="appearance-none border border-slate-400 rounded-md w-5 h-5 peer"
                     {...rest}
                 />
-                { indeterminate ? (<FaWindowMinimize className="absolute text-teal-600 dark:text-teal-500 left-[3px] bottom-[7px]"/>) : (<FaCheck className="absolute text-teal-600 dark:text-teal-500 left-[3px] bottom-[3px] peer-[&:not(:checked)]:hidden"/>)}
-                {console.log(rest)}
-                {console.log(indeterminate)}
+                {indeterminate ? (
+                    <FaWindowMinimize className="absolute text-teal-600 dark:text-teal-500 left-[3px] bottom-[7px]" />
+                ) : (
+                    <FaCheck className="absolute text-teal-600 dark:text-teal-500 left-[3px] bottom-[3px] peer-[&:not(:checked)]:hidden" />
+                )}
+                {/* {console.log(rest)} */}
+                {/* {console.log(indeterminate)} */}
             </label>
         );
     }
@@ -71,9 +89,10 @@ const VisibleCompaniesForm = () => {
 
     const saveButtonClicked = async () => {
         const body = [];
-        console.log(selectedFlatRows);
-        for (let i = 0; i < selectedFlatRows.length; i++) {
-            const original = selectedFlatRows[i].original;
+        const selectedRows = table.getSelectedRowModel().flatRows;
+        console.log(selectedRows);
+        for (let i = 0; i < selectedRows.length; i++) {
+            const original = selectedRows[i].original;
             // Do something with the original property, for example:
             // console.log(original);
             body.push({
@@ -89,64 +108,61 @@ const VisibleCompaniesForm = () => {
             console.log(err);
         }
     };
+    const columnHelper = createColumnHelper();
 
-    const columns = useMemo(
-        () => [
-            {
-                Header: "ID",
-                accessor: "id",
-            },
-            {
-                Header: "Company Name",
-                accessor: "name",
-            },
-        ],
-        []
-    );
+    const columns = [
+        columnHelper.accessor("id", {
+            header: () => "ID",
+            cell: (props) => props.renderValue(),
+            //   footer: props => props.column.id,
+        }),
+        columnHelper.accessor("name", {
+            header: () => "Company Head Name",
+            cell: (props) => props.renderValue(),
+            //   footer: info => info.column.id,
+        }),
+        columnHelper.display({
+            id: "select",
+            header: ({ table }) => (
+                <IndeterminateCheckbox
+                    {...{
+                        checked: table.getIsAllRowsSelected(),
+                        indeterminate: table.getIsSomeRowsSelected(),
+                        onChange: table.getToggleAllRowsSelectedHandler(),
+                    }}
+                />
+            ),
+            cell: ({ row }) => (
+                <div>
+                    <IndeterminateCheckbox
+                        {...{
+                            checked: row.getIsSelected(),
+                            disabled: !row.getCanSelect(),
+                            indeterminate: row.getIsSomeSelected(),
+                            onChange: row.getToggleSelectedHandler(),
+                        }}
+                    />
+                </div>
+            ),
+        }),
+    ];
 
     const data = useMemo(
         () => (fetchedData ? [...fetchedData] : []),
         [fetchedData]
     );
 
-    const tableHooks = (hooks) => {
-        hooks.visibleColumns.push((columns) => [
-            ...columns,
-            {
-                id: "selection",
-                Header: ({ getToggleAllRowsSelectedProps }) => (
-                    <div>
-                        <IndeterminateCheckbox
-                            {...getToggleAllRowsSelectedProps()}
-
-                        />
-                    </div>
-                ),
-                Cell: ({ row }) => (
-                    <div>
-                        <IndeterminateCheckbox
-                            {...row.getToggleRowSelectedProps()}
-                        />
-                    </div>
-                ),
-            },
-        ]);
-    };
-
-    const tableInstance = useTable({ columns, data }, useRowSelect, tableHooks);
-    const {
-        getTableProps,
-        getTableBodyProps,
-        headerGroups,
-        rows,
-        prepareRow,
-        selectedFlatRows,
-        state: { selectedRowIds },
-    } = tableInstance;
-
-    console.log(rows);
-    console.log(selectedRowIds);
-    // console.log(showLoadingBar)
+    const table = useReactTable({
+        data,
+        columns,
+        enableRowSelection: true,
+        initialState: {
+            sorting: [{ id: "name", desc: true }],
+        },
+        getCoreRowModel: getCoreRowModel(),
+        getSortedRowModel: getSortedRowModel(),
+    });
+    console.log(table);
     useEffect(() => {
         setShowLoadingBar(isLoading || isUpdatingVisibleCompanies);
         // if (rows.length > 0) {
@@ -157,17 +173,15 @@ const VisibleCompaniesForm = () => {
         //         }
         //     }
         // }
-    }, [isLoading, tableInstance, rows, isUpdatingVisibleCompanies]);
+    }, [isLoading, isUpdatingVisibleCompanies]);
+
     useEffect(() => {
-        if (rows.length > 0) {
-            for (let i = 0; i < rows.length; i++) {
-                console.log(`${rows[0].original.id} fetched data: ${fetchedData[0].id}`)
-                if (rows[i].original.id == fetchedData[i].id) {
-                    rows[i].toggleRowSelected(fetchedData[i].visible)
-                }
+        if (fetchedData?.length > 0) {
+            for (let i = 0; i < fetchedData.length; i++) {
+                table.setRowSelection(fetchedData?.map((item) => item.visible));
             }
         }
-    }, [fetchedData])
+    }, [fetchedData]);
 
     if (isLoading) {
         return (
@@ -191,62 +205,98 @@ const VisibleCompaniesForm = () => {
                         Save
                     </button>
                 </div>
-
-                <div
-                    className={`overflow-hidden rounded border border-black border-opacity-50 shadow-md m-5 mx-auto`}
-                >
-                    <table
-                        className="w-full border-collapse text-center text-sm"
-                        {...getTableProps()}
-                    >
+                <div className="overflow-hidden rounded border border-black border-opacity-50 shadow-md m-5 max-w-5xl mx-auto">
+                    <table className="w-full border-collapse text-center text-sm">
                         <thead className="bg-blueAccent-600 dark:bg-blueAccent-700">
-                            {headerGroups.map((headerGroup) => (
-                                <tr {...headerGroup.getHeaderGroupProps()}>
-                                    {headerGroup.headers.map((column) => (
+                            {table.getHeaderGroups().map((headerGroup) => (
+                                <tr key={headerGroup.id}>
+                                    {headerGroup.headers.map((header) => (
                                         <th
+                                            key={header.id}
                                             scope="col"
                                             className="px-4 py-4 font-medium"
-                                            {...column.getHeaderProps()}
                                         >
-                                            {column.render("Header")}
+                                            {header.isPlaceholder ? null : (
+                                                <div className="">
+                                                    <div
+                                                        {...{
+                                                            className:
+                                                                header.column.getCanSort()
+                                                                    ? "cursor-pointer select-none flex flex-row justify-center"
+                                                                    : "",
+                                                            onClick:
+                                                                header.column.getToggleSortingHandler(),
+                                                        }}
+                                                    >
+                                                        {flexRender(
+                                                            header.column
+                                                                .columnDef
+                                                                .header,
+                                                            header.getContext()
+                                                        )}
+
+                                                        {/* {console.log(
+                                                            header.column.getIsSorted()
+                                                        )} */}
+                                                        {header.column.getCanSort() ? (
+                                                            <div className="relative pl-2">
+                                                                <FaAngleUp
+                                                                    className={classNames(
+                                                                        header.column.getIsSorted() ==
+                                                                            "asc"
+                                                                            ? "text-teal-700"
+                                                                            : "",
+                                                                        "absolute text-lg -translate-y-2"
+                                                                    )}
+                                                                />
+                                                                <FaAngleDown
+                                                                    className={classNames(
+                                                                        header.column.getIsSorted() ==
+                                                                            "desc"
+                                                                            ? "text-teal-700"
+                                                                            : "",
+                                                                        "absolute text-lg translate-y-2"
+                                                                    )}
+                                                                />
+                                                            </div>
+                                                        ) : (
+                                                            ""
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </th>
                                     ))}
                                 </tr>
                             ))}
                         </thead>
-                        <tbody
-                            className="divide-y divide-black divide-opacity-50 border-t border-black border-opacity-50"
-                            {...getTableBodyProps()}
-                        >
-                            {rows.map((row) => {
-                                prepareRow(row);
-                                return (
-                                    <tr
-                                        className="dark:hover:bg-zinc-800 hover:bg-zinc-200"
-                                        {...row.getRowProps()}
-                                    >
-                                        {row.cells.map((cell) => {
-                                            return (
-                                                <td
-                                                    className="px-4 py-4 font-normal"
-                                                    {...cell.getCellProps()}
-                                                >
-                                                    <div className="text-sm">
-                                                        <div className="font-medium">
-                                                            {cell.render(
-                                                                "Cell"
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                            );
-                                        })}
-                                    </tr>
-                                );
-                            })}
+                        <tbody className="divide-y divide-black divide-opacity-50 border-t border-black border-opacity-50">
+                            {table.getRowModel().rows.map((row) => (
+                                <tr
+                                    className="dark:hover:bg-zinc-800 hover:bg-zinc-200"
+                                    key={row.id}
+                                >
+                                    {row.getVisibleCells().map((cell) => (
+                                        <td
+                                            className="px-4 py-4 font-normal"
+                                            key={cell.id}
+                                        >
+                                            <div className="text-sm">
+                                                <div className="font-medium">
+                                                    {flexRender(
+                                                        cell.column.columnDef
+                                                            .cell,
+                                                        cell.getContext()
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </td>
+                                    ))}
+                                </tr>
+                            ))}
                         </tbody>
                     </table>
-                </div>
+                </div>                
             </section>
         );
     }

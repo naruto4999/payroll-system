@@ -111,7 +111,7 @@ const NewCompanyEntryForm = () => {
             //   footer: props => props.column.id,
         }),
         columnHelper.accessor("name", {
-            header: () => "Bank Name",
+            header: () => "Company Name",
             cell: (props) => props.renderValue(),
             //   footer: info => info.column.id,
         }),

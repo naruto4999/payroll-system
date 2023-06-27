@@ -1,14 +1,5 @@
 import Sidebar from "./menu/Sidebar";
 import { Routes, Route, useParams } from "react-router-dom";
-// import CompanyEntryForm from "./menu/MasterEntry/forms/CompanyEntryForm";
-// import BankEntryForm from "./menu/MasterEntry/forms/BankEntryForm";
-// import CategoryEntryForm from "./menu/MasterEntry/forms/CategoryEntryForm";
-// import DepartmentEntryForm from "./menu/MasterEntry/forms/DepartmentEntryForm";
-// import DesignationEntryForm from "./menu/MasterEntry/forms/DesignationEntryForm";
-// import EmployeeEntryForm from "./menu/MasterEntry/forms/EmployeeEntryForm";
-// import HolidayEntryForm from "./menu/MasterEntry/forms/HolidayEntryForm";
-// import SalaryGradeEntryForm from "./menu/MasterEntry/forms/SalaryGradeEntryForm";
-// import ShiftEntryForm from "./menu/MasterEntry/forms/ShiftEntryForm";
 import LoginForm from "./authentication/Login";
 import Profile from "./authentication/Profile";
 import RegisterForm from "./authentication/Register";
@@ -21,13 +12,14 @@ import DepartmentEntryForm from "./menu/MasterEntry/forms/DepartmentEntryForm/De
 import DesignationEntryForm from "./menu/MasterEntry/forms/DesignationEntryForm/DesignationEntryForm";
 import SalaryGradeEntryForm from "./menu/MasterEntry/forms/SalaryGradeEntryForm/SalaryGradeEntryForm";
 import RegularRegisterForm from "./menu/AdminControlsForm/RegularRegisterForm";
-// import VisibleCompaniesForm from "./menu/AdminControlsForm/VisibleCompaniesForm";
+import VisibleCompaniesForm from "./menu/AdminControlsForm/VisibleCompaniesForm";
 import CategoryEntryForm from "./menu/MasterEntry/forms/CategoryEntryForm/CategoryEntryForm";
 import BankEntryForm from "./menu/MasterEntry/forms/BankEntryForm/BankEntryForm";
 import LeaveGradeEntryForm from "./menu/MasterEntry/forms/LeaveGradeEntryForm/LeaveGradeEntryForm";
 import ShiftEntryForm from "./menu/MasterEntry/forms/ShiftEntryForm/ShiftEntryForm";
 import HolidayEntryForm from "./menu/MasterEntry/forms/HolidayEntryForm/HolidayEntryForm";
-import EarningsHeadEntry from "./menu/MasterEntry/forms/EarningsHeadEntry/EarningsHeadEntry";
+import EarningsHeadEntry from "./menu/MasterEntry/forms/EarningsHeadEntryForm/EarningsHeadEntry";
+import DeductionsHeadEntryForm from "./menu/MasterEntry/forms/DeductionsHeadEntryForm/DeductionsHeadEntryForm";
 
 // import store, { persistor } from "./authentication/store/index"
 // import { PersistGate } from "redux-persist/integration/react";
@@ -121,8 +113,12 @@ function App() {
                         element={<HolidayEntryForm />}
                     />
                     <Route
-                        path="earning-heads-entry"
+                        path="earnings-heads-entry"
                         element={<EarningsHeadEntry />}
+                    />
+                    <Route
+                        path="deductions-heads-entry"
+                        element={<DeductionsHeadEntryForm />}
                     />
                     {/* <Route path="bank-entry" element={<BankEntryForm />} />
                     <Route path="category-entry" element={<CategoryEntryForm />} />
@@ -143,10 +139,10 @@ function App() {
                         path="regular-registration"
                         element={<RegularRegisterForm />}
                     />
-                    {/* <Route
+                    <Route
                         path="visible-companies"
                         element={<VisibleCompaniesForm />}
-                    /> */}
+                    />
                 </Route>
                 <Route path="login" element={<LoginForm />} />
                 <Route path="register" element={<RegisterForm />} />
