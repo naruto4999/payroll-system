@@ -7,11 +7,15 @@ const baseQuery = fetchBaseQuery({
         const token = getState().auth.token;
         if (token) {
             headers.set("authorization", "Bearer " + String(token));
-            headers.set("content-Type", "application/json")
+            // if (!headers.has("content-type")) {
+            //     console.log("hahahahahahahahhahah")
+            //     headers.set("content-type", "application/json");
+            //   }
+            // headers.set("content-Type", "multipart/form-data")
             headers.set("ngrok-skip-browser-warning", "69420")
             // 'Content-Type': 'application/json',
         }
-        console.log(token)
+        
         return headers;
     },
 });

@@ -20,6 +20,7 @@ import ShiftEntryForm from "./menu/MasterEntry/forms/ShiftEntryForm/ShiftEntryFo
 import HolidayEntryForm from "./menu/MasterEntry/forms/HolidayEntryForm/HolidayEntryForm";
 import EarningsHeadEntry from "./menu/MasterEntry/forms/EarningsHeadEntryForm/EarningsHeadEntry";
 import DeductionsHeadEntryForm from "./menu/MasterEntry/forms/DeductionsHeadEntryForm/DeductionsHeadEntryForm";
+import EmployeeEntryForm from "./menu/MasterEntry/forms/EmployeeEntryForm/EmployeeEntryForm";
 
 // import store, { persistor } from "./authentication/store/index"
 // import { PersistGate } from "redux-persist/integration/react";
@@ -119,6 +120,10 @@ function App() {
                     <Route
                         path="deductions-heads-entry"
                         element={<DeductionsHeadEntryForm />}
+                    />
+                    <Route
+                        path="employee-entry"
+                        element={<EmployeeEntryForm />}
                     />
                     {/* <Route path="bank-entry" element={<BankEntryForm />} />
                     <Route path="category-entry" element={<CategoryEntryForm />} />

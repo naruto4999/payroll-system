@@ -4,6 +4,8 @@ from django.conf import settings
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from datetime import datetime, timedelta
+import pathlib
+from django.utils import timezone
 
 
 #imports for signals
@@ -271,39 +273,145 @@ class DeductionsHead(models.Model):
     
 
 # Employee related models
-
+def employee_photo_handler(instance, filename):
+    fpath = pathlib.Path(filename)
+    new_image_name = f"{instance.user.username}/{instance.user.id}_{instance.company.id}_{instance.id}{fpath.suffix}"
+    return new_image_name
 #Employee personal details
 class EmployeePersonalDetail(models.Model):
     GENDER_CHOICES = (
         ('M', 'Male'),
         ('F', 'Female'),
-        ('O', 'Other'),
+        ('O', 'Others'),
     )
+    MARITAL_STATUS_CHOICES = (
+        ('S', 'Single'),
+        ('M', 'Married'),
+        ('D', 'Divorced'),
+        ('W', 'Widowed'),
+    )
+    BLOOD_GROUP_CHOICES = (
+        ('A+', 'A+'),
+        ('A-', 'A-'),
+        ('B+', 'B+'),
+        ('B-', 'B-'),
+        ('AB+', 'AB+'),
+        ('AB-', 'AB-'),
+        ('O+', 'O+'),
+        ('O-', 'O-'),
+    )
+    EDUCATION_CHOICES = [
+        ('0', 'No Qualification'),
+        ('1', '1st class'),
+        ('2', '2nd class'),
+        ('3', '3rd class'),
+        ('4', '4th class'),
+        ('5', '5th class'),
+        ('6', '6th class'),
+        ('7', '7th class'),
+        ('8', '8th class'),
+        ('9', '9th class'),
+        ('10', '10th class'),
+        ('11', '11th class'),
+        ('12', '12th class'),
+        ('G', 'Graduate'),
+        ('PG', ' Post Graduate')
+    ]
+    STATE_AND_UT_CHOICES = [
+        #States
+        ('AP', 'Andhra Pradesh'),
+        ('AR', 'Arunachal Pradesh'),
+        ('AS', 'Assam'),
+        ('BR', 'Bihar'),
+        ('CT', 'Chhattisgarh'),
+        ('GA', 'Goa'),
+        ('GJ', 'Gujarat'),
+        ('HR', 'Haryana'),
+        ('HP', 'Himachal Pradesh'),
+        ('JH', 'Jharkhand'),
+        ('KA', 'Karnataka'),
+        ('KL', 'Kerala'),
+        ('MP', 'Madhya Pradesh'),
+        ('MH', 'Maharashtra'),
+        ('MN', 'Manipur'),
+        ('ML', 'Meghalaya'),
+        ('MZ', 'Mizoram'),
+        ('NL', 'Nagaland'),
+        ('OR', 'Odisha'),
+        ('PB', 'Punjab'),
+        ('RJ', 'Rajasthan'),
+        ('SK', 'Sikkim'),
+        ('TN', 'Tamil Nadu'),
+        ('TG', 'Telangana'),
+        ('TR', 'Tripura'),
+        ('UP', 'Uttar Pradesh'),
+        ('UK', 'Uttarakhand'),
+        ('WB', 'West Bengal'),
+
+        #Union
+        ('JK', 'Jammu and Kashmir'),
+        ('AN', 'Andaman and Nicobar Islands'),
+        ('CH', 'Chandigarh'),
+        ('DN', 'Dadra and Nagar Haveli'),
+        ('DD', 'Daman and Diu'),
+        ('DL', 'Delhi'),
+        ('LD', 'Lakshadweep'),
+        ('PY', 'Puducherry'),
+    ]
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="employee_personal_detail")
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="employee_personal_detail")
     name = models.CharField(max_length=256, null=False, blank=False)
     paycode = models.PositiveSmallIntegerField(null=False, blank=False)
     attendance_card_no = models.PositiveSmallIntegerField(null=False, blank=False)
+    photo = models.ImageField(upload_to=employee_photo_handler ,null=True, blank=True)
     father_or_husband_name = models.CharField(max_length=256, null=True, blank=True)
     mother_name = models.CharField(max_length=256, null=True, blank=True)
     wife_name = models.CharField(max_length=256, null=True, blank=True)
     dob = models.DateField(null=True, blank=True)
     phone_number = models.CharField(max_length=10, null=True, blank=True)
+    alternate_phone_number = models.CharField(max_length=10, null=True, blank=True)
     email = models.EmailField(max_length=150, null=True, blank=True)
     pan_number = models.CharField(max_length=10, null=True, blank=True)
-    driving_licence = models.CharField(max_length=15, null=True, blank=True) #cross check the number of digits
+    driving_licence = models.CharField(max_length=20, null=True, blank=True) #cross check the number of digits
     passport = models.CharField(max_length=8, null=True, blank=True)
     aadhaar = models.CharField(max_length=12, null=True, blank=True)
-    gender = models.CharField(max_length=10, null=True, blank=True)
-    gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
+    handicapped = models.BooleanField(null=False, blank=False, default=False)
+    gender = models.CharField(max_length=1, choices=GENDER_CHOICES, null=True, blank=True)
+    marital_status = models.CharField(max_length=1, choices=MARITAL_STATUS_CHOICES, null=True, blank=True)
+    blood_group = models.CharField(max_length=3, choices=BLOOD_GROUP_CHOICES, null=True, blank=True)
+    religion = models.CharField(max_length=50, null=True, blank=True)
+    education_qualification = models.CharField(max_length=2, choices=EDUCATION_CHOICES, null=True, blank=True)
+    technical_qualification = models.CharField(max_length=50, null=True, blank=True)
+    local_address = models.CharField(max_length=256, null=True, blank=True)
+    local_district = models.CharField(max_length=30, null=True, blank=True)
+    local_state_or_union_territory = models.CharField(max_length=2, choices=STATE_AND_UT_CHOICES, null=True, blank=True)
+    local_pincode = models.CharField(max_length=6, null=True, blank=True)
+    permanent_address = models.CharField(max_length=256, null=True, blank=True)
+    permanent_district = models.CharField(max_length=30, null=True, blank=True)
+    permanent_state_or_union_territory = models.CharField(max_length=2, choices=STATE_AND_UT_CHOICES, null=True, blank=True)
+    permanent_pincode = models.CharField(max_length=6, null=True, blank=True)
+    isActive = models.BooleanField(default=True, null=False, blank=False)
+    created_at = models.DateTimeField(auto_now_add=True)
 
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['user', 'company', 'paycode'], name='unique_paycode_per_employee_within_each_company_and_user')
+            models.UniqueConstraint(fields=['user', 'company', 'paycode'], name='unique_paycode_per_employee_within_each_company_and_user'),
+            models.UniqueConstraint(fields=['user', 'company', 'attendance_card_no'], name='unique_attendance_card_no_per_employee_within_each_company_and_user')
         ]
-    def __str__(self):
+    def _str_(self):
         return f"{self.user.email} -> {self.company.name}: {self.name}"
+    
+
+
+
+# class EmployeePhoto(models.Model):
+#     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="employee_photos")
+#     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="employee_photos")
+#     employee = models.OneToOneField(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="employee_photo", primary_key=True)
+#     photo = models.ImageField(upload_to=employee_photo_handler ,null=True, blank=True)
+#     def __str__(self):
+#         return f"{self.user.email} -> {self.company.name} -> {self.employee.name}"
     
 @receiver(post_save, sender=Company)
 def create_default_leave_grades_for_company(sender, instance, created, **kwargs):

@@ -1,7 +1,7 @@
 from dataclasses import field
 from rest_framework import serializers
 
-from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, DeductionsHead
+from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, DeductionsHead, EmployeePersonalDetail
 from rest_framework import serializers
 
 
@@ -123,3 +123,26 @@ class DeductionsHeadSerializer(serializers.ModelSerializer):
         model = DeductionsHead
         fields = ('id', 'user', 'company', 'name', 'mandatory_deduction')
         read_only_fields = ('mandatory_deduction',)
+
+class EmployeePersonalDetailSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    # creator_id = serializers.ReadOnlyField(source='creator.id')
+    photo = serializers.ImageField(required=False)
+    education_qualification = serializers.ChoiceField(choices=EmployeePersonalDetail.EDUCATION_CHOICES, allow_blank=True)
+    local_state_or_union_territory = serializers.ChoiceField(choices=EmployeePersonalDetail.STATE_AND_UT_CHOICES, allow_blank=True)
+    permanent_state_or_union_territory = serializers.ChoiceField(choices=EmployeePersonalDetail.STATE_AND_UT_CHOICES, allow_blank=True)
+    gender = serializers.ChoiceField(choices=EmployeePersonalDetail.GENDER_CHOICES, allow_blank=True)
+    marital_status = serializers.ChoiceField(choices=EmployeePersonalDetail.MARITAL_STATUS_CHOICES, allow_blank=True)
+    blood_group = serializers.ChoiceField(choices=EmployeePersonalDetail.BLOOD_GROUP_CHOICES, allow_blank=True)
+    isActive = serializers.ReadOnlyField()
+    created_at = serializers.ReadOnlyField()
+
+    class Meta:
+        model = EmployeePersonalDetail
+        fields = ['id', 'user', 'company', 'name', 'paycode', 'attendance_card_no', 'photo',
+                  'father_or_husband_name', 'mother_name', 'wife_name', 'dob', 'phone_number', 'alternate_phone_number',
+                  'email', 'pan_number', 'driving_licence', 'passport', 'aadhaar', 'handicapped', 'gender',
+                  'marital_status', 'blood_group', 'religion', 'education_qualification', 'technical_qualification',
+                  'local_address', 'local_district', 'local_state_or_union_territory', 'local_pincode',
+                  'permanent_address', 'permanent_district', 'permanent_state_or_union_territory', 'permanent_pincode',
+                  'isActive', 'created_at']

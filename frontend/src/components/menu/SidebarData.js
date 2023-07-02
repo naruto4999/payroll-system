@@ -1,5 +1,5 @@
 import { FaUserTie, FaPlus, FaPen, FaHome, FaThLarge, FaLevelUpAlt, FaMoneyCheckAlt, FaCogs,FaUserShield , FaUsersCog, FaEye, FaBusinessTime} from "react-icons/fa";
-import { FaMountainSun, FaMoneyBill1, FaDollarSign, FaArrowTrendDown } from "react-icons/fa6";
+import { FaMountainSun, FaMoneyBill1, FaDollarSign, FaArrowTrendDown, FaPerson } from "react-icons/fa6";
 
 
 const menuItems = [
@@ -73,6 +73,11 @@ const menuItems = [
                     },
                     
                 ]
+            },
+            {
+                title: "Employee Entry",
+                icon: FaPerson,
+                path: "/home/employee-entry"
             },
         ],
     },

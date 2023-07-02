@@ -1,5 +1,5 @@
 from django.urls import path, include
-from .views import CompanyListCreateAPIView, CompanyDetailsMixinView, CompanyRetrieveUpdateDestroyAPIView, DepartmentListCreateAPIView, DepartmentRetrieveUpdateDestroyAPIView, DesignationListCreateAPIView, DesignationRetrieveUpdateDestroyAPIView, SalaryGradeListCreateAPIView, SalaryGradeRetrieveUpdateDestroyAPIView, RegularRegisterListCreateAPIViewView, RegularRetrieveDestroyAPIView, CompanyVisibilityPatchAPIView, CategoryListCreateAPIView, CategoryRetrieveUpdateDestroyAPIView, BankListCreateAPIView, BankRetrieveUpdateDestroyAPIView, LeaveGradeListCreateAPIView, LeaveGradeRetrieveUpdateDestroyAPIView, ShiftListCreateAPIView, ShiftRetrieveUpdateDestroyAPIView, HolidayListCreateAPIView, HolidayRetrieveUpdateDestroyAPIView, EarningsHeadListCreateAPIView, EarningsHeadRetrieveUpdateDestroyAPIView, DeductionsHeadListCreateAPIView, DeductionsHeadRetrieveUpdateDestroyAPIView
+from .views import CompanyListCreateAPIView, CompanyDetailsMixinView, CompanyRetrieveUpdateDestroyAPIView, DepartmentListCreateAPIView, DepartmentRetrieveUpdateDestroyAPIView, DesignationListCreateAPIView, DesignationRetrieveUpdateDestroyAPIView, SalaryGradeListCreateAPIView, SalaryGradeRetrieveUpdateDestroyAPIView, RegularRegisterListCreateAPIViewView, RegularRetrieveDestroyAPIView, CompanyVisibilityPatchAPIView, CategoryListCreateAPIView, CategoryRetrieveUpdateDestroyAPIView, BankListCreateAPIView, BankRetrieveUpdateDestroyAPIView, LeaveGradeListCreateAPIView, LeaveGradeRetrieveUpdateDestroyAPIView, ShiftListCreateAPIView, ShiftRetrieveUpdateDestroyAPIView, HolidayListCreateAPIView, HolidayRetrieveUpdateDestroyAPIView, EarningsHeadListCreateAPIView, EarningsHeadRetrieveUpdateDestroyAPIView, DeductionsHeadListCreateAPIView, DeductionsHeadRetrieveUpdateDestroyAPIView, EmployeePersonalDetailListCreateView
 from .auth.views import LoginView, RegisterView, RefreshView, PasswordResetAPIView, PasswordResetConfirmView, VerifyOTPView
 from django.contrib.auth.views import PasswordResetCompleteView
 
@@ -32,6 +32,10 @@ urlpatterns = [
     path('earnings-head/<int:company_id>/<int:id>', EarningsHeadRetrieveUpdateDestroyAPIView.as_view()),
     path('deductions-head/<int:company_id>', DeductionsHeadListCreateAPIView.as_view()),
     path('deductions-head/<int:company_id>/<int:id>', DeductionsHeadRetrieveUpdateDestroyAPIView.as_view()),
+
+    # Use URLs like this from now on, separate for GET requests and POST request and don't use query params in POST request, only use them in GET requests
+    path('employee-personal-detail/<int:company_id>', EmployeePersonalDetailListCreateView.as_view()),
+    path('employee-personal-detail', EmployeePersonalDetailListCreateView.as_view()),
     
 
     path('auth/login/', LoginView.as_view(), name='login'),

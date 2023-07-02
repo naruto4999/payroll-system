@@ -41,8 +41,8 @@ CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:4173',
-    'https://fe56-103-248-94-173.ngrok-free.app',
-    'https://eaf1-103-248-94-173.ngrok-free.app',
+    'https://3306-103-198-173-126.ngrok-free.app',
+    'https://66c3-103-198-173-126.ngrok-free.app',
     'http://localhost:5173',
     'http://127.0.0.1:8000',
     'http://localhost:8000',
@@ -180,9 +180,15 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 
 STATICFILES_DIRS = [BASE_DIR / "static"]
+
+MEDIA_ROOT = BASE_DIR / "mediafiles"
+
+MEDIA_URL = '/media/'
+
+# STATIC_ROOT = BASE_DIR / "staticfiles-cdn" #this is a production setting
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
