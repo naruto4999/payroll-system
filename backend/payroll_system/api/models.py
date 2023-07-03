@@ -277,6 +277,7 @@ def employee_photo_handler(instance, filename):
     fpath = pathlib.Path(filename)
     new_image_name = f"{instance.user.username}/{instance.user.id}_{instance.company.id}_{instance.id}{fpath.suffix}"
     return new_image_name
+
 #Employee personal details
 class EmployeePersonalDetail(models.Model):
     GENDER_CHOICES = (
@@ -403,7 +404,43 @@ class EmployeePersonalDetail(models.Model):
         return f"{self.user.email} -> {self.company.name}: {self.name}"
     
 
+class EmployeeProfessionalDetail(models.Model):
+    WEEKDAY_CHOICES = [
+        ('mon', 'Monday'),
+        ('tue', 'Tuesday'),
+        ('wed', 'Wednesday'),
+        ('thu', 'Thursday'),
+        ('fri', 'Friday'),
+        ('sat', 'Saturday'),
+        ('sun', 'Sunday'),
+    ]
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="employee_professional_detail")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="employee_professional_detail")
+    employee = models.ForeignKey(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="employee_professional_detail")
+    date_of_joining = models.DateField(null=False, blank=False)
+    date_of_confirm = models.DateField(null=False, blank=False)
+    department = models.ForeignKey(Deparment, on_delete=models.CASCADE, related_name="employee_professional_detail", null=True, blank=True)
+    designation = models.ForeignKey(Designation, on_delete=models.CASCADE, related_name="employee_professional_detail", null=True, blank=True)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="employee_professional_detail", null=True, blank=True)
+    salary_grade = models.ForeignKey(SalaryGrade, on_delete=models.CASCADE, related_name="employee_professional_detail", null=True, blank=True)
+    shift = models.ForeignKey(Shift, on_delete=models.CASCADE, related_name="employee_professional_detail", null=True, blank=True)
+    weekly_off = models.CharField(max_length=3, choices=WEEKDAY_CHOICES, null=True, blank=True)
+    extra_off = models.CharField(max_length=3, choices=WEEKDAY_CHOICES, null=True, blank=True)
 
+    
+
+    def save(self, *args, **kwargs):
+        if self.department.company != self.company or self.department.user != self.user:
+            raise ValidationError("Invalid department selected.")
+        elif self.designation.company != self.company or self.designation.user != self.user:
+            raise ValidationError("Invalid designation selected.")
+        elif self.category.company != self.company or self.category.user != self.user:
+            raise ValidationError("Invalid category selected.")
+        elif self.salary_grade.company != self.company or self.salary_grade.user != self.user:
+            raise ValidationError("Invalid salary grade selected.")
+        elif self.shift.company != self.company or self.shift.user != self.user:
+            raise ValidationError("Invalid shift selected.")
+        super().save(*args, **kwargs)
 
 # class EmployeePhoto(models.Model):
 #     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="employee_photos")

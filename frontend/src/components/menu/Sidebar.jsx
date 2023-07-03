@@ -27,7 +27,7 @@ const Sidebar = () => {
         items = menuItems
         // const items = itemsWithoutAdminControl
     }
-    const [showSidebar, setShowSidebar] = useState(true);
+    const [showSidebar, setShowSidebar] = useState(false);
     const [showLoadingBar, setShowLoadingBar] = useState(false);
     const sidebarHandler = () => {
         setShowSidebar(!showSidebar);

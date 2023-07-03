@@ -853,7 +853,6 @@ class EmployeePersonalDetailListCreateView(generics.ListCreateAPIView):
                 error_message = {"attendance_card_no": "This Paycode already exists"}
             else:
                 error_message = {"error": "Some error occurred"}
-            error_message = {"error": "Some error occurred"}
             return Response({"error": error_message}, status=status.HTTP_400_BAD_REQUEST)
 
 class EmployeePersonalDetailUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):

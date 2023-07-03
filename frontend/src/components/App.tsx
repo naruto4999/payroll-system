@@ -33,6 +33,8 @@ import { useState, useEffect } from "react";
 import SwitchToggle from "./UI/ToggleSwitch";
 
 function App() {
+    
+
     const [theme, setTheme] = useState("");
 
     useEffect(() => {
@@ -57,7 +59,7 @@ function App() {
     };
 
     return (
-        <div className="min-h-screen bg-zinc-100 text-gray-900 font-sans dark:bg-zinc-900 dark:text-slate-100">
+        <div className="min-h-[100dvh] bg-zinc-100 text-gray-900 font-sans dark:bg-zinc-900 dark:text-slate-100 overflow-y-clip">
             <div className="absolute top-0 right-0 m-3 sm:m-4 dark:text-slate-100 dark:text-opacity-70 flex flex-row items-center text-xs sm:text-base gap-2 z-20">
                 Dark
                 <SwitchToggle theme={theme} switch={themeSwitch} />
@@ -97,18 +99,12 @@ function App() {
                         path="category-entry"
                         element={<CategoryEntryForm />}
                     />
-                    <Route
-                        path="bank-entry"
-                        element={<BankEntryForm />}
-                    />
+                    <Route path="bank-entry" element={<BankEntryForm />} />
                     <Route
                         path="leave-grade-entry"
                         element={<LeaveGradeEntryForm />}
                     />
-                    <Route
-                        path="shift-entry"
-                        element={<ShiftEntryForm />}
-                    />
+                    <Route path="shift-entry" element={<ShiftEntryForm />} />
                     <Route
                         path="holiday-entry"
                         element={<HolidayEntryForm />}

@@ -5,7 +5,7 @@ const classNames = (...classes) => {
     return classes.filter(Boolean).join(" ");
 };
 
-const AddEmployee = ({
+const AddEmployeePersonalDetail = ({
     handleSubmit,
     handleChange,
     handleBlur,
@@ -18,21 +18,30 @@ const AddEmployee = ({
     setErrorMessage,
     setFieldValue,
 }) => {
-    const inputRef = useRef(null);
-    console.log(errors)
+    // const inputRef = useRef(null);
+    console.log(errors);
     const [sameAsLocal, setSameAsLocal] = useState(false);
-    useEffect(() => {
-        inputRef.current.focus();
-    }, []);
+    // useEffect(() => {
+    //     inputRef.current.focus();
+    // }, []);
 
     useEffect(() => {
         if (sameAsLocal) {
             setFieldValue("permanentAddress", values.localAddress);
             setFieldValue("permanentDistrict", values.localDistrict);
-            setFieldValue("permanentStateOrUnionTerritory", values.localStateOrUnionTerritory);
+            setFieldValue(
+                "permanentStateOrUnionTerritory",
+                values.localStateOrUnionTerritory
+            );
             setFieldValue("permanentPincode", values.localPincode);
         }
-    }, [sameAsLocal, values.localAddress, values.localDistrict, values.localStateOrUnionTerritory, values.localPincode]);
+    }, [
+        sameAsLocal,
+        values.localAddress,
+        values.localDistrict,
+        values.localStateOrUnionTerritory,
+        values.localPincode,
+    ]);
 
     console.log(values);
 
@@ -42,7 +51,7 @@ const AddEmployee = ({
 
     return (
         <div className="text-gray-900 dark:text-slate-100">
-            <h1 className="font-medium text-2xl mb-2">Add Employee</h1>
+            {/* <h1 className="font-medium text-2xl mb-2">Add Employee</h1> */}
             <form
                 action=""
                 className="flex flex-col gap-2 justify-center"
@@ -113,20 +122,22 @@ const AddEmployee = ({
                             }}
                         />
                     </label>
-                    {errors.photo  && (
+                    {errors.photo && (
                         <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold mx-auto">
                             {errors.photo}
                         </div>
                     )}
                 </section>
-                <section className="flex flex-row justify-center gap-4">
+                <section className="flex flex-row justify-center gap-4 flex-wrap lg:flex-nowrap">
                     <div className="w-full">
                         <label
                             htmlFor="paycode"
                             className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
                         >
                             Paycode
-                            <span className="dark:text-redAccent-600 text-redAccent-500 ">*</span>
+                            <span className="dark:text-redAccent-600 text-redAccent-500 ">
+                                *
+                            </span>
                         </label>
                         <div className="relative">
                             <input
@@ -160,7 +171,9 @@ const AddEmployee = ({
                             className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
                         >
                             Attendance Card Number
-                            <span className="dark:text-redAccent-600 text-redAccent-500 ">*</span>
+                            <span className="dark:text-redAccent-600 text-redAccent-500 ">
+                                *
+                            </span>
                         </label>
                         <div className="relative">
                             <input
@@ -197,7 +210,9 @@ const AddEmployee = ({
                             className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
                         >
                             Employee Name
-                            <span className="dark:text-redAccent-600 text-redAccent-500 ">*</span>
+                            <span className="dark:text-redAccent-600 text-redAccent-500 ">
+                                *
+                            </span>
                         </label>
                         <div className="relative">
                             <input
@@ -214,7 +229,6 @@ const AddEmployee = ({
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                                 value={values.employeeName}
-                                ref={inputRef}
                             />
                             {errors.employeeName && touched.employeeName && (
                                 <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
@@ -244,7 +258,6 @@ const AddEmployee = ({
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                                 value={values.fatherOrHusbandName}
-                                ref={inputRef}
                             />
                             {errors.fatherOrHusbandName &&
                                 touched.fatherOrHusbandName && (
@@ -274,7 +287,6 @@ const AddEmployee = ({
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                                 value={values.motherName}
-                                ref={inputRef}
                             />
                             {errors.motherName && touched.motherName && (
                                 <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
@@ -303,7 +315,6 @@ const AddEmployee = ({
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                                 value={values.wifeName}
-                                ref={inputRef}
                             />
                             {errors.wifeName && touched.wifeName && (
                                 <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
@@ -332,7 +343,6 @@ const AddEmployee = ({
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                                 value={values.dob}
-                                ref={inputRef}
                             />
                             {errors.dob && touched.dob && (
                                 <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
@@ -363,7 +373,6 @@ const AddEmployee = ({
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                                 value={values.phoneNumber}
-                                ref={inputRef}
                             />
                             {errors.phoneNumber && touched.phoneNumber && (
                                 <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
@@ -397,7 +406,6 @@ const AddEmployee = ({
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                                 value={values.alternatePhoneNumber}
-                                ref={inputRef}
                             />
                             {errors.alternatePhoneNumber &&
                                 touched.alternatePhoneNumber && (
@@ -428,7 +436,6 @@ const AddEmployee = ({
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                                 value={values.religion}
-                                ref={inputRef}
                             />
                             {errors.religion && touched.religion && (
                                 <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
@@ -458,7 +465,6 @@ const AddEmployee = ({
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                                 value={values.email}
-                                ref={inputRef}
                             />
                             {errors.email && touched.email && (
                                 <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
@@ -566,7 +572,6 @@ const AddEmployee = ({
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                                 value={values.panNumber}
-                                ref={inputRef}
                             />
                             {errors.panNumber && touched.panNumber && (
                                 <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
@@ -597,7 +602,6 @@ const AddEmployee = ({
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                                 value={values.drivingLicence}
-                                ref={inputRef}
                             />
                             {errors.drivingLicence &&
                                 touched.drivingLicence && (
@@ -628,7 +632,6 @@ const AddEmployee = ({
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                                 value={values.passport}
-                                ref={inputRef}
                             />
                             {errors.passport && touched.passport && (
                                 <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
@@ -658,7 +661,6 @@ const AddEmployee = ({
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                                 value={values.aadhaar}
-                                ref={inputRef}
                             />
                             {errors.aadhaar && touched.aadhaar && (
                                 <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
@@ -719,7 +721,6 @@ const AddEmployee = ({
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                                 value={values.technicalQualification}
-                                ref={inputRef}
                             />
                             {errors.technicalQualification &&
                                 touched.technicalQualification && (
@@ -750,7 +751,6 @@ const AddEmployee = ({
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                                 value={values.localAddress}
-                                ref={inputRef}
                             />
                             {errors.localAddress && touched.localAddress && (
                                 <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
@@ -783,7 +783,6 @@ const AddEmployee = ({
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                                 value={values.localDistrict}
-                                ref={inputRef}
                             />
                             {errors.localDistrict && touched.localDistrict && (
                                 <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
@@ -867,7 +866,6 @@ const AddEmployee = ({
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                                 value={values.localPincode}
-                                ref={inputRef}
                             />
                             {errors.localPincode && touched.localPincode && (
                                 <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
@@ -915,7 +913,6 @@ const AddEmployee = ({
                                         ? values.localAddress
                                         : values.permanentAddress
                                 }
-                                ref={inputRef}
                             />
                             {errors.permanentAddress &&
                                 touched.permanentAddress && (
@@ -952,7 +949,6 @@ const AddEmployee = ({
                                 maxLength={30}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
-                                ref={inputRef}
                             />
                             {errors.permanentDistrict &&
                                 touched.permanentDistrict && (
@@ -1048,7 +1044,6 @@ const AddEmployee = ({
                                         ? values.localPincode
                                         : values.permanentPincode
                                 }
-                                ref={inputRef}
                             />
                             {errors.permanentPincode &&
                                 touched.permanentPincode && (
@@ -1059,6 +1054,11 @@ const AddEmployee = ({
                         </div>
                     </div>
                 </section>
+                {errorMessage && errorMessage.error && (
+                    <p className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                        {errorMessage.error}
+                    </p>
+                )}
 
                 <section className="flex flex-row gap-4 mt-4 mb-2">
                     <button
@@ -1078,7 +1078,12 @@ const AddEmployee = ({
                         type="button"
                         className="bg-zinc-400 hover:bg-zinc-500 dark:bg-zinc-600 rounded w-20 p-2 text-base font-medium dark:hover:bg-zinc-700"
                         onClick={() => {
-                            setAddEmployeePopover(false);
+                            setAddEmployeePopover({
+                                addEmployeePersonalDetail: false,
+                                addEmployeeProfessionalDetail: false,
+                                addEmployeeSalaryDetail: false,
+                                addEmployeePfEsiDetail: false,
+                            });
                             setErrorMessage("");
                         }}
                     >
@@ -1089,4 +1094,4 @@ const AddEmployee = ({
         </div>
     );
 };
-export default AddEmployee;
+export default AddEmployeePersonalDetail;

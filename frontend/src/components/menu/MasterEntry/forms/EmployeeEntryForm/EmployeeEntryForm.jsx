@@ -23,8 +23,9 @@ import {
 import { useOutletContext } from "react-router-dom";
 import ReactModal from "react-modal";
 import { Formik } from "formik";
-import AddEmployee from "./AddEmployee";
+import AddEmployeePersonalDetail from "./AddEmployeePersonalDetail";
 import { EmployeePersonalDetailSchema } from "./EmployeeEntrySchema";
+import AddEmployeeNavigationBar from "./AddEmployeeNavigationBar";
 
 ReactModal.setAppElement("#root");
 
@@ -54,16 +55,35 @@ const EmployeeEntryForm = () => {
     //     useUpdateEmployeePersonalDetailMutation();
     // const [deleteEmployeePersonalDetail, { isLoading: isDeletingEmployeePersonalDetail }] =
     //     useDeleteEmployeePersonalDetailMutation();
-    const [addEmployeePopover, setAddEmployeePopover] = useState(false);
+    const [addEmployeePopover, setAddEmployeePopover] = useState({
+        addEmployeePersonalDetail: false,
+        addEmployeeProfessionalDetail: false,
+        addEmployeeSalaryDetail: false,
+        addEmployeePfEsiDetail: false,
+    });
     const [showLoadingBar, setShowLoadingBar] = useOutletContext();
     const [editEmployeePopover, setEditEmployeePopover] = useState(false);
     const [viewEmployeePopover, setViewEmployeePopover] = useState(false);
     const [updateEmployeeId, setUpdateEmployeeId] = useState("");
     // const [msg, setMsg] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
+    console.log(addEmployeePopover);
 
     // const [viewEmployeeId, setViewEmployeeId] = useState("");
 
+    const addEmployeePopoverHandler = (popoverName) => {
+        // setAddEmployeePopover((prevState) => ({
+        //   ...prevState,
+        //   [popoverName]: !prevState[popoverName],
+        // }));
+        setAddEmployeePopover((prevState) => {
+            const updatedState = {};
+            Object.keys(prevState).forEach((key) => {
+                updatedState[key] = key === popoverName;
+            });
+            return updatedState;
+        });
+    };
     const editEmployeePopoverHandler = (employee) => {
         console.log(employee);
         setUpdateEmployeeId(employee.id);
@@ -78,12 +98,6 @@ const EmployeeEntryForm = () => {
 
     const addButtonClicked = async (values, formikBag) => {
         console.log(values);
-        // const formData = new FormData();
-        // formData.append("company", globalCompany.id);
-        // formData.append("name", values.employeeName);
-        // formData.append("paycode", values.paycode);
-        // formData.append("attendance_card_no", values.attendanceCardNumber);
-        // formData.append("photo", values.photo);
         const formData = new FormData();
         formData.append("company", globalCompany.id);
         formData.append("name", values.employeeName);
@@ -277,7 +291,11 @@ const EmployeeEntryForm = () => {
                     </div>
                     <button
                         className="dark:bg-teal-700 my-auto rounded p-2 text-base font-medium bg-teal-500 hover:bg-teal-600 dark:hover:bg-teal-600 whitespace-nowrap"
-                        onClick={() => setAddEmployeePopover(true)}
+                        onClick={() =>
+                            addEmployeePopoverHandler(
+                                "addEmployeePersonalDetail"
+                            )
+                        }
                     >
                         Add Employee
                     </button>
@@ -376,67 +394,95 @@ const EmployeeEntryForm = () => {
                 </div>
 
                 <ReactModal
-                    className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-[1100px] max-h-screen h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl overflow-y-scroll scrollbar"
-                    isOpen={addEmployeePopover}
-                    onRequestClose={() => setAddEmployeePopover(false)}
+                    className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-[1100px] max-h-[100dvh] h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl overflow-y-scroll scrollbar"
+                    isOpen={
+                        addEmployeePopover.addEmployeePersonalDetail ||
+                        addEmployeePopover.addEmployeeProfessionalDetail ||
+                        addEmployeePopover.addEmployeeSalaryDetail ||
+                        addEmployeePopover.addEmployeePfEsiDetail
+                    }
+                    onRequestClose={() =>
+                        setAddEmployeePopover({
+                            addEmployeePersonalDetail: false,
+                            addEmployeeProfessionalDetail: false,
+                            addEmployeeSalaryDetail: false,
+                            addEmployeePfEsiDetail: false,
+                        })
+                    }
                     style={{
                         overlay: {
                             backgroundColor: "rgba(0, 0, 0, 0.75)",
                         },
                     }}
                 >
-                    <Formik
-                        initialValues={{
-                            photo: "",
+                    {" "}
+                    <>
+                        {" "}
+                        <AddEmployeeNavigationBar
+                            addEmployeePopover={addEmployeePopover}
+                            addEmployeePopoverHandler={
+                                addEmployeePopoverHandler
+                            }
+                        />
+                        {addEmployeePopover.addEmployeePersonalDetail && (
+                            <Formik
+                                initialValues={{
+                                    photo: "",
 
-                            // 1st column
-                            paycode: "",
-                            attendanceCardNumber: "",
-                            employeeName: "",
-                            fatherOrHusbandName: "",
-                            motherName: "",
-                            wifeName: "",
-                            dob: "",
-                            phoneNumber: "",
+                                    // 1st column
+                                    paycode: "",
+                                    attendanceCardNumber: "",
+                                    employeeName: "",
+                                    fatherOrHusbandName: "",
+                                    motherName: "",
+                                    wifeName: "",
+                                    dob: "",
+                                    phoneNumber: "",
 
-                            // 2nd column
-                            alternatePhoneNumber: "",
-                            religion: "",
-                            email: "",
-                            handicapped: false,
-                            gender: "",
-                            maritalStatus: "",
-                            bloodGroup: "",
+                                    // 2nd column
+                                    alternatePhoneNumber: "",
+                                    religion: "",
+                                    email: "",
+                                    handicapped: false,
+                                    gender: "",
+                                    maritalStatus: "",
+                                    bloodGroup: "",
 
-                            // 3rd column
-                            panNumber: "",
-                            drivingLicence: "",
-                            passport: "",
-                            aadhaar: "",
-                            educationQualification: "",
-                            technicalQualification: "",
-                            localAddress: "",
+                                    // 3rd column
+                                    panNumber: "",
+                                    drivingLicence: "",
+                                    passport: "",
+                                    aadhaar: "",
+                                    educationQualification: "",
+                                    technicalQualification: "",
+                                    localAddress: "",
 
-                            // 4th column
-                            localDistrict: "",
-                            localStateOrUnionTerritory: "",
-                            localPincode: "",
-                            permanentAddress: "",
-                            permanentDistrict: "",
-                            permanentStateOrUnionTerritory: "",
-                            permanentPincode: "",
-                        }}
-                        validationSchema={EmployeePersonalDetailSchema}
-                        onSubmit={addButtonClicked}
-                        component={(props) => (
-                            <AddEmployee
-                                {...props}
-                                errorMessage={errorMessage}
-                                setErrorMessage={setErrorMessage}
-                                setAddEmployeePopover={setAddEmployeePopover}
+                                    // 4th column
+                                    localDistrict: "",
+                                    localStateOrUnionTerritory: "",
+                                    localPincode: "",
+                                    permanentAddress: "",
+                                    permanentDistrict: "",
+                                    permanentStateOrUnionTerritory: "",
+                                    permanentPincode: "",
+                                }}
+                                validationSchema={EmployeePersonalDetailSchema}
+                                onSubmit={addButtonClicked}
+                                component={(props) => (
+                                    <>
+                                        <AddEmployeePersonalDetail
+                                            {...props}
+                                            errorMessage={errorMessage}
+                                            setErrorMessage={setErrorMessage}
+                                            setAddEmployeePopover={
+                                                setAddEmployeePopover
+                                            }
+                                        />
+                                    </>
+                                )}
                             />
                         )}
-                    />
+                    </>
                 </ReactModal>
 
                 {/* <ReactModal
