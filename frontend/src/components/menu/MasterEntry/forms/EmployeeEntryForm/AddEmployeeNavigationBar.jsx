@@ -10,7 +10,7 @@ const AddEmployeeNavigationBar = ({
 }) => {
     return (
         // <h1>HI</h1>
-        <div className=" h-10 w-full flex flex-row justify-center gap-8 mt-6 md:mt-0">
+        <div className=" h-10 w-fit flex flex-row justify-center gap-8 mt-6 md:mt-0 mx-auto">
             <div>
                 <button
                 onClick={() => {

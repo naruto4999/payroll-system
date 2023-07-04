@@ -1,7 +1,7 @@
 from django.forms import ValidationError
 from django.shortcuts import render
 from rest_framework import generics, status, mixins
-from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, DeductionsHeadSerializer, EmployeePersonalDetailSerializer
+from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, DeductionsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer
 from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -827,9 +827,9 @@ class EmployeePersonalDetailListCreateView(generics.ListCreateAPIView):
         company_id = self.kwargs.get('company_id')
         user = self.request.user
         if user.role == "OWNER":
-            return user.employee_personal_detail.filter(company=company_id)
+            return user.employee_personal_details.filter(company=company_id)
         instance = OwnerToRegular.objects.get(user=user)
-        return instance.owner.employee_personal_detail.filter(company=company_id)
+        return instance.owner.employee_personal_details.filter(company=company_id)
 
 
     def create(self, request, *args, **kwargs):
@@ -854,6 +854,7 @@ class EmployeePersonalDetailListCreateView(generics.ListCreateAPIView):
             else:
                 error_message = {"error": "Some error occurred"}
             return Response({"error": error_message}, status=status.HTTP_400_BAD_REQUEST)
+        
 
 class EmployeePersonalDetailUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes= [IsAuthenticated]
@@ -864,9 +865,9 @@ class EmployeePersonalDetailUpdateDestroyAPIView(generics.RetrieveUpdateDestroyA
         company_id = self.kwargs.get('company_id')
         user = self.request.user
         if user.role == "OWNER":
-            return user.employee_personal_detail.filter(company=company_id)
+            return user.employee_personal_details.filter(company=company_id)
         instance = OwnerToRegular.objects.get(user=user)
-        return instance.owner.employee_personal_detail.filter(company=company_id)
+        return instance.owner.employee_personal_details.filter(company=company_id)
     
     def update(self, request, *args, **kwargs):
         user = self.request.user
@@ -882,6 +883,44 @@ class EmployeePersonalDetailUpdateDestroyAPIView(generics.RetrieveUpdateDestroyA
             instance = OwnerToRegular.objects.get(user=user)
             serializer.save(user=instance.owner)
             return Response(serializer.data, status=status.HTTP_200_OK)
+        
+
+class EmployeeProfessionalDetailCreateAPIView(generics.CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = EmployeeProfessionalDetailSerializer
+    lookup_field = 'company_id'
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        user = self.request.user
+        if user.role == "OWNER":
+            return user.employee_professional_details.filter(company=company_id)
+        instance = OwnerToRegular.objects.get(user=user)
+        return instance.owner.employee_professional_details.filter(company=company_id)
+
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = self.request.user
+        # try:
+        if user.role == "OWNER":
+            serializer.save(user=user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            instance = OwnerToRegular.objects.get(user=user)
+            serializer.save(user=instance.owner)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        # except IntegrityError as e:
+        #     error_string = str(e)
+        #     print(error_string)
+        #     if "user_id" in error_string and "company_id" in error_string and "paycode" in error_string:
+        #         error_message = {"paycode": "This Paycode already exists"}
+        #     elif "user_id" in error_string and "company_id" in error_string and "attendance_card_no" in error_string:
+        #         error_message = {"attendance_card_no": "This Paycode already exists"}
+        #     else:
+        #         error_message = {"error": "Some error occurred"}
+        #     return Response({"error": error_message}, status=status.HTTP_400_BAD_REQUEST)
         
             
 #Viewsets

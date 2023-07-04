@@ -26,6 +26,7 @@ import { Formik } from "formik";
 import AddEmployeePersonalDetail from "./AddEmployeePersonalDetail";
 import { EmployeePersonalDetailSchema } from "./EmployeeEntrySchema";
 import AddEmployeeNavigationBar from "./AddEmployeeNavigationBar";
+import AddEmployeeProfessionalDetail from "./AddEmployeeProfessionalDetail";
 
 ReactModal.setAppElement("#root");
 
@@ -394,7 +395,7 @@ const EmployeeEntryForm = () => {
                 </div>
 
                 <ReactModal
-                    className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-[1100px] max-h-[100dvh] h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl overflow-y-scroll scrollbar"
+                    className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-[1100px] w-fit max-h-[100dvh] h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl overflow-y-scroll scrollbar"
                     isOpen={
                         addEmployeePopover.addEmployeePersonalDetail ||
                         addEmployeePopover.addEmployeeProfessionalDetail ||
@@ -415,9 +416,7 @@ const EmployeeEntryForm = () => {
                         },
                     }}
                 >
-                    {" "}
                     <>
-                        {" "}
                         <AddEmployeeNavigationBar
                             addEmployeePopover={addEmployeePopover}
                             addEmployeePopoverHandler={
@@ -477,6 +476,38 @@ const EmployeeEntryForm = () => {
                                             setAddEmployeePopover={
                                                 setAddEmployeePopover
                                             }
+                                        />
+                                    </>
+                                )}
+                            />
+                        )}
+
+                        {addEmployeePopover.addEmployeeProfessionalDetail && (
+                            <Formik
+                                initialValues={{
+                                    dateOfJoining: "",
+                                    dateOfConfirm: "",
+                                    department: "",
+                                    designation: "",
+                                    category: "",
+                                    salaryGrade: "",
+                                    shift: "",
+                                    weeklyOff: "",
+                                    extraOff: "",
+                                }}
+                                validationSchema={EmployeePersonalDetailSchema}
+                                onSubmit={addButtonClicked}
+                                component={(props) => (
+                                    <>
+                                        <AddEmployeeProfessionalDetail
+                                            {...props}
+                                            errorMessage={errorMessage}
+                                            setErrorMessage={setErrorMessage}
+                                            setAddEmployeePopover={
+                                                setAddEmployeePopover
+                                            }
+                                            globalCompany={globalCompany}
+                                            setShowLoadingBar={setShowLoadingBar}
                                         />
                                     </>
                                 )}

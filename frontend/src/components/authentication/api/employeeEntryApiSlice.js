@@ -34,10 +34,21 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
         //     }),
         //     invalidatesTags: ['Shifts']
         // }),
+        addEmployeeProfessionalDetail: builder.mutation({
+            query: (employeeProfessionalDetail) => ({
+                url: `/api/employee-professional-detail`,
+                method: "POST",
+                body: employeeProfessionalDetail,
+                // formData:true 
+            }),
+            invalidatesTags: ["EmployeeProfessionalDetails"],
+        }),
     }),
 });
 
 export const {
     useGetEmployeePersonalDetailsQuery,
     useAddEmployeePersonalDetailMutation,
+    useAddEmployeeProfessionalDetailMutation,
+    
 } = employeeEntryApiSlice;

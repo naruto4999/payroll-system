@@ -1,7 +1,7 @@
 from dataclasses import field
 from rest_framework import serializers
 
-from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, DeductionsHead, EmployeePersonalDetail
+from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, DeductionsHead, EmployeePersonalDetail, EmployeeProfessionalDetail
 from rest_framework import serializers
 
 
@@ -146,3 +146,12 @@ class EmployeePersonalDetailSerializer(serializers.ModelSerializer):
                   'local_address', 'local_district', 'local_state_or_union_territory', 'local_pincode',
                   'permanent_address', 'permanent_district', 'permanent_state_or_union_territory', 'permanent_pincode',
                   'isActive', 'created_at']
+
+class EmployeeProfessionalDetailSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    weekly_off = serializers.ChoiceField(choices=EmployeeProfessionalDetail.WEEKDAY_CHOICES, allow_blank=False)
+    extra_off = serializers.ChoiceField(choices=EmployeeProfessionalDetail.EXTRA_OFF_CHOICES, allow_blank=False)
+
+    class Meta:
+        model = EmployeePersonalDetail
+        fields = ['user', 'company', 'employee', 'date_of_joining', 'date_of_confirm', 'department', 'designation', 'category', 'salary_grade', 'shift', 'weekly_off', 'extra_off']

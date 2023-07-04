@@ -359,8 +359,8 @@ class EmployeePersonalDetail(models.Model):
         ('LD', 'Lakshadweep'),
         ('PY', 'Puducherry'),
     ]
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="employee_personal_detail")
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="employee_personal_detail")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="employee_personal_details")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="employee_personal_details")
     name = models.CharField(max_length=256, null=False, blank=False)
     paycode = models.PositiveSmallIntegerField(null=False, blank=False)
     attendance_card_no = models.PositiveSmallIntegerField(null=False, blank=False)
@@ -406,6 +406,7 @@ class EmployeePersonalDetail(models.Model):
 
 class EmployeeProfessionalDetail(models.Model):
     WEEKDAY_CHOICES = [
+        ('no_off', 'No Off'),
         ('mon', 'Monday'),
         ('tue', 'Tuesday'),
         ('wed', 'Wednesday'),
@@ -414,9 +415,41 @@ class EmployeeProfessionalDetail(models.Model):
         ('sat', 'Saturday'),
         ('sun', 'Sunday'),
     ]
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="employee_professional_detail")
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="employee_professional_detail")
-    employee = models.ForeignKey(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="employee_professional_detail")
+
+    EXTRA_OFF_CHOICES = [
+        ('no_off', 'No Off'),
+        ('mon1', 'First Monday'),
+        ('mon2', 'Second Monday'),
+        ('mon3', 'Third Monday'),
+        ('mon4', 'Fourth Monday'),
+        ('tue1', 'First Tuesday'),
+        ('tue2', 'Second Tuesday'),
+        ('tue3', 'Third Tuesday'),
+        ('tue4', 'Fourth Tuesday'),
+        ('wed1', 'First Wednesday'),
+        ('wed2', 'Second Wednesday'),
+        ('wed3', 'Third Wednesday'),
+        ('wed4', 'Fourth Wednesday'),
+        ('thu1', 'First Thursday'),
+        ('thu2', 'Second Thursday'),
+        ('thu3', 'Third Thursday'),
+        ('thu4', 'Fourth Thursday'),
+        ('fri1', 'First Friday'),
+        ('fri2', 'Second Friday'),
+        ('fri3', 'Third Friday'),
+        ('fri4', 'Fourth Friday'),
+        ('sat1', 'First Saturday'),
+        ('sat2', 'Second Saturday'),
+        ('sat3', 'Third Saturday'),
+        ('sat4', 'Fourth Saturday'),
+        ('sun1', 'First Sunday'),
+        ('sun2', 'Second Sunday'),
+        ('sun3', 'Third Sunday'),
+        ('sun4', 'Fourth Sunday'),
+    ]
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="employee_professional_details")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="employee_professional_details")
+    employee = models.OneToOneField(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="employee_professional_detail", primary_key=True)
     date_of_joining = models.DateField(null=False, blank=False)
     date_of_confirm = models.DateField(null=False, blank=False)
     department = models.ForeignKey(Deparment, on_delete=models.CASCADE, related_name="employee_professional_detail", null=True, blank=True)
@@ -424,21 +457,20 @@ class EmployeeProfessionalDetail(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="employee_professional_detail", null=True, blank=True)
     salary_grade = models.ForeignKey(SalaryGrade, on_delete=models.CASCADE, related_name="employee_professional_detail", null=True, blank=True)
     shift = models.ForeignKey(Shift, on_delete=models.CASCADE, related_name="employee_professional_detail", null=True, blank=True)
-    weekly_off = models.CharField(max_length=3, choices=WEEKDAY_CHOICES, null=True, blank=True)
-    extra_off = models.CharField(max_length=3, choices=WEEKDAY_CHOICES, null=True, blank=True)
+    weekly_off = models.CharField(max_length=6, choices=WEEKDAY_CHOICES, null=False, blank=False, default='no_off')    
+    extra_off = models.CharField(max_length=10, choices=EXTRA_OFF_CHOICES, default='no_off', null=False, blank=False)
 
-    
 
     def save(self, *args, **kwargs):
-        if self.department.company != self.company or self.department.user != self.user:
+        if self.department and (self.department.company != self.company or self.department.user != self.user):
             raise ValidationError("Invalid department selected.")
-        elif self.designation.company != self.company or self.designation.user != self.user:
+        elif self.designation and (self.designation.company != self.company or self.designation.user != self.user):
             raise ValidationError("Invalid designation selected.")
-        elif self.category.company != self.company or self.category.user != self.user:
+        elif self.category and (self.category.company != self.company or self.category.user != self.user):
             raise ValidationError("Invalid category selected.")
-        elif self.salary_grade.company != self.company or self.salary_grade.user != self.user:
+        elif self.salary_grade and (self.salary_grade.company != self.company or self.salary_grade.user != self.user):
             raise ValidationError("Invalid salary grade selected.")
-        elif self.shift.company != self.company or self.shift.user != self.user:
+        elif self.shift and (self.shift.company != self.company or self.shift.user != self.user):
             raise ValidationError("Invalid shift selected.")
         super().save(*args, **kwargs)
 
