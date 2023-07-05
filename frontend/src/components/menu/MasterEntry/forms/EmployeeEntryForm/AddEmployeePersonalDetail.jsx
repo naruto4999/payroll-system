@@ -11,12 +11,14 @@ const AddEmployeePersonalDetail = ({
     handleBlur,
     values,
     errors,
-    setAddEmployeePopover,
+    // setAddEmployeePopover,
+    cancelButtonClicked,
     isValid,
     touched,
     errorMessage,
     setErrorMessage,
     setFieldValue,
+    isEditing,
 }) => {
     // const inputRef = useRef(null);
     console.log(errors);
@@ -59,41 +61,17 @@ const AddEmployeePersonalDetail = ({
                 // encType="multipart/form-data"
             >
                 <section className="flex flex-col justify-center">
-                    {/* <label
-                            htmlFor="photo"
-                            className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
-                        >
-                            Photo
-                        </label> */}
-                    {/* <div className="relative">
-                            <input
-                                className="appearance-none"
-                                type="file"
-                                name="photo"
-                                id="photo"
-                                accept="image/*"
-                                onBlur={handleBlur}
-                                onChange={(e) =>
-                                    setFieldValue(
-                                        "photo",
-                                        e.currentTarget.files[0]
-                                    )
-                                }
-                            ></input>
-                            {errors.photo && touched.photo && (
-                                <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                                    {errors.photo}
-                                </div>
-                            )}
-                            
-                        </div> */}
                     <label className="dark:border-slate-50 border-zinc-700 dark:hover:bg-blueAccent-700 hover:cursor-pointer border-2 h-24 w-24 mx-auto rounded-full flex flex-row justify-center items-center">
-                        {values.photo === "" ? (
+                        {values.photo === "" || values.photo === null ||values.photo === undefined ? (
                             <FaUserPlus className="h-14 w-14" />
                         ) : (
                             <img
                                 id="previewImage"
-                                src={URL.createObjectURL(values.photo)}
+                                src={
+                                    typeof values.photo == "string"
+                                        ? values.photo
+                                        : URL.createObjectURL(values.photo)
+                                }
                                 alt="Preview"
                                 className="h-24 w-24 mx-auto rounded-full object-contain"
                             />
@@ -1078,13 +1056,7 @@ const AddEmployeePersonalDetail = ({
                         type="button"
                         className="bg-zinc-400 hover:bg-zinc-500 dark:bg-zinc-600 rounded w-20 p-2 text-base font-medium dark:hover:bg-zinc-700"
                         onClick={() => {
-                            setAddEmployeePopover({
-                                addEmployeePersonalDetail: false,
-                                addEmployeeProfessionalDetail: false,
-                                addEmployeeSalaryDetail: false,
-                                addEmployeePfEsiDetail: false,
-                            });
-                            setErrorMessage("");
+                            cancelButtonClicked(isEditing)
                         }}
                     >
                         Cancel

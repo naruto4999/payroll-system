@@ -44,8 +44,8 @@ const AddEmployeeProfessionalDetail = ({
     const { data: fetchedShifts, isLoading: isLoadingShifts } =
         useGetShiftsQuery(globalCompany);
     // const inputRef = useRef(null);
-    console.log(fetchedDepartments);
-    console.log(errors);
+    // console.log(fetchedDepartments);
+    // console.log(errors);
     const [sameAsLocal, setSameAsLocal] = useState(false);
     // useEffect(() => {
     //     inputRef.current.focus();
@@ -65,7 +65,7 @@ const AddEmployeeProfessionalDetail = ({
         isLoadingSalaryGrade,
     ]);
 
-    console.log(fetchedShifts);
+    // console.log(fetchedShifts);
     console.log(values);
 
     useEffect(() => {}, []);

@@ -37,7 +37,7 @@ const SelectCompany = () => {
                     <h1 className="text-3xl font-medium">Select a Company</h1>
                     <p className="text-sm my-2">Select a company to work on</p>
                     <div className="mt-6 flex flex-row flex-wrap gap-14 md:gap-20 justify-center ">
-                        {fetchedData.map((data) => {
+                        {fetchedData?.map((data) => {
                             return (
                                 <button
                                     key={data.id}

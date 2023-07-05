@@ -5,13 +5,33 @@ export const EmployeePersonalDetailSchema = yup.object().shape({
         .mixed()
         .test("fileSize", "File size is too large", (value) => {
             if (!value) return true; // Allow empty values
+
+            // Handle URL case
+            if (typeof value === "string" && value.startsWith("http")) {
+                return true; // Assume URL is valid
+            }
+
             const maxSize = 1024 * 1024; // 1 MB in bytes
-            return value.size <= maxSize;
+            if (value instanceof File) {
+                return value.size <= maxSize;
+            }
+
+            return false; // Invalid value type
         })
         .test("fileType", "Invalid file type", (value) => {
             if (!value) return true; // Allow empty values
+
+            // Handle URL case
+            if (typeof value === "string" && value.startsWith("http")) {
+                return true; // Assume URL is valid
+            }
+
             const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
-            return allowedTypes.includes(value.type);
+            if (value instanceof File) {
+                return allowedTypes.includes(value.type);
+            }
+
+            return false; // Invalid value type
         })
         .nullable(), // Allows the field to be null (optional),
 
@@ -252,9 +272,56 @@ export const EmployeePersonalDetailSchema = yup.object().shape({
         .length(6, "Permanent Pin Code must be 6 digits long"),
 });
 
-// export const editLeaveGradeSchema = yup.object().shape({
-//     updatedLeaveGrade: yup
-//         .string()
-//         .min(1, "Leave Grade name must be atleast 1 characters long")
-//         .required("Required"),
-// });
+export const EmployeeProfessionalDetailSchema = yup.object().shape({
+    dateOfJoining: yup.date().nullable(), // Allows the field to be null (optional),
+    dateOfConfirm: yup.date().nullable(),
+    department: yup.string().nullable(),
+    designation: yup.string().nullable(),
+    category: yup.string().nullable(),
+    salaryGrade: yup.string().nullable(),
+    shift: yup.string().nullable(),
+    weeklyOff: yup
+        .string()
+        .oneOf(
+            ["no_off", "mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+            "Invalid weekly off option"
+        )
+        .nullable(),
+    extraOff: yup
+        .string()
+        .oneOf(
+            [
+                "no_off",
+                "mon1",
+                "mon2",
+                "mon3",
+                "mon4",
+                "tue1",
+                "tue2",
+                "tue3",
+                "tue4",
+                "wed1",
+                "wed2",
+                "wed3",
+                "wed4",
+                "thu1",
+                "thu2",
+                "thu3",
+                "thu4",
+                "fri1",
+                "fri2",
+                "fri3",
+                "fri4",
+                "sat1",
+                "sat2",
+                "sat3",
+                "sat4",
+                "sun1",
+                "sun2",
+                "sun3",
+                "sun4",
+            ],
+            "Invalid extra off option"
+        )
+        .nullable(),
+});

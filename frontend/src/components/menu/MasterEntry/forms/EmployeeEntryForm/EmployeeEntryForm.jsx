@@ -17,6 +17,8 @@ import { useSelector } from "react-redux";
 import {
     useGetEmployeePersonalDetailsQuery,
     useAddEmployeePersonalDetailMutation,
+    useAddEmployeeProfessionalDetailMutation,
+    useLazyGetSingleEmployeePersonalDetailQuery,
 } from "../../../../authentication/api/employeeEntryApiSlice";
 // import EditEmployee from "./EditEmployee";
 // import ViewEmployee from "./ViewEmployee";
@@ -24,7 +26,10 @@ import { useOutletContext } from "react-router-dom";
 import ReactModal from "react-modal";
 import { Formik } from "formik";
 import AddEmployeePersonalDetail from "./AddEmployeePersonalDetail";
-import { EmployeePersonalDetailSchema } from "./EmployeeEntrySchema";
+import {
+    EmployeePersonalDetailSchema,
+    EmployeeProfessionalDetailSchema,
+} from "./EmployeeEntrySchema";
 import AddEmployeeNavigationBar from "./AddEmployeeNavigationBar";
 import AddEmployeeProfessionalDetail from "./AddEmployeeProfessionalDetail";
 
@@ -36,8 +41,12 @@ const classNames = (...classes) => {
 
 const EmployeeEntryForm = () => {
     const globalCompany = useSelector((state) => state.globalCompany);
-
-    console.log(globalCompany);
+    const [
+        getSingleEmployeePersonalDetail,
+        { data: singleEmployeeData },
+        lastPromiseInfo,
+    ] = useLazyGetSingleEmployeePersonalDetailQuery();
+    // console.log(globalCompany);
     const {
         data: fetchedData,
         isLoading,
@@ -47,11 +56,15 @@ const EmployeeEntryForm = () => {
         isFetching,
         refetch,
     } = useGetEmployeePersonalDetailsQuery(globalCompany);
-    console.log(fetchedData);
+    // console.log(fetchedData);
     const [
         addEmployeePersonalDetail,
         { isLoading: isAddingEmployeePersonalDetail },
     ] = useAddEmployeePersonalDetailMutation();
+    const [
+        addEmployeeProfessionalDetail,
+        { isLoading: isAddingEmployeeProfessionalDetail },
+    ] = useAddEmployeeProfessionalDetailMutation();
     // const [updateEmployeePersonalDetail, { isLoading: isUpdatingEmployeePersonalDetail }] =
     //     useUpdateEmployeePersonalDetailMutation();
     // const [deleteEmployeePersonalDetail, { isLoading: isDeletingEmployeePersonalDetail }] =
@@ -62,21 +75,22 @@ const EmployeeEntryForm = () => {
         addEmployeeSalaryDetail: false,
         addEmployeePfEsiDetail: false,
     });
+    const [editEmployeePopover, setEditEmployeePopover] = useState({
+        editEmployeePersonalDetail: false,
+        editEmployeeProfessionalDetail: false,
+        editEmployeeSalaryDetail: false,
+        editEmployeePfEsiDetail: false,
+    });
     const [showLoadingBar, setShowLoadingBar] = useOutletContext();
-    const [editEmployeePopover, setEditEmployeePopover] = useState(false);
     const [viewEmployeePopover, setViewEmployeePopover] = useState(false);
-    const [updateEmployeeId, setUpdateEmployeeId] = useState("");
+    const [updateEmployeeId, setUpdateEmployeeId] = useState(null);
+    const [addedEmployeeId, setAddedEmployeeId] = useState(null);
     // const [msg, setMsg] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
-    console.log(addEmployeePopover);
 
     // const [viewEmployeeId, setViewEmployeeId] = useState("");
 
     const addEmployeePopoverHandler = (popoverName) => {
-        // setAddEmployeePopover((prevState) => ({
-        //   ...prevState,
-        //   [popoverName]: !prevState[popoverName],
-        // }));
         setAddEmployeePopover((prevState) => {
             const updatedState = {};
             Object.keys(prevState).forEach((key) => {
@@ -85,11 +99,32 @@ const EmployeeEntryForm = () => {
             return updatedState;
         });
     };
-    const editEmployeePopoverHandler = (employee) => {
-        console.log(employee);
-        setUpdateEmployeeId(employee.id);
-        setEditEmployeePopover(!editEmployeePopover);
+
+    const editEmployeePopoverHandler = async ({ popoverName, id }) => {
+        console.log(popoverName);
+        console.log(id);
+        setUpdateEmployeeId(id)
+
+        try {
+            const data = await getSingleEmployeePersonalDetail({
+                id: id,
+                company: globalCompany.id,
+            }).unwrap();
+            console.log(data);
+            setEditEmployeePopover((prevState) => {
+                const updatedState = {};
+                Object.keys(prevState).forEach((key) => {
+                    updatedState[key] = key === popoverName;
+                });
+                return updatedState;
+            });
+        } catch (err) {
+            console.log(err);
+        }
+
+        // setEditEmployeePopover(!editEmployeePopover);
     };
+    console.log(singleEmployeeData);
 
     const viewEmployeePopoverHandler = (employee) => {
         console.log(employee);
@@ -97,7 +132,26 @@ const EmployeeEntryForm = () => {
         setViewEmployeeId(employee.id);
     };
 
-    const addButtonClicked = async (values, formikBag) => {
+    const cancelButtonClicked = (isEditing) => {
+        if (isEditing) {
+            setUpdateEmployeeId(null);
+            setEditEmployeePopover({
+                editEmployeePersonalDetail: false,
+                editEmployeeProfessionalDetail: false,
+                editEmployeeSalaryDetail: false,
+                editEmployeePfEsiDetail: false,
+            });
+        } else {
+            setAddEmployeePopover({
+                addEmployeePersonalDetail: false,
+                addEmployeeProfessionalDetail: false,
+                addEmployeeSalaryDetail: false,
+                addEmployeePfEsiDetail: false,
+            });
+        }
+    };
+
+    const addPersonalDetailButtonClicked = async (values, formikBag) => {
         console.log(values);
         const formData = new FormData();
         formData.append("company", globalCompany.id);
@@ -150,8 +204,10 @@ const EmployeeEntryForm = () => {
             }).unwrap();
             console.log(data);
             setErrorMessage("");
-            setAddEmployeePopover(!addEmployeePopover);
+            setAddedEmployeeId(data.id);
+            // setAddEmployeePopover(!addEmployeePopover);
             formikBag.resetForm();
+            addEmployeePopoverHandler("addEmployeeProfessionalDetail");
         } catch (err) {
             console.log(err);
             if (err.status === 400) {
@@ -161,6 +217,49 @@ const EmployeeEntryForm = () => {
                 console.log(err);
             }
         }
+    };
+
+    console.log(editEmployeePopover);
+    const addProfessionalDetailButtonClicked = async (values, formikBag) => {
+        console.log(values);
+        console.log(addedEmployeeId);
+        const toSend = {
+            employee: addedEmployeeId,
+            company: globalCompany.id,
+            date_of_joining: values.dateOfJoining,
+            date_of_confirm: values.dateOfConfirm,
+            department: values.department,
+            designation: values.designation,
+            category: values.category,
+            salary_grade: values.salaryGrade,
+            shift: values.shift,
+            weekly_off: values.weeklyOff,
+            extra_off: values.extraOff,
+        };
+
+        try {
+            const data = await addEmployeeProfessionalDetail(toSend).unwrap();
+            console.log(data);
+            setErrorMessage("");
+            // setAddedEmployeeId(data.id)
+            // setAddEmployeePopover(!addEmployeePopover);
+            formikBag.resetForm();
+            // addEmployeePopoverHandler("addEmployeeProfessionalDetail");
+        } catch (err) {
+            console.log(err);
+            if (err.status === 400) {
+                console.log(err.data.error);
+                setErrorMessage(err.data.error);
+            } else {
+                console.log(err);
+            }
+        }
+    };
+
+    const updatePersonalDetailButtonClicked = async (values, formikBag) => {
+        console.log(formikBag)
+        console.log(values);
+
     };
 
     // const updateButtonClicked = async (values, formikBag) => {
@@ -230,7 +329,10 @@ const EmployeeEntryForm = () => {
                     <div
                         className="p-1.5 dark:bg-teal-700 rounded bg-teal-600 dark:hover:bg-teal-600 hover:bg-teal-700"
                         onClick={() =>
-                            editEmployeePopoverHandler(props.row.original)
+                            editEmployeePopoverHandler({
+                                id: props.row.original.id,
+                                popoverName: "editEmployeePersonalDetail",
+                            })
                         }
                     >
                         <FaPen className="h-4" />
@@ -266,8 +368,16 @@ const EmployeeEntryForm = () => {
 
     useEffect(() => {
         // Add more for adding, editing and deleting later on
-        setShowLoadingBar(isLoading);
-    }, [isLoading]);
+        setShowLoadingBar(
+            isLoading ||
+                isAddingEmployeePersonalDetail ||
+                isAddingEmployeeProfessionalDetail
+        );
+    }, [
+        isLoading,
+        isAddingEmployeePersonalDetail,
+        isAddingEmployeeProfessionalDetail,
+    ]);
 
     if (globalCompany.id == null) {
         return (
@@ -394,6 +504,7 @@ const EmployeeEntryForm = () => {
                     </table>
                 </div>
 
+                {/* For Adding */}
                 <ReactModal
                     className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-[1100px] w-fit max-h-[100dvh] h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl overflow-y-scroll scrollbar"
                     isOpen={
@@ -422,6 +533,10 @@ const EmployeeEntryForm = () => {
                             addEmployeePopoverHandler={
                                 addEmployeePopoverHandler
                             }
+                            editEmployeePopover={editEmployeePopover}
+                            editEmployeePopoverHandler={editEmployeePopoverHandler}
+                            isEditing={false}
+                            updateEmployeeId={updateEmployeeId}
                         />
                         {addEmployeePopover.addEmployeePersonalDetail && (
                             <Formik
@@ -466,16 +581,17 @@ const EmployeeEntryForm = () => {
                                     permanentPincode: "",
                                 }}
                                 validationSchema={EmployeePersonalDetailSchema}
-                                onSubmit={addButtonClicked}
+                                onSubmit={addPersonalDetailButtonClicked}
                                 component={(props) => (
                                     <>
                                         <AddEmployeePersonalDetail
                                             {...props}
                                             errorMessage={errorMessage}
                                             setErrorMessage={setErrorMessage}
-                                            setAddEmployeePopover={
-                                                setAddEmployeePopover
+                                            cancelButtonClicked={
+                                                cancelButtonClicked
                                             }
+                                            isEditing={false}
                                         />
                                     </>
                                 )}
@@ -492,11 +608,13 @@ const EmployeeEntryForm = () => {
                                     category: "",
                                     salaryGrade: "",
                                     shift: "",
-                                    weeklyOff: "",
-                                    extraOff: "",
+                                    weeklyOff: "no_off",
+                                    extraOff: "no_off",
                                 }}
-                                validationSchema={EmployeePersonalDetailSchema}
-                                onSubmit={addButtonClicked}
+                                validationSchema={
+                                    EmployeeProfessionalDetailSchema
+                                }
+                                onSubmit={addProfessionalDetailButtonClicked}
                                 component={(props) => (
                                     <>
                                         <AddEmployeeProfessionalDetail
@@ -507,7 +625,9 @@ const EmployeeEntryForm = () => {
                                                 setAddEmployeePopover
                                             }
                                             globalCompany={globalCompany}
-                                            setShowLoadingBar={setShowLoadingBar}
+                                            setShowLoadingBar={
+                                                setShowLoadingBar
+                                            }
                                         />
                                     </>
                                 )}
@@ -516,12 +636,21 @@ const EmployeeEntryForm = () => {
                     </>
                 </ReactModal>
 
-                {/* <ReactModal
-                    className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-2xl h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
-                    isOpen={editShiftPopover}
+                {/* For Editing */}
+                <ReactModal
+                    className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-[1100px] w-fit max-h-[100dvh] h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl overflow-y-scroll scrollbar"
+                    isOpen={
+                        editEmployeePopover.editEmployeePersonalDetail ||
+                        editEmployeePopover.editEmployeeProfessionalDetail ||
+                        editEmployeePopover.editEmployeeSalaryDetail ||
+                        editEmployeePopover.editEmployeePfEsiDetail
+                    }
                     onRequestClose={() =>
-                        editShiftPopoverHandler({
-                            id: "",
+                        setEditEmployeePopover({
+                            editEmployeePersonalDetail: false,
+                            editEmployeeProfessionalDetail: false,
+                            editEmployeeSalaryDetail: false,
+                            editEmployeePfEsiDetail: false,
                         })
                     }
                     style={{
@@ -530,41 +659,118 @@ const EmployeeEntryForm = () => {
                         },
                     }}
                 >
-                    <Formik
-                        initialValues={
-                            updateShiftId
-                                ? shiftForEdit(updateShiftId)
-                                : {
-                                      shiftName: "",
-                                      shiftBeginningTime: "",
-                                      shiftEndTime: "",
-                                      lunchTime: "",
-                                      teaTime: "",
-                                      lateGrace: "",
-                                      otBeginAfter: "",
-                                      nextShiftDelay: "",
-                                      accidentalPunchBuffer: "",
-                                      halfDayMinimumMinutes: "",
-                                      fullDayMinimumMinutes: "",
-                                      shortLeaves: "",
-                                  }
-                        }
-                        validationSchema={ShiftSchema}
-                        onSubmit={updateButtonClicked}
-                        component={(props) => (
-                            <EditShift
-                                {...props}
-                                errorMessage={errorMessage}
-                                setErrorMessage={setErrorMessage}
-                                editShiftPopoverHandler={
-                                    editShiftPopoverHandler
-                                }
+                    <>
+                        <AddEmployeeNavigationBar
+                            addEmployeePopover={addEmployeePopover}
+                            addEmployeePopoverHandler={
+                                addEmployeePopoverHandler
+                            }
+                            editEmployeePopover={editEmployeePopover}
+                            editEmployeePopoverHandler={editEmployeePopoverHandler}
+                            isEditing={true}
+                            updateEmployeeId={updateEmployeeId}
+                        />
+                        {editEmployeePopover.editEmployeePersonalDetail && (
+                            <Formik
+                                initialValues={{
+                                    photo: singleEmployeeData.photo === null ? "" : singleEmployeeData.photo,
+
+                                    // 1st column
+                                    paycode: singleEmployeeData.paycode,
+                                    attendanceCardNumber:
+                                        singleEmployeeData.attendance_card_no,
+                                    employeeName: singleEmployeeData.name,
+                                    fatherOrHusbandName:
+                                        singleEmployeeData.father_or_husband_name,
+                                    motherName: singleEmployeeData.mother_name,
+                                    wifeName: singleEmployeeData.wife_name,
+                                    dob: singleEmployeeData.dob ===null ? "" : singleEmployeeData.dob,
+                                    phoneNumber: singleEmployeeData.phone_number,
+
+                                    // 2nd column
+                                    alternatePhoneNumber: singleEmployeeData.alternate_phone_number,
+                                    religion: singleEmployeeData.religion,
+                                    email: singleEmployeeData.email,
+                                    handicapped: singleEmployeeData.handicapped,
+                                    gender: singleEmployeeData.gender,
+                                    maritalStatus: singleEmployeeData.marital_status,
+                                    bloodGroup: "",
+
+                                    // 3rd column
+                                    panNumber: singleEmployeeData.pan_number,
+                                    drivingLicence: singleEmployeeData.driving_licence,
+                                    passport: singleEmployeeData.passport,
+                                    aadhaar: singleEmployeeData.aadhaar,
+                                    educationQualification: singleEmployeeData.education_qualification,
+                                    technicalQualification: singleEmployeeData.technical_qualification,
+                                    localAddress: singleEmployeeData.local_address,
+
+                                    // 4th column
+                                    localDistrict: singleEmployeeData.local_district,
+                                    localStateOrUnionTerritory: singleEmployeeData.local_state_or_union_territory,
+                                    localPincode: singleEmployeeData.local_pincode,
+                                    permanentAddress: singleEmployeeData.permanent_address,
+                                    permanentDistrict: singleEmployeeData.permanent_district,
+                                    permanentStateOrUnionTerritory: singleEmployeeData.permanent_state_or_union_territory,
+                                    permanentPincode: singleEmployeeData.permanent_pincode,
+                                }}
+                                validationSchema={EmployeePersonalDetailSchema}
+                                onSubmit={updatePersonalDetailButtonClicked}
+                                component={(props) => (
+                                    <>
+                                        <AddEmployeePersonalDetail
+                                            {...props}
+                                            errorMessage={errorMessage}
+                                            setErrorMessage={setErrorMessage}
+                                            cancelButtonClicked={
+                                                cancelButtonClicked
+                                            }
+                                            isEditing={true}
+                                        />
+                                    </>
+                                )}
                             />
                         )}
-                    />
+
+                        {/* {addEmployeePopover.addEmployeeProfessionalDetail && (
+                            <Formik
+                                initialValues={{
+                                    dateOfJoining: "",
+                                    dateOfConfirm: "",
+                                    department: "",
+                                    designation: "",
+                                    category: "",
+                                    salaryGrade: "",
+                                    shift: "",
+                                    weeklyOff: "no_off",
+                                    extraOff: "no_off",
+                                }}
+                                validationSchema={
+                                    EmployeeProfessionalDetailSchema
+                                }
+                                onSubmit={addProfessionalDetailButtonClicked}
+                                component={(props) => (
+                                    <>
+                                        <AddEmployeeProfessionalDetail
+                                            {...props}
+                                            errorMessage={errorMessage}
+                                            setErrorMessage={setErrorMessage}
+                                            setAddEmployeePopover={
+                                                setAddEmployeePopover
+                                            }
+                                            globalCompany={globalCompany}
+                                            setShowLoadingBar={
+                                                setShowLoadingBar
+                                            }
+                                        />
+                                    </>
+                                )}
+                            />
+                        )} */}
+                    </>
                 </ReactModal>
 
-                <ReactModal
+                {/* <ReactModal
                     className="fixed inset-0 mx-2 sm:mx-auto my-auto sm:max-w-2xl h-fit bg-zinc-300 dark:bg-zinc-800 p-4 flex flex-col items-left gap-4 rounded shadow-xl"
                     isOpen={viewShiftPopover}
                     onRequestClose={() =>

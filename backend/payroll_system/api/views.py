@@ -856,7 +856,7 @@ class EmployeePersonalDetailListCreateView(generics.ListCreateAPIView):
             return Response({"error": error_message}, status=status.HTTP_400_BAD_REQUEST)
         
 
-class EmployeePersonalDetailUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+class EmployeePersonalDetailRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes= [IsAuthenticated]
     serializer_class = EmployeePersonalDetailSerializer
     lookup_field = 'id'

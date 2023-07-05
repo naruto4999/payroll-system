@@ -19,6 +19,14 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
             }),
             invalidatesTags: ["EmployeePersonalDetails"],
         }),
+        getSingleEmployeePersonalDetail: builder.query({
+            query: (employee) => ({
+                url: `/api/employee-personal-detail/${employee.company}/${employee.id}`,
+                method: "GET",
+            }),
+            keepUnusedDataFor: 1,
+            // providesTags: ["EmployeePersonalDetails"],
+        }),
         // updateShift: builder.mutation({
         //     query: shift => ({
         //         url: `/api/shift/${shift.company}/${shift.id}`,
@@ -50,5 +58,5 @@ export const {
     useGetEmployeePersonalDetailsQuery,
     useAddEmployeePersonalDetailMutation,
     useAddEmployeeProfessionalDetailMutation,
-    
+    useLazyGetSingleEmployeePersonalDetailQuery,
 } = employeeEntryApiSlice;

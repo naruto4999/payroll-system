@@ -153,5 +153,5 @@ class EmployeeProfessionalDetailSerializer(serializers.ModelSerializer):
     extra_off = serializers.ChoiceField(choices=EmployeeProfessionalDetail.EXTRA_OFF_CHOICES, allow_blank=False)
 
     class Meta:
-        model = EmployeePersonalDetail
+        model = EmployeeProfessionalDetail
         fields = ['user', 'company', 'employee', 'date_of_joining', 'date_of_confirm', 'department', 'designation', 'category', 'salary_grade', 'shift', 'weekly_off', 'extra_off']
