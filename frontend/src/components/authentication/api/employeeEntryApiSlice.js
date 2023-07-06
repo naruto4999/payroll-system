@@ -27,14 +27,14 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
             keepUnusedDataFor: 1,
             // providesTags: ["EmployeePersonalDetails"],
         }),
-        // updateShift: builder.mutation({
-        //     query: shift => ({
-        //         url: `/api/shift/${shift.company}/${shift.id}`,
-        //         method: 'PUT',
-        //         body: shift,
-        //     }),
-        //     invalidatesTags: ['Shifts']
-        // }),
+        updateEmployeePersonalDetail: builder.mutation({
+            query: employee => ({
+                url: `/api/employee-personal-detail/${employee.globalCompany}/${employee.id}`,
+                method: 'PATCH',
+                body: employee.formData,
+            }),
+            invalidatesTags: ['EmployeePersonalDetails']
+        }),
         // deleteShift: builder.mutation({
         //     query: shift => ({
         //         url: `/api/shift/${shift.company}/${shift.id}`,
@@ -59,4 +59,5 @@ export const {
     useAddEmployeePersonalDetailMutation,
     useAddEmployeeProfessionalDetailMutation,
     useLazyGetSingleEmployeePersonalDetailQuery,
+    useUpdateEmployeePersonalDetailMutation,
 } = employeeEntryApiSlice;

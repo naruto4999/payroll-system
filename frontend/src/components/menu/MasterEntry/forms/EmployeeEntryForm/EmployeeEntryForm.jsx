@@ -19,6 +19,7 @@ import {
     useAddEmployeePersonalDetailMutation,
     useAddEmployeeProfessionalDetailMutation,
     useLazyGetSingleEmployeePersonalDetailQuery,
+    useUpdateEmployeePersonalDetailMutation,
 } from "../../../../authentication/api/employeeEntryApiSlice";
 // import EditEmployee from "./EditEmployee";
 // import ViewEmployee from "./ViewEmployee";
@@ -39,14 +40,45 @@ const classNames = (...classes) => {
     return classes.filter(Boolean).join(" ");
 };
 
+function getObjectDifferences(obj1, obj2) {
+    const diffObj = {};
+
+    for (const key in obj1) {
+        if (obj1.hasOwnProperty(key) && obj2.hasOwnProperty(key)) {
+            let value1 = obj1[key];
+            let value2 = obj2[key];
+
+            if (value1 === null) {
+                obj1[key] = "";
+            }
+
+            if (value2 === null) {
+                obj1[key] = "";
+            }
+            if (obj1[key] !== obj2[key]) {
+                diffObj[key] = obj2[key];
+            }
+        }
+    }
+
+    return diffObj;
+}
+
 const EmployeeEntryForm = () => {
     const globalCompany = useSelector((state) => state.globalCompany);
     const [
         getSingleEmployeePersonalDetail,
-        { data: singleEmployeeData },
+        {
+            data: {
+                user,
+                company,
+                isActive,
+                createdAt,
+                ...singleEmployeeData
+            } = {},
+        } = {},
         lastPromiseInfo,
     ] = useLazyGetSingleEmployeePersonalDetailQuery();
-    // console.log(globalCompany);
     const {
         data: fetchedData,
         isLoading,
@@ -56,7 +88,7 @@ const EmployeeEntryForm = () => {
         isFetching,
         refetch,
     } = useGetEmployeePersonalDetailsQuery(globalCompany);
-    // console.log(fetchedData);
+    console.log(fetchedData);
     const [
         addEmployeePersonalDetail,
         { isLoading: isAddingEmployeePersonalDetail },
@@ -65,8 +97,11 @@ const EmployeeEntryForm = () => {
         addEmployeeProfessionalDetail,
         { isLoading: isAddingEmployeeProfessionalDetail },
     ] = useAddEmployeeProfessionalDetailMutation();
-    // const [updateEmployeePersonalDetail, { isLoading: isUpdatingEmployeePersonalDetail }] =
-    //     useUpdateEmployeePersonalDetailMutation();
+
+    const [
+        updateEmployeePersonalDetail,
+        { isLoading: isUpdatingEmployeePersonalDetail },
+    ] = useUpdateEmployeePersonalDetailMutation();
     // const [deleteEmployeePersonalDetail, { isLoading: isDeletingEmployeePersonalDetail }] =
     //     useDeleteEmployeePersonalDetailMutation();
     const [addEmployeePopover, setAddEmployeePopover] = useState({
@@ -103,7 +138,7 @@ const EmployeeEntryForm = () => {
     const editEmployeePopoverHandler = async ({ popoverName, id }) => {
         console.log(popoverName);
         console.log(id);
-        setUpdateEmployeeId(id)
+        setUpdateEmployeeId(id);
 
         try {
             const data = await getSingleEmployeePersonalDetail({
@@ -124,7 +159,7 @@ const EmployeeEntryForm = () => {
 
         // setEditEmployeePopover(!editEmployeePopover);
     };
-    console.log(singleEmployeeData);
+    // console.log(singleEmployeeData);
 
     const viewEmployeePopoverHandler = (employee) => {
         console.log(employee);
@@ -154,49 +189,12 @@ const EmployeeEntryForm = () => {
     const addPersonalDetailButtonClicked = async (values, formikBag) => {
         console.log(values);
         const formData = new FormData();
+        for (const key in values) {
+            if (values.hasOwnProperty(key)) {
+                formData.append(key, values[key]);
+            }
+        }
         formData.append("company", globalCompany.id);
-        formData.append("name", values.employeeName);
-        formData.append("paycode", values.paycode);
-        formData.append("attendance_card_no", values.attendanceCardNumber);
-        formData.append("photo", values.photo);
-        formData.append("father_or_husband_name", values.fatherOrHusbandName);
-        formData.append("mother_name", values.motherName);
-        formData.append("wife_name", values.wifeName);
-        formData.append("dob", values.dob);
-        formData.append("phone_number", values.phoneNumber);
-        formData.append("alternate_phone_number", values.alternatePhoneNumber);
-        formData.append("email", values.email);
-        formData.append("pan_number", values.panNumber);
-        formData.append("driving_licence", values.drivingLicence);
-        formData.append("passport", values.passport);
-        formData.append("aadhaar", values.aadhaar);
-        formData.append("handicapped", values.handicapped);
-        formData.append("gender", values.gender);
-        formData.append("marital_status", values.maritalStatus);
-        formData.append("blood_group", values.bloodGroup);
-        formData.append("religion", values.religion);
-        formData.append(
-            "education_qualification",
-            values.educationQualification
-        );
-        formData.append(
-            "technical_qualification",
-            values.technicalQualification
-        );
-        formData.append("local_address", values.localAddress);
-        formData.append("local_district", values.localDistrict);
-        formData.append(
-            "local_state_or_union_territory",
-            values.localStateOrUnionTerritory
-        );
-        formData.append("local_pincode", values.localPincode);
-        formData.append("permanent_address", values.permanentAddress);
-        formData.append("permanent_district", values.permanentDistrict);
-        formData.append(
-            "permanent_state_or_union_territory",
-            values.permanentStateOrUnionTerritory
-        );
-        formData.append("permanent_pincode", values.permanentPincode);
 
         try {
             const data = await addEmployeePersonalDetail({
@@ -219,26 +217,16 @@ const EmployeeEntryForm = () => {
         }
     };
 
-    console.log(editEmployeePopover);
     const addProfessionalDetailButtonClicked = async (values, formikBag) => {
         console.log(values);
         console.log(addedEmployeeId);
-        const toSend = {
-            employee: addedEmployeeId,
-            company: globalCompany.id,
-            date_of_joining: values.dateOfJoining,
-            date_of_confirm: values.dateOfConfirm,
-            department: values.department,
-            designation: values.designation,
-            category: values.category,
-            salary_grade: values.salaryGrade,
-            shift: values.shift,
-            weekly_off: values.weeklyOff,
-            extra_off: values.extraOff,
-        };
 
         try {
-            const data = await addEmployeeProfessionalDetail(toSend).unwrap();
+            const data = await addEmployeeProfessionalDetail({
+                ...values,
+                employee: addedEmployeeId,
+                company: globalCompany.id,
+            }).unwrap();
             console.log(data);
             setErrorMessage("");
             // setAddedEmployeeId(data.id)
@@ -257,43 +245,45 @@ const EmployeeEntryForm = () => {
     };
 
     const updatePersonalDetailButtonClicked = async (values, formikBag) => {
-        console.log(formikBag)
+        // console.log(formikBag);
         console.log(values);
+        console.log(singleEmployeeData);
+        const differences = getObjectDifferences(singleEmployeeData, values);
+        console.log(differences);
+        if (Object.keys(differences).length !== 0) {
+            console.log("in if fucking whatever");
+            const formData = new FormData();
+            for (const key in differences) {
+                if (differences.hasOwnProperty(key)) {
+                    formData.append(key, differences[key]);
+                }
+            }
+            formData.append("company", globalCompany.id);
+            formData.append("id", values.id);
+            // console.log(globalCompany.id)
 
+            try {
+                const data = await updateEmployeePersonalDetail({
+                    formData,
+                    id: values.id,
+                    globalCompany: globalCompany.id,
+                }).unwrap();
+                console.log(data);
+                setErrorMessage("");
+                setAddedEmployeeId(data.id);
+                // setAddEmployeePopover(!addEmployeePopover);
+                // addEmployeePopoverHandler("addEmployeeProfessionalDetail");
+            } catch (err) {
+                console.log(err);
+                if (err.status === 400) {
+                    console.log(err.data.error);
+                    setErrorMessage(err.data.error);
+                } else {
+                    console.log(err);
+                }
+            }
+        }
     };
-
-    // const updateButtonClicked = async (values, formikBag) => {
-    //     console.log(values);
-    //     try {
-    //         const data = await updateShift({
-    //             id: updateShiftId,
-    //             name: values.shiftName,
-    //             company: globalCompany.id,
-    //             beginning_time: values.shiftBeginningTime + ":00",
-    //             end_time: values.shiftEndTime + ":00",
-    //             lunch_time: values.lunchTime,
-    //             tea_time: values.teaTime,
-    //             late_grace: values.lateGrace,
-    //             ot_begin_after: values.otBeginAfter,
-    //             next_shift_dealy: values.nextShiftDelay,
-    //             accidental_punch_buffer: values.accidentalPunchBuffer,
-    //             half_day_minimum_minutes: values.halfDayMinimumMinutes,
-    //             full_day_minimum_minutes: values.fullDayMinimumMinutes,
-    //             short_leaves: values.shortLeaves,
-    //         }).unwrap();
-    //         console.log(data);
-    //         setErrorMessage("");
-    //         formikBag.resetForm();
-    //         editShiftPopoverHandler({ id: "" });
-    //     } catch (err) {
-    //         console.log(err);
-    //         if (err.status === 400) {
-    //             setErrorMessage("Shift with this name already exists");
-    //         } else {
-    //             console.log(err);
-    //         }
-    //     }
-    // };
 
     const deleteButtonClicked = async (id) => {
         console.log(id);
@@ -308,8 +298,24 @@ const EmployeeEntryForm = () => {
             cell: (props) => props.renderValue(),
             //   footer: props => props.column.id,
         }),
+        columnHelper.accessor("attendanceCardNo", {
+            header: () => "ACN",
+            cell: (props) => props.renderValue(),
+            //   footer: props => props.column.id,
+        }),
+
         columnHelper.accessor("name", {
             header: () => "Employee Name",
+            cell: (props) => props.renderValue(),
+            //   footer: info => info.column.id,
+        }),
+        columnHelper.accessor("dateOfJoining", {
+            header: () => "DOJ",
+            cell: (props) => props.renderValue(),
+            //   footer: info => info.column.id,
+        }),
+        columnHelper.accessor("designation", {
+            header: () => "Designation",
             cell: (props) => props.renderValue(),
             //   footer: info => info.column.id,
         }),
@@ -441,9 +447,9 @@ const EmployeeEntryForm = () => {
                                                             header.getContext()
                                                         )}
 
-                                                        {console.log(
+                                                        {/* {console.log(
                                                             header.column.getIsSorted()
-                                                        )}
+                                                        )} */}
                                                         {header.column.getCanSort() ? (
                                                             <div className="relative pl-2">
                                                                 <FaAngleUp
@@ -534,7 +540,9 @@ const EmployeeEntryForm = () => {
                                 addEmployeePopoverHandler
                             }
                             editEmployeePopover={editEmployeePopover}
-                            editEmployeePopoverHandler={editEmployeePopoverHandler}
+                            editEmployeePopoverHandler={
+                                editEmployeePopoverHandler
+                            }
                             isEditing={false}
                             updateEmployeeId={updateEmployeeId}
                         />
@@ -545,8 +553,8 @@ const EmployeeEntryForm = () => {
 
                                     // 1st column
                                     paycode: "",
-                                    attendanceCardNumber: "",
-                                    employeeName: "",
+                                    attendanceCardNo: "",
+                                    name: "",
                                     fatherOrHusbandName: "",
                                     motherName: "",
                                     wifeName: "",
@@ -666,54 +674,25 @@ const EmployeeEntryForm = () => {
                                 addEmployeePopoverHandler
                             }
                             editEmployeePopover={editEmployeePopover}
-                            editEmployeePopoverHandler={editEmployeePopoverHandler}
+                            editEmployeePopoverHandler={
+                                editEmployeePopoverHandler
+                            }
                             isEditing={true}
                             updateEmployeeId={updateEmployeeId}
                         />
                         {editEmployeePopover.editEmployeePersonalDetail && (
                             <Formik
-                                initialValues={{
-                                    photo: singleEmployeeData.photo === null ? "" : singleEmployeeData.photo,
-
-                                    // 1st column
-                                    paycode: singleEmployeeData.paycode,
-                                    attendanceCardNumber:
-                                        singleEmployeeData.attendance_card_no,
-                                    employeeName: singleEmployeeData.name,
-                                    fatherOrHusbandName:
-                                        singleEmployeeData.father_or_husband_name,
-                                    motherName: singleEmployeeData.mother_name,
-                                    wifeName: singleEmployeeData.wife_name,
-                                    dob: singleEmployeeData.dob ===null ? "" : singleEmployeeData.dob,
-                                    phoneNumber: singleEmployeeData.phone_number,
-
-                                    // 2nd column
-                                    alternatePhoneNumber: singleEmployeeData.alternate_phone_number,
-                                    religion: singleEmployeeData.religion,
-                                    email: singleEmployeeData.email,
-                                    handicapped: singleEmployeeData.handicapped,
-                                    gender: singleEmployeeData.gender,
-                                    maritalStatus: singleEmployeeData.marital_status,
-                                    bloodGroup: "",
-
-                                    // 3rd column
-                                    panNumber: singleEmployeeData.pan_number,
-                                    drivingLicence: singleEmployeeData.driving_licence,
-                                    passport: singleEmployeeData.passport,
-                                    aadhaar: singleEmployeeData.aadhaar,
-                                    educationQualification: singleEmployeeData.education_qualification,
-                                    technicalQualification: singleEmployeeData.technical_qualification,
-                                    localAddress: singleEmployeeData.local_address,
-
-                                    // 4th column
-                                    localDistrict: singleEmployeeData.local_district,
-                                    localStateOrUnionTerritory: singleEmployeeData.local_state_or_union_territory,
-                                    localPincode: singleEmployeeData.local_pincode,
-                                    permanentAddress: singleEmployeeData.permanent_address,
-                                    permanentDistrict: singleEmployeeData.permanent_district,
-                                    permanentStateOrUnionTerritory: singleEmployeeData.permanent_state_or_union_territory,
-                                    permanentPincode: singleEmployeeData.permanent_pincode,
-                                }}
+                                initialValues={
+                                    singleEmployeeData !== undefined
+                                        ? {
+                                              ...singleEmployeeData,
+                                              photo:
+                                                  singleEmployeeData.photo ??
+                                                  "",
+                                              dob: singleEmployeeData.dob ?? "",
+                                          }
+                                        : {}
+                                }
                                 validationSchema={EmployeePersonalDetailSchema}
                                 onSubmit={updatePersonalDetailButtonClicked}
                                 component={(props) => (

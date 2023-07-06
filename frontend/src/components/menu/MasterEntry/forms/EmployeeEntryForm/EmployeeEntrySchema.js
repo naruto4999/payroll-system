@@ -41,12 +41,12 @@ export const EmployeePersonalDetailSchema = yup.object().shape({
         .required("Required")
         .matches(/^\d+$/, "Paycode must contain only numbers")
         .max(7, "Paycode must have a maximum of 7 digits"),
-    attendanceCardNumber: yup
+    attendanceCardNo: yup
         .string()
         .required("Required")
         .matches(/^\d+$/, "Attendance card number must contain only numbers")
         .max(7, "Attendance card number must have a maximum of 7 digits"),
-    employeeName: yup
+    name: yup
         .string()
         .required("Required")
         .max(100, "Must be at most 100 characters"),

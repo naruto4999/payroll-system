@@ -146,6 +146,18 @@ class EmployeePersonalDetailSerializer(serializers.ModelSerializer):
                   'local_address', 'local_district', 'local_state_or_union_territory', 'local_pincode',
                   'permanent_address', 'permanent_district', 'permanent_state_or_union_territory', 'permanent_pincode',
                   'isActive', 'created_at']
+        
+
+class EmployeeListSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    paycode = serializers.IntegerField(read_only=True)
+    attendance_card_no = serializers.IntegerField(read_only=True)
+    date_of_joining = serializers.DateField(source='employee_professional_detail.date_of_joining', read_only=True)
+    designation = serializers.CharField(source='employee_professional_detail.designation', read_only=True)
+    class Meta:
+        fields = ['id', 'name', 'paycode', 'attendance_card_no', 'date_of_joining', 'designation']
+
 
 class EmployeeProfessionalDetailSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)

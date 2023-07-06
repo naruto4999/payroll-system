@@ -252,7 +252,7 @@ const AddEmployeeProfessionalDetail = ({
                                     key={shift.id}
                                     value={shift.id}
                                 >
-                                    {shift.name}{` [${timeFormat(shift.beginning_time)} - ${timeFormat(shift.end_time)}]`}
+                                    {shift.name}{` [${timeFormat(shift.beginningTime)} - ${timeFormat(shift.endTime)}]`}
                                 </option>
                             ))}
                         </select>

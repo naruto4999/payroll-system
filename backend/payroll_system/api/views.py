@@ -1,8 +1,8 @@
 from django.forms import ValidationError
 from django.shortcuts import render
 from rest_framework import generics, status, mixins
-from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, DeductionsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer
-from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift
+from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, DeductionsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer
+from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift, EmployeeProfessionalDetail
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
@@ -12,7 +12,9 @@ from rest_framework.exceptions import NotFound
 from .auth.views import MyTokenObtainPairView
 from django.db.models.functions import Lower
 from rest_framework.parsers import MultiPartParser, FormParser
+from djangorestframework_camel_case.parser import CamelCaseFormParser, CamelCaseMultiPartParser
 from django.db import IntegrityError
+from django.db.models import Q
 
 
 
@@ -821,15 +823,26 @@ class EmployeePersonalDetailListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = EmployeePersonalDetailSerializer
     lookup_field = 'company_id'
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [CamelCaseMultiPartParser, CamelCaseFormParser]
+
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return EmployeeListSerializer
+        # elif self.request.method == 'POST':
+        #     return EmployeePersonalDetailCreateSerializer
+        return EmployeePersonalDetailSerializer  # Use the default serializer for other methods
 
     def get_queryset(self, *args, **kwargs):
         company_id = self.kwargs.get('company_id')
         user = self.request.user
         if user.role == "OWNER":
-            return user.employee_personal_details.filter(company=company_id)
-        instance = OwnerToRegular.objects.get(user=user)
-        return instance.owner.employee_personal_details.filter(company=company_id)
+            personal_details_list = user.employee_personal_details.filter(company=company_id)
+        else:
+            instance = OwnerToRegular.objects.get(user=user)
+            personal_details_list = instance.owner.employee_personal_details.filter(company=company_id)
+        combined_queryset = personal_details_list.prefetch_related('employee_professional_detail')
+        # print(combined_queryset)
+        return combined_queryset
 
 
     def create(self, request, *args, **kwargs):
@@ -850,7 +863,7 @@ class EmployeePersonalDetailListCreateView(generics.ListCreateAPIView):
             if "user_id" in error_string and "company_id" in error_string and "paycode" in error_string:
                 error_message = {"paycode": "This Paycode already exists"}
             elif "user_id" in error_string and "company_id" in error_string and "attendance_card_no" in error_string:
-                error_message = {"attendance_card_no": "This Paycode already exists"}
+                error_message = {"attendance_card_no": "This Attendance Card No. already exists"}
             else:
                 error_message = {"error": "Some error occurred"}
             return Response({"error": error_message}, status=status.HTTP_400_BAD_REQUEST)
@@ -872,17 +885,16 @@ class EmployeePersonalDetailRetrieveUpdateDestroyAPIView(generics.RetrieveUpdate
     def update(self, request, *args, **kwargs):
         user = self.request.user
         instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data)
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        
+
         if user.role == "OWNER":
             serializer.save(user=self.request.user)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        
         else:
             instance = OwnerToRegular.objects.get(user=user)
             serializer.save(user=instance.owner)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
         
 
 class EmployeeProfessionalDetailCreateAPIView(generics.CreateAPIView):
@@ -923,6 +935,33 @@ class EmployeeProfessionalDetailCreateAPIView(generics.CreateAPIView):
         #     return Response({"error": error_message}, status=status.HTTP_400_BAD_REQUEST)
         
             
+
+class EmployeeProfessionalDetailRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes= [IsAuthenticated]
+    serializer_class = EmployeeProfessionalDetailSerializer
+    lookup_field = 'employee'
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        user = self.request.user
+        if user.role == "OWNER":
+            return user.employee_professional_details.filter(company=company_id)
+        instance = OwnerToRegular.objects.get(user=user)
+        return instance.owner.employee_professional_details.filter(company=company_id)
+    
+    def update(self, request, *args, **kwargs):
+        user = self.request.user
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        if user.role == "OWNER":
+            serializer.save(user=self.request.user)
+        else:
+            instance = OwnerToRegular.objects.get(user=user)
+            serializer.save(user=instance.owner)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
 #Viewsets
 class UserViewSet(viewsets.ModelViewSet):
     http_method_names = ['get']

@@ -21,7 +21,7 @@ const AddEmployeePersonalDetail = ({
     isEditing,
 }) => {
     // const inputRef = useRef(null);
-    console.log(errors);
+    // console.log(errors);
     const [sameAsLocal, setSameAsLocal] = useState(false);
     // useEffect(() => {
     //     inputRef.current.focus();
@@ -45,7 +45,7 @@ const AddEmployeePersonalDetail = ({
         values.localPincode,
     ]);
 
-    console.log(values);
+    // console.log(values);
 
     const handleSameAsLocal = (event) => {
         setSameAsLocal(event.target.checked);
@@ -145,7 +145,7 @@ const AddEmployeePersonalDetail = ({
                         </div>
 
                         <label
-                            htmlFor="attendanceCardNumber"
+                            htmlFor="attendanceCardNo"
                             className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
                         >
                             Attendance Card Number
@@ -156,35 +156,35 @@ const AddEmployeePersonalDetail = ({
                         <div className="relative">
                             <input
                                 className={classNames(
-                                    errors.attendanceCardNumber &&
-                                        touched.attendanceCardNumber
+                                    errors.attendanceCardNo &&
+                                        touched.attendanceCardNo
                                         ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
                                         : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
                                     "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full custom-number-input"
                                 )}
                                 type="number"
-                                id="attendanceCardNumber"
-                                name="attendanceCardNumber"
+                                id="attendanceCardNo"
+                                name="attendanceCardNo"
                                 onChange={handleChange}
                                 onBlur={handleBlur}
-                                value={values.attendanceCardNumber}
+                                value={values.attendanceCardNo}
                             />
-                            {errors.attendanceCardNumber &&
-                                touched.attendanceCardNumber && (
+                            {errors.attendanceCardNo &&
+                                touched.attendanceCardNo && (
                                     <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                                        {errors.attendanceCardNumber}
+                                        {errors.attendanceCardNo}
                                     </div>
                                 )}
                             {errorMessage &&
-                                errorMessage.attendance_card_no && (
+                                errorMessage.attendanceCardNo && (
                                     <p className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                                        {errorMessage.attendance_card_no}
+                                        {errorMessage.attendanceCardNo}
                                     </p>
                                 )}
                         </div>
 
                         <label
-                            htmlFor="employeeName"
+                            htmlFor="name"
                             className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
                         >
                             Employee Name
@@ -195,22 +195,22 @@ const AddEmployeePersonalDetail = ({
                         <div className="relative">
                             <input
                                 className={classNames(
-                                    errors.employeeName && touched.employeeName
+                                    errors.name && touched.name
                                         ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
                                         : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
                                     "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
                                 )}
                                 type="text"
                                 maxLength={100}
-                                id="employeeName"
-                                name="employeeName"
+                                id="name"
+                                name="name"
                                 onChange={handleChange}
                                 onBlur={handleBlur}
-                                value={values.employeeName}
+                                value={values.name}
                             />
-                            {errors.employeeName && touched.employeeName && (
+                            {errors.name && touched.name && (
                                 <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                                    {errors.employeeName}
+                                    {errors.name}
                                 </div>
                             )}
                         </div>
@@ -1050,13 +1050,14 @@ const AddEmployeePersonalDetail = ({
                         disabled={!isValid}
                         onClick={handleSubmit}
                     >
-                        Add
+                        {isEditing ? "Update" : "Add"}
                     </button>
                     <button
                         type="button"
                         className="bg-zinc-400 hover:bg-zinc-500 dark:bg-zinc-600 rounded w-20 p-2 text-base font-medium dark:hover:bg-zinc-700"
                         onClick={() => {
                             cancelButtonClicked(isEditing)
+                            setErrorMessage("")
                         }}
                     >
                         Cancel
