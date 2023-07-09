@@ -49,7 +49,23 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
                 body: employeeProfessionalDetail,
                 // formData:true 
             }),
-            invalidatesTags: ["EmployeeProfessionalDetails"],
+            invalidatesTags: ["EmployeePersonalDetails"],
+        }),
+        getSingleEmployeeProfessionalDetail: builder.query({
+            query: (employee) => ({
+                url: `/api/employee-professional-detail/${employee.company}/${employee.id}`,
+                method: "GET",
+            }),
+            keepUnusedDataFor: 1,
+            // providesTags: ["EmployeePersonalDetails"],
+        }),
+        updateEmployeeProfessionalDetail: builder.mutation({
+            query: employee => ({
+                url: `/api/employee-professional-detail/${employee.globalCompany}/${employee.employee}`,
+                method: 'PATCH',
+                body: employee,
+            }),
+            invalidatesTags: ['EmployeeProfessionalDetails']
         }),
     }),
 });
@@ -60,4 +76,6 @@ export const {
     useAddEmployeeProfessionalDetailMutation,
     useLazyGetSingleEmployeePersonalDetailQuery,
     useUpdateEmployeePersonalDetailMutation,
+    useUpdateEmployeeProfessionalDetailMutation,
+    useLazyGetSingleEmployeeProfessionalDetailQuery,
 } = employeeEntryApiSlice;

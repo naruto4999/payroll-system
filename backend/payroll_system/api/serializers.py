@@ -1,7 +1,7 @@
 from dataclasses import field
 from rest_framework import serializers
 
-from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, DeductionsHead, EmployeePersonalDetail, EmployeeProfessionalDetail
+from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, DeductionsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning
 from rest_framework import serializers
 
 
@@ -136,7 +136,7 @@ class EmployeePersonalDetailSerializer(serializers.ModelSerializer):
     blood_group = serializers.ChoiceField(choices=EmployeePersonalDetail.BLOOD_GROUP_CHOICES, allow_blank=True)
     isActive = serializers.ReadOnlyField()
     created_at = serializers.ReadOnlyField()
-
+    
     class Meta:
         model = EmployeePersonalDetail
         fields = ['id', 'user', 'company', 'name', 'paycode', 'attendance_card_no', 'photo',
@@ -167,3 +167,14 @@ class EmployeeProfessionalDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployeeProfessionalDetail
         fields = ['user', 'company', 'employee', 'date_of_joining', 'date_of_confirm', 'department', 'designation', 'category', 'salary_grade', 'shift', 'weekly_off', 'extra_off']
+
+class EmployeeSalaryEarningSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmployeeSalaryEarning
+        fields = ['user', 'employee', 'company', 'earnings_head', 'value']
+
+    def create(self, validated_data):
+        employee_earnings = []
+        for data in validated_data:
+            employee_earnings.append(EmployeeSalaryEarning(**data))
+        return EmployeeSalaryEarning.objects.bulk_create(employee_earnings)

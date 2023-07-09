@@ -11,7 +11,10 @@ const AddEmployeeNavigationBar = ({
     editEmployeePopoverHandler,
     isEditing,
     updateEmployeeId,
+    getSingleEmployeeProfessionalDetail,
+    globalCompany,
 }) => {
+    console.log(updateEmployeeId);
     return (
         // <h1>HI</h1>
         <div className=" h-10 w-fit flex flex-row justify-center gap-8 mt-6 md:mt-0 mx-auto">
@@ -21,7 +24,7 @@ const AddEmployeeNavigationBar = ({
                         isEditing
                             ? editEmployeePopoverHandler({
                                   popoverName: "editEmployeePersonalDetail",
-                                  updateEmployeeId,
+                                  id: updateEmployeeId,
                               })
                             : addEmployeePopoverHandler(
                                   "addEmployeePersonalDetail"
@@ -50,14 +53,17 @@ const AddEmployeeNavigationBar = ({
 
             <button
                 onClick={() => {
-                    isEditing
-                        ? editEmployeePopoverHandler({
-                              popoverName: "editEmployeeProfessionalDetail",
-                              updateEmployeeId,
-                          })
-                        : addEmployeePopoverHandler(
-                              "addEmployeeProfessionalDetail"
-                          );
+                    if (isEditing) {
+                        editEmployeePopoverHandler({
+                            popoverName: "editEmployeeProfessionalDetail",
+                            id: updateEmployeeId,
+                        });
+                        // getSingleEmployeeProfessionalDetail({globalCompany, id: updateEmployeeId})
+                    } else {
+                        addEmployeePopoverHandler(
+                            "addEmployeeProfessionalDetail"
+                        );
+                    }
                 }}
                 className={classNames(
                     addEmployeePopover.addEmployeeProfessionalDetail ||
@@ -78,8 +84,38 @@ const AddEmployeeNavigationBar = ({
                     )}
                 ></div>
             </button>
-            <button className="text-sm md:text-xl dark:text-slate-100 text-gray-900 font-semibold">
+            <button
+                onClick={() => {
+                    if (isEditing) {
+                        editEmployeePopoverHandler({
+                            popoverName: "editEmployeeSalaryDetail",
+                            id: updateEmployeeId,
+                        });
+                        // getSingleEmployeeProfessionalDetail({globalCompany, id: updateEmployeeId})
+                    } else {
+                        addEmployeePopoverHandler(
+                            "addEmployeeSalaryDetail"
+                        );
+                    }
+                }}
+                className={classNames(
+                    addEmployeePopover.addEmployeeSalaryDetail ||
+                        editEmployeePopover.editEmployeeSalaryDetail
+                        ? "text-opacity-100 dark:text-opacity-100"
+                        : "text-opacity-50 dark:text-opacity-50",
+                    "text-sm md:text-xl dark:text-slate-100  text-gray-900 font-semibold transition-all"
+                )}
+            >
                 Salary
+                <div
+                    className={classNames(
+                        addEmployeePopover.addEmployeeSalaryDetail ||
+                        editEmployeePopover.editEmployeeSalaryDetail
+                            ? ""
+                            : "hidden",
+                        "dark:bg-blueAccent-600 h-1 mt-2 "
+                    )}
+                ></div>
             </button>
             <button className="text-sm md:text-xl dark:text-slate-100 text-gray-900 font-semibold">
                 ESI & PF

@@ -5,7 +5,7 @@ const classNames = (...classes) => {
     return classes.filter(Boolean).join(" ");
 };
 
-const AddEmployeePersonalDetail = ({
+const EmployeePersonalDetail = ({
     handleSubmit,
     handleChange,
     handleBlur,
@@ -19,6 +19,7 @@ const AddEmployeePersonalDetail = ({
     setErrorMessage,
     setFieldValue,
     isEditing,
+    dirty,
 }) => {
     // const inputRef = useRef(null);
     // console.log(errors);
@@ -53,7 +54,6 @@ const AddEmployeePersonalDetail = ({
 
     return (
         <div className="text-gray-900 dark:text-slate-100">
-            {/* <h1 className="font-medium text-2xl mb-2">Add Employee</h1> */}
             <form
                 action=""
                 className="flex flex-col gap-2 justify-center"
@@ -1041,13 +1041,13 @@ const AddEmployeePersonalDetail = ({
                 <section className="flex flex-row gap-4 mt-4 mb-2">
                     <button
                         className={classNames(
-                            isValid
+                            isValid && dirty
                                 ? "dark:hover:bg-teal-600  hover:bg-teal-600"
                                 : "opacity-40",
                             "dark:bg-teal-700 rounded w-20 p-2 text-base font-medium bg-teal-500"
                         )}
                         type="submit"
-                        disabled={!isValid}
+                        disabled={!isValid || !dirty}
                         onClick={handleSubmit}
                     >
                         {isEditing ? "Update" : "Add"}
@@ -1067,4 +1067,4 @@ const AddEmployeePersonalDetail = ({
         </div>
     );
 };
-export default AddEmployeePersonalDetail;
+export default EmployeePersonalDetail;

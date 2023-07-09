@@ -33,37 +33,36 @@ import { useState, useEffect } from "react";
 import SwitchToggle from "./UI/ToggleSwitch";
 
 function App() {
+    document.documentElement.classList.add("scrollbar")
+    // const [theme, setTheme] = useState("");
     
+    // useEffect(() => {
+    //     if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+    //         setTheme("dark");
+    //     } else {
+    //         setTheme("light");
+    //     }
+    // }, []);
+  
+    // useEffect(() => {
+    //     if (theme == "dark") {
+    //         document.documentElement.classList.add("dark");
+            
+    //     } else {
+    //         document.documentElement.classList.remove("dark");
+    //     }
+    // }, [theme]);
 
-    const [theme, setTheme] = useState("");
-
-    useEffect(() => {
-        if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-            setTheme("dark");
-        } else {
-            setTheme("light");
-        }
-    }, []);
-    let { uid } = useParams();
-    let { token } = useParams();
-    useEffect(() => {
-        if (theme == "dark") {
-            document.documentElement.classList.add("dark");
-        } else {
-            document.documentElement.classList.remove("dark");
-        }
-    }, [theme]);
-
-    const themeSwitch = () => {
-        setTheme(theme === "dark" ? "light" : "dark");
-    };
+    // const themeSwitch = () => {
+    //     setTheme(theme === "dark" ? "light" : "dark");
+    // };
 
     return (
-        <div className="min-h-[100dvh] bg-zinc-100 text-gray-900 font-sans dark:bg-zinc-900 dark:text-slate-100 overflow-y-clip">
-            <div className="absolute top-0 right-0 m-3 sm:m-4 dark:text-slate-100 dark:text-opacity-70 flex flex-row items-center text-xs sm:text-base gap-2 z-20">
+        <div className="min-h-[100dvh] max-h-[100dvh] bg-zinc-100 text-gray-900 font-sans dark:bg-zinc-900 dark:text-slate-100 scroll-pt-50 overflow-y-auto scrollbar">
+            {/* <div className="absolute top-0 right-0 m-3 sm:m-4 dark:text-slate-100 dark:text-opacity-70 flex flex-row items-center text-xs sm:text-base gap-2 z-20">
                 Dark
                 <SwitchToggle theme={theme} switch={themeSwitch} />
-            </div>
+            </div> */}
 
             <Routes>
                 <Route

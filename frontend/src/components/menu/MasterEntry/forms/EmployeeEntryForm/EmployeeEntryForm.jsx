@@ -20,19 +20,25 @@ import {
     useAddEmployeeProfessionalDetailMutation,
     useLazyGetSingleEmployeePersonalDetailQuery,
     useUpdateEmployeePersonalDetailMutation,
+    useUpdateEmployeeProfessionalDetailMutation,
+    useLazyGetSingleEmployeeProfessionalDetailQuery,
 } from "../../../../authentication/api/employeeEntryApiSlice";
+import { useGetEarningsHeadsQuery } from "../../../../authentication/api/earningsHeadEntryApiSlice";
+
 // import EditEmployee from "./EditEmployee";
 // import ViewEmployee from "./ViewEmployee";
 import { useOutletContext } from "react-router-dom";
 import ReactModal from "react-modal";
 import { Formik } from "formik";
-import AddEmployeePersonalDetail from "./AddEmployeePersonalDetail";
+import EmployeePersonalDetail from "./EmployeePersonalDetail";
 import {
     EmployeePersonalDetailSchema,
     EmployeeProfessionalDetailSchema,
 } from "./EmployeeEntrySchema";
 import AddEmployeeNavigationBar from "./AddEmployeeNavigationBar";
-import AddEmployeeProfessionalDetail from "./AddEmployeeProfessionalDetail";
+import EmployeeProfessionalDetail from "./EmployeeProfessionalDetail";
+import EmployeeSalaryDetail from "./EmployeeSalaryDetail";
+import * as yup from "yup";
 
 ReactModal.setAppElement("#root");
 
@@ -42,6 +48,9 @@ const classNames = (...classes) => {
 
 function getObjectDifferences(obj1, obj2) {
     const diffObj = {};
+    if (Object.keys(obj1).length === 0) {
+        return obj2;
+    }
 
     for (const key in obj1) {
         if (obj1.hasOwnProperty(key) && obj2.hasOwnProperty(key)) {
@@ -53,7 +62,7 @@ function getObjectDifferences(obj1, obj2) {
             }
 
             if (value2 === null) {
-                obj1[key] = "";
+                obj2[key] = "";
             }
             if (obj1[key] !== obj2[key]) {
                 diffObj[key] = obj2[key];
@@ -64,21 +73,42 @@ function getObjectDifferences(obj1, obj2) {
     return diffObj;
 }
 
+const checkNullUndefinedValues = (obj) => {
+    for (let key in obj) {
+        if (obj[key] === null || obj[key] === undefined) {
+            obj[key] = "";
+        }
+    }
+    return obj;
+};
+
 const EmployeeEntryForm = () => {
     const globalCompany = useSelector((state) => state.globalCompany);
     const [
         getSingleEmployeePersonalDetail,
         {
             data: {
-                user,
-                company,
-                isActive,
-                createdAt,
-                ...singleEmployeeData
+                user: PersonalDetailUser,
+                company: PersonalDetailCompany,
+                isActive: PersonalDetailIsActive,
+                createdAt: PersonalDetailCreatedAt,
+                ...singleEmployeePersonalDetail
             } = {},
         } = {},
-        lastPromiseInfo,
+        // lastPromiseInfo,
     ] = useLazyGetSingleEmployeePersonalDetailQuery();
+
+    const [
+        getSingleEmployeeProfessionalDetail,
+        {
+            data: {
+                user: ProfessionalDetailUser,
+                company: ProfessionalDetailCompany,
+                ...singleEmployeeProfessionalDetail
+            } = {},
+        } = {},
+        // lastPromiseInfo,
+    ] = useLazyGetSingleEmployeeProfessionalDetailQuery();
     const {
         data: fetchedData,
         isLoading,
@@ -88,6 +118,7 @@ const EmployeeEntryForm = () => {
         isFetching,
         refetch,
     } = useGetEmployeePersonalDetailsQuery(globalCompany);
+
     console.log(fetchedData);
     const [
         addEmployeePersonalDetail,
@@ -102,6 +133,29 @@ const EmployeeEntryForm = () => {
         updateEmployeePersonalDetail,
         { isLoading: isUpdatingEmployeePersonalDetail },
     ] = useUpdateEmployeePersonalDetailMutation();
+    const [
+        updateEmployeeProfessionalDetail,
+        { isLoading: isUpdatingEmployeeProfessionalDetail },
+    ] = useUpdateEmployeeProfessionalDetailMutation();
+    const {
+        data: fetchedEarningsHeads,
+        isLoading: isLoadingEarningsHeads,
+        isSuccess: EarningsHeadsSuccess,
+    } = useGetEarningsHeadsQuery(globalCompany);
+
+    let earningHeadOptions = [];
+    if (EarningsHeadsSuccess) {
+        earningHeadOptions = fetchedEarningsHeads.map((earningHead) => ({
+            id: earningHead.id,
+            name: earningHead.name,
+        }));
+    }
+    let earningHeadInitialValues = {};
+    if (EarningsHeadsSuccess) {
+        fetchedEarningsHeads.forEach((earningHead) => {
+            earningHeadInitialValues[earningHead.name] = "";
+        });
+    }
     // const [deleteEmployeePersonalDetail, { isLoading: isDeletingEmployeePersonalDetail }] =
     //     useDeleteEmployeePersonalDetailMutation();
     const [addEmployeePopover, setAddEmployeePopover] = useState({
@@ -134,32 +188,80 @@ const EmployeeEntryForm = () => {
             return updatedState;
         });
     };
+    console.log(updateEmployeeId);
+
+    const currentDate = new Date();
+    const formattedDate = currentDate.toISOString().split("T")[0];
+
+    const editEmployeeProfessionalDetailInitialValues = {
+        dateOfJoining: formattedDate,
+        dateOfConfirm: "",
+        department: "",
+        designation: "",
+        category: "",
+        salaryGrade: "",
+        shift: "",
+        weeklyOff: "sun",
+        extraOff: "no_off",
+    };
 
     const editEmployeePopoverHandler = async ({ popoverName, id }) => {
         console.log(popoverName);
         console.log(id);
         setUpdateEmployeeId(id);
-
-        try {
-            const data = await getSingleEmployeePersonalDetail({
-                id: id,
-                company: globalCompany.id,
-            }).unwrap();
-            console.log(data);
-            setEditEmployeePopover((prevState) => {
-                const updatedState = {};
-                Object.keys(prevState).forEach((key) => {
-                    updatedState[key] = key === popoverName;
+        setAddedEmployeeId(id);
+        console.log(updateEmployeeId);
+        if (popoverName === "editEmployeePersonalDetail") {
+            try {
+                const data = await getSingleEmployeePersonalDetail({
+                    id: id,
+                    company: globalCompany.id,
+                }).unwrap();
+                console.log(data);
+                setEditEmployeePopover((prevState) => {
+                    const updatedState = {};
+                    Object.keys(prevState).forEach((key) => {
+                        updatedState[key] = key === popoverName;
+                    });
+                    return updatedState;
                 });
-                return updatedState;
-            });
-        } catch (err) {
-            console.log(err);
+                console.log(updateEmployeeId);
+            } catch (err) {
+                console.log(err);
+            }
+        } else if (popoverName === "editEmployeeProfessionalDetail") {
+            console.log("ishhhhhhhhh meeeeeeeee bish");
+            try {
+                const data = await getSingleEmployeeProfessionalDetail({
+                    id: id,
+                    company: globalCompany.id,
+                }).unwrap();
+                console.log(data);
+                setEditEmployeePopover((prevState) => {
+                    const updatedState = {};
+                    Object.keys(prevState).forEach((key) => {
+                        updatedState[key] = key === popoverName;
+                    });
+                    return updatedState;
+                });
+                console.log(updateEmployeeId);
+            } catch (err) {
+                if (err.status === 404) {
+                    console.log("me hereeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
+                    setEditEmployeePopover((prevState) => {
+                        const updatedState = {};
+                        Object.keys(prevState).forEach((key) => {
+                            updatedState[key] = key === popoverName;
+                        });
+                        return updatedState;
+                    });
+                }
+                console.log(err);
+            }
         }
 
         // setEditEmployeePopover(!editEmployeePopover);
     };
-    // console.log(singleEmployeeData);
 
     const viewEmployeePopoverHandler = (employee) => {
         console.log(employee);
@@ -216,6 +318,7 @@ const EmployeeEntryForm = () => {
             }
         }
     };
+    console.log(Object.keys(singleEmployeeProfessionalDetail).length === 0);
 
     const addProfessionalDetailButtonClicked = async (values, formikBag) => {
         console.log(values);
@@ -232,7 +335,7 @@ const EmployeeEntryForm = () => {
             // setAddedEmployeeId(data.id)
             // setAddEmployeePopover(!addEmployeePopover);
             formikBag.resetForm();
-            // addEmployeePopoverHandler("addEmployeeProfessionalDetail");
+            addEmployeePopoverHandler("addEmployeeSalaryDetail");
         } catch (err) {
             console.log(err);
             if (err.status === 400) {
@@ -247,8 +350,11 @@ const EmployeeEntryForm = () => {
     const updatePersonalDetailButtonClicked = async (values, formikBag) => {
         // console.log(formikBag);
         console.log(values);
-        console.log(singleEmployeeData);
-        const differences = getObjectDifferences(singleEmployeeData, values);
+        console.log(singleEmployeePersonalDetail);
+        const differences = getObjectDifferences(
+            singleEmployeePersonalDetail,
+            values
+        );
         console.log(differences);
         if (Object.keys(differences).length !== 0) {
             console.log("in if fucking whatever");
@@ -283,6 +389,41 @@ const EmployeeEntryForm = () => {
                 }
             }
         }
+    };
+
+    const updateProfessionalDetailButtonClicked = async (values, formikBag) => {
+        console.log(values);
+        console.log(singleEmployeeProfessionalDetail);
+        const differences = getObjectDifferences(
+            singleEmployeeProfessionalDetail,
+            values
+        );
+        console.log(differences);
+        if (Object.keys(differences).length !== 0) {
+            console.log("in if fucking whatever");
+
+            try {
+                const data = await updateEmployeeProfessionalDetail({
+                    ...differences,
+                    employee: values.employee,
+                    globalCompany: globalCompany.id,
+                }).unwrap();
+                console.log(data);
+                setErrorMessage("");
+            } catch (err) {
+                console.log(err);
+                if (err.status === 400) {
+                    console.log(err.data.error);
+                    setErrorMessage(err.data.error);
+                } else {
+                    console.log(err);
+                }
+            }
+        }
+    };
+
+    const addSalaryDetailButtonClicked = async (values, formikBag) => {
+        console.log(values);
     };
 
     const deleteButtonClicked = async (id) => {
@@ -334,12 +475,12 @@ const EmployeeEntryForm = () => {
                     </div>
                     <div
                         className="p-1.5 dark:bg-teal-700 rounded bg-teal-600 dark:hover:bg-teal-600 hover:bg-teal-700"
-                        onClick={() =>
+                        onClick={() => {
                             editEmployeePopoverHandler({
                                 id: props.row.original.id,
                                 popoverName: "editEmployeePersonalDetail",
-                            })
-                        }
+                            });
+                        }}
                     >
                         <FaPen className="h-4" />
                     </div>
@@ -372,19 +513,32 @@ const EmployeeEntryForm = () => {
         enableSortingRemoval: false,
     });
 
+    let EmployeeSalaryDetailSchema = yup.object().shape({
+        earningsHead: yup.object().shape(
+            Object.keys(earningHeadInitialValues).reduce((schema, key) => {
+                return {
+                    ...schema,
+                    [key]: yup.number().required(`${key} is required`),
+                };
+            }, {})
+        ),
+    });
+
     useEffect(() => {
         // Add more for adding, editing and deleting later on
         setShowLoadingBar(
             isLoading ||
                 isAddingEmployeePersonalDetail ||
-                isAddingEmployeeProfessionalDetail
+                isAddingEmployeeProfessionalDetail ||
+                isUpdatingEmployeePersonalDetail
         );
     }, [
         isLoading,
         isAddingEmployeePersonalDetail,
         isAddingEmployeeProfessionalDetail,
+        isUpdatingEmployeePersonalDetail,
     ]);
-
+    console.log(checkNullUndefinedValues(singleEmployeeProfessionalDetail));
     if (globalCompany.id == null) {
         return (
             <section className="flex flex-col items-center">
@@ -417,9 +571,9 @@ const EmployeeEntryForm = () => {
                         Add Employee
                     </button>
                 </div>
-                <div className="overflow-hidden rounded border border-black border-opacity-50 shadow-md m-5 max-w-5xl mx-auto">
+                <div className="rounded border border-black border-opacity-50 shadow-md max-w-6xl mx-auto max-h-[80dvh] lg:max-h-[84dvh] overflow-y-auto scrollbar">
                     <table className="w-full border-collapse text-center text-sm">
-                        <thead className="bg-blueAccent-600 dark:bg-blueAccent-700">
+                        <thead className="bg-blueAccent-600 dark:bg-blueAccent-700 sticky top-0">
                             {table.getHeaderGroups().map((headerGroup) => (
                                 <tr key={headerGroup.id}>
                                     {headerGroup.headers.map((header) => (
@@ -482,7 +636,7 @@ const EmployeeEntryForm = () => {
                                 </tr>
                             ))}
                         </thead>
-                        <tbody className="divide-y divide-black divide-opacity-50 border-t border-black border-opacity-50">
+                        <tbody className="divide-y divide-black divide-opacity-50 border-t border-black border-opacity-50 max-h-20 overflow-y-auto">
                             {table.getRowModel().rows.map((row) => (
                                 <tr
                                     className="dark:hover:bg-zinc-800 hover:bg-zinc-200"
@@ -545,6 +699,10 @@ const EmployeeEntryForm = () => {
                             }
                             isEditing={false}
                             updateEmployeeId={updateEmployeeId}
+                            getSingleEmployeeProfessionalDetail={
+                                getSingleEmployeeProfessionalDetail
+                            }
+                            globalCompany={globalCompany.id}
                         />
                         {addEmployeePopover.addEmployeePersonalDetail && (
                             <Formik
@@ -592,7 +750,7 @@ const EmployeeEntryForm = () => {
                                 onSubmit={addPersonalDetailButtonClicked}
                                 component={(props) => (
                                     <>
-                                        <AddEmployeePersonalDetail
+                                        <EmployeePersonalDetail
                                             {...props}
                                             errorMessage={errorMessage}
                                             setErrorMessage={setErrorMessage}
@@ -608,33 +766,61 @@ const EmployeeEntryForm = () => {
 
                         {addEmployeePopover.addEmployeeProfessionalDetail && (
                             <Formik
-                                initialValues={{
-                                    dateOfJoining: "",
-                                    dateOfConfirm: "",
-                                    department: "",
-                                    designation: "",
-                                    category: "",
-                                    salaryGrade: "",
-                                    shift: "",
-                                    weeklyOff: "no_off",
-                                    extraOff: "no_off",
-                                }}
+                                initialValues={
+                                    editEmployeeProfessionalDetailInitialValues
+                                }
                                 validationSchema={
                                     EmployeeProfessionalDetailSchema
                                 }
                                 onSubmit={addProfessionalDetailButtonClicked}
                                 component={(props) => (
                                     <>
-                                        <AddEmployeeProfessionalDetail
+                                        <EmployeeProfessionalDetail
                                             {...props}
                                             errorMessage={errorMessage}
                                             setErrorMessage={setErrorMessage}
-                                            setAddEmployeePopover={
-                                                setAddEmployeePopover
-                                            }
+                                            // setAddEmployeePopover={
+                                            //     setAddEmployeePopover
+                                            // }
                                             globalCompany={globalCompany}
                                             setShowLoadingBar={
                                                 setShowLoadingBar
+                                            }
+                                            isEditing={false}
+                                            cancelButtonClicked={
+                                                cancelButtonClicked
+                                            }
+                                        />
+                                    </>
+                                )}
+                            />
+                        )}
+
+                        {addEmployeePopover.addEmployeeSalaryDetail && (
+                            <Formik
+                                initialValues={{
+                                    earningsHead: {
+                                        ...earningHeadInitialValues,
+                                    },
+                                }}
+                                validationSchema={EmployeeSalaryDetailSchema}
+                                onSubmit={addSalaryDetailButtonClicked}
+                                component={(props) => (
+                                    <>
+                                        <EmployeeSalaryDetail
+                                            {...props}
+                                            errorMessage={errorMessage}
+                                            setErrorMessage={setErrorMessage}
+                                            // setAddEmployeePopover={
+                                            //     setAddEmployeePopover
+                                            // }
+                                            globalCompany={globalCompany}
+                                            setShowLoadingBar={
+                                                setShowLoadingBar
+                                            }
+                                            isEditing={false}
+                                            cancelButtonClicked={
+                                                cancelButtonClicked
                                             }
                                         />
                                     </>
@@ -679,25 +865,25 @@ const EmployeeEntryForm = () => {
                             }
                             isEditing={true}
                             updateEmployeeId={updateEmployeeId}
+                            getSingleEmployeeProfessionalDetail={
+                                getSingleEmployeeProfessionalDetail
+                            }
+                            globalCompany={globalCompany.id}
                         />
                         {editEmployeePopover.editEmployeePersonalDetail && (
                             <Formik
                                 initialValues={
-                                    singleEmployeeData !== undefined
-                                        ? {
-                                              ...singleEmployeeData,
-                                              photo:
-                                                  singleEmployeeData.photo ??
-                                                  "",
-                                              dob: singleEmployeeData.dob ?? "",
-                                          }
+                                    singleEmployeePersonalDetail !== undefined
+                                        ? checkNullUndefinedValues(
+                                              singleEmployeePersonalDetail
+                                          )
                                         : {}
                                 }
                                 validationSchema={EmployeePersonalDetailSchema}
                                 onSubmit={updatePersonalDetailButtonClicked}
                                 component={(props) => (
                                     <>
-                                        <AddEmployeePersonalDetail
+                                        <EmployeePersonalDetail
                                             {...props}
                                             errorMessage={errorMessage}
                                             setErrorMessage={setErrorMessage}
@@ -711,41 +897,48 @@ const EmployeeEntryForm = () => {
                             />
                         )}
 
-                        {/* {addEmployeePopover.addEmployeeProfessionalDetail && (
+                        {editEmployeePopover.editEmployeeProfessionalDetail && (
                             <Formik
-                                initialValues={{
-                                    dateOfJoining: "",
-                                    dateOfConfirm: "",
-                                    department: "",
-                                    designation: "",
-                                    category: "",
-                                    salaryGrade: "",
-                                    shift: "",
-                                    weeklyOff: "no_off",
-                                    extraOff: "no_off",
-                                }}
+                                initialValues={
+                                    singleEmployeeProfessionalDetail !==
+                                    undefined
+                                        ? checkNullUndefinedValues(
+                                              singleEmployeeProfessionalDetail
+                                          )
+                                        : editEmployeeProfessionalDetailInitialValues
+                                }
                                 validationSchema={
                                     EmployeeProfessionalDetailSchema
                                 }
-                                onSubmit={addProfessionalDetailButtonClicked}
+                                onSubmit={
+                                    Object.keys(
+                                        singleEmployeeProfessionalDetail
+                                    ).length === 0
+                                        ? addProfessionalDetailButtonClicked
+                                        : updateProfessionalDetailButtonClicked
+                                }
                                 component={(props) => (
                                     <>
-                                        <AddEmployeeProfessionalDetail
+                                        <EmployeeProfessionalDetail
                                             {...props}
                                             errorMessage={errorMessage}
                                             setErrorMessage={setErrorMessage}
-                                            setAddEmployeePopover={
-                                                setAddEmployeePopover
-                                            }
+                                            // setEditEmployeePopover={
+                                            //     setEditEmployeePopover
+                                            // }
                                             globalCompany={globalCompany}
                                             setShowLoadingBar={
                                                 setShowLoadingBar
+                                            }
+                                            isEditing={true}
+                                            cancelButtonClicked={
+                                                cancelButtonClicked
                                             }
                                         />
                                     </>
                                 )}
                             />
-                        )} */}
+                        )}
                     </>
                 </ReactModal>
 

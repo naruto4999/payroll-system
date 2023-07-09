@@ -273,8 +273,8 @@ export const EmployeePersonalDetailSchema = yup.object().shape({
 });
 
 export const EmployeeProfessionalDetailSchema = yup.object().shape({
-    dateOfJoining: yup.date().nullable(), // Allows the field to be null (optional),
-    dateOfConfirm: yup.date().nullable(),
+    dateOfJoining: yup.date().required("Required"), // Allows the field to be null (optional),
+    dateOfConfirm: yup.date().required("Required"),
     department: yup.string().nullable(),
     designation: yup.string().nullable(),
     category: yup.string().nullable(),
@@ -325,3 +325,14 @@ export const EmployeeProfessionalDetailSchema = yup.object().shape({
         )
         .nullable(),
 });
+
+// export const EmployeeSalaryDetailSchema = yup.object().shape({
+//     earningsHead: yup.object().shape(
+//       Object.keys(initialValues.earningsHead).reduce((schema, key) => {
+//         return {
+//           ...schema,
+//           [key]: yup.number().required(`${key} is required`),
+//         };
+//       }, {})
+//     ),
+//   });

@@ -17,6 +17,11 @@
       background: rgb(161 161 170);
       border-radius: 100vh;
     }
+
+    /* .dark .scrollbar::-webkit-scrollbar-track {
+      background: rgb(24 24 27);
+    } */
+
   
     .scrollbar::-webkit-scrollbar-thumb:hover {
       background: rgb(113 113 122)

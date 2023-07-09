@@ -56,13 +56,13 @@ const HolidayEntryForm = () => {
 
     // console.log(fetchedData.find(
     //     (grade) => grade.id === updateHolidayId
-    // )?.mandatory_holiday);
+    // )?.mandatoryHoliday);
 
     const editHolidayPopoverHandler = (Holiday) => {
         console.log(Holiday);
-        console.log(Holiday.mandatory_holiday);
+        console.log(Holiday.mandatoryHoliday);
         setUpdateHolidayId(Holiday.id);
-        setDisableEdit(Holiday.mandatory_holiday);
+        setDisableEdit(Holiday.mandatoryHoliday);
         setEditHolidayPopover(!editHolidayPopover);
     };
 
@@ -104,7 +104,7 @@ const HolidayEntryForm = () => {
             console.log(data);
             setErrorMessage("");
             formikBag.resetForm();
-            editHolidayPopoverHandler({ id: "", mandatory_holiday: false });
+            editHolidayPopoverHandler({ id: "", mandatoryHoliday: false });
         } catch (err) {
             console.log(err);
             if (err.status === 400) {
@@ -146,7 +146,7 @@ const HolidayEntryForm = () => {
             cell: (props) => props.renderValue(),
             //   footer: info => info.column.id,
         }),
-        columnHelper.accessor("mandatory_holiday", {
+        columnHelper.accessor("mandatoryHoliday", {
             header: () => "Mandatory",
             cell: (props) => props.renderValue(),
             enableHiding: true,
@@ -157,7 +157,7 @@ const HolidayEntryForm = () => {
             header: () => "Actions",
             cell: (props) => (
                 <div className="flex justify-center gap-4">
-                    {props.row.original.mandatory_holiday ? (
+                    {props.row.original.mandatoryHoliday ? (
                         ""
                     ) : (
                         <>
@@ -169,7 +169,6 @@ const HolidayEntryForm = () => {
                             >
                                 <FaRegTrashAlt className="h-4" />
                             </div>
-
                             <div
                                 className="p-1.5 dark:bg-teal-700 rounded bg-teal-600 dark:hover:bg-teal-600 hover:bg-teal-700"
                                 onClick={() =>
@@ -196,7 +195,7 @@ const HolidayEntryForm = () => {
         columns,
         initialState: {
             sorting: [{ id: "name", desc: false }],
-            columnVisibility: { mandatory_holiday: false },
+            columnVisibility: { mandatoryHoliday: false },
         },
         getCoreRowModel: getCoreRowModel(),
         getSortedRowModel: getSortedRowModel(),
@@ -357,7 +356,7 @@ const HolidayEntryForm = () => {
                     onRequestClose={() =>
                         editHolidayPopoverHandler({
                             id: "",
-                            mandatory_holiday: false,
+                            mandatoryHoliday: false,
                         })
                     }
                     style={{

@@ -131,7 +131,7 @@ const EarningsHeadEntry = () => {
             header: () => "Actions",
             cell: (props) => (
                 <div className="flex justify-center gap-4">
-                    {props.row.original.mandatory_earning ? (
+                    {props.row.original.mandatoryEarning ? (
                         ""
                     ) : (
                         <>

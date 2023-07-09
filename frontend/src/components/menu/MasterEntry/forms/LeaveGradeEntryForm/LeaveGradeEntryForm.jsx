@@ -54,15 +54,11 @@ const LeaveGradeEntryForm = () => {
     // const [msg, setMsg] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
 
-    // console.log(fetchedData.find(
-    //     (grade) => grade.id === updateLeaveGradeId
-    // )?.mandatory_leave);
-
     const editLeaveGradePopoverHandler = (LeaveGrade) => {
         console.log(LeaveGrade);
-        console.log(LeaveGrade.mandatory_leave);
+        console.log(LeaveGrade.mandatoryLeave);
         setUpdateLeaveGradeId(LeaveGrade.id);
-        setDisableEdit(LeaveGrade.mandatory_leave);
+        setDisableEdit(LeaveGrade.mandatoryLeave);
         setEditLeaveGradePopover(!editLeaveGradePopover);
     };
 
@@ -104,7 +100,7 @@ const LeaveGradeEntryForm = () => {
             console.log(data);
             setErrorMessage("");
             formikBag.resetForm();
-            editLeaveGradePopoverHandler({ id: "", mandatory_leave: false });
+            editLeaveGradePopoverHandler({ id: "", mandatoryLeave: false });
         } catch (err) {
             console.log(err);
             if (err.status === 400) {
@@ -138,7 +134,7 @@ const LeaveGradeEntryForm = () => {
             cell: (props) => props.renderValue(),
             //   footer: info => info.column.id,
         }),
-        columnHelper.accessor("mandatory_leave", {
+        columnHelper.accessor("mandatoryLeave", {
             header: () => "Mandatory",
             cell: (props) => props.renderValue(),
             enableHiding: true,
@@ -149,7 +145,7 @@ const LeaveGradeEntryForm = () => {
             header: () => "Actions",
             cell: (props) => (
                 <div className="flex justify-center gap-4">
-                    {props.row.original.mandatory_leave ? (
+                    {props.row.original.mandatoryLeave ? (
                         ""
                     ) : (
                         <div
@@ -183,7 +179,7 @@ const LeaveGradeEntryForm = () => {
         columns,
         initialState: {
             sorting: [{ id: "name", desc: false }],
-            columnVisibility: { mandatory_leave: false },
+            columnVisibility: { mandatoryLeave: false },
         },
         getCoreRowModel: getCoreRowModel(),
         getSortedRowModel: getSortedRowModel(),
@@ -358,7 +354,7 @@ const LeaveGradeEntryForm = () => {
                     onRequestClose={() =>
                         editLeaveGradePopoverHandler({
                             id: "",
-                            mandatory_leave: false,
+                            mandatoryLeave: false,
                         })
                     }
                     style={{

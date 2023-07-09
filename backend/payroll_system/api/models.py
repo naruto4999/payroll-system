@@ -457,7 +457,7 @@ class EmployeeProfessionalDetail(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="employee_professional_detail", null=True, blank=True)
     salary_grade = models.ForeignKey(SalaryGrade, on_delete=models.CASCADE, related_name="employee_professional_detail", null=True, blank=True)
     shift = models.ForeignKey(Shift, on_delete=models.CASCADE, related_name="employee_professional_detail", null=True, blank=True)
-    weekly_off = models.CharField(max_length=6, choices=WEEKDAY_CHOICES, null=False, blank=False, default='no_off')    
+    weekly_off = models.CharField(max_length=6, choices=WEEKDAY_CHOICES, null=False, blank=False, default='sun')    
     extra_off = models.CharField(max_length=10, choices=EXTRA_OFF_CHOICES, default='no_off', null=False, blank=False)
 
 
@@ -473,6 +473,68 @@ class EmployeeProfessionalDetail(models.Model):
         elif self.shift and (self.shift.company != self.company or self.shift.user != self.user):
             raise ValidationError("Invalid shift selected.")
         super().save(*args, **kwargs)
+
+
+class EmployeeSalaryEarning(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_employees_earnings")
+    employee = models.ForeignKey(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="earnings")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="all_company_employees_earnings")
+    earnings_head = models.ForeignKey(EarningsHead, on_delete=models.CASCADE, related_name="employees_earnings")
+    value = models.IntegerField(default=0, null=False, blank=False)
+
+    def save(self, *args, **kwargs):
+        if self.earnings_head.company != self.company or self.earnings_head.user != self.user:
+            raise ValidationError("Invalid Earning Head selected.")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['employee', 'earnings_head'], name='unique_employee_earning_head')
+        ]
+
+class EmployeeSalaryDetail(models.Model):
+    OVERTIME_TYPE_CHOICES = (
+        ('no_overtime', 'No Overtime'),
+        ('all_days', 'All Days'),
+        ('holiday_weekly_off', 'Holiday/Weekly Off'),
+    )
+
+    OVERTIME_RATE_CHOICES = (
+        ('S', 'Single'),
+        ('D', 'Double'),
+    )
+
+    SALARY_MODE_CHOICES = (
+        ('monthly', 'Monthly'),
+        ('daily', 'Daily'),
+        ('piece_rate', 'Piece Rate'),
+    )
+    PAYMENT_MODE_CHOICES = (
+        ('bank_transfer', 'Bank Transfer'),
+        ('cheque', 'Cheque'),
+        ('cash', 'Cash'),
+        ('rtgs', 'RTGS'),
+        ('neft', 'NEFT'),
+    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="employee_salary_details")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="employee_salary_details")
+    employee = models.OneToOneField(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="employee_salary_detail", primary_key=True)
+    overtime_type = models.CharField(max_length=20, choices=OVERTIME_TYPE_CHOICES, default='no_overtime', null=False, blank=False)
+    overtime_rate = models.CharField(max_length=1, choices=OVERTIME_RATE_CHOICES, null=True, blank=True)
+    salary_mode = models.CharField(max_length=20, choices=SALARY_MODE_CHOICES, default='monthly', null=False, blank=False)
+    payment_mode = models.CharField(max_length=20, choices=PAYMENT_MODE_CHOICES, default='bank_transfer', null=False, blank=False)
+    bank_name = models.CharField(max_length=75, null=True, blank=True)
+    account_number = models.CharField(max_length=50, null=True, blank=True)
+    ifcs = models.CharField(max_length=25, null=True, blank=True)
+    labour_wellfare_fund = models.BooleanField(default=False, null=False, blank=False)
+    late_deduction = models.BooleanField(default=False, null=False, blank=False)
+    bonus_allow = models.BooleanField(default=False, null=False, blank=False)
+    bonus_exg = models.BooleanField(default=False, null=False, blank=False)
+
+
+    def clean(self):
+        if self.overtime_type in ['holiday_weekly_off', 'all_days'] and not self.overtime_rate:
+            raise ValidationError("Overtime rate cannot be null or blank for 'Holiday/Weekly Off' or 'All Days' overtime type.")
+
 
 # class EmployeePhoto(models.Model):
 #     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="employee_photos")
