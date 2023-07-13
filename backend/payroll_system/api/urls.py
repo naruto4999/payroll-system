@@ -1,5 +1,5 @@
 from django.urls import path, include
-from .views import CompanyListCreateAPIView, CompanyDetailsMixinView, CompanyRetrieveUpdateDestroyAPIView, DepartmentListCreateAPIView, DepartmentRetrieveUpdateDestroyAPIView, DesignationListCreateAPIView, DesignationRetrieveUpdateDestroyAPIView, SalaryGradeListCreateAPIView, SalaryGradeRetrieveUpdateDestroyAPIView, RegularRegisterListCreateAPIViewView, RegularRetrieveDestroyAPIView, CompanyVisibilityPatchAPIView, CategoryListCreateAPIView, CategoryRetrieveUpdateDestroyAPIView, BankListCreateAPIView, BankRetrieveUpdateDestroyAPIView, LeaveGradeListCreateAPIView, LeaveGradeRetrieveUpdateDestroyAPIView, ShiftListCreateAPIView, ShiftRetrieveUpdateDestroyAPIView, HolidayListCreateAPIView, HolidayRetrieveUpdateDestroyAPIView, EarningsHeadListCreateAPIView, EarningsHeadRetrieveUpdateDestroyAPIView, DeductionsHeadListCreateAPIView, DeductionsHeadRetrieveUpdateDestroyAPIView, EmployeePersonalDetailListCreateView, EmployeePersonalDetailRetrieveUpdateDestroyAPIView, EmployeeProfessionalDetailCreateAPIView, EmployeeProfessionalDetailRetrieveUpdateDestroyAPIView, EmployeeSalaryEarningListCreateAPIView
+from .views import CompanyListCreateAPIView, CompanyDetailsMixinView, CompanyRetrieveUpdateDestroyAPIView, DepartmentListCreateAPIView, DepartmentRetrieveUpdateDestroyAPIView, DesignationListCreateAPIView, DesignationRetrieveUpdateDestroyAPIView, SalaryGradeListCreateAPIView, SalaryGradeRetrieveUpdateDestroyAPIView, RegularRegisterListCreateAPIViewView, RegularRetrieveDestroyAPIView, CompanyVisibilityPatchAPIView, CategoryListCreateAPIView, CategoryRetrieveUpdateDestroyAPIView, BankListCreateAPIView, BankRetrieveUpdateDestroyAPIView, LeaveGradeListCreateAPIView, LeaveGradeRetrieveUpdateDestroyAPIView, ShiftListCreateAPIView, ShiftRetrieveUpdateDestroyAPIView, HolidayListCreateAPIView, HolidayRetrieveUpdateDestroyAPIView, EarningsHeadListCreateAPIView, EarningsHeadRetrieveUpdateDestroyAPIView, DeductionsHeadListCreateAPIView, DeductionsHeadRetrieveUpdateDestroyAPIView, EmployeePersonalDetailListCreateView, EmployeePersonalDetailRetrieveUpdateDestroyAPIView, EmployeeProfessionalDetailCreateAPIView, EmployeeProfessionalDetailRetrieveUpdateDestroyAPIView, EmployeeSalaryEarningListCreateAPIView, EmployeeSalaryEarningListUpdateAPIView,EmployeeSalaryDetailCreateAPIView, EmployeeSalaryDetailRetrieveUpdateAPIView, EmployeeFamilyNomineeDetialListCreateAPIView
 from .auth.views import LoginView, RegisterView, RefreshView, PasswordResetAPIView, PasswordResetConfirmView, VerifyOTPView
 from django.contrib.auth.views import PasswordResetCompleteView
 
@@ -41,7 +41,18 @@ urlpatterns = [
     path('employee-professional-detail', EmployeeProfessionalDetailCreateAPIView.as_view()),
     path('employee-professional-detail/<int:company_id>/<int:employee>', EmployeeProfessionalDetailRetrieveUpdateDestroyAPIView.as_view()),
 
+    path('employee-salary-earning', EmployeeSalaryEarningListCreateAPIView.as_view()),
     path('employee-salary-earning/<int:company_id>/<int:employee>', EmployeeSalaryEarningListCreateAPIView.as_view()),
+    path('employee-salary-earning-update/<int:company_id>/<int:employee>', EmployeeSalaryEarningListUpdateAPIView.as_view()),
+    path('employee-salary-detail/<int:company_id>', EmployeeSalaryDetailCreateAPIView.as_view()),
+    path('employee-salary-detail/<int:company_id>/<int:employee>', EmployeeSalaryDetailRetrieveUpdateAPIView.as_view()),
+    path('employee-family-nominee-detail', EmployeeFamilyNomineeDetialListCreateAPIView.as_view()),
+    path('employee-family-nominee-detail/<int:company_id>/<int:employee>', EmployeeFamilyNomineeDetialListCreateAPIView.as_view()),
+
+
+
+    
+
 
 
 

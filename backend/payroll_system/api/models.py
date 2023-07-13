@@ -6,6 +6,8 @@ from django.core.exceptions import ValidationError
 from datetime import datetime, timedelta
 import pathlib
 from django.utils import timezone
+from django.core.validators import MinValueValidator, MaxValueValidator
+from decimal import Decimal
 
 
 #imports for signals
@@ -48,6 +50,7 @@ from django.dispatch import receiver
 #         user.is_superuser = True
 #         user.is_staff = True
 #         user.save(using=self._db)
+PERCENTAGE_VALIDATOR = [MinValueValidator(0), MaxValueValidator(100)]
 
 class UserManager(BaseUserManager):
     def create_user(self, username, email, password=None, phone_no=None, **kwargs):
@@ -482,14 +485,16 @@ class EmployeeSalaryEarning(models.Model):
     earnings_head = models.ForeignKey(EarningsHead, on_delete=models.CASCADE, related_name="employees_earnings")
     value = models.IntegerField(default=0, null=False, blank=False)
 
-    def save(self, *args, **kwargs):
-        if self.earnings_head.company != self.company or self.earnings_head.user != self.user:
-            raise ValidationError("Invalid Earning Head selected.")
-
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=['employee', 'earnings_head'], name='unique_employee_earning_head')
         ]
+    def save(self, *args, **kwargs):
+        if self.earnings_head.company != self.company or self.earnings_head.user != self.user:
+            raise ValidationError("Invalid Earning Head selected.")
+        super().save(*args, **kwargs)
+
+    
 
 class EmployeeSalaryDetail(models.Model):
     OVERTIME_TYPE_CHOICES = (
@@ -530,10 +535,81 @@ class EmployeeSalaryDetail(models.Model):
     bonus_allow = models.BooleanField(default=False, null=False, blank=False)
     bonus_exg = models.BooleanField(default=False, null=False, blank=False)
 
-
     def clean(self):
         if self.overtime_type in ['holiday_weekly_off', 'all_days'] and not self.overtime_rate:
-            raise ValidationError("Overtime rate cannot be null or blank for 'Holiday/Weekly Off' or 'All Days' overtime type.")
+            raise ValidationError({
+                'overtime_rate': "Overtime rate cannot be null or blank for 'Holiday/Weekly Off' or 'All Days' overtime type."
+            })
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+class EmployeePfEsiDetail(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="employee_pf_esi_details")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="employee_pf_esi_details")
+    employee = models.ForeignKey(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="employee_pf_esi_detail")
+    pf_allow = models.BooleanField(null=False, blank=False, default=False)
+    pf_number = models.CharField(max_length=50, null=True, blank=True)
+    pf_limit_ignore_employee = models.BooleanField(null=False, blank=False, default=False)
+    pf_limit_ignore_employee_value = models.PositiveIntegerField(null=True, blank=True)
+    pf_limit_ignore_employer = models.BooleanField(null=False, blank=False, default=False)
+    pf_limit_ignore_employer_value = models.BooleanField(null=False, blank=False, default=False)
+    pf_percent_ignore_employee = models.BooleanField(null=False, blank=False, default=False)
+    pf_percent_ignore_employee_value = models.DecimalField(max_digits=3, decimal_places=0, default=Decimal(0), validators=PERCENTAGE_VALIDATOR)
+    pf_percent_ignore_employer = models.BooleanField(null=False, blank=False, default=False)
+    pf_percent_ignore_employer_value = models.DecimalField(max_digits=3, decimal_places=0, default=Decimal(0), validators=PERCENTAGE_VALIDATOR)
+    uan_number = models.CharField(max_length=30, null=True, blank=True)
+    esi_allow = models.BooleanField(null=False, blank=False, default=False)
+    esi_number = models.CharField(max_length=30, null=True, blank=True)
+    esi_dispensary = models.CharField(max_length=100, null=True, blank=True)
+    esi_on_ot = models.BooleanField(null=False, blank=False, default=False)
+
+
+class EmployeeFamilyNomineeDetial(models.Model):
+
+    RELATION_CHOICES = [
+    ('Father', 'Father'),
+    ('Mother', 'Mother'),
+    ('Wife', 'Wife'),
+    ('Son', 'Son'),
+    ('Brother', 'Brother'),
+    ('Sister', 'Sister'),
+    ('Daughter', 'Daughter'),
+    ('Husband', 'Husband'),
+]
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="employee_family_nominee_details")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="employee_family_nominee_details")
+    employee = models.ForeignKey(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="employee_family_nominee_detail")
+    name = models.CharField(max_length=256, null=False, blank=False)
+    address = models.CharField(max_length=256, null=True, blank=True)
+    dob = models.DateField(null=True, blank=True)
+    relation = models.CharField(max_length=10, choices=RELATION_CHOICES, null=False, blank=False)
+    residing = models.BooleanField(null=False, blank=False, default=True)
+    esi_benefit = models.BooleanField(null=False, blank=False, default=True)
+    pf_benefits = models.BooleanField(null=False, blank=False, default=True)
+    is_esi_nominee = models.BooleanField(null=False, blank=False, default=False)
+    esi_nominee_share = models.DecimalField(max_digits=3, decimal_places=0, default=Decimal(0), validators=PERCENTAGE_VALIDATOR)
+    is_pf_nominee = models.BooleanField(null=False, blank=False, default=False)
+    pf_nominee_share = models.DecimalField(max_digits=3, decimal_places=0, default=Decimal(0), validators=PERCENTAGE_VALIDATOR)
+    is_fa_nominee = models.BooleanField(null=False, blank=False, default=False)
+    fa_nominee_share = models.DecimalField(max_digits=3, decimal_places=0, default=Decimal(0), validators=PERCENTAGE_VALIDATOR)
+    is_gratuity_nominee = models.BooleanField(null=False, blank=False, default=False)
+    gratuity_nominee_share = models.DecimalField(max_digits=3, decimal_places=0, default=Decimal(0), validators=PERCENTAGE_VALIDATOR)
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
 
 
 # class EmployeePhoto(models.Model):

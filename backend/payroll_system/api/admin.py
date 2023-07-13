@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import User, Company, CompanyDetails, Deparment, Designation, SalaryGrade, OwnerToRegular, Category, LeaveGrade, Shift, Holiday, DeductionsHead, EarningsHead, EmployeePersonalDetail, EmployeeProfessionalDetail
+from .models import User, Company, CompanyDetails, Deparment, Designation, SalaryGrade, OwnerToRegular, Category, LeaveGrade, Shift, Holiday, DeductionsHead, EarningsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryDetail, EmployeeSalaryEarning
 
 admin.site.register(User)
 admin.site.register(Company)
@@ -16,3 +16,5 @@ admin.site.register(DeductionsHead)
 admin.site.register(EarningsHead)
 admin.site.register(EmployeePersonalDetail)
 admin.site.register(EmployeeProfessionalDetail)
+admin.site.register(EmployeeSalaryDetail)
+admin.site.register(EmployeeSalaryEarning)

@@ -67,6 +67,62 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
             }),
             invalidatesTags: ['EmployeeProfessionalDetails']
         }),
+        addEmployeeSalaryEarning: builder.mutation({
+            query: (body) => ({
+                url: `/api/employee-salary-earning`,
+                method: "POST",
+                body: body,
+            }),
+            // invalidatesTags: ["EmployeePersonalDetails"],
+        }),
+        addEmployeeSalaryDetail: builder.mutation({
+            query: (employeeSalaryDetail) => ({
+                url: `/api/employee-salary-detail/${employeeSalaryDetail.company}`,
+                method: "POST",
+                body: employeeSalaryDetail,
+            }),
+            // invalidatesTags: ["EmployeePersonalDetails"],
+        }),
+        getSingleEmployeeSalaryEarning: builder.query({
+            query: (employee) => ({
+                url: `/api/employee-salary-earning/${employee.company}/${employee.id}`,
+                method: "GET",
+            }),
+            keepUnusedDataFor: 1,
+            // providesTags: ["EmployeePersonalDetails"],
+        }),
+        getSingleEmployeeSalaryDetail: builder.query({
+            query: (employee) => ({
+                url: `/api/employee-salary-detail/${employee.company}/${employee.id}`,
+                method: "GET",
+            }),
+            keepUnusedDataFor: 1,
+            // providesTags: ["EmployeePersonalDetails"],
+        }),
+        updateEmployeeSalaryEarning: builder.mutation({
+            query: employee => ({
+                url: `/api/employee-salary-earning-update/${employee.globalCompany}/${employee.employee}`,
+                method: 'PUT',
+                body: employee,
+            }),
+            // invalidatesTags: ['EmployeeProfessionalDetails']
+        }),
+        updateEmployeeSalaryDetail: builder.mutation({
+            query: employee => ({
+                url: `/api/employee-salary-detail/${employee.company}/${employee.employee}`,
+                method: 'PUT',
+                body: employee,
+            }),
+            // invalidatesTags: ['EmployeeProfessionalDetails']
+        }),
+        addEmployeeFamilyDetail: builder.mutation({
+            query: (body) => ({
+                url: `/api/employee-family-nominee-detail`,
+                method: "POST",
+                body: body,
+            }),
+            // invalidatesTags: ["EmployeePersonalDetails"],
+        }),
     }),
 });
 
@@ -78,4 +134,11 @@ export const {
     useUpdateEmployeePersonalDetailMutation,
     useUpdateEmployeeProfessionalDetailMutation,
     useLazyGetSingleEmployeeProfessionalDetailQuery,
+    useAddEmployeeSalaryEarningMutation,
+    useLazyGetSingleEmployeeSalaryEarningQuery,
+    useUpdateEmployeeSalaryEarningMutation,
+    useAddEmployeeSalaryDetailMutation,
+    useLazyGetSingleEmployeeSalaryDetailQuery,
+    useUpdateEmployeeSalaryDetailMutation,
+    useAddEmployeeFamilyDetailMutation,
 } = employeeEntryApiSlice;

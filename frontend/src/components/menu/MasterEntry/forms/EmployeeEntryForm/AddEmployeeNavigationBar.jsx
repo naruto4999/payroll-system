@@ -26,9 +26,7 @@ const AddEmployeeNavigationBar = ({
                                   popoverName: "editEmployeePersonalDetail",
                                   id: updateEmployeeId,
                               })
-                            : addEmployeePopoverHandler(
-                                  "addEmployeePersonalDetail"
-                              );
+                            : null
                     }}
                     className={classNames(
                         addEmployeePopover.addEmployeePersonalDetail ||
@@ -93,9 +91,7 @@ const AddEmployeeNavigationBar = ({
                         });
                         // getSingleEmployeeProfessionalDetail({globalCompany, id: updateEmployeeId})
                     } else {
-                        addEmployeePopoverHandler(
-                            "addEmployeeSalaryDetail"
-                        );
+                        addEmployeePopoverHandler("addEmployeeSalaryDetail");
                     }
                 }}
                 className={classNames(
@@ -110,15 +106,42 @@ const AddEmployeeNavigationBar = ({
                 <div
                     className={classNames(
                         addEmployeePopover.addEmployeeSalaryDetail ||
-                        editEmployeePopover.editEmployeeSalaryDetail
+                            editEmployeePopover.editEmployeeSalaryDetail
                             ? ""
                             : "hidden",
                         "dark:bg-blueAccent-600 h-1 mt-2 "
                     )}
                 ></div>
             </button>
-            <button className="text-sm md:text-xl dark:text-slate-100 text-gray-900 font-semibold">
+            <button
+                onClick={() => {
+                    if (isEditing) {
+                        editEmployeePopoverHandler({
+                            popoverName: "editEmployeePfEsiDetail",
+                            id: updateEmployeeId,
+                        });
+                    } else {
+                        addEmployeePopoverHandler("addEmployeePfEsiDetail");
+                    }
+                }}
+                className={classNames(
+                    addEmployeePopover.addEmployeePfEsiDetail ||
+                        editEmployeePopover.editEmployeePfEsiDetail
+                        ? "text-opacity-100 dark:text-opacity-100"
+                        : "text-opacity-50 dark:text-opacity-50",
+                    "text-sm md:text-xl dark:text-slate-100  text-gray-900 font-semibold transition-all"
+                )}
+            >
                 ESI & PF
+                <div
+                    className={classNames(
+                        addEmployeePopover.addEmployeePfEsiDetail ||
+                            editEmployeePopover.editEmployeePfEsiDetail
+                            ? ""
+                            : "hidden",
+                        "dark:bg-blueAccent-600 h-1 mt-2 "
+                    )}
+                ></div>
             </button>
         </div>
     );

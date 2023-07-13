@@ -1,7 +1,7 @@
 from dataclasses import field
 from rest_framework import serializers
 
-from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, DeductionsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning
+from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, DeductionsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning, EmployeeSalaryDetail, EmployeeFamilyNomineeDetial
 from rest_framework import serializers
 
 
@@ -169,12 +169,20 @@ class EmployeeProfessionalDetailSerializer(serializers.ModelSerializer):
         fields = ['user', 'company', 'employee', 'date_of_joining', 'date_of_confirm', 'department', 'designation', 'category', 'salary_grade', 'shift', 'weekly_off', 'extra_off']
 
 class EmployeeSalaryEarningSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
     class Meta:
         model = EmployeeSalaryEarning
         fields = ['user', 'employee', 'company', 'earnings_head', 'value']
+    
+class EmployeeSalaryDetailSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    class Meta:
+        model = EmployeeSalaryDetail
+        fields = ['user', 'company', 'employee', 'overtime_type', 'overtime_rate', 'salary_mode', 'payment_mode', 'bank_name', 'account_number', 'ifcs', 'labour_wellfare_fund', 'late_deduction', 'bonus_allow', 'bonus_exg']
 
-    def create(self, validated_data):
-        employee_earnings = []
-        for data in validated_data:
-            employee_earnings.append(EmployeeSalaryEarning(**data))
-        return EmployeeSalaryEarning.objects.bulk_create(employee_earnings)
+
+class EmployeeFamilyNomineeDetialSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    class Meta:
+        model = EmployeeFamilyNomineeDetial
+        fields = ['id', 'user', 'company', 'employee', 'name', 'address', 'dob', 'relation', 'residing', 'esi_benefit', 'pf_benefits', 'is_esi_nominee', 'esi_nominee_share', 'is_pf_nominee', 'pf_nominee_share', 'is_fa_nominee', 'fa_nominee_share', 'is_gratuity_nominee', 'gratuity_nominee_share',]

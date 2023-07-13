@@ -31,6 +31,7 @@ const EmployeeProfessionalDetail = ({
     cancelButtonClicked,
     isEditing,
     dirty,
+    addedEmployeeId,
 }) => {
     const { data: fetchedDepartments, isLoading: isLoadingDepartments } =
         useGetDepartmentsQuery(globalCompany);
@@ -79,7 +80,7 @@ const EmployeeProfessionalDetail = ({
             );
         }
     }, [values.dateOfJoining]);
-    console.log(values);
+    console.log(addedEmployeeId);
 
     useEffect(() => {}, []);
 
@@ -97,6 +98,12 @@ const EmployeeProfessionalDetail = ({
                         Processing...
                     </p>
                 </div>
+            </div>
+        );
+    } else if (!addedEmployeeId && !isEditing) {
+        return (
+            <div className="mt-1 text-xl dark:text-redAccent-600 text-redAccent-500 font-bold mx-auto">
+                Please add Personal Details First
             </div>
         );
     } else {
