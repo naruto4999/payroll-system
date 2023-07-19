@@ -1,7 +1,7 @@
 from django.forms import ValidationError
 from django.shortcuts import render
 from rest_framework import generics, status, mixins
-from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, DeductionsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer
+from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, DeductionsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer
 from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift, EmployeeProfessionalDetail
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -888,11 +888,22 @@ class EmployeePersonalDetailRetrieveUpdateDestroyAPIView(generics.RetrieveUpdate
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
 
-        if user.role == "OWNER":
-            serializer.save(user=self.request.user)
-        else:
-            instance = OwnerToRegular.objects.get(user=user)
-            serializer.save(user=instance.owner)
+        try:
+            if user.role == "OWNER":
+                serializer.save(user=self.request.user)
+            else:
+                instance = OwnerToRegular.objects.get(user=user)
+                serializer.save(user=instance.owner)
+        except IntegrityError as e:
+            error_string = str(e)
+            print(error_string)
+            if "user_id" in error_string and "company_id" in error_string and "paycode" in error_string:
+                error_message = {"paycode": "This Paycode already exists"}
+            elif "user_id" in error_string and "company_id" in error_string and "attendance_card_no" in error_string:
+                error_message = {"attendance_card_no": "This Attendance Card No. already exists"}
+            else:
+                error_message = {"error": "Some error occurred"}
+            return Response({"error": error_message}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
         
@@ -1085,6 +1096,58 @@ class EmployeeSalaryDetailRetrieveUpdateAPIView(generics.RetrieveUpdateAPIView):
             error_string = str(e)
             return Response({'overtimeRate': "Overtime Rate cannot be blank if overtime is allowed"}, status=status.HTTP_400_BAD_REQUEST)
         
+
+class EmployeePfEsiDetailCreateAPIView(generics.CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = EmployeePfEsiDetailSerializer
+    lookup_field = 'company_id'
+
+    def create(self, request, *args, **kwargs):
+        try:
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            user = self.request.user
+            # try:
+            if user.role == "OWNER":
+                serializer.save(user=user)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            else:
+                instance = OwnerToRegular.objects.get(user=user)
+                serializer.save(user=instance.owner)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except ValidationError as e:
+            error_string = str(e)
+            print(error_string)
+            return Response({'error': error_string}, status=status.HTTP_400_BAD_REQUEST)
+        
+class EmployeePfEsiDetailRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes= [IsAuthenticated]
+    serializer_class = EmployeePfEsiDetailSerializer
+    lookup_field = 'employee'
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        user = self.request.user
+        if user.role == "OWNER":
+            return user.employee_pf_esi_details.filter(company=company_id)
+        instance = OwnerToRegular.objects.get(user=user)
+        return instance.owner.employee_pf_esi_details.filter(company=company_id)
+    
+    def update(self, request, *args, **kwargs):
+        user = self.request.user
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        if user.role == "OWNER":
+            serializer.save(user=self.request.user)
+        else:
+            instance = OwnerToRegular.objects.get(user=user)
+            serializer.save(user=instance.owner)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+        
 class EmployeeFamilyNomineeDetialListCreateAPIView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = EmployeeFamilyNomineeDetialSerializer
@@ -1100,17 +1163,53 @@ class EmployeeFamilyNomineeDetialListCreateAPIView(generics.ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         print(request.data)
-        serializer = self.get_serializer(data=request.data['details'], many=True)
-        serializer.is_valid(raise_exception=True)
-        user = self.request.user
+        try:
+            serializer = self.get_serializer(data=request.data['family_nominee_detail'], many=True)
+            serializer.is_valid(raise_exception=True)
+            user = self.request.user
 
+            if user.role == "OWNER":
+                serializer.save(user=user)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            else:
+                instance = OwnerToRegular.objects.get(user=user)
+                serializer.save(user=instance.owner)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+        except ValidationError as e:
+            print(e)
+            return Response({'error': e}, status=status.HTTP_400_BAD_REQUEST)
+        
+class EmployeeFamilyNomineeDetialRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes= [IsAuthenticated]
+    serializer_class = EmployeeFamilyNomineeDetialSerializer
+    lookup_field = 'id'
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        employee = self.kwargs.get('employee')
+        user = self.request.user
         if user.role == "OWNER":
-            serializer.save(user=user)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        else:
-            instance = OwnerToRegular.objects.get(user=user)
-            serializer.save(user=instance.owner)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            return user.employee_family_nominee_details.filter(company=company_id, employee=employee)
+        instance = OwnerToRegular.objects.get(user=user)
+        return instance.owner.employee_family_nominee_details.filter(company=company_id, employee=employee)
+
+    
+    def update(self, request, *args, **kwargs):
+        family_nominee_detail = request.data['family_nominee_detail']
+        # partial = kwargs.pop('partial', False)
+
+        for data in family_nominee_detail:
+            instance = self.get_queryset().filter(id=data['id'])
+            serializer = self.get_serializer(instance.first(), data=data)
+            serializer.is_valid(raise_exception=True)
+            user = self.request.user
+            if user.role == "OWNER":
+                serializer.save(user=user)
+            else:
+                instance = OwnerToRegular.objects.get(user=user)
+                serializer.save(user=instance.owner)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 #Viewsets
 class UserViewSet(viewsets.ModelViewSet):

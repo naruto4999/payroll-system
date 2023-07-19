@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from "react";
 import { FaUserPlus } from "react-icons/fa6";
+import { Field, ErrorMessage, FieldArray } from "formik";
 
 const classNames = (...classes) => {
     return classes.filter(Boolean).join(" ");
@@ -46,7 +47,7 @@ const EmployeePersonalDetail = ({
         values.localPincode,
     ]);
 
-    // console.log(values);
+    console.log(values);
 
     const handleSameAsLocal = (event) => {
         setSameAsLocal(event.target.checked);
@@ -62,7 +63,9 @@ const EmployeePersonalDetail = ({
             >
                 <section className="flex flex-col justify-center">
                     <label className="dark:border-slate-50 border-zinc-700 dark:hover:bg-blueAccent-700 hover:cursor-pointer border-2 h-24 w-24 mx-auto rounded-full flex flex-row justify-center items-center">
-                        {values.photo === "" || values.photo === null ||values.photo === undefined ? (
+                        {values.photo === "" ||
+                        values.photo === null ||
+                        values.photo === undefined ? (
                             <FaUserPlus className="h-14 w-14" />
                         ) : (
                             <img
@@ -175,12 +178,11 @@ const EmployeePersonalDetail = ({
                                         {errors.attendanceCardNo}
                                     </div>
                                 )}
-                            {errorMessage &&
-                                errorMessage.attendanceCardNo && (
-                                    <p className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                                        {errorMessage.attendanceCardNo}
-                                    </p>
-                                )}
+                            {errorMessage && errorMessage.attendanceCardNo && (
+                                <p className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                    {errorMessage.attendanceCardNo}
+                                </p>
+                            )}
                         </div>
 
                         <label
@@ -454,15 +456,13 @@ const EmployeePersonalDetail = ({
                         <br />
                         <label className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm block my-2">
                             Handicapped:
-                            <input
+                            <Field
                                 type="checkbox"
-                                id="handicapped"
                                 name="handicapped"
-                                onChange={handleChange}
-                                value={values.handicapped}
                                 className="rounded w-4 h-4 accent-teal-600 mx-4 translate-y-0.5"
                             />
                         </label>
+
                         {/* <br /> */}
 
                         <label
@@ -1041,13 +1041,13 @@ const EmployeePersonalDetail = ({
                 <section className="flex flex-row gap-4 mt-4 mb-2">
                     <button
                         className={classNames(
-                            isValid && dirty
+                            isValid
                                 ? "dark:hover:bg-teal-600  hover:bg-teal-600"
                                 : "opacity-40",
                             "dark:bg-teal-700 rounded w-20 p-2 text-base font-medium bg-teal-500"
                         )}
                         type="submit"
-                        disabled={!isValid || !dirty}
+                        disabled={!isValid }
                         onClick={handleSubmit}
                     >
                         {isEditing ? "Update" : "Add"}
@@ -1056,8 +1056,8 @@ const EmployeePersonalDetail = ({
                         type="button"
                         className="bg-zinc-400 hover:bg-zinc-500 dark:bg-zinc-600 rounded w-20 p-2 text-base font-medium dark:hover:bg-zinc-700"
                         onClick={() => {
-                            cancelButtonClicked(isEditing)
-                            setErrorMessage("")
+                            cancelButtonClicked(isEditing);
+                            setErrorMessage("");
                         }}
                     >
                         Cancel

@@ -15,7 +15,7 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
                 url: `/api/employee-personal-detail`,
                 method: "POST",
                 body: employeePersonalDetail.formData,
-                // formData:true 
+                // formData:true
             }),
             invalidatesTags: ["EmployeePersonalDetails"],
         }),
@@ -28,12 +28,12 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
             // providesTags: ["EmployeePersonalDetails"],
         }),
         updateEmployeePersonalDetail: builder.mutation({
-            query: employee => ({
+            query: (employee) => ({
                 url: `/api/employee-personal-detail/${employee.globalCompany}/${employee.id}`,
-                method: 'PATCH',
+                method: "PATCH",
                 body: employee.formData,
             }),
-            invalidatesTags: ['EmployeePersonalDetails']
+            invalidatesTags: ["EmployeePersonalDetails"],
         }),
         // deleteShift: builder.mutation({
         //     query: shift => ({
@@ -47,7 +47,7 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
                 url: `/api/employee-professional-detail`,
                 method: "POST",
                 body: employeeProfessionalDetail,
-                // formData:true 
+                // formData:true
             }),
             invalidatesTags: ["EmployeePersonalDetails"],
         }),
@@ -60,12 +60,12 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
             // providesTags: ["EmployeePersonalDetails"],
         }),
         updateEmployeeProfessionalDetail: builder.mutation({
-            query: employee => ({
+            query: (employee) => ({
                 url: `/api/employee-professional-detail/${employee.globalCompany}/${employee.employee}`,
-                method: 'PATCH',
+                method: "PATCH",
                 body: employee,
             }),
-            invalidatesTags: ['EmployeeProfessionalDetails']
+            invalidatesTags: ["EmployeeProfessionalDetails"],
         }),
         addEmployeeSalaryEarning: builder.mutation({
             query: (body) => ({
@@ -100,28 +100,74 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
             // providesTags: ["EmployeePersonalDetails"],
         }),
         updateEmployeeSalaryEarning: builder.mutation({
-            query: employee => ({
+            query: (employee) => ({
                 url: `/api/employee-salary-earning-update/${employee.globalCompany}/${employee.employee}`,
-                method: 'PUT',
+                method: "PUT",
                 body: employee,
             }),
             // invalidatesTags: ['EmployeeProfessionalDetails']
         }),
         updateEmployeeSalaryDetail: builder.mutation({
-            query: employee => ({
+            query: (employee) => ({
                 url: `/api/employee-salary-detail/${employee.company}/${employee.employee}`,
-                method: 'PUT',
+                method: "PUT",
                 body: employee,
             }),
             // invalidatesTags: ['EmployeeProfessionalDetails']
         }),
-        addEmployeeFamilyDetail: builder.mutation({
+        addEmployeePfEsiDetail: builder.mutation({
+            query: (employeePfEsiDetail) => ({
+                url: `/api/employee-pf-esi-detail`,
+                method: "POST",
+                body: employeePfEsiDetail,
+                // formData:true
+            }),
+        }),
+        getSingleEmployeePfEsiDetail: builder.query({
+            query: (employee) => ({
+                url: `/api/employee-pf-esi-detail/${employee.company}/${employee.id}`,
+                method: "GET",
+            }),
+            keepUnusedDataFor: 1,
+            // providesTags: ["Eml"],
+        }),
+        updateEmployeePfEsiDetail: builder.mutation({
+            query: (employee) => ({
+                url: `/api/employee-pf-esi-detail/${employee.globalCompany}/${employee.employee}`,
+                method: "PATCH",
+                body: employee,
+            }),
+            // invalidatesTags: ['EmployeeProfessionalDetails']
+        }),
+        addEmployeeFamilyNomineeDetail: builder.mutation({
             query: (body) => ({
                 url: `/api/employee-family-nominee-detail`,
                 method: "POST",
                 body: body,
             }),
             // invalidatesTags: ["EmployeePersonalDetails"],
+        }),
+        getEmployeeFamilyNomineeDetails: builder.query({
+            query: (employee) => ({
+                url: `/api/employee-family-nominee-detail/${employee.company}/${employee.id}`,
+                method: "GET",
+            }),
+            keepUnusedDataFor: 1,
+            // providesTags: ["EmployeePersonalDetails"],
+        }),
+        updateEmployeeFamilyNomineeDetail: builder.mutation({
+            query: (employee) => ({
+                url: `/api/employee-family-nominee-detail-update/${employee.globalCompany}/${employee.employee}`,
+                method: "PUT",
+                body: employee,
+            }),
+        }),
+        deleteEmployeeFamilyNomineeDetail: builder.mutation({
+            query: employee => ({
+                url: `/api/employee-family-nominee-detail-delete/${employee.company}/${employee.employee}/${employee.id}`,
+                method: 'DELETE',
+            }),
+            // invalidatesTags: ['Departments']
         }),
     }),
 });
@@ -140,5 +186,12 @@ export const {
     useAddEmployeeSalaryDetailMutation,
     useLazyGetSingleEmployeeSalaryDetailQuery,
     useUpdateEmployeeSalaryDetailMutation,
-    useAddEmployeeFamilyDetailMutation,
+    useAddEmployeeFamilyNomineeDetailMutation,
+    useAddEmployeePfEsiDetailMutation,
+    useLazyGetSingleEmployeePfEsiDetailQuery,
+    useUpdateEmployeePfEsiDetailMutation,
+    useLazyGetEmployeeFamilyNomineeDetailsQuery,
+    useGetSingleEmployeePfEsiDetailQuery,
+    useUpdateEmployeeFamilyNomineeDetailMutation,
+    useDeleteEmployeeFamilyNomineeDetailMutation
 } = employeeEntryApiSlice;

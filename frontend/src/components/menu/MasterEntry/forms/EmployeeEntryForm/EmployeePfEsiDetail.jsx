@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState } from "react";
 import { FaUserPlus } from "react-icons/fa6";
-import { FaPlus } from "react-icons/fa6";
-import { Field, ErrorMessage, FieldArray } from "formik";
+import { FaCircleNotch } from "react-icons/fa6";
+import { Field, ErrorMessage } from "formik";
 
 const classNames = (...classes) => {
     return classes.filter(Boolean).join(" ");
@@ -29,9 +29,24 @@ const EmployeePfEsiDetail = ({
     dirty,
     initialValues,
     addedEmployeeId,
-    familyNomineeDetailInitailValues,
 }) => {
     console.log(values);
+    console.log(errors)
+    useEffect(() => {
+        if (values.pfLimitIgnoreEmployee === false) {
+            setFieldValue("pfLimitIgnoreEmployeeValue", "");
+        }
+        if (values.pfPercentIgnoreEmployee === false) {
+            setFieldValue("pfPercentIgnoreEmployeeValue", "")
+        }
+        if (values.pfLimitIgnoreEmployer === false) {
+            setFieldValue("pfLimitIgnoreEmployerValue", "")
+        }
+        if (values.pfPercentIgnoreEmployer === false) {
+            setFieldValue("pfPercentIgnoreEmployerValue", "")
+        }
+    }, [values.pfLimitIgnoreEmployee, values.pfPercentIgnoreEmployee, values.pfLimitIgnoreEmployer, values.pfPercentIgnoreEmployer]);
+
     if (!addedEmployeeId && !isEditing) {
         return (
             <div className="mt-1 text-xl dark:text-redAccent-600 text-redAccent-500 font-bold mx-auto">
@@ -49,499 +64,247 @@ const EmployeePfEsiDetail = ({
                 >
                     <section className="flex flex-row gap-10 flex-wrap lg:flex-nowrap justify-center">
                         <div className="w-fit">
-                            <FieldArray
-                                name="familyNomineeDetail"
-                                render={(arrayHelpers) => {
-                                    return (
-                                        <div>
-                                            {values.familyNomineeDetail.map(
-                                                (member, index) => (
-                                                    <div
-                                                        key={index}
-                                                        className="flex flex-row flex-wrap gap-1 border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25 border-2 rounded p-2 my-1"
-                                                    >
-                                                        <div className="flex flex-row justify-between w-full">
-                                                            <div className="text-blueAccent-500 dark:text-blueAccent-600 mr-2">{`${
-                                                                index + 1
-                                                            }`}</div>
-                                                            <div>
-                                                                <button
-                                                                    type="button"
-                                                                    className="dark:bg-redAccent-700 bg-redAccent-500 dark:hover:bg-redAccent-600 hover:bg-redAccent-700 rounded-md p-2 inline-flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
-                                                                    onClick={() =>
-                                                                        arrayHelpers.remove(
-                                                                            index
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    <svg
-                                                                        className="h-4 w-4"
-                                                                        xmlns="http://www.w3.org/2000/svg"
-                                                                        fill="none"
-                                                                        viewBox="0 0 24 24"
-                                                                        stroke="currentColor"
-                                                                        aria-hidden="true"
-                                                                    >
-                                                                        <path
-                                                                            strokeLinecap="round"
-                                                                            strokeLinejoin="round"
-                                                                            strokeWidth="2"
-                                                                            d="M6 18L18 6M6 6l12 12"
-                                                                        />
-                                                                    </svg>
-                                                                    {/* <svg
-                                                                        class="h-6 w-6"
-                                                                        xmlns="http://www.w3.org/2000/svg"
-                                                                        fill="none"
-                                                                        viewBox="0 0 24 24"
-                                                                        stroke="currentColor"
-                                                                        aria-hidden="true"
-                                                                    >
-                                                                        <path
-                                                                            stroke-linecap="round"
-                                                                            stroke-linejoin="round"
-                                                                            stroke-width="2"
-                                                                            d="M5 12h14M12 5v14"
-                                                                        />
-                                                                    </svg> */}
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex flex-row flex-wrap gap-1">
-                                                            <div>
-                                                                <label
-                                                                    htmlFor={`familyNomineeDetail.${index}.name`}
-                                                                    className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
-                                                                >
-                                                                    Name
-                                                                </label>
-                                                                <Field
-                                                                    className={classNames(
-                                                                        errors
-                                                                            .familyNomineeDetail?.[
-                                                                            index
-                                                                        ]
-                                                                            ?.name &&
-                                                                            touched
-                                                                                .familyNomineeDetail?.[
-                                                                                index
-                                                                            ]
-                                                                                ?.name
-                                                                            ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
-                                                                            : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
-                                                                        "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition min-w-32 block"
-                                                                    )}
-                                                                    type="text"
-                                                                    name={`familyNomineeDetail.${index}.name`}
-                                                                    maxLength={
-                                                                        100
-                                                                    }
-                                                                />
-                                                                <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                                                                    <ErrorMessage
-                                                                        name={`familyNomineeDetail.${index}.name`}
-                                                                    />
-                                                                </div>
-                                                            </div>
-
-                                                            <div>
-                                                                <label
-                                                                    htmlFor={`familyNomineeDetail.${index}.address`}
-                                                                    className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
-                                                                >
-                                                                    Address
-                                                                </label>
-                                                                <Field
-                                                                    className={classNames(
-                                                                        errors
-                                                                            .familyNomineeDetail?.[
-                                                                            index
-                                                                        ]
-                                                                            ?.address &&
-                                                                            touched
-                                                                                .familyNomineeDetail?.[
-                                                                                index
-                                                                            ]
-                                                                                ?.address
-                                                                            ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
-                                                                            : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
-                                                                        "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition min-w-32 block"
-                                                                    )}
-                                                                    type="text"
-                                                                    name={`familyNomineeDetail.${index}.address`}
-                                                                />
-                                                                <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                                                                    <ErrorMessage
-                                                                        name={`familyNomineeDetail.${index}.address`}
-                                                                    />
-                                                                </div>
-                                                            </div>
-
-                                                            <div>
-                                                                <label
-                                                                    htmlFor={`familyNomineeDetail.${index}.dob`}
-                                                                    className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
-                                                                >
-                                                                    DOB
-                                                                </label>
-                                                                <Field
-                                                                    className={classNames(
-                                                                        errors
-                                                                            .familyNomineeDetail?.[
-                                                                            index
-                                                                        ]
-                                                                            ?.dob &&
-                                                                            touched
-                                                                                .familyNomineeDetail?.[
-                                                                                index
-                                                                            ]
-                                                                                ?.dob
-                                                                            ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
-                                                                            : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
-                                                                        "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-[132px] block"
-                                                                    )}
-                                                                    type="date"
-                                                                    name={`familyNomineeDetail.${index}.dob`}
-                                                                />
-                                                                <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                                                                    <ErrorMessage
-                                                                        name={`familyNomineeDetail.${index}.dob`}
-                                                                    />
-                                                                </div>
-                                                            </div>
-
-                                                            <div>
-                                                                <label
-                                                                    htmlFor={`familyNomineeDetail.${index}.relation`}
-                                                                    className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
-                                                                >
-                                                                    Relation
-                                                                </label>
-                                                                <Field
-                                                                    as="select"
-                                                                    name={`familyNomineeDetail.${index}.relation`}
-                                                                    className="p-1 rounded-md bg-opacity-50 bg-zinc-50 dark:bg-zinc-700 block my-1"
-                                                                >
-                                                                    <option value="Father">
-                                                                        Father
-                                                                    </option>
-                                                                    <option value="Mother">
-                                                                        Mother
-                                                                    </option>
-                                                                    <option value="Wife">
-                                                                        Wife
-                                                                    </option>
-                                                                    <option value="Son">
-                                                                        Son
-                                                                    </option>
-                                                                    <option value="Brother">
-                                                                        Brother
-                                                                    </option>
-                                                                    <option value="Sister">
-                                                                        Sister
-                                                                    </option>
-                                                                    <option value="Daughter">
-                                                                        Daughter
-                                                                    </option>
-                                                                    <option value="Husband">
-                                                                        Husband
-                                                                    </option>
-                                                                </Field>
-                                                                <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                                                                    <ErrorMessage
-                                                                        name={`familyNomineeDetail.${index}.relation`}
-                                                                    />
-                                                                </div>
-                                                            </div>
-
-                                                            <div>
-                                                                <label
-                                                                    className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
-                                                                    htmlFor={`familyNomineeDetail.${index}.residing`}
-                                                                >
-                                                                    Residing?
-                                                                </label>
-                                                                <Field
-                                                                    type="checkbox"
-                                                                    name={`familyNomineeDetail.${index}.residing`}
-                                                                    className="rounded w-4 h-4 accent-teal-600 mx-auto mt-2 block"
-                                                                />
-                                                            </div>
-
-                                                            <div>
-                                                                <label
-                                                                    className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm mx-2"
-                                                                    htmlFor={`familyNomineeDetail.${index}.esiBenefit`}
-                                                                >
-                                                                    Esi
-                                                                </label>
-                                                                <Field
-                                                                    type="checkbox"
-                                                                    name={`familyNomineeDetail.${index}.esiBenefit`}
-                                                                    className="rounded w-4 h-4 accent-teal-600 mx-auto mt-2 block"
-                                                                />
-                                                            </div>
-
-                                                            <div>
-                                                                <label
-                                                                    className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm mx-2"
-                                                                    htmlFor={`familyNomineeDetail.${index}.pfBenefits`}
-                                                                >
-                                                                    Pf
-                                                                </label>
-                                                                <Field
-                                                                    type="checkbox"
-                                                                    name={`familyNomineeDetail.${index}.pfBenefits`}
-                                                                    className="rounded w-4 h-4 accent-teal-600 mx-auto mt-2 block"
-                                                                />
-                                                            </div>
-
-                                                            <div>
-                                                                <label
-                                                                    className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm mx-2"
-                                                                    htmlFor={`familyNomineeDetail.${index}.isEsiNominee`}
-                                                                >
-                                                                    Esi Nominee
-                                                                </label>
-                                                                <Field
-                                                                    type="checkbox"
-                                                                    name={`familyNomineeDetail.${index}.isEsiNominee`}
-                                                                    className="rounded w-4 h-4 accent-teal-600 mx-auto mt-2 block"
-                                                                />
-                                                            </div>
-
-                                                            <div>
-                                                                <label
-                                                                    className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
-                                                                    htmlFor={`familyNomineeDetail.${index}.esiNomineeShare`}
-                                                                >
-                                                                    Esi %
-                                                                </label>
-                                                                <Field
-                                                                    className={classNames(
-                                                                        errors
-                                                                            .familyNomineeDetail?.[
-                                                                            index
-                                                                        ]
-                                                                            ?.esiNomineeShare &&
-                                                                            touched
-                                                                                .familyNomineeDetail?.[
-                                                                                index
-                                                                            ]
-                                                                                ?.esiNomineeShare
-                                                                            ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
-                                                                            : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
-                                                                        "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-20 block custom-number-input"
-                                                                    )}
-                                                                    type="number"
-                                                                    maxLength={
-                                                                        5
-                                                                    }
-                                                                    name={`familyNomineeDetail.${index}.esiNomineeShare`}
-                                                                />
-                                                            </div>
-
-                                                            <div>
-                                                                <label
-                                                                    className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm mx-2"
-                                                                    htmlFor={`familyNomineeDetail.${index}.isPfNominee`}
-                                                                >
-                                                                    Pf Nominee
-                                                                </label>
-                                                                <Field
-                                                                    type="checkbox"
-                                                                    name={`familyNomineeDetail.${index}.isPfNominee`}
-                                                                    className="rounded w-4 h-4 accent-teal-600 mx-auto mt-2 block"
-                                                                />
-                                                            </div>
-
-                                                            <div>
-                                                                <label
-                                                                    className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
-                                                                    htmlFor={`familyNomineeDetail.${index}.pfNomineeShare`}
-                                                                >
-                                                                    Pf %
-                                                                </label>
-                                                                <Field
-                                                                    className={classNames(
-                                                                        errors
-                                                                            .familyNomineeDetail?.[
-                                                                            index
-                                                                        ]
-                                                                            ?.pfNomineeShare &&
-                                                                            touched
-                                                                                .familyNomineeDetail?.[
-                                                                                index
-                                                                            ]
-                                                                                ?.pfNomineeShare
-                                                                            ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
-                                                                            : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
-                                                                        "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-20 block custom-number-input"
-                                                                    )}
-                                                                    type="number"
-                                                                    maxLength={
-                                                                        5
-                                                                    }
-                                                                    name={`familyNomineeDetail.${index}.pfNomineeShare`}
-                                                                />
-                                                            </div>
-
-                                                            <div>
-                                                                <label
-                                                                    className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm mx-2"
-                                                                    htmlFor={`familyNomineeDetail.${index}.isFaNominee`}
-                                                                >
-                                                                    FA Nominee
-                                                                </label>
-                                                                <Field
-                                                                    type="checkbox"
-                                                                    name={`familyNomineeDetail.${index}.isFaNominee`}
-                                                                    className="rounded w-4 h-4 accent-teal-600 mx-auto mt-2 block"
-                                                                />
-                                                            </div>
-
-                                                            <div>
-                                                                <label
-                                                                    className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
-                                                                    htmlFor={`familyNomineeDetail.${index}.faNomineeShare`}
-                                                                >
-                                                                    FA %
-                                                                </label>
-                                                                <Field
-                                                                    className={classNames(
-                                                                        errors
-                                                                            .familyNomineeDetail?.[
-                                                                            index
-                                                                        ]
-                                                                            ?.faNomineeShare &&
-                                                                            touched
-                                                                                .familyNomineeDetail?.[
-                                                                                index
-                                                                            ]
-                                                                                ?.faNomineeShare
-                                                                            ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
-                                                                            : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
-                                                                        "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-20 block custom-number-input"
-                                                                    )}
-                                                                    type="number"
-                                                                    maxLength={
-                                                                        5
-                                                                    }
-                                                                    name={`familyNomineeDetail.${index}.faNomineeShare`}
-                                                                />
-                                                            </div>
-
-                                                            <div>
-                                                                <label
-                                                                    className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm mx-2"
-                                                                    htmlFor={`familyNomineeDetail.${index}.isGratuityNominee`}
-                                                                >
-                                                                    Gratuity
-                                                                    Nominee
-                                                                </label>
-                                                                <Field
-                                                                    type="checkbox"
-                                                                    name={`familyNomineeDetail.${index}.isGratuityNominee`}
-                                                                    className="rounded w-4 h-4 accent-teal-600 mx-auto mt-2 block"
-                                                                />
-                                                            </div>
-
-                                                            <div>
-                                                                <label
-                                                                    className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
-                                                                    htmlFor={`familyNomineeDetail.${index}.gratuityNomineeShare`}
-                                                                >
-                                                                    Gratuity %
-                                                                </label>
-                                                                <Field
-                                                                    className={classNames(
-                                                                        errors
-                                                                            .familyNomineeDetail?.[
-                                                                            index
-                                                                        ]
-                                                                            ?.gratuityNomineeShare &&
-                                                                            touched
-                                                                                .familyNomineeDetail?.[
-                                                                                index
-                                                                            ]
-                                                                                ?.gratuityNomineeShare
-                                                                            ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
-                                                                            : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
-                                                                        "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-20 block custom-number-input"
-                                                                    )}
-                                                                    type="number"
-                                                                    maxLength={
-                                                                        5
-                                                                    }
-                                                                    name={`familyNomineeDetail.${index}.gratuityNomineeShare`}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )
-                                            )}
-                                            <div>
-                                                <button
-                                                    onClick={() =>
-                                                        arrayHelpers.insert(
-                                                            values
-                                                                .familyNomineeDetail
-                                                                .length + 1,
-                                                            familyNomineeDetailInitailValues
-                                                        )
-                                                    }
-                                                    className="dark:bg-teal-700 bg-teal-500 dark:hover:bg-teal-600 hover:bg-teal-700 rounded-md p-2 inline-flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
-                                                    type="button"
-                                                >
-                                                    <svg
-                                                        className="h-4 w-4"
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                        fill="none"
-                                                        viewBox="0 0 24 24"
-                                                        stroke="currentColor"
-                                                        aria-hidden="true"
-                                                    >
-                                                        <path
-                                                            strokeLinecap="round"
-                                                            strokeLinejoin="round"
-                                                            strokeWidth="2"
-                                                            d="M5 12h14M12 5v14"
-                                                        />
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    );
-                                }}
-                            />
-                        </div>
-
-                        {/* <div className="w-fit">
-                            <label
-                                htmlFor={"salaryDetail.overtimeType"}
-                                className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
-                            >
-                                Overtime Type
-                            </label>
-                            <Field
-                                as="select"
-                                name="salaryDetail.overtimeType"
-                                className="p-1 rounded-md bg-opacity-50 bg-zinc-50 dark:bg-zinc-700 block my-1"
-                            >
-                                <option value="no_overtime">No Overtime</option>
-                                <option value="all_days">All Days</option>
-                                <option value="holiday_weekly_off">
-                                    Holiday/Weekly Off
-                                </option>
-                            </Field>
-                            <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                                <ErrorMessage
-                                    name={"salaryDetail.overtimeType"}
+                            <label className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm block my-2">
+                                PF Allow:
+                                <Field
+                                    type="checkbox"
+                                    name="pfAllow"
+                                    className="rounded w-4 h-4 accent-teal-600 mx-4 translate-y-0.5"
                                 />
+                            </label>
+                            <div>
+                                <label
+                                    className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
+                                    htmlFor={"pfNumber"}
+                                >
+                                    PF Number
+                                </label>
+                                <Field
+                                    className={classNames(
+                                        errors.pfNumber && touched.pfNumber
+                                            ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
+                                            : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
+                                        "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full block"
+                                    )}
+                                    type="text"
+                                    maxLength={50}
+                                    name={"pfNumber"}
+                                />
+                                <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                    <ErrorMessage name="pfNumber" />
+                                </div>
                             </div>
 
-                            
-                        </div> */}
+                            <div>
+                                <label className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm block mt-2">
+                                    PF Limit Ignore Employee:
+                                    <Field
+                                        type="checkbox"
+                                        name="pfLimitIgnoreEmployee"
+                                        className="rounded w-4 h-4 accent-teal-600 mx-4 translate-y-0.5"
+                                    />
+                                </label>
+                                <Field
+                                    className={classNames(
+                                        errors.pfLimitIgnoreEmployeeValue &&
+                                            touched.pfLimitIgnoreEmployeeValue
+                                            ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
+                                            : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
+                                        "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full block custom-number-input"
+                                    )}
+                                    type="number"
+                                    name={"pfLimitIgnoreEmployeeValue"}
+                                    disabled={!values.pfLimitIgnoreEmployee}
+                                />
+                                <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                    <ErrorMessage name="pfLimitIgnoreEmployeeValue" />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm block mt-2">
+                                    PF % Ignore Employee:
+                                    <Field
+                                        type="checkbox"
+                                        name="pfPercentIgnoreEmployee"
+                                        className="rounded w-4 h-4 accent-teal-600 mx-4 translate-y-0.5"
+                                    />
+                                </label>
+                                <Field
+                                    className={classNames(
+                                        errors.pfPercentIgnoreEmployeeValue &&
+                                            touched.pfPercentIgnoreEmployeeValue
+                                            ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
+                                            : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
+                                        "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full block custom-number-input"
+                                    )}
+                                    type="number"
+                                    maxLength={5}
+                                    name={"pfPercentIgnoreEmployeeValue"}
+                                    disabled={!values.pfPercentIgnoreEmployee}
+                                />
+                                <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                    <ErrorMessage name="pfPercentIgnoreEmployeeValue" />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm block mt-2">
+                                    PF Limit Ignore Employer:
+                                    <Field
+                                        type="checkbox"
+                                        name="pfLimitIgnoreEmployer"
+                                        className="rounded w-4 h-4 accent-teal-600 mx-4 translate-y-0.5"
+                                    />
+                                </label>
+                                <Field
+                                    className={classNames(
+                                        errors.pfLimitIgnoreEmployerValue &&
+                                            touched.pfLimitIgnoreEmployerValue
+                                            ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
+                                            : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
+                                        "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full block custom-number-input"
+                                    )}
+                                    type="number"
+                                    name={"pfLimitIgnoreEmployerValue"}
+                                    disabled={!values.pfLimitIgnoreEmployer}
+
+                                />
+                                <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                    <ErrorMessage name="pfLimitIgnoreEmployerValue" />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm block mt-2">
+                                    PF % Ignore Employer:
+                                    <Field
+                                        type="checkbox"
+                                        name="pfPercentIgnoreEmployer"
+                                        className="rounded w-4 h-4 accent-teal-600 mx-4 translate-y-0.5"
+                                    />
+                                </label>
+                                <Field
+                                    className={classNames(
+                                        errors.pfPercentIgnoreEmployerValue &&
+                                            touched.pfPercentIgnoreEmployerValue
+                                            ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
+                                            : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
+                                        "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full block custom-number-input"
+                                    )}
+                                    type="number"
+                                    maxLength={5}
+                                    name={"pfPercentIgnoreEmployerValue"}
+                                    disabled={!values.pfPercentIgnoreEmployer}
+
+                                />
+                                <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                    <ErrorMessage name="pfPercentIgnoreEmployerValue" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="w-fit">
+                            {/* <label className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm block my-2">
+                                Bonus Exg.:
+                                <Field
+                                    type="checkbox"
+                                    name="salaryDetail.bonusExg"
+                                    className="rounded w-4 h-4 accent-teal-600 mx-4 translate-y-0.5"
+                                />
+                            </label> */}
+
+                            <div>
+                                <label className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm block my-2">
+                                    ESI Allow:
+                                    <Field
+                                        type="checkbox"
+                                        name="esiAllow"
+                                        className="rounded w-4 h-4 accent-teal-600 mx-4 translate-y-0.5"
+                                    />
+                                </label>
+                            </div>
+                            <div>
+                                <label
+                                    className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
+                                    htmlFor={"esiNumber"}
+                                >
+                                    ESI Number
+                                </label>
+                                <Field
+                                    className={classNames(
+                                        errors.esiNumber && touched.esiNumber
+                                            ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
+                                            : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
+                                        "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full block"
+                                    )}
+                                    type="text"
+                                    maxLength={30}
+                                    name={"esiNumber"}
+                                />
+                                <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                    <ErrorMessage name="esiNumber" />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label
+                                    className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
+                                    htmlFor={"esiDispensary"}
+                                >
+                                    ESI Dispensary
+                                </label>
+                                <Field
+                                    className={classNames(
+                                        errors.esiDispensary &&
+                                            touched.esiDispensary
+                                            ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
+                                            : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
+                                        "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full block"
+                                    )}
+                                    type="text"
+                                    maxLength={100}
+                                    name={"esiDispensary"}
+                                />
+                                <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                    <ErrorMessage name="esiDispensary" />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm block my-2">
+                                    ESI on Overtime:
+                                    <Field
+                                        type="checkbox"
+                                        name="esiOnOt"
+                                        className="rounded w-4 h-4 accent-teal-600 mx-4 translate-y-0.5"
+                                    />
+                                </label>
+                            </div>
+
+                            <div>
+                                <label
+                                    className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
+                                    htmlFor={"uanNumber"}
+                                >
+                                    UAN Number
+                                </label>
+                                <Field
+                                    className={classNames(
+                                        errors.uanNumber && touched.uanNumber
+                                            ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
+                                            : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
+                                        "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full block"
+                                    )}
+                                    type="text"
+                                    maxLength={50}
+                                    name={"uanNumber"}
+                                />
+                                <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                    <ErrorMessage name="uanNumber" />
+                                </div>
+                            </div>
+                        </div>
                     </section>
                     {errorMessage && errorMessage.error && (
                         <p className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
@@ -552,13 +315,13 @@ const EmployeePfEsiDetail = ({
                     <section className="flex flex-row gap-4 mt-4 mb-2">
                         <button
                             className={classNames(
-                                isValid && dirty
+                                isValid
                                     ? "dark:hover:bg-teal-600  hover:bg-teal-600"
                                     : "opacity-40",
                                 "dark:bg-teal-700 rounded w-20 p-2 text-base font-medium bg-teal-500"
                             )}
                             type="submit"
-                            disabled={!isValid || !dirty}
+                            disabled={!isValid}
                             onClick={handleSubmit}
                         >
                             {isEditing ? "Update" : "Add"}

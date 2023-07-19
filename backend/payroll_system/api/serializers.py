@@ -1,7 +1,7 @@
 from dataclasses import field
 from rest_framework import serializers
 
-from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, DeductionsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning, EmployeeSalaryDetail, EmployeeFamilyNomineeDetial
+from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, DeductionsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning, EmployeeSalaryDetail, EmployeeFamilyNomineeDetial, EmployeePfEsiDetail
 from rest_framework import serializers
 
 
@@ -172,7 +172,7 @@ class EmployeeSalaryEarningSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     class Meta:
         model = EmployeeSalaryEarning
-        fields = ['user', 'employee', 'company', 'earnings_head', 'value']
+        fields = ['user', 'employee', 'company', 'earnings_head', 'value', 'year']
     
 class EmployeeSalaryDetailSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
@@ -181,8 +181,14 @@ class EmployeeSalaryDetailSerializer(serializers.ModelSerializer):
         fields = ['user', 'company', 'employee', 'overtime_type', 'overtime_rate', 'salary_mode', 'payment_mode', 'bank_name', 'account_number', 'ifcs', 'labour_wellfare_fund', 'late_deduction', 'bonus_allow', 'bonus_exg']
 
 
-class EmployeeFamilyNomineeDetialSerializer(serializers.ModelSerializer):
+class EmployeePfEsiDetailSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     class Meta:
+        model = EmployeePfEsiDetail
+        fields = ['user', 'company', 'employee', 'pf_allow', 'pf_number', 'pf_limit_ignore_employee', 'pf_limit_ignore_employee_value', 'pf_limit_ignore_employer', 'pf_limit_ignore_employer_value', 'pf_percent_ignore_employee', 'pf_percent_ignore_employee_value', 'pf_percent_ignore_employer', 'pf_percent_ignore_employer_value', 'uan_number', 'esi_allow', 'esi_number', 'esi_dispensary', 'esi_on_ot',
+        ]
+
+class EmployeeFamilyNomineeDetialSerializer(serializers.ModelSerializer):
+    class Meta:
         model = EmployeeFamilyNomineeDetial
-        fields = ['id', 'user', 'company', 'employee', 'name', 'address', 'dob', 'relation', 'residing', 'esi_benefit', 'pf_benefits', 'is_esi_nominee', 'esi_nominee_share', 'is_pf_nominee', 'pf_nominee_share', 'is_fa_nominee', 'fa_nominee_share', 'is_gratuity_nominee', 'gratuity_nominee_share',]
+        fields = ['id', 'company', 'employee', 'name', 'address', 'dob', 'relation', 'residing', 'esi_benefit', 'pf_benefits', 'is_esi_nominee', 'esi_nominee_share', 'is_pf_nominee', 'pf_nominee_share', 'is_fa_nominee', 'fa_nominee_share', 'is_gratuity_nominee', 'gratuity_nominee_share',]

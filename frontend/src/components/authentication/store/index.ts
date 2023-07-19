@@ -5,18 +5,22 @@ import storage from "redux-persist/lib/storage";
 import { apiSlice } from "../api/apiSlice";
 import reducer from "./slices/auth";
 import globalCompanyReducer from "./slices/globalCompany";
+import alertSliceReducer from "./slices/alertSlice"
+
 
 const rootReducer = combineReducers({
     [apiSlice.reducerPath]: apiSlice.reducer,
     auth: reducer,
     globalCompany: globalCompanyReducer,
+    alert: alertSliceReducer,
 });
 
 const persistConfig = {
     key: "root",
     version: 1,
     storage: storage,
-    // blacklist: ['globalCompany'], #Use this to blacklist a slice/reducer the data of blacklisted slice will not be persisted
+    blacklist: ['alert'], 
+    // Use this to blacklist a slice/reducer the data of blacklisted slice will not be persisted
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

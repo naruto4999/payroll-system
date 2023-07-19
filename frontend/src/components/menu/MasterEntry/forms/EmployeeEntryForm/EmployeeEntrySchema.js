@@ -326,6 +326,135 @@ export const EmployeeProfessionalDetailSchema = yup.object().shape({
         .nullable(),
 });
 
+export const EmployeePfEsiDetailSchema = yup.object().shape({
+    pfNumber: yup.string().max(50, "Max Length is 50").trim(),
+    esiNumber: yup.string().max(30, "Max Length is 30").trim(),
+    pfPercentIgnoreEmployeeValue: yup
+        .number()
+        .min(0, "Value must be at least 0")
+        .max(100, "Value must be at most 100")
+        .nullable()
+        .typeError("Invalid value")
+        .test("decimal-digits", "Maximum 2 decimal digits allowed", (value) => {
+            if (value === null || value === undefined) return true;
+            const decimalDigits = value.toString().split(".")[1];
+            return !decimalDigits || decimalDigits.length <= 2;
+        }),
+    pfPercentIgnoreEmployerValue: yup
+        .number()
+        .min(0, "Value must be at least 0")
+        .max(100, "Value must be at most 100")
+        .nullable()
+        .typeError("Invalid value")
+        .test("decimal-digits", "Maximum 2 decimal digits allowed", (value) => {
+            if (value === null || value === undefined) return true;
+            const decimalDigits = value.toString().split(".")[1];
+            return !decimalDigits || decimalDigits.length <= 2;
+        }),
+    pfLimitIgnoreEmployerValue: yup
+        .number()
+        .max(2147483646, "Value must be at most 2147483646")
+        .nullable()
+        .typeError("Invalid value"),
+    pfLimitIgnoreEmployeeValue: yup
+        .number()
+        .max(2147483646, "Value must be at most 2147483646")
+        .nullable()
+        .typeError("Invalid value"),
+});
+
+export const EmployeeFamilyNomineeDetailSchema = yup.object().shape({
+    familyNomineeDetail: yup.array().of(
+        yup.object().shape({
+            isPfNominee: yup.boolean(),
+            name: yup.string().required("Name is required"),
+            pfNomineeShare: yup.number().when("isPfNominee", {
+                is: true,
+                then: (pfNomineeShare) =>
+                    pfNomineeShare
+                        .required("Required")
+                        .max(100, "Can't exceed 100")
+                        .test(
+                            "totalShare",
+                            "Total % should not exceed 100",
+                            (value, context) => {
+                                let valuesArray =
+                                    context.from[1].value.familyNomineeDetail;
+                                let totalShare = 0;
+                                valuesArray.forEach((detail) => {
+                                    totalShare += detail.pfNomineeShare || 0;
+                                });
+                                return totalShare <= 100;
+                            }
+                        ),
+            }),
+
+            esiNomineeShare: yup.number().when("isEsiNominee", {
+                is: true,
+                then: (esiNomineeShare) =>
+                    esiNomineeShare
+                        .required("Required")
+                        .max(100, "Can't exceed 100")
+                        .test(
+                            "totalShare",
+                            "Total % should not exceed 100",
+                            (value, context) => {
+                                let valuesArray =
+                                    context.from[1].value.familyNomineeDetail;
+                                let totalShare = 0;
+                                valuesArray.forEach((detail) => {
+                                    totalShare += detail.esiNomineeShare || 0;
+                                });
+                                return totalShare <= 100;
+                            }
+                        ),
+            }),
+
+            faNomineeShare: yup.number().when("isFaNominee", {
+                is: true,
+                then: (faNomineeShare) =>
+                    faNomineeShare
+                        .required("Required")
+                        .max(100, "Can't exceed 100")
+                        .test(
+                            "totalShare",
+                            "Total % should not exceed 100",
+                            (value, context) => {
+                                let valuesArray =
+                                    context.from[1].value.familyNomineeDetail;
+                                let totalShare = 0;
+                                valuesArray.forEach((detail) => {
+                                    totalShare += detail.faNomineeShare || 0;
+                                });
+                                return totalShare <= 100;
+                            }
+                        ),
+            }),
+
+            gratuityNomineeShare: yup.number().when("isGratuityNominee", {
+                is: true,
+                then: (gratuityNomineeShare) =>
+                    gratuityNomineeShare
+                        .required("Required")
+                        .max(100, "Can't exceed 100")
+                        .test(
+                            "totalShare",
+                            "Total % should not exceed 100",
+                            (value, context) => {
+                                let valuesArray =
+                                    context.from[1].value.familyNomineeDetail;
+                                let totalShare = 0;
+                                valuesArray.forEach((detail) => {
+                                    totalShare += detail.gratuityNomineeShare || 0;
+                                });
+                                return totalShare <= 100;
+                            }
+                        ),
+            }),
+        })
+    ),
+});
+
 // export const EmployeeSalaryDetailSchema = yup.object().shape({
 //     earningsHead: yup.object().shape(
 //       Object.keys(initialValues.earningsHead).reduce((schema, key) => {

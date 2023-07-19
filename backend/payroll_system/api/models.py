@@ -484,14 +484,42 @@ class EmployeeSalaryEarning(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="all_company_employees_earnings")
     earnings_head = models.ForeignKey(EarningsHead, on_delete=models.CASCADE, related_name="employees_earnings")
     value = models.IntegerField(default=0, null=False, blank=False)
+    # month = models.PositiveSmallIntegerField(null=False, blank=False)
+    year = models.PositiveSmallIntegerField(null=False, blank=False)
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['employee', 'earnings_head'], name='unique_employee_earning_head')
+            models.UniqueConstraint(fields=['employee', 'earnings_head', 'year'], name='unique_employee_earning_head')
         ]
+
+    def clean(self):
+        if self.year < 1950 or self.year > 2100:
+            raise ValidationError("Invalid year value")
+        
     def save(self, *args, **kwargs):
+        self.clean()
         if self.earnings_head.company != self.company or self.earnings_head.user != self.user:
             raise ValidationError("Invalid Earning Head selected.")
+        super().save(*args, **kwargs)
+
+class EmployeeMonthlySalaryChange(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_employees_monthly_salary_changes")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="all_company_employees_monthly_salary_changes")
+    employee = models.ForeignKey(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="monthly_salary_changes")
+    month = models.PositiveSmallIntegerField()
+    salary_earnings = models.ForeignKey(EmployeeSalaryEarning, related_name="monthly_changes", on_delete=models.CASCADE)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['employee', 'month', 'salary_earnings'], name='unique_employee_monthly_salary')
+        ]
+
+    def clean(self):
+        if self.month < 1 or self.month > 12:
+            raise ValidationError("Invalid month value")
+
+    def save(self, *args, **kwargs):
+        self.clean()
         super().save(*args, **kwargs)
 
     
@@ -548,17 +576,17 @@ class EmployeeSalaryDetail(models.Model):
 class EmployeePfEsiDetail(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="employee_pf_esi_details")
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="employee_pf_esi_details")
-    employee = models.ForeignKey(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="employee_pf_esi_detail")
+    employee = models.OneToOneField(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="employee_pf_esi_detail", primary_key=True)
     pf_allow = models.BooleanField(null=False, blank=False, default=False)
     pf_number = models.CharField(max_length=50, null=True, blank=True)
     pf_limit_ignore_employee = models.BooleanField(null=False, blank=False, default=False)
     pf_limit_ignore_employee_value = models.PositiveIntegerField(null=True, blank=True)
     pf_limit_ignore_employer = models.BooleanField(null=False, blank=False, default=False)
-    pf_limit_ignore_employer_value = models.BooleanField(null=False, blank=False, default=False)
+    pf_limit_ignore_employer_value = models.PositiveIntegerField(null=True, blank=True)
     pf_percent_ignore_employee = models.BooleanField(null=False, blank=False, default=False)
-    pf_percent_ignore_employee_value = models.DecimalField(max_digits=3, decimal_places=0, default=Decimal(0), validators=PERCENTAGE_VALIDATOR)
+    pf_percent_ignore_employee_value = models.DecimalField(max_digits=4, decimal_places=2, validators=PERCENTAGE_VALIDATOR, null=True, blank=True)
     pf_percent_ignore_employer = models.BooleanField(null=False, blank=False, default=False)
-    pf_percent_ignore_employer_value = models.DecimalField(max_digits=3, decimal_places=0, default=Decimal(0), validators=PERCENTAGE_VALIDATOR)
+    pf_percent_ignore_employer_value = models.DecimalField(max_digits=4, decimal_places=2, validators=PERCENTAGE_VALIDATOR, null=True, blank=True)
     uan_number = models.CharField(max_length=30, null=True, blank=True)
     esi_allow = models.BooleanField(null=False, blank=False, default=False)
     esi_number = models.CharField(max_length=30, null=True, blank=True)
@@ -589,36 +617,43 @@ class EmployeeFamilyNomineeDetial(models.Model):
     esi_benefit = models.BooleanField(null=False, blank=False, default=True)
     pf_benefits = models.BooleanField(null=False, blank=False, default=True)
     is_esi_nominee = models.BooleanField(null=False, blank=False, default=False)
-    esi_nominee_share = models.DecimalField(max_digits=3, decimal_places=0, default=Decimal(0), validators=PERCENTAGE_VALIDATOR)
+    esi_nominee_share = models.DecimalField(max_digits=5, decimal_places=2, validators=PERCENTAGE_VALIDATOR, null=True, blank=True)
     is_pf_nominee = models.BooleanField(null=False, blank=False, default=False)
-    pf_nominee_share = models.DecimalField(max_digits=3, decimal_places=0, default=Decimal(0), validators=PERCENTAGE_VALIDATOR)
+    pf_nominee_share = models.DecimalField(max_digits=5, decimal_places=2, validators=PERCENTAGE_VALIDATOR, null=True, blank=True)
     is_fa_nominee = models.BooleanField(null=False, blank=False, default=False)
-    fa_nominee_share = models.DecimalField(max_digits=3, decimal_places=0, default=Decimal(0), validators=PERCENTAGE_VALIDATOR)
+    fa_nominee_share = models.DecimalField(max_digits=5, decimal_places=2, validators=PERCENTAGE_VALIDATOR, null=True, blank=True)
     is_gratuity_nominee = models.BooleanField(null=False, blank=False, default=False)
-    gratuity_nominee_share = models.DecimalField(max_digits=3, decimal_places=0, default=Decimal(0), validators=PERCENTAGE_VALIDATOR)
+    gratuity_nominee_share = models.DecimalField(max_digits=5, decimal_places=2, validators=PERCENTAGE_VALIDATOR, null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not hasattr(self.employee, 'employee_pf_esi_detail'):
+            raise ValidationError("Employee has no PF and ESI detail")
+        else:
+            if self.employee.employee_pf_esi_detail and not self.employee.employee_pf_esi_detail.pf_allow:
+                self.pf_benefits = False
+                self.is_pf_nominee = False
+                self.pf_nominee_share = None
+        if not self.esi_benefit:
+            self.is_esi_nominee = False
+        if not self.pf_benefits:
+            self.is_pf_nominee = False
+        if not self.is_esi_nominee:
+            self.esi_nominee_share = None
+        if not self.is_pf_nominee:
+            self.pf_nominee_share = None
+        if not self.is_fa_nominee:
+            self.fa_nominee_share = None
+        if not self.is_gratuity_nominee:
+            self.gratuity_nominee_share = None
+        
+            # self.save(update_fields=['pf_benefits', 'is_pf_nominee'])
+        super().save(*args, **kwargs)
 
 
 
 
 
 
-
-
-
-
-
-
-    
-
-
-
-# class EmployeePhoto(models.Model):
-#     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="employee_photos")
-#     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="employee_photos")
-#     employee = models.OneToOneField(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="employee_photo", primary_key=True)
-#     photo = models.ImageField(upload_to=employee_photo_handler ,null=True, blank=True)
-#     def __str__(self):
-#         return f"{self.user.email} -> {self.company.name} -> {self.employee.name}"
     
 @receiver(post_save, sender=Company)
 def create_default_leave_grades_for_company(sender, instance, created, **kwargs):

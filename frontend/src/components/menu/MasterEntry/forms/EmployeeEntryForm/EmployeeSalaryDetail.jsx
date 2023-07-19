@@ -58,6 +58,26 @@ const EmployeeSalaryDetail = ({
                 >
                     <section className="flex flex-row gap-10 flex-wrap lg:flex-nowrap justify-center">
                         <div className="w-fit">
+                        <label
+                                htmlFor="year"
+                                className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
+                            >
+                                Salary for year
+                            </label>
+                            <Field
+                                className={classNames(
+                                    errors.year &&
+                                        touched.year
+                                        ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
+                                        : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
+                                    "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full custom-number-input"
+                                )}
+                                type="number"
+                                name="year"
+                            />
+                            <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                <ErrorMessage name="year" />
+                            </div>
                             {Object.keys(initialValues.earningsHead).map(
                                 (key) => (
                                     <div key={key}>
@@ -310,13 +330,13 @@ const EmployeeSalaryDetail = ({
                     <section className="flex flex-row gap-4 mt-4 mb-2">
                         <button
                             className={classNames(
-                                isValid && dirty
+                                isValid
                                     ? "dark:hover:bg-teal-600  hover:bg-teal-600"
                                     : "opacity-40",
                                 "dark:bg-teal-700 rounded w-20 p-2 text-base font-medium bg-teal-500"
                             )}
                             type="submit"
-                            disabled={!isValid || !dirty}
+                            disabled={!isValid}
                             onClick={handleSubmit}
                         >
                             {isEditing ? "Update" : "Add"}

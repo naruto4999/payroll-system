@@ -181,7 +181,7 @@ const EmployeeProfessionalDetail = ({
                                 className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm block"
                                 htmlFor="department"
                             >
-                                department
+                                Department
                             </label>
                             <select
                                 className="p-1 rounded-md bg-opacity-50 bg-zinc-50 dark:bg-zinc-700 block my-1"

@@ -31,6 +31,7 @@ import { RootState } from "./authentication/store/index";
 import { useSelector } from "react-redux";
 import { useState, useEffect } from "react";
 import SwitchToggle from "./UI/ToggleSwitch";
+import Alert from "./UI/Alert";
 
 function App() {
     document.documentElement.classList.add("scrollbar")
@@ -63,6 +64,7 @@ function App() {
                 Dark
                 <SwitchToggle theme={theme} switch={themeSwitch} />
             </div> */}
+            <Alert/>
 
             <Routes>
                 <Route

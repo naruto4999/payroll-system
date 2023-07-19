@@ -1,5 +1,7 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { authActions } from "../store/slices/auth";
+import { useDispatch } from "react-redux";
+import { alertActions } from "../store/slices/alertSlice";
 
 const baseQuery = fetchBaseQuery({
     baseUrl: "http://127.0.0.1:8000/",
@@ -21,10 +23,20 @@ const baseQuery = fetchBaseQuery({
 });
 
 const baseQueryWithReauth = async (args, api, extraOptions) => {
+    // const dispatch = useDispatch();
     let result = await baseQuery(args, api, extraOptions);
     console.log(args)
 
+
     console.log(result);
+    // if(result?.error?.status === 200) {
+    //     dispatch(
+    //         alertActions.createAlert({
+    //           message: "We are off to a good start!",
+    //           type: "success"
+    //         })
+    //       );
+    // }
 
     if (result?.error?.status === 401) {
         console.log("sending refresh token");
