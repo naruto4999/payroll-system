@@ -2,7 +2,7 @@ from django.forms import ValidationError
 from django.shortcuts import render
 from rest_framework import generics, status, mixins
 from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, DeductionsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer
-from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift, EmployeeProfessionalDetail
+from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift, EmployeeSalaryEarning, EarningsHead
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
@@ -15,7 +15,9 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from djangorestframework_camel_case.parser import CamelCaseFormParser, CamelCaseMultiPartParser
 from django.db import IntegrityError
 from django.db.models import Q
-
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
+import pytz
 
 
 
@@ -965,15 +967,63 @@ class EmployeeProfessionalDetailRetrieveUpdateDestroyAPIView(generics.RetrieveUp
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-
+        validated_data = serializer.validated_data
         if user.role == "OWNER":
-            serializer.save(user=self.request.user)
+            pass
         else:
             instance = OwnerToRegular.objects.get(user=user)
-            serializer.save(user=instance.owner)
+            user = instance.owner
+        if 'date_of_joining' in validated_data:
+            print('hahah')
+            instance = self.get_queryset().filter(employee=validated_data['employee'])
+            print(instance[0].date_of_joining)
+            print(type(instance[0].date_of_joining))
+            print(type(validated_data['date_of_joining']))
+            if instance[0].date_of_joining != validated_data['date_of_joining']:
+                earning_instances = EmployeeSalaryEarning.objects.filter(user=user, employee=validated_data['employee'], from_date=instance[0].date_of_joining.replace(day=1))
+                print(len(earning_instances))
+                if len(earning_instances) > 0:
+                    for earning in earning_instances:
+                        print(earning)
+                        earning.from_date=validated_data['date_of_joining'].replace(day=1)
+                        earning.save()
+                        print("saved")
+                # print(f'0 -> {earning_instances[0].earnings_head}')
+                # print(earning_instances[0].to_date)
+                
+
+        print(validated_data)
+        serializer.save(user=self.request.user)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
     
+# class EmployeeSalaryEarningListCreateAPIView(generics.ListCreateAPIView):
+#     permission_classes = [IsAuthenticated]
+#     serializer_class = EmployeeSalaryEarningSerializer
+
+#     def get_queryset(self, *args, **kwargs):
+#         company_id = self.kwargs.get('company_id')
+#         employee = self.kwargs.get('employee')
+#         user = self.request.user
+#         if user.role == "OWNER":
+#             return user.all_employees_earnings.filter(company=company_id, employee=employee)
+#         instance = OwnerToRegular.objects.get(user=user)
+#         return instance.owner.all_employees_earnings.filter(company=company_id, employee=employee)
+
+#     def create(self, request, *args, **kwargs):
+#         print(request.data)
+#         serializer = self.get_serializer(data=request.data['employee_earnings'], many=True)
+#         serializer.is_valid(raise_exception=True)
+#         user = self.request.user
+
+#         if user.role == "OWNER":
+#             serializer.save(user=user)
+#             return Response(serializer.data, status=status.HTTP_200_OK)
+#         else:
+#             instance = OwnerToRegular.objects.get(user=user)
+#             serializer.save(user=instance.owner)
+#             return Response(serializer.data, status=status.HTTP_200_OK)
+        
 class EmployeeSalaryEarningListCreateAPIView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = EmployeeSalaryEarningSerializer
@@ -989,17 +1039,75 @@ class EmployeeSalaryEarningListCreateAPIView(generics.ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         print(request.data)
-        serializer = self.get_serializer(data=request.data['employee_earnings'], many=True)
-        serializer.is_valid(raise_exception=True)
-        user = self.request.user
+        employee_earnings = request.data['employee_earnings']
+        for data in employee_earnings:
+            earnings_head_id = data['earnings_head']
+            earnings_head_instance = EarningsHead.objects.get(pk=earnings_head_id)
+            earnings_head_instance_data = EarningsHeadSerializer(earnings_head_instance).data
+            data["earnings_head"] = earnings_head_instance_data
+            user = self.request.user
+            serializer = self.get_serializer(data=data)
+            serializer.is_valid(raise_exception=True)
+            validated_data = serializer.validated_data
+            instance = self.get_queryset().filter(earnings_head=earnings_head_id)
+            if instance.exists():
+                print("nuuuuu")
+            else:
+                print("yayyy")
+                validated_data['to_date'] = '9999-01-01'
+                # print(validated_data)
+            if user.role == "OWNER":
+                pass
+            else:
+                instance = OwnerToRegular.objects.get(user=user)
+                user=instance.owner
+            new_earning = EmployeeSalaryEarning.objects.create(
+                    user=user,
+                    employee=validated_data['employee'],
+                    company=validated_data['company'],
+                    earnings_head_id=earnings_head_id,
+                    value=validated_data['value'],
+                    from_date=validated_data['from_date'],
+                    to_date=validated_data['to_date']
+                )
+            print(new_earning)
 
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def list(self, request, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        employee = self.kwargs.get('employee')
+        year = self.kwargs.get('year')
+        user = self.request.user
+        print(year)
+        print('yayyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy')
         if user.role == "OWNER":
-            serializer.save(user=user)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            queryset = user.all_employees_earnings.filter(
+                company=company_id,
+                employee=employee,
+                from_date__year__lte=year,
+                to_date__year__gte=year
+            )
         else:
             instance = OwnerToRegular.objects.get(user=user)
-            serializer.save(user=instance.owner)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            queryset = instance.owner.all_employees_earnings.filter(
+                company=company_id,
+                employee=employee,
+                from_date__year__lte=year,
+                to_date__year__gte=year
+            )
+
+        serializer = self.get_serializer(queryset, many=True)
+        # print(serializer.data)
+        return Response(serializer.data)
+            # serializer = self.get_serializer(instance.first(), data=data, partial=partial)
+            # serializer.is_valid(raise_exception=True)
+            # user = self.request.user
+            # if user.role == "OWNER":
+            #     serializer.save(user=user)
+            # else:
+            #     instance = OwnerToRegular.objects.get(user=user)
+            #     serializer.save(user=instance.owner)
         
 class EmployeeSalaryEarningListUpdateAPIView(generics.UpdateAPIView):
     permission_classes= [IsAuthenticated]
@@ -1016,22 +1124,231 @@ class EmployeeSalaryEarningListUpdateAPIView(generics.UpdateAPIView):
         return instance.owner.all_employees_earnings.filter(company=company_id, employee=employee)
 
     
+    # def update(self, request, *args, **kwargs):
+    #     print(request.data)
+    #     employee_earnings = request.data['employee_earnings']
+    #     partial = kwargs.pop('partial', False)
+
+    #     for employee_earning in employee_earnings:
+    #         print(employee_earning)
+    #         instance = self.get_queryset().filter(earnings_head=employee_earning['earnings_head'])
+    #         print(instance)
+    #         serializer = self.get_serializer(instance.first(), employee_earning=employee_earning, partial=partial)
+    #         serializer.is_valid(raise_exception=True)
+    #         user = self.request.user
+    #         if user.role == "OWNER":
+    #             serializer.save(user=user)
+    #         else:
+    #             instance = OwnerToRegular.objects.get(user=user)
+    #             serializer.save(user=instance.owner)
+
+    #     return Response({"error": "sdfsdf"}, status=status.HTTP_200_OK)
+
     def update(self, request, *args, **kwargs):
+        indian_timezone = pytz.timezone('Asia/Kolkata')
+        current_datetime = datetime.now(indian_timezone)
+        current_indian_year = current_datetime.year
         employee_earnings = request.data['employee_earnings']
         partial = kwargs.pop('partial', False)
+        user = self.request.user
+        if user.role != "OWNER":
+            instance = OwnerToRegular.objects.get(user=user)
+            user=instance
 
-        for data in employee_earnings:
-            instance = self.get_queryset().filter(earnings_head=data['earnings_head'])
-            serializer = self.get_serializer(instance.first(), data=data, partial=partial)
+        for item in employee_earnings:
+            existing_earning_to_date_before_saving=None
+            earnings_head_id = item['earnings_head']
+            earnings_head_instance = EarningsHead.objects.get(pk=earnings_head_id)
+            earnings_head_instance_data = EarningsHeadSerializer(earnings_head_instance).data
+
+            # earnings_head_instance['company'] = earnings_head_instance['company_id']
+
+            item['earnings_head'] = earnings_head_instance_data
+            serializer = self.get_serializer(data=item)
             serializer.is_valid(raise_exception=True)
-            user = self.request.user
-            if user.role == "OWNER":
-                serializer.save(user=user)
-            else:
-                instance = OwnerToRegular.objects.get(user=user)
-                serializer.save(user=instance.owner)
+            employee_earning = serializer.validated_data
+            earnings_head = employee_earning['earnings_head']
+            from_date = employee_earning['from_date']
+            to_date = employee_earning['to_date']
+            value = employee_earning['value']
+            print(employee_earning)
+            # Get existing employee earnings for the earnings_head
+            existing_earnings = self.get_queryset().filter(earnings_head=earnings_head_id).order_by('from_date')
+            existing_earnings.filter(from_date__gte=from_date, to_date__lte=to_date).delete()
+            existing_earnings = self.get_queryset().filter(earnings_head=earnings_head_id).order_by('from_date')
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
+            # Find the index of the earning that contains the from_date
+            index_to_update = None
+            for idx, earning in enumerate(existing_earnings):
+                print(idx)
+                print(earning.from_date)
+                print(earning.to_date)
+
+                print(from_date)
+                if from_date >=  earning.from_date and from_date <= earning.to_date:
+                    index_to_update = idx
+                    break
+            print('before iffffffffffff')
+            print(index_to_update)
+            if index_to_update is not None:
+                print('afeter if')
+                existing_earning = existing_earnings[index_to_update]
+                print(value)
+                print(existing_earning.value)
+                if value!=existing_earning.value:
+                    if from_date==existing_earning.from_date and to_date==existing_earning.to_date:
+                        existing_earning.value = value
+                        print('here')
+                        existing_earning.save()
+                    elif from_date==existing_earning.from_date and to_date<existing_earning.to_date:
+                        existing_earning_from_date_before_saving = existing_earning.to_date
+                        print(existing_earning_from_date_before_saving)
+                        existing_earning.from_date = to_date + relativedelta(months=1)
+                        existing_earning.save()
+                        print(existing_earning.to_date)
+
+                        new_earning = EmployeeSalaryEarning.objects.create(
+                        user=user,
+                        employee=employee_earning['employee'],
+                        company=employee_earning['company'],
+                        earnings_head_id=earnings_head_id,
+                        value=value,
+                        from_date=from_date,
+                        to_date=to_date
+                        )
+                        print(new_earning)
+
+
+                    else:
+                        existing_earning_to_date_before_saving = existing_earning.to_date
+                        print(existing_earning_to_date_before_saving)
+                        existing_earning.to_date = from_date - relativedelta(months=1)
+                        existing_earning.save()
+                        print(existing_earning.to_date)
+                        if to_date < existing_earning_to_date_before_saving:
+                            if to_date.year == current_indian_year and to_date.month==12:
+                                print("nowwww innfite it")
+                                new_earning = EmployeeSalaryEarning.objects.create(
+                                user=user,
+                                employee=employee_earning['employee'],
+                                company=employee_earning['company'],
+                                earnings_head_id=earnings_head_id,
+                                value=value,
+                                from_date=from_date,
+                                to_date="9999-01-01"
+                                )
+                                print(new_earning)
+                            
+                            else:
+                                print("not saved yet")
+                                # serializer.save(user=user) #save the incoming earning head
+                                new_earning = EmployeeSalaryEarning.objects.create(
+                                user=user,
+                                employee=employee_earning['employee'],
+                                company=employee_earning['company'],
+                                earnings_head_id=earnings_head_id,
+                                value=value,
+                                from_date=from_date,
+                                to_date=to_date
+                                )
+                                print("yayyyyyyyyyyyy saved")
+                                auto_created_earning = EmployeeSalaryEarning.objects.create(
+                                user=user,
+                                employee=existing_earning.employee,
+                                company=existing_earning.company,
+                                earnings_head=existing_earning.earnings_head,
+                                value=existing_earning.value,
+                                from_date=to_date + relativedelta(months=1),
+                                to_date=existing_earning_to_date_before_saving
+                                )
+                                print(auto_created_earning)
+
+                        elif to_date == existing_earning_to_date_before_saving:
+                            print("inside elif of you know")
+                            # serializer.save(user=user) #save the incoming earning head
+                            new_earning = EmployeeSalaryEarning.objects.create(
+                            user=user,
+                            employee=employee_earning['employee'],
+                            company=employee_earning['company'],
+                            earnings_head_id=earnings_head_id,
+                            value=value,
+                            from_date=from_date,
+                            to_date=to_date
+                            )
+                        elif to_date > existing_earning_to_date_before_saving:
+                            index_for_to_date = None
+                            new_existing_earnings = self.get_queryset().filter(earnings_head=earnings_head_id).order_by('from_date')
+                            # new_existing_earnings.filter(from_date__gte=from_date, to_date__lte=to_date).delete()
+                            # new_existing_earnings = self.get_queryset().filter(earnings_head=earnings_head_id).order_by('from_date')
+
+                            for idx_new, earning_for_to_date in enumerate(new_existing_earnings):
+                                print(idx_new)
+                                print(earning_for_to_date.from_date)
+                                print(earning_for_to_date.to_date)
+
+                                print(to_date, 'of recieved')
+                                if to_date >=  earning_for_to_date.from_date and to_date <= earning_for_to_date.to_date:
+                                    index_for_to_date = idx_new
+                                    break
+                            print(index_for_to_date)
+                            if index_for_to_date is not None:
+                                existing_earning_for_to_date = new_existing_earnings[index_for_to_date]
+                                print(existing_earning_for_to_date)
+                                existing_earning_for_to_date.from_date = to_date  + relativedelta(months=1)
+                                existing_earning_for_to_date.save()
+                                print(existing_earning_for_to_date)
+                                print("now to create new earning ")
+                                new_earning = EmployeeSalaryEarning.objects.create(
+                                user=user,
+                                employee=employee_earning['employee'],
+                                company=employee_earning['company'],
+                                earnings_head_id=earnings_head_id,
+                                value=value,
+                                from_date=from_date,
+                                to_date=to_date
+                                )
+                            elif index_for_to_date is None:
+                                new_earning = EmployeeSalaryEarning.objects.create(
+                                user=user,
+                                employee=employee_earning['employee'],
+                                company=employee_earning['company'],
+                                earnings_head_id=earnings_head_id,
+                                value=value,
+                                from_date=from_date,
+                                to_date=to_date
+                                )
+
+                elif value==existing_earning.value:
+                    if to_date <= existing_earning.to_date:
+                        print('no need to update')
+                        pass
+                    elif to_date>existing_earning.to_date:
+                        existing_earnings.filter(from_date__gt=from_date, to_date__lt=to_date).delete()
+                        new_earning = EmployeeSalaryEarning.objects.create(
+                                user=user,
+                                employee=employee_earning['employee'],
+                                company=employee_earning['company'],
+                                earnings_head_id=earnings_head_id,
+                                value=value,
+                                from_date=from_date,
+                                to_date=to_date
+                                )
+                        print(new_earning)
+                      
+
+            else:
+                # If there is no existing earning to update, create a new one
+                print(employee_earning)
+                new_earning = EmployeeSalaryEarning.objects.create(
+                    user=user,
+                    employee=employee_earning['employee'],
+                    company=employee_earning['company'],
+                    earnings_head_id=earnings_head_id,
+                    value=value,
+                    from_date=from_date,
+                    to_date=to_date
+                )
+        return Response({"message": "Employee earnings updated successfully"}, status=status.HTTP_200_OK)
     
 class EmployeeSalaryDetailCreateAPIView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]

@@ -19,7 +19,7 @@ const persistConfig = {
     key: "root",
     version: 1,
     storage: storage,
-    blacklist: ['alert'], 
+    blacklist: ['alert', apiSlice.reducerPath], 
     // Use this to blacklist a slice/reducer the data of blacklisted slice will not be persisted
 };
 

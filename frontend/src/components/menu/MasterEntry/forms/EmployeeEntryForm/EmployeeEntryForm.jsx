@@ -49,6 +49,7 @@ import {
     EmployeeProfessionalDetailSchema,
     EmployeePfEsiDetailSchema,
     EmployeeFamilyNomineeDetailSchema,
+    generateEmployeeSalaryDetailSchema,
 } from "./EmployeeEntrySchema";
 import AddEmployeeNavigationBar from "./AddEmployeeNavigationBar";
 import EmployeeProfessionalDetail from "./EmployeeProfessionalDetail";
@@ -152,6 +153,7 @@ const EmployeeEntryForm = () => {
                 ...singleEmployeeProfessionalDetail
             } = {},
             isLoading: isLoadingSingleEmployeeProfessionalDetail,
+            isSuccess: isSingleEmployeeProfessionalDetailSuccess,
         } = {},
         // lastPromiseInfo,
     ] = useLazyGetSingleEmployeeProfessionalDetailQuery();
@@ -316,24 +318,59 @@ const EmployeeEntryForm = () => {
         esiOnOt: false,
     };
 
-    let editEarningHeadInitialValues = {};
+    // let editEarningHeadInitialValues = {};
+    // console.log(singleEmployeeSalaryEarning);
 
-    if (Object.keys(singleEmployeeSalaryEarning).length !== 0) {
-        fetchedEarningsHeads.forEach((earningHead) => {
-            editEarningHeadInitialValues[earningHead.name] = 0;
+    // Find the object with the greatest fromDate
+    // let salaryYear = "";
+    // let toDateSmallestYear = "9999";
+    // console.log(mostRecentObject);
 
-            for (const key in singleEmployeeSalaryEarning) {
-                if (
-                    singleEmployeeSalaryEarning[key].earningsHead ===
-                    earningHead.id
-                ) {
-                    // console.log(singleEmployeeSalaryEarning[key].value);
-                    editEarningHeadInitialValues[earningHead.name] =
-                        singleEmployeeSalaryEarning[key].value;
-                }
-            }
-        });
-    }
+    // if (Object.keys(singleEmployeeSalaryEarning).length !== 0) {
+    //     fetchedEarningsHeads.forEach((earningHead) => {
+    //         editEarningHeadInitialValues[earningHead.name] = 0;
+
+    //         for (const key in singleEmployeeSalaryEarning) {
+    //             if (
+    //                 singleEmployeeSalaryEarning[key].earningsHead ===
+    //                 earningHead.id
+    //             ) {
+    //                 // console.log(singleEmployeeSalaryEarning[key].value);
+    //                 editEarningHeadInitialValues[earningHead.name] =
+    //                     singleEmployeeSalaryEarning[key].value;
+    //             }
+    //         }
+    //     });
+    //     const parsedEarnings = Object.values(singleEmployeeSalaryEarning).map(
+    //         (obj) => ({
+    //             ...obj,
+    //             fromDate: new Date(obj.fromDate),
+    //         })
+    //     );
+    //     const mostRecentObject = parsedEarnings.reduce((acc, obj) => {
+    //         if (!acc || obj.fromDate > acc.fromDate) {
+    //             return obj;
+    //         }
+    //         return acc;
+    //     }, null);
+
+    //     // Now mostRecentObject contains the object with the greatest fromDate
+    //     salaryYear = mostRecentObject.fromDate.getFullYear();
+    //     console.log(salaryYear);
+
+    //     for (const key in singleEmployeeSalaryEarning) {
+    //         if (singleEmployeeSalaryEarning.hasOwnProperty(key)) {
+    //             const toDate = new Date(
+    //                 singleEmployeeSalaryEarning[key].to_date
+    //             );
+    //             const year = toDate.getFullYear();
+
+    //             if (year < toDateSmallestYear) {
+    //                 toDateSmallestYear = year;
+    //             }
+    //         }
+    //     }
+    // }
 
     const salaryDetailInitialValues = {
         overtimeType: "no_overtime",
@@ -453,12 +490,20 @@ const EmployeeEntryForm = () => {
             }
         } else if (popoverName === "editEmployeeSalaryDetail") {
             console.log("ishhhhhhhhh meeeeeeeee bish salary detail");
+            const currentDate = new Date();
+            const currentYear = currentDate.getFullYear();
             try {
                 await Promise.all([
-                    getSingleEmployeeSalaryEarning({
+                    getSingleEmployeeProfessionalDetail({
                         id: id,
                         company: globalCompany.id,
                     }).unwrap(),
+
+                    // getSingleEmployeeSalaryEarning({
+                    //     id: id,
+                    //     company: globalCompany.id,
+                    //     year: currentYear,
+                    // }).unwrap(),
                     getSingleEmployeeSalaryDetail({
                         id: id,
                         company: globalCompany.id,
@@ -473,6 +518,7 @@ const EmployeeEntryForm = () => {
                 });
                 console.log(updateEmployeeId);
             } catch (err) {
+                console.log(err);
                 if (err.status === 404) {
                     console.log("me hereeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
                     setEditEmployeePopover((prevState) => {
@@ -662,7 +708,16 @@ const EmployeeEntryForm = () => {
             // setAddEmployeePopover(!addEmployeePopover);
 
             if (updateEmployeeId === null) {
+                try {
+                    const data = await getSingleEmployeeProfessionalDetail({
+                        id: employeeId,
+                        company: globalCompany.id,
+                    }).unwrap();
+                } catch (err) {
+                    console.log(err);
+                }
                 formikBag.resetForm();
+
                 addEmployeePopoverHandler("addEmployeeSalaryDetail");
             } else {
                 editEmployeePopoverHandler({
@@ -680,6 +735,7 @@ const EmployeeEntryForm = () => {
             }
         }
     };
+    console.log(singleEmployeeProfessionalDetail);
 
     const updatePersonalDetailButtonClicked = async (values, formikBag) => {
         // console.log(formikBag);
@@ -775,6 +831,17 @@ const EmployeeEntryForm = () => {
                         duration: 3000,
                     })
                 );
+
+                try {
+                    console.log("yo getting the professional detail here");
+                    const data = await getSingleEmployeeProfessionalDetail({
+                        id: updateEmployeeId,
+                        company: globalCompany.id,
+                    }).unwrap();
+                    console.log(data);
+                } catch (err) {
+                    console.log(err);
+                }
             } catch (err) {
                 dispatch(
                     alertActions.createAlert({
@@ -795,14 +862,29 @@ const EmployeeEntryForm = () => {
 
     const addSalaryDetailButtonClicked = async (values, formikBag) => {
         console.log(values);
-        const toSend = {
-            employeeEarnings: [],
-        };
+
         console.log(updateEmployeeId);
         let employeeId = addedEmployeeId;
         if (updateEmployeeId !== null) {
             employeeId = updateEmployeeId;
         }
+
+        const monthofJoining = isSingleEmployeeProfessionalDetailSuccess
+            ? parseInt(
+                  singleEmployeeProfessionalDetail.dateOfJoining.split("-")[1]
+              )
+            : "";
+        const from_date = `${values.year}-${monthofJoining}-01`;
+        const to_date = `${values.year}-12-01`;
+
+        const toSend = {
+            employeeEarnings: [],
+            company: globalCompany.id,
+            employee: employeeId,
+        };
+
+        console.log(singleEmployeeProfessionalDetail.dateOfJoining);
+        console.log(from_date);
         for (const key in values.earningsHead) {
             console.log(key);
             for (let i = 0; i < fetchedEarningsHeads.length; i++) {
@@ -812,15 +894,16 @@ const EmployeeEntryForm = () => {
                         earnings_head: fetchedEarningsHeads[i].id,
                         value: values.earningsHead[key],
                         company: globalCompany.id,
-                        // year:
+                        from_date,
+                        to_date,
                     };
                     toSend.employeeEarnings.push(obj);
                     console.log(obj);
                 }
             }
         }
-
         console.log(toSend);
+
         const salaryDetail = {
             ...values.salaryDetail,
             company: globalCompany.id,
@@ -1019,38 +1102,42 @@ const EmployeeEntryForm = () => {
 
     const updateSalaryDetailButtonClicked = async (values, formikBag) => {
         console.log(values);
-        const toSend = {
-            employeeEarnings: [],
-            globalCompany: globalCompany.id,
-            employee: updateEmployeeId,
-        };
-        for (const key in values.earningsHead) {
-            console.log(key);
-            for (let i = 0; i < fetchedEarningsHeads.length; i++) {
-                if (fetchedEarningsHeads[i].name === key) {
-                    let obj = {
-                        employee: updateEmployeeId,
-                        earnings_head: fetchedEarningsHeads[i].id,
-                        value: values.earningsHead[key],
-                        company: globalCompany.id,
-                    };
-                    toSend.employeeEarnings.push(obj);
-                    console.log(obj);
-                }
-            }
-        }
-        console.log(toSend);
+        // const toSend = {
+        //     employeeEarnings: [],
+        //     globalCompany: globalCompany.id,
+        //     employee: updateEmployeeId,
+        // };
+        // for (const key in values.earningsHead) {
+        //     console.log(key);
+        //     for (let i = 0; i < fetchedEarningsHeads.length; i++) {
+        //         if (fetchedEarningsHeads[i].name === key) {
+        //             let obj = {
+        //                 employee: updateEmployeeId,
+        //                 earnings_head: fetchedEarningsHeads[i].id,
+        //                 value: values.earningsHead[key],
+        //                 company: globalCompany.id,
+        //             };
+        //             toSend.employeeEarnings.push(obj);
+        //             console.log(obj);
+        //         }
+        //     }
+        // }
+        // console.log(toSend);
         const salaryDetail = {
             ...values.salaryDetail,
             company: globalCompany.id,
             employee: updateEmployeeId,
         };
         try {
-            await Promise.all([
-                updateEmployeeSalaryEarning(toSend).unwrap(),
-                updateEmployeeSalaryDetail(salaryDetail).unwrap(),
-            ]);
-            console.log("Both requests completed successfully");
+            // await Promise.all([
+            //     updateEmployeeSalaryEarning(toSend).unwrap(),
+            //     updateEmployeeSalaryDetail(salaryDetail).unwrap(),
+            // ]);
+            const data = await updateEmployeeSalaryDetail(
+                salaryDetail
+            ).unwrap();
+
+            console.log("Requests completed successfully");
             dispatch(
                 alertActions.createAlert({
                     message: "Saved",
@@ -1058,6 +1145,17 @@ const EmployeeEntryForm = () => {
                     duration: 3000,
                 })
             );
+
+            try {
+                console.log("getting salary info now");
+                const data = await getSingleEmployeeSalaryDetail({
+                    id: updateEmployeeId,
+                    company: globalCompany.id,
+                }).unwrap();
+                console.log(data);
+            } catch (err) {
+                console.log(err);
+            }
         } catch (err) {
             dispatch(
                 alertActions.createAlert({
@@ -1258,35 +1356,36 @@ const EmployeeEntryForm = () => {
         enableSortingRemoval: false,
     });
 
-    let EmployeeSalaryDetailSchema = yup.object().shape({
-        earningsHead: yup.object().shape(
-            Object.keys(earningHeadInitialValues).reduce((schema, key) => {
-                return {
-                    ...schema,
-                    [key]: yup.number().required(`${key} is required`),
-                };
-            }, {})
-        ),
-        year: yup
-            .number()
-            .required("Year is required")
-            .min(1950, "Year must be greater than or equal to 1950")
-            .max(2100, "Year must be less than or equal to 2100"),
-        salaryDetail: yup.object().shape({
-            overtimeType: yup.string().required("Overtime Type is required"),
-            overtimeRate: yup.string(),
-            salaryMode: yup.string().required("Salary Mode is required"),
-            paymentMode: yup.string().required("Payment Mode is required"),
-            bankName: yup.string(),
-            accountNumber: yup.string(),
-            ifcs: yup.string(),
-            labourWellfareFund: yup.boolean(),
-            lateDeduction: yup.boolean(),
-            bonusAllow: yup.boolean(),
-            bonusExg: yup.boolean(),
-        }),
-    });
-    console.log(familyNomineeDetailInitailValues);
+    // console.time('schema creation');
+    // let EmployeeSalaryDetailSchema = yup.object().shape({
+    //     earningsHead: yup.object().shape(
+    //         Object.keys(earningHeadInitialValues).reduce((schema, key) => {
+    //             return {
+    //                 ...schema,
+    //                 [key]: yup.number().required(`${key} is required`),
+    //             };
+    //         }, {})
+    //     ),
+    //     year: yup
+    //         .number()
+    //         .required("Year is required")
+    //         .min(1950, "Year must be greater than or equal to 1950")
+    //         .max(2100, "Year must be less than or equal to 2100"),
+    //     salaryDetail: yup.object().shape({
+    //         overtimeType: yup.string().required("Overtime Type is required"),
+    //         overtimeRate: yup.string(),
+    //         salaryMode: yup.string().required("Salary Mode is required"),
+    //         paymentMode: yup.string().required("Payment Mode is required"),
+    //         bankName: yup.string(),
+    //         accountNumber: yup.string(),
+    //         ifcs: yup.string(),
+    //         labourWellfareFund: yup.boolean(),
+    //         lateDeduction: yup.boolean(),
+    //         bonusAllow: yup.boolean(),
+    //         bonusExg: yup.boolean(),
+    //     }),
+    // });
+    // console.timeEnd('schema creation');
 
     useEffect(() => {
         // Add more for adding, editing and deleting later on
@@ -1605,7 +1704,13 @@ const EmployeeEntryForm = () => {
                                         earningsHead: {
                                             ...earningHeadInitialValues,
                                         },
-                                        year: "",
+                                        year: isSingleEmployeeProfessionalDetailSuccess
+                                            ? parseInt(
+                                                  singleEmployeeProfessionalDetail.dateOfJoining.split(
+                                                      "-"
+                                                  )[0]
+                                              )
+                                            : "",
                                         salaryDetail: {
                                             overtimeType: "no_overtime",
                                             overtimeRate: "",
@@ -1620,9 +1725,9 @@ const EmployeeEntryForm = () => {
                                             bonusExg: false,
                                         },
                                     }}
-                                    validationSchema={
-                                        EmployeeSalaryDetailSchema
-                                    }
+                                    validationSchema={generateEmployeeSalaryDetailSchema(
+                                        earningHeadInitialValues
+                                    )}
                                     onSubmit={addSalaryDetailButtonClicked}
                                     component={(props) => (
                                         <>
@@ -1646,6 +1751,12 @@ const EmployeeEntryForm = () => {
                                                 addedEmployeeId={
                                                     addedEmployeeId
                                                 }
+                                                singleEmployeeProfessionalDetail={
+                                                    isSingleEmployeeProfessionalDetailSuccess
+                                                        ? singleEmployeeProfessionalDetail
+                                                        : null
+                                                }
+                                                // updateEmployeeId={updateEmployeeId}
                                             />
                                         </>
                                     )}
@@ -1864,29 +1975,24 @@ const EmployeeEntryForm = () => {
 
                             {editEmployeePopover.editEmployeeSalaryDetail && (
                                 <Formik
-                                    initialValues={
-                                        Object.keys(singleEmployeeSalaryEarning)
-                                            .length !== 0
-                                            ? {
-                                                  earningsHead: {
-                                                      ...editEarningHeadInitialValues,
-                                                  },
-                                                  salaryDetail: {
-                                                      ...singleEmployeeSalaryDetail,
-                                                  },
-                                              }
-                                            : {
-                                                  earningsHead: {
-                                                      ...earningHeadInitialValues,
-                                                  },
-                                                  salaryDetail: {
-                                                      ...salaryDetailInitialValues,
-                                                  },
-                                              }
-                                    }
-                                    validationSchema={
-                                        EmployeeSalaryDetailSchema
-                                    }
+                                    initialValues={{
+                                        earningsHead: {
+                                            //   ...editEarningHeadInitialValues,
+                                        },
+                                        year: isSingleEmployeeProfessionalDetailSuccess
+                                            ? parseInt(
+                                                  singleEmployeeProfessionalDetail.dateOfJoining.split(
+                                                      "-"
+                                                  )[0]
+                                              )
+                                            : null,
+                                        salaryDetail: {
+                                            ...singleEmployeeSalaryDetail,
+                                        },
+                                    }}
+                                    validationSchema={generateEmployeeSalaryDetailSchema(
+                                        null
+                                    )}
                                     onSubmit={
                                         Object.keys(singleEmployeeSalaryEarning)
                                             .length !== 0
@@ -1908,6 +2014,20 @@ const EmployeeEntryForm = () => {
                                                 isEditing={true}
                                                 cancelButtonClicked={
                                                     cancelButtonClicked
+                                                }
+                                                singleEmployeeProfessionalDetail={
+                                                    isSingleEmployeeProfessionalDetailSuccess
+                                                        ? singleEmployeeProfessionalDetail
+                                                        : null
+                                                }
+                                                // fromDateMostRecentYear={
+                                                //     salaryYear
+                                                // }
+                                                // toDateSmallestYear={
+                                                //     toDateSmallestYear
+                                                // }
+                                                updateEmployeeId={
+                                                    updateEmployeeId
                                                 }
                                             />
                                         </>

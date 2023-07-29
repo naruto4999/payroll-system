@@ -376,13 +376,13 @@ const EmployeeProfessionalDetail = ({
                     <section className="flex flex-row gap-4 mt-4 mb-2">
                         <button
                             className={classNames(
-                                isValid && dirty
+                                isValid
                                     ? "dark:hover:bg-teal-600  hover:bg-teal-600"
                                     : "opacity-40",
                                 "dark:bg-teal-700 rounded w-20 p-2 text-base font-medium bg-teal-500"
                             )}
                             type="submit"
-                            disabled={!isValid || !dirty}
+                            disabled={!isValid}
                             onClick={handleSubmit}
                         >
                             {isEditing ? "Update" : "Add"}

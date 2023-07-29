@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from "react";
 import { FaUserPlus } from "react-icons/fa6";
 import { FaCircleNotch } from "react-icons/fa6";
 import { Field, ErrorMessage } from "formik";
+// import { useLazyGetSingleEmployeeSalaryEarningQuery } from "../../../../authentication/api/employeeEntryApiSlice";
 
 const classNames = (...classes) => {
     return classes.filter(Boolean).join(" ");
@@ -28,9 +29,58 @@ const EmployeeSalaryDetail = ({
     isEditing,
     dirty,
     initialValues,
-    addedEmployeeId
+    addedEmployeeId,
+    singleEmployeeProfessionalDetail,
+    fromDateMostRecentYear,
+    toDateSmallestYear,
+    updateEmployeeId,
 }) => {
-    console.log(values);
+    const yearOfJoining = parseInt(
+        singleEmployeeProfessionalDetail.dateOfJoining.split("-")[0]
+    );
+
+    console.log(errors);
+    console.log(values.year)
+    const currentDate = new Date();
+    const futureYear = currentDate.getFullYear() + 1;
+    // const futureYear = currentYear + 1;
+
+    const options = [];
+
+    for (let i = yearOfJoining; i <= futureYear; i++) {
+        options.push(
+            <option key={i} value={i}>
+                {i}
+            </option>
+        );
+    }
+
+    // useEffect(() => {
+    //     const getSalaryAgain = async (selectedYear) => {
+    //         try {
+    //             const data = await getSingleEmployeeSalaryEarning({
+    //                 id: updateEmployeeId,
+    //                 company: globalCompany.id,
+    //                 year: selectedYear,
+    //             }).unwrap();
+    //             console.log(data);
+    //         } catch (err) {
+    //             console.log(err);
+    //         }
+    //         Object.keys(initialValues.earningsHead).map((key) => {
+    //             // setFieldValue(`earningsHead.${key}`, values.localAddress)
+    //             console.log(key);
+    //         });
+    //     };
+    //     const selectedYear = parseInt(values.year, 10);
+    //     if (
+    //         selectedYear < fromDateMostRecentYear ||
+    //         selectedYear > toDateSmallestYear
+    //     ) {
+    //         getSalaryAgain(selectedYear);
+    //     }
+    // }, [values.year]);
+
     useEffect(() => {
         if (
             values.salaryDetail.overtimeType !== "no_overtime" &&
@@ -58,59 +108,70 @@ const EmployeeSalaryDetail = ({
                 >
                     <section className="flex flex-row gap-10 flex-wrap lg:flex-nowrap justify-center">
                         <div className="w-fit">
-                        <label
+                            <label
                                 htmlFor="year"
                                 className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
                             >
                                 Salary for year
                             </label>
-                            <Field
-                                className={classNames(
-                                    errors.year &&
-                                        touched.year
-                                        ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
-                                        : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
-                                    "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full custom-number-input"
-                                )}
-                                type="number"
+                            {/* <Field
+                                as="select"
                                 name="year"
-                            />
+                                className="p-1 rounded-md bg-opacity-50 bg-zinc-50 dark:bg-zinc-700 block my-1"
+                                disabled={!isEditing}
+                            >
+                                {options}
+                            </Field> */}
+                            <p>
+                                {values.year
+                                    ? values.year
+                                    : "Coundn't get Joining Date"}
+                            </p>
                             <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
                                 <ErrorMessage name="year" />
                             </div>
-                            {Object.keys(initialValues.earningsHead).map(
-                                (key) => (
-                                    <div key={key}>
-                                        <label
-                                            htmlFor={key}
-                                            className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
-                                        >
-                                            {key}
-                                        </label>
-                                        <div className="relative">
-                                            <Field
-                                                className={classNames(
-                                                    errors.earningsHead?.[
-                                                        key
-                                                    ] &&
-                                                        touched.earningsHead?.[
+                            {!isEditing &&
+                                Object.keys(initialValues.earningsHead).map(
+                                    (key) => (
+                                        <div key={key}>
+                                            <label
+                                                htmlFor={key}
+                                                className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
+                                            >
+                                                {key}
+                                            </label>
+                                            <div className="relative">
+                                                <Field
+                                                    className={classNames(
+                                                        errors.earningsHead?.[
                                                             key
-                                                        ]
-                                                        ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
-                                                        : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
-                                                    "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full custom-number-input"
-                                                )}
-                                                type="number"
-                                                name={`earningsHead.${key}`}
-                                            />
-                                            <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                                                <ErrorMessage
+                                                        ] &&
+                                                            touched
+                                                                .earningsHead?.[
+                                                                key
+                                                            ]
+                                                            ? "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75"
+                                                            : "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25",
+                                                        "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full custom-number-input"
+                                                    )}
+                                                    type="number"
                                                     name={`earningsHead.${key}`}
                                                 />
+                                                <div className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
+                                                    <ErrorMessage
+                                                        name={`earningsHead.${key}`}
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                )
+                                    )
+                                )}
+
+                            {isEditing && (
+                                <p className="w-80 dark:text-redAccent-500 text-redAccent-600 font-bold">
+                                    Please go to Employee Salary to make any
+                                    changes to Salary since it already exists
+                                </p>
                             )}
                         </div>
 

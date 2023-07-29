@@ -8,6 +8,7 @@ import pathlib
 from django.utils import timezone
 from django.core.validators import MinValueValidator, MaxValueValidator
 from decimal import Decimal
+from django.db.models import Q
 
 
 #imports for signals
@@ -484,17 +485,40 @@ class EmployeeSalaryEarning(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="all_company_employees_earnings")
     earnings_head = models.ForeignKey(EarningsHead, on_delete=models.CASCADE, related_name="employees_earnings")
     value = models.IntegerField(default=0, null=False, blank=False)
-    # month = models.PositiveSmallIntegerField(null=False, blank=False)
-    year = models.PositiveSmallIntegerField(null=False, blank=False)
+    from_date = models.DateField(null=False, blank=False)
+    to_date = models.DateField(null=False, blank=False)
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['employee', 'earnings_head', 'year'], name='unique_employee_earning_head')
+            models.UniqueConstraint(fields=['employee', 'earnings_head', 'from_date'], name='unique_employee_earnings_head_with_from_date'),
+
+            #Covers the fact that a particuar earning head for an employee can have to_date set to "9999-01-01" for only one record
+            models.UniqueConstraint( fields=['earnings_head', 'employee', 'to_date'], name='unique_employee_earnings_head_with_to_date')
         ]
 
     def clean(self):
-        if self.year < 1950 or self.year > 2100:
-            raise ValidationError("Invalid year value")
+       def clean(self):
+        if isinstance(self.from_date, str):
+            # Parse the string into a datetime object
+            self.from_date = datetime.strptime(self.from_date, "%Y-%m-%d")
+
+        if isinstance(self.to_date, str):
+            # Parse the string into a datetime object
+            self.to_date = datetime.strptime(self.to_date, "%Y-%m-%d")
+
+        # Now both from_date and to_date are datetime objects
+
+        if self.from_date.day != 1:
+            self.from_date = self.from_date.replace(day=1)
+
+        if self.to_date.day != 1:
+            self.to_date = self.to_date.replace(day=1)
+
+        if self.from_date > self.to_date:
+            raise ValidationError("'from_date' must be before 'to_date'")
+
+        if self.from_date.year < 1950 or self.from_date.year > 2100:
+            raise ValidationError("Invalid From Date value")
         
     def save(self, *args, **kwargs):
         self.clean()
@@ -502,25 +526,25 @@ class EmployeeSalaryEarning(models.Model):
             raise ValidationError("Invalid Earning Head selected.")
         super().save(*args, **kwargs)
 
-class EmployeeMonthlySalaryChange(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_employees_monthly_salary_changes")
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="all_company_employees_monthly_salary_changes")
-    employee = models.ForeignKey(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="monthly_salary_changes")
-    month = models.PositiveSmallIntegerField()
-    salary_earnings = models.ForeignKey(EmployeeSalaryEarning, related_name="monthly_changes", on_delete=models.CASCADE)
+# class EmployeeMonthlySalaryChange(models.Model):
+#     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_employees_monthly_salary_changes")
+#     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="all_company_employees_monthly_salary_changes")
+#     employee = models.ForeignKey(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="monthly_salary_changes")
+#     month = models.PositiveSmallIntegerField()
+#     salary_earnings = models.ForeignKey(EmployeeSalaryEarning, related_name="monthly_changes", on_delete=models.CASCADE)
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(fields=['employee', 'month', 'salary_earnings'], name='unique_employee_monthly_salary')
-        ]
+#     class Meta:
+#         constraints = [
+#             models.UniqueConstraint(fields=['employee', 'month', 'salary_earnings'], name='unique_employee_monthly_salary')
+#         ]
 
-    def clean(self):
-        if self.month < 1 or self.month > 12:
-            raise ValidationError("Invalid month value")
+#     def clean(self):
+#         if self.month < 1 or self.month > 12:
+#             raise ValidationError("Invalid month value")
 
-    def save(self, *args, **kwargs):
-        self.clean()
-        super().save(*args, **kwargs)
+#     def save(self, *args, **kwargs):
+#         self.clean()
+#         super().save(*args, **kwargs)
 
     
 

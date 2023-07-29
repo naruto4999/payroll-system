@@ -79,6 +79,11 @@ const menuItems = [
                 icon: FaPerson,
                 path: "/home/employee-entry"
             },
+            {
+                title: "Employee Salary",
+                icon: FaDollarSign,
+                path: "/home/employee-salary"
+            },
         ],
     },
     {

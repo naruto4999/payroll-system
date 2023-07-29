@@ -168,11 +168,18 @@ class EmployeeProfessionalDetailSerializer(serializers.ModelSerializer):
         model = EmployeeProfessionalDetail
         fields = ['user', 'company', 'employee', 'date_of_joining', 'date_of_confirm', 'department', 'designation', 'category', 'salary_grade', 'shift', 'weekly_off', 'extra_off']
 
+# class EmployeeSalaryEarningSerializer(serializers.ModelSerializer):
+#     user = UserSerializer(read_only=True)
+#     class Meta:
+#         model = EmployeeSalaryEarning
+#         fields = ['user', 'employee', 'company', 'earnings_head', 'value', 'year']
+
 class EmployeeSalaryEarningSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
+    # user = UserSerializer(read_only=True)
+    earnings_head = EarningsHeadSerializer()
     class Meta:
         model = EmployeeSalaryEarning
-        fields = ['user', 'employee', 'company', 'earnings_head', 'value', 'year']
+        fields = ['employee', 'company', 'earnings_head', 'value', 'from_date', 'to_date']
     
 class EmployeeSalaryDetailSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)

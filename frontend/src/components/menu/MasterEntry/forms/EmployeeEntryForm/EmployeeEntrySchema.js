@@ -445,7 +445,8 @@ export const EmployeeFamilyNomineeDetailSchema = yup.object().shape({
                                     context.from[1].value.familyNomineeDetail;
                                 let totalShare = 0;
                                 valuesArray.forEach((detail) => {
-                                    totalShare += detail.gratuityNomineeShare || 0;
+                                    totalShare +=
+                                        detail.gratuityNomineeShare || 0;
                                 });
                                 return totalShare <= 100;
                             }
@@ -454,6 +455,68 @@ export const EmployeeFamilyNomineeDetailSchema = yup.object().shape({
         })
     ),
 });
+
+export const generateEmployeeSalaryDetailSchema = (
+    earningHeadInitialValues
+) => {
+    if (earningHeadInitialValues != null) {
+        let EmployeeSalaryDetailSchema = yup.object().shape({
+            earningsHead: yup.object().shape(
+                Object.keys(earningHeadInitialValues).reduce((schema, key) => {
+                    return {
+                        ...schema,
+                        [key]: yup.number().required(`${key} is required`),
+                    };
+                }, {})
+            ),
+            year: yup
+                .number()
+                .required("Year is required")
+                .min(1950, "Year must be greater than or equal to 1950")
+                .max(2100, "Year must be less than or equal to 2100"),
+            salaryDetail: yup.object().shape({
+                overtimeType: yup
+                    .string()
+                    .required("Overtime Type is required"),
+                overtimeRate: yup.string(),
+                salaryMode: yup.string().required("Salary Mode is required"),
+                paymentMode: yup.string().required("Payment Mode is required"),
+                bankName: yup.string(),
+                accountNumber: yup.string(),
+                ifcs: yup.string(),
+                labourWellfareFund: yup.boolean(),
+                lateDeduction: yup.boolean(),
+                bonusAllow: yup.boolean(),
+                bonusExg: yup.boolean(),
+            }),
+        });
+        return EmployeeSalaryDetailSchema;
+    } else if (earningHeadInitialValues === null) {
+        let EmployeeSalaryDetailSchema = yup.object().shape({
+            year: yup
+                .number()
+                .required("Year is required")
+                .min(1950, "Year must be greater than or equal to 1950")
+                .max(2100, "Year must be less than or equal to 2100"),
+            salaryDetail: yup.object().shape({
+                overtimeType: yup
+                    .string()
+                    .required("Overtime Type is required"),
+                overtimeRate: yup.string(),
+                salaryMode: yup.string().required("Salary Mode is required"),
+                paymentMode: yup.string().required("Payment Mode is required"),
+                bankName: yup.string(),
+                accountNumber: yup.string(),
+                ifcs: yup.string(),
+                labourWellfareFund: yup.boolean(),
+                lateDeduction: yup.boolean(),
+                bonusAllow: yup.boolean(),
+                bonusExg: yup.boolean(),
+            }),
+        });
+        return EmployeeSalaryDetailSchema;
+    }
+};
 
 // export const EmployeeSalaryDetailSchema = yup.object().shape({
 //     earningsHead: yup.object().shape(

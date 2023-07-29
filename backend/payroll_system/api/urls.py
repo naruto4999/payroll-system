@@ -41,8 +41,10 @@ urlpatterns = [
     path('employee-professional-detail', EmployeeProfessionalDetailCreateAPIView.as_view()),
     path('employee-professional-detail/<int:company_id>/<int:employee>', EmployeeProfessionalDetailRetrieveUpdateDestroyAPIView.as_view()),
 
-    path('employee-salary-earning', EmployeeSalaryEarningListCreateAPIView.as_view()),
+    # path('employee-salary-earning', EmployeeSalaryEarningListCreateAPIView.as_view()),
+    path('employee-salary-earning/<int:company_id>/<int:employee>/<int:year>', EmployeeSalaryEarningListCreateAPIView.as_view()),
     path('employee-salary-earning/<int:company_id>/<int:employee>', EmployeeSalaryEarningListCreateAPIView.as_view()),
+
     path('employee-salary-earning-update/<int:company_id>/<int:employee>', EmployeeSalaryEarningListUpdateAPIView.as_view()),
     path('employee-salary-detail/<int:company_id>', EmployeeSalaryDetailCreateAPIView.as_view()),
     path('employee-salary-detail/<int:company_id>/<int:employee>', EmployeeSalaryDetailRetrieveUpdateAPIView.as_view()),

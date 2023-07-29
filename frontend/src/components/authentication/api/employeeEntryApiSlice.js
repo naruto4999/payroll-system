@@ -69,7 +69,7 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
         }),
         addEmployeeSalaryEarning: builder.mutation({
             query: (body) => ({
-                url: `/api/employee-salary-earning`,
+                url: `/api/employee-salary-earning/${body.company}/${body.employee}`,
                 method: "POST",
                 body: body,
             }),
@@ -85,11 +85,11 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
         }),
         getSingleEmployeeSalaryEarning: builder.query({
             query: (employee) => ({
-                url: `/api/employee-salary-earning/${employee.company}/${employee.id}`,
+                url: `/api/employee-salary-earning/${employee.company}/${employee.id}/${employee.year}`,
                 method: "GET",
             }),
-            keepUnusedDataFor: 1,
-            // providesTags: ["EmployeePersonalDetails"],
+            keepUnusedDataFor: 10,
+            providesTags: ["SingleEmployeeSalaryEarning"],
         }),
         getSingleEmployeeSalaryDetail: builder.query({
             query: (employee) => ({
@@ -105,7 +105,7 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
                 method: "PUT",
                 body: employee,
             }),
-            // invalidatesTags: ['EmployeeProfessionalDetails']
+            invalidatesTags: ['SingleEmployeeSalaryEarning']
         }),
         updateEmployeeSalaryDetail: builder.mutation({
             query: (employee) => ({
@@ -181,6 +181,7 @@ export const {
     useUpdateEmployeeProfessionalDetailMutation,
     useLazyGetSingleEmployeeProfessionalDetailQuery,
     useAddEmployeeSalaryEarningMutation,
+    useGetSingleEmployeeSalaryEarningQuery,
     useLazyGetSingleEmployeeSalaryEarningQuery,
     useUpdateEmployeeSalaryEarningMutation,
     useAddEmployeeSalaryDetailMutation,
@@ -193,5 +194,6 @@ export const {
     useLazyGetEmployeeFamilyNomineeDetailsQuery,
     useGetSingleEmployeePfEsiDetailQuery,
     useUpdateEmployeeFamilyNomineeDetailMutation,
-    useDeleteEmployeeFamilyNomineeDetailMutation
+    useDeleteEmployeeFamilyNomineeDetailMutation,
+    useGetSingleEmployeePersonalDetailQuery,
 } = employeeEntryApiSlice;
