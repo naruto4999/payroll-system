@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import {
     createColumnHelper,
     flexRender,
@@ -140,6 +140,7 @@ const EmployeeEntryForm = () => {
                 ...singleEmployeeSalaryDetail
             } = {},
             isLoading: isLoadingSingleEmployeeSalaryDetail,
+            isSuccess: isSingleEmployeeSalaryDetailSuccess,
         } = {},
         // lastPromiseInfo,
     ] = useLazyGetSingleEmployeeSalaryDetailQuery();
@@ -267,14 +268,6 @@ const EmployeeEntryForm = () => {
         { isLoading: isDeletingEmployeeFamilyNomineeDetail },
     ] = useDeleteEmployeeFamilyNomineeDetailMutation();
 
-    // let earningHeadOptions = [];
-    // if (EarningsHeadsSuccess) {
-    //     earningHeadOptions = fetchedEarningsHeads.map((earningHead) => ({
-    //         id: earningHead.id,
-    //         name: earningHead.name,
-    //     }));
-    // }
-
     let earningHeadInitialValues = {};
     if (EarningsHeadsSuccess) {
         fetchedEarningsHeads.forEach((earningHead) => {
@@ -282,7 +275,7 @@ const EmployeeEntryForm = () => {
         });
     }
 
-    let familyNomineeDetailInitailValues = {
+    const familyNomineeDetailInitailValues = {
         name: "",
         address: "",
         dob: "",
@@ -318,75 +311,20 @@ const EmployeeEntryForm = () => {
         esiOnOt: false,
     };
 
-    // let editEarningHeadInitialValues = {};
-    // console.log(singleEmployeeSalaryEarning);
+    // const salaryDetailInitialValues = {
+    //     overtimeType: "no_overtime",
+    //     overtimeRate: "",
+    //     salaryMode: "monthly",
+    //     paymentMode: "bank_transfer",
+    //     bankName: "",
+    //     accountNumber: "",
+    //     ifcs: "",
+    //     labourWellfareFund: false,
+    //     lateDeduction: false,
+    //     bonusAllow: false,
+    //     bonusExg: false,
+    // };
 
-    // Find the object with the greatest fromDate
-    // let salaryYear = "";
-    // let toDateSmallestYear = "9999";
-    // console.log(mostRecentObject);
-
-    // if (Object.keys(singleEmployeeSalaryEarning).length !== 0) {
-    //     fetchedEarningsHeads.forEach((earningHead) => {
-    //         editEarningHeadInitialValues[earningHead.name] = 0;
-
-    //         for (const key in singleEmployeeSalaryEarning) {
-    //             if (
-    //                 singleEmployeeSalaryEarning[key].earningsHead ===
-    //                 earningHead.id
-    //             ) {
-    //                 // console.log(singleEmployeeSalaryEarning[key].value);
-    //                 editEarningHeadInitialValues[earningHead.name] =
-    //                     singleEmployeeSalaryEarning[key].value;
-    //             }
-    //         }
-    //     });
-    //     const parsedEarnings = Object.values(singleEmployeeSalaryEarning).map(
-    //         (obj) => ({
-    //             ...obj,
-    //             fromDate: new Date(obj.fromDate),
-    //         })
-    //     );
-    //     const mostRecentObject = parsedEarnings.reduce((acc, obj) => {
-    //         if (!acc || obj.fromDate > acc.fromDate) {
-    //             return obj;
-    //         }
-    //         return acc;
-    //     }, null);
-
-    //     // Now mostRecentObject contains the object with the greatest fromDate
-    //     salaryYear = mostRecentObject.fromDate.getFullYear();
-    //     console.log(salaryYear);
-
-    //     for (const key in singleEmployeeSalaryEarning) {
-    //         if (singleEmployeeSalaryEarning.hasOwnProperty(key)) {
-    //             const toDate = new Date(
-    //                 singleEmployeeSalaryEarning[key].to_date
-    //             );
-    //             const year = toDate.getFullYear();
-
-    //             if (year < toDateSmallestYear) {
-    //                 toDateSmallestYear = year;
-    //             }
-    //         }
-    //     }
-    // }
-
-    const salaryDetailInitialValues = {
-        overtimeType: "no_overtime",
-        overtimeRate: "",
-        salaryMode: "monthly",
-        paymentMode: "bank_transfer",
-        bankName: "",
-        accountNumber: "",
-        ifcs: "",
-        labourWellfareFund: false,
-        lateDeduction: false,
-        bonusAllow: false,
-        bonusExg: false,
-    };
-    // const [deleteEmployeePersonalDetail, { isLoading: isDeletingEmployeePersonalDetail }] =
-    //     useDeleteEmployeePersonalDetailMutation();
     const [addEmployeePopover, setAddEmployeePopover] = useState({
         addEmployeePersonalDetail: false,
         addEmployeeProfessionalDetail: false,
@@ -499,11 +437,6 @@ const EmployeeEntryForm = () => {
                         company: globalCompany.id,
                     }).unwrap(),
 
-                    // getSingleEmployeeSalaryEarning({
-                    //     id: id,
-                    //     company: globalCompany.id,
-                    //     year: currentYear,
-                    // }).unwrap(),
                     getSingleEmployeeSalaryDetail({
                         id: id,
                         company: globalCompany.id,
@@ -529,8 +462,6 @@ const EmployeeEntryForm = () => {
                         return updatedState;
                     });
                 }
-
-                // setEditEmployeePopover(!editEmployeePopover);
             }
         } else if (popoverName === "editEmployeePfEsiDetail") {
             console.log("ishhhhhhhhh pfffffff bish");
@@ -614,15 +545,10 @@ const EmployeeEntryForm = () => {
             }
         }
     };
+
     console.log(singleEmployeePersonalDetail);
 
-    const viewEmployeePopoverHandler = (employee) => {
-        console.log(employee);
-        setViewEmployeePopover(!viewEmployeePopover);
-        setViewEmployeeId(employee.id);
-    };
-
-    const cancelButtonClicked = (isEditing) => {
+    const cancelButtonClicked = useCallback((isEditing) => {
         if (isEditing) {
             setUpdateEmployeeId(null);
             setEditEmployeePopover({
@@ -643,99 +569,117 @@ const EmployeeEntryForm = () => {
             });
         }
         setErrorMessage("");
-    };
+    }, []);
 
-    const addPersonalDetailButtonClicked = async (values, formikBag) => {
-        console.log(values);
-        const formData = new FormData();
-        for (const key in values) {
-            if (values.hasOwnProperty(key)) {
-                formData.append(key, values[key]);
-            }
-        }
-        formData.append("company", globalCompany.id);
-
-        try {
-            const data = await addEmployeePersonalDetail({
-                formData,
-            }).unwrap();
-            console.log(data);
-            setErrorMessage("");
-            setAddedEmployeeId(data.id);
-            // setAddEmployeePopover(!addEmployeePopover);
-            formikBag.resetForm();
-            dispatch(
-                alertActions.createAlert({
-                    message: "Saved",
-                    type: "Success",
-                    duration: 3000,
-                })
-            );
-            addEmployeePopoverHandler("addEmployeeProfessionalDetail");
-        } catch (err) {
-            console.log(err);
-            if (err.status === 400) {
-                console.log(err.data.error);
-                setErrorMessage(err.data.error);
-            }
-            dispatch(
-                alertActions.createAlert({
-                    message: "Error Occurred",
-                    type: "Error",
-                    duration: 5000,
-                })
-            );
-        }
-    };
-
-    const addProfessionalDetailButtonClicked = async (values, formikBag) => {
-        console.log(values);
-        console.log(addedEmployeeId);
-        let employeeId = addedEmployeeId;
-        if (updateEmployeeId !== null) {
-            employeeId = updateEmployeeId;
-        }
-
-        try {
-            const data = await addEmployeeProfessionalDetail({
-                ...values,
-                employee: employeeId,
-                company: globalCompany.id,
-            }).unwrap();
-            console.log(data);
-            setErrorMessage("");
-            // setAddedEmployeeId(data.id)
-            // setAddEmployeePopover(!addEmployeePopover);
-
-            if (updateEmployeeId === null) {
-                try {
-                    const data = await getSingleEmployeeProfessionalDetail({
-                        id: employeeId,
-                        company: globalCompany.id,
-                    }).unwrap();
-                } catch (err) {
-                    console.log(err);
+    const addPersonalDetailButtonClicked = useCallback(
+        async (values, formikBag) => {
+            console.log(values);
+            const formData = new FormData();
+            for (const key in values) {
+                if (values.hasOwnProperty(key)) {
+                    formData.append(key, values[key]);
                 }
-                formikBag.resetForm();
+            }
+            formData.append("company", globalCompany.id);
 
-                addEmployeePopoverHandler("addEmployeeSalaryDetail");
-            } else {
-                editEmployeePopoverHandler({
-                    popoverName: "editEmployeeProfessionalDetail",
-                    id: updateEmployeeId,
-                });
-            }
-        } catch (err) {
-            console.log(err);
-            if (err.status === 400) {
-                console.log(err.data.error);
-                setErrorMessage(err.data.error);
-            } else {
+            try {
+                const data = await addEmployeePersonalDetail({
+                    formData,
+                }).unwrap();
+                console.log(data);
+                setErrorMessage("");
+                setAddedEmployeeId(data.id);
+                formikBag.resetForm();
+                dispatch(
+                    alertActions.createAlert({
+                        message: "Saved",
+                        type: "Success",
+                        duration: 3000,
+                    })
+                );
+                addEmployeePopoverHandler("addEmployeeProfessionalDetail");
+            } catch (err) {
                 console.log(err);
+                if (err.status === 400) {
+                    console.log(err.data.error);
+                    setErrorMessage(err.data.error);
+                }
+                dispatch(
+                    alertActions.createAlert({
+                        message: "Error Occurred",
+                        type: "Error",
+                        duration: 5000,
+                    })
+                );
             }
-        }
-    };
+        },
+        []
+    );
+
+    console.time("filter array");
+
+    const addProfessionalDetailButtonClicked = useCallback(
+        async (values, formikBag) => {
+            console.log(values);
+            console.log(addedEmployeeId);
+            let employeeId = addedEmployeeId;
+            if (updateEmployeeId !== null) {
+                employeeId = updateEmployeeId;
+            }
+
+            try {
+                const data = await addEmployeeProfessionalDetail({
+                    ...values,
+                    employee: employeeId,
+                    company: globalCompany.id,
+                }).unwrap();
+                console.log(data);
+                setErrorMessage("");
+                dispatch(
+                    alertActions.createAlert({
+                        message: "Saved",
+                        type: "Success",
+                        duration: 3000,
+                    })
+                );
+
+                if (updateEmployeeId === null) {
+                    try {
+                        const data = await getSingleEmployeeProfessionalDetail({
+                            id: employeeId,
+                            company: globalCompany.id,
+                        }).unwrap();
+                    } catch (err) {
+                        console.log(err);
+                    }
+                    formikBag.resetForm();
+
+                    addEmployeePopoverHandler("addEmployeeSalaryDetail");
+                } else {
+                    editEmployeePopoverHandler({
+                        popoverName: "editEmployeeProfessionalDetail",
+                        id: updateEmployeeId,
+                    });
+                }
+            } catch (err) {
+                console.log(err);
+                dispatch(
+                    alertActions.createAlert({
+                        message: "Error Occurred",
+                        type: "Error",
+                        duration: 5000,
+                    })
+                );
+                if (err.status === 400) {
+                    console.log(err.data.error);
+                    setErrorMessage(err.data.error);
+                }
+            }
+        },
+        [addedEmployeeId, updateEmployeeId]
+    );
     console.log(singleEmployeeProfessionalDetail);
+    console.timeEnd("filter array");
 
     const updatePersonalDetailButtonClicked = async (values, formikBag) => {
         // console.log(formikBag);
@@ -915,6 +859,13 @@ const EmployeeEntryForm = () => {
                 addEmployeeSalaryDetail(salaryDetail).unwrap(),
             ]);
             console.log("Both requests completed successfully");
+            dispatch(
+                alertActions.createAlert({
+                    message: "Saved",
+                    type: "Success",
+                    duration: 3000,
+                })
+            );
             setErrorMessage("");
             if (updateEmployeeId === null) {
                 formikBag.resetForm();
@@ -926,125 +877,133 @@ const EmployeeEntryForm = () => {
                 });
             }
         } catch (err) {
+            dispatch(
+                alertActions.createAlert({
+                    message: "Error Occurred",
+                    type: "Error",
+                    duration: 5000,
+                })
+            );
             console.log(err);
             if (err.status === 400) {
                 console.log(err.data.overtimeRate);
                 setErrorMessage(err.data);
-            } else {
-                console.log(err);
             }
         }
     };
 
-    const addPfEsiDetailButtonClicked = async (values, formikBag) => {
-        console.log(values);
-        console.log("ksldjflksdjfd");
+    const addPfEsiDetailButtonClicked = useCallback(
+        async (values, formikBag) => {
+            console.log(values);
+            console.log("ksldjflksdjfd");
 
-        let employeeId = addedEmployeeId;
-        if (updateEmployeeId !== null) {
-            employeeId = updateEmployeeId;
-        }
+            let employeeId = addedEmployeeId;
+            if (updateEmployeeId !== null) {
+                employeeId = updateEmployeeId;
+            }
 
-        try {
-            const data = await addEmployeePfEsiDetail({
-                ...values,
-                pfLimitIgnoreEmployerValue:
-                    values.pfLimitIgnoreEmployerValue !== ""
-                        ? values.pfLimitIgnoreEmployerValue
-                        : null,
-                pfLimitIgnoreEmployeeValue:
-                    values.pfLimitIgnoreEmployeeValue !== ""
-                        ? values.pfLimitIgnoreEmployeeValue
-                        : null,
-                employee: employeeId,
-                company: globalCompany.id,
-            }).unwrap();
-            console.log(data);
-            setErrorMessage("");
-            // setAddedEmployeeId(data.id)
-            // setAddEmployeePopover(!addEmployeePopover);
+            try {
+                const data = await addEmployeePfEsiDetail({
+                    ...values,
+                    pfLimitIgnoreEmployerValue:
+                        values.pfLimitIgnoreEmployerValue !== ""
+                            ? values.pfLimitIgnoreEmployerValue
+                            : null,
+                    pfLimitIgnoreEmployeeValue:
+                        values.pfLimitIgnoreEmployeeValue !== ""
+                            ? values.pfLimitIgnoreEmployeeValue
+                            : null,
+                    employee: employeeId,
+                    company: globalCompany.id,
+                }).unwrap();
+                console.log(data);
+                alertActions.createAlert({
+                    message: "Saved",
+                    type: "Success",
+                    duration: 3000,
+                });
+                setErrorMessage("");
 
-            if (updateEmployeeId === null) {
-                formikBag.resetForm();
-                try {
-                    const data = await getSingleEmployeePersonalDetail({
-                        id: employeeId,
-                        company: globalCompany.id,
-                    }).unwrap();
-                    console.log(updateEmployeeId);
-                    console.log(singleEmployeePersonalDetail);
-                } catch (err) {
-                    console.log(err);
-                }
-
-                try {
-                    const data = await getSingleEmployeePfEsiDetail({
-                        id: employeeId,
-                        company: globalCompany.id,
-                    }).unwrap();
-                } catch (err) {
-                    if (err.status === 404) {
-                        console.log("me hereeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
+                if (updateEmployeeId === null) {
+                    formikBag.resetForm();
+                    try {
+                        const data = await getSingleEmployeePersonalDetail({
+                            id: employeeId,
+                            company: globalCompany.id,
+                        }).unwrap();
+                    } catch (err) {
+                        console.log(err);
                     }
-                    console.log(err);
+                    try {
+                        const data = await getSingleEmployeePfEsiDetail({
+                            id: employeeId,
+                            company: globalCompany.id,
+                        }).unwrap();
+                    } catch (err) {
+                        if (err.status === 404) {
+                        }
+                        console.log(err);
+                    }
+                    addEmployeePopoverHandler("addEmployeeFamilyNomineeDetail");
                 }
-                console.log(singleEmployeePfEsiDetail);
-
-                addEmployeePopoverHandler("addEmployeeFamilyNomineeDetail");
-            } else {
-                // editEmployeePopoverHandler({
-                //     popoverName: "editEmployeeProfessionalDetail",
-                //     id: updateEmployeeId,
-                // });
-            }
-        } catch (err) {
-            console.log(err);
-            if (err.status === 400) {
-                console.log(err.data.error);
-                setErrorMessage(err.data.error);
-            } else {
+            } catch (err) {
                 console.log(err);
+                alertActions.createAlert({
+                    message: "Error Occurred",
+                    type: "Error",
+                    duration: 5000,
+                });
+                if (err.status === 400) {
+                    console.log(err.data.error);
+                    setErrorMessage(err.data.error);
+                }
             }
-        }
-    };
+        },
+        [addedEmployeeId, updateEmployeeId]
+    );
 
-    const addFamilyNomineeDetailButtonClicked = async (values, formikBag) => {
-        console.log(values);
-        let employeeId = addedEmployeeId;
-        if (updateEmployeeId !== null) {
-            employeeId = updateEmployeeId;
-        }
-        const toSend = values;
-        for (let i = 0; i < values.familyNomineeDetail.length; i++) {
-            toSend.familyNomineeDetail[i].employee = employeeId;
-            toSend.familyNomineeDetail[i].company = globalCompany.id;
-        }
-        console.log(toSend);
-        try {
-            const data = await addEmployeeFamilyNomineeDetail(toSend).unwrap();
-            console.log(data);
-            setErrorMessage("");
-
-            if (updateEmployeeId === null) {
-                // formikBag.resetForm();
-                console.log("yppppppppppppppppppppppppppppppppp bishhh");
-                // addEmployeePopoverHandler("addEmployeeFamilyNomineeDetail");
-            } else {
-                // editEmployeePopoverHandler({
-                //     popoverName: "editEmployeeProfessionalDetail",
-                //     id: updateEmployeeId,
-                // });
+    const addFamilyNomineeDetailButtonClicked = useCallback(
+        async (values, formikBag) => {
+            console.log(values);
+            let employeeId = addedEmployeeId;
+            if (updateEmployeeId !== null) {
+                employeeId = updateEmployeeId;
             }
-        } catch (err) {
-            console.log(err);
-            if (err.status === 400) {
-                console.log(err.data);
-                setErrorMessage(err.data);
-            } else {
+            let toSend = JSON.parse(JSON.stringify(values));
+            for (let i = 0; i < values.familyNomineeDetail.length; i++) {
+                if (values.familyNomineeDetail[i].dob === "") {
+                    toSend.familyNomineeDetail[i].dob = null;
+                }
+                toSend.familyNomineeDetail[i].employee = employeeId;
+                toSend.familyNomineeDetail[i].company = globalCompany.id;
+            }
+            console.log(toSend);
+            try {
+                const data = await addEmployeeFamilyNomineeDetail(
+                    toSend
+                ).unwrap();
+                console.log(data);
+                alertActions.createAlert({
+                    message: "Saved",
+                    type: "Success",
+                    duration: 3000,
+                });
+                setErrorMessage("");
+            } catch (err) {
                 console.log(err);
+                alertActions.createAlert({
+                    message: "Error Occurred",
+                    type: "Error",
+                    duration: 5000,
+                });
+                if (err.status === 400) {
+                    console.log(err.data);
+                    setErrorMessage(err.data);
+                }
             }
-        }
-    };
+        },
+        [addedEmployeeId, updateEmployeeId]
+    );
 
     const updatePfEsiDetailButtonClicked = async (values, formikBag) => {
         console.log(values);
@@ -1054,8 +1013,6 @@ const EmployeeEntryForm = () => {
         );
         console.log(differences);
         if (Object.keys(differences).length !== 0) {
-            console.log("in if fucking whatever");
-
             try {
                 const data = await updateEmployeePfEsiDetail({
                     ...differences,
@@ -1102,37 +1059,13 @@ const EmployeeEntryForm = () => {
 
     const updateSalaryDetailButtonClicked = async (values, formikBag) => {
         console.log(values);
-        // const toSend = {
-        //     employeeEarnings: [],
-        //     globalCompany: globalCompany.id,
-        //     employee: updateEmployeeId,
-        // };
-        // for (const key in values.earningsHead) {
-        //     console.log(key);
-        //     for (let i = 0; i < fetchedEarningsHeads.length; i++) {
-        //         if (fetchedEarningsHeads[i].name === key) {
-        //             let obj = {
-        //                 employee: updateEmployeeId,
-        //                 earnings_head: fetchedEarningsHeads[i].id,
-        //                 value: values.earningsHead[key],
-        //                 company: globalCompany.id,
-        //             };
-        //             toSend.employeeEarnings.push(obj);
-        //             console.log(obj);
-        //         }
-        //     }
-        // }
-        // console.log(toSend);
+        console.log("askldjsakldjaslkdj");
         const salaryDetail = {
             ...values.salaryDetail,
             company: globalCompany.id,
             employee: updateEmployeeId,
         };
         try {
-            // await Promise.all([
-            //     updateEmployeeSalaryEarning(toSend).unwrap(),
-            //     updateEmployeeSalaryDetail(salaryDetail).unwrap(),
-            // ]);
             const data = await updateEmployeeSalaryDetail(
                 salaryDetail
             ).unwrap();
@@ -1147,7 +1080,6 @@ const EmployeeEntryForm = () => {
             );
 
             try {
-                console.log("getting salary info now");
                 const data = await getSingleEmployeeSalaryDetail({
                     id: updateEmployeeId,
                     company: globalCompany.id,
@@ -1172,7 +1104,6 @@ const EmployeeEntryForm = () => {
             }
         }
     };
-    console.log(employeeFamilyNomineeDetail);
 
     const updateFamilyNomineeDetailButtonClicked = async (
         values,
@@ -1327,14 +1258,14 @@ const EmployeeEntryForm = () => {
                     >
                         <FaPen className="h-4" />
                     </div>
-                    <div
+                    {/* <div
                         className="p-1.5 dark:bg-blueAccent-600 rounded bg-blueAccent-600 dark:hover:bg-blueAccent-500 hover:bg-blueAccent-700"
                         onClick={() =>
                             viewEmployeePopoverHandler(props.row.original)
                         }
                     >
                         <FaEye className="h-4" />
-                    </div>
+                    </div> */}
                 </div>
             ),
         }),
@@ -1355,37 +1286,6 @@ const EmployeeEntryForm = () => {
         getSortedRowModel: getSortedRowModel(),
         enableSortingRemoval: false,
     });
-
-    // console.time('schema creation');
-    // let EmployeeSalaryDetailSchema = yup.object().shape({
-    //     earningsHead: yup.object().shape(
-    //         Object.keys(earningHeadInitialValues).reduce((schema, key) => {
-    //             return {
-    //                 ...schema,
-    //                 [key]: yup.number().required(`${key} is required`),
-    //             };
-    //         }, {})
-    //     ),
-    //     year: yup
-    //         .number()
-    //         .required("Year is required")
-    //         .min(1950, "Year must be greater than or equal to 1950")
-    //         .max(2100, "Year must be less than or equal to 2100"),
-    //     salaryDetail: yup.object().shape({
-    //         overtimeType: yup.string().required("Overtime Type is required"),
-    //         overtimeRate: yup.string(),
-    //         salaryMode: yup.string().required("Salary Mode is required"),
-    //         paymentMode: yup.string().required("Payment Mode is required"),
-    //         bankName: yup.string(),
-    //         accountNumber: yup.string(),
-    //         ifcs: yup.string(),
-    //         labourWellfareFund: yup.boolean(),
-    //         lateDeduction: yup.boolean(),
-    //         bonusAllow: yup.boolean(),
-    //         bonusExg: yup.boolean(),
-    //     }),
-    // });
-    // console.timeEnd('schema creation');
 
     useEffect(() => {
         // Add more for adding, editing and deleting later on
@@ -1678,9 +1578,6 @@ const EmployeeEntryForm = () => {
                                                 setErrorMessage={
                                                     setErrorMessage
                                                 }
-                                                // setAddEmployeePopover={
-                                                //     setAddEmployeePopover
-                                                // }
                                                 globalCompany={globalCompany}
                                                 setShowLoadingBar={
                                                     setShowLoadingBar
@@ -1756,7 +1653,6 @@ const EmployeeEntryForm = () => {
                                                         ? singleEmployeeProfessionalDetail
                                                         : null
                                                 }
-                                                // updateEmployeeId={updateEmployeeId}
                                             />
                                         </>
                                     )}
@@ -1994,8 +1890,7 @@ const EmployeeEntryForm = () => {
                                         null
                                     )}
                                     onSubmit={
-                                        Object.keys(singleEmployeeSalaryEarning)
-                                            .length !== 0
+                                        isSingleEmployeeSalaryDetailSuccess
                                             ? updateSalaryDetailButtonClicked
                                             : addSalaryDetailButtonClicked
                                     }
@@ -2020,12 +1915,6 @@ const EmployeeEntryForm = () => {
                                                         ? singleEmployeeProfessionalDetail
                                                         : null
                                                 }
-                                                // fromDateMostRecentYear={
-                                                //     salaryYear
-                                                // }
-                                                // toDateSmallestYear={
-                                                //     toDateSmallestYear
-                                                // }
                                                 updateEmployeeId={
                                                     updateEmployeeId
                                                 }
@@ -2058,9 +1947,6 @@ const EmployeeEntryForm = () => {
                                                 setErrorMessage={
                                                     setErrorMessage
                                                 }
-                                                // setAddEmployeePopover={
-                                                //     setAddEmployeePopover
-                                                // }
                                                 globalCompany={globalCompany}
                                                 setShowLoadingBar={
                                                     setShowLoadingBar
@@ -2106,9 +1992,6 @@ const EmployeeEntryForm = () => {
                                                 setErrorMessage={
                                                     setErrorMessage
                                                 }
-                                                // setAddEmployeePopover={
-                                                //     setAddEmployeePopover
-                                                // }
                                                 globalCompany={globalCompany}
                                                 setShowLoadingBar={
                                                     setShowLoadingBar

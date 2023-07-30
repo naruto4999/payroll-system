@@ -525,27 +525,6 @@ class EmployeeSalaryEarning(models.Model):
         if self.earnings_head.company != self.company or self.earnings_head.user != self.user:
             raise ValidationError("Invalid Earning Head selected.")
         super().save(*args, **kwargs)
-
-# class EmployeeMonthlySalaryChange(models.Model):
-#     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_employees_monthly_salary_changes")
-#     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="all_company_employees_monthly_salary_changes")
-#     employee = models.ForeignKey(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="monthly_salary_changes")
-#     month = models.PositiveSmallIntegerField()
-#     salary_earnings = models.ForeignKey(EmployeeSalaryEarning, related_name="monthly_changes", on_delete=models.CASCADE)
-
-#     class Meta:
-#         constraints = [
-#             models.UniqueConstraint(fields=['employee', 'month', 'salary_earnings'], name='unique_employee_monthly_salary')
-#         ]
-
-#     def clean(self):
-#         if self.month < 1 or self.month > 12:
-#             raise ValidationError("Invalid month value")
-
-#     def save(self, *args, **kwargs):
-#         self.clean()
-#         super().save(*args, **kwargs)
-
     
 
 class EmployeeSalaryDetail(models.Model):

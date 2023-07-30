@@ -47,13 +47,7 @@ const EmployeeProfessionalDetail = ({
 
     const { data: fetchedShifts, isLoading: isLoadingShifts } =
         useGetShiftsQuery(globalCompany);
-    // const inputRef = useRef(null);
-    console.log(dirty);
-    // console.log(errors);
-    const [sameAsLocal, setSameAsLocal] = useState(false);
-    // useEffect(() => {
-    //     inputRef.current.focus();
-    // }, []);
+    // const [sameAsLocal, setSameAsLocal] = useState(false);
 
     useEffect(() => {
         setShowLoadingBar(

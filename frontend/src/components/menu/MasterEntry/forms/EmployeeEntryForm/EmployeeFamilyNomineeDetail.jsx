@@ -33,62 +33,12 @@ const EmployeeFamilyNomineeDetail = ({
     updateEmployeeId,
     singleEmployeePfEsiDetail,
 }) => {
-    // console.log(errorMessage);
     let employeeId = addedEmployeeId;
     if (isEditing) {
         employeeId = updateEmployeeId;
     }
 
-    // const {
-    //     data: singleEmployeePfEsiDetail,
-    //     isLoading,
-    //     isSuccess,
-    //     isError,
-    //     error,
-    //     isFetching,
-    //     refetch,
-    // } = useGetSingleEmployeePfEsiDetailQuery({
-    //     company: globalCompany.id,
-    //     id: isEditing,
-    //     singleEmployeePfEsiDetail,
-    // });
-
-    // const [
-    //     getSingleEmployeePfEsiDetail,
-    //     {
-    //         data: {
-    //             user: PfEsiDetailDetailUser,
-    //             company: PfEsiDetailDetailCompany,
-    //             ...singleEmployeePfEsiDetail
-    //         } = {},
-    //         isLoading,
-    //     } = {},
-    //     // lastPromiseInfo,
-    // ] = useLazyGetSingleEmployeePfEsiDetailQuery({ pollingInterval: 0 });
-    // console.log(singleEmployeePfEsiDetail);
-    // console.log(familyNomineeDetailInitailValues);
-    // console.log(errors);
-    // useEffect(() => {
-    //     const fetchData = async () => {
-    //         try {
-    //             const data = await getSingleEmployeePfEsiDetail({
-    //                 company: globalCompany.id,
-    //                 id: employeeId,
-    //             }).unwrap();
-    //             console.log(data);
-
-    //             console.log(updateEmployeeId);
-    //         } catch (err) {
-    //             console.log(err);
-    //             getSingleEmployeePfEsiDetail.abort()
-    //         }
-    //     };
-    //     fetchData();
-    //     console.log("hiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii")
-    // }, [employeeId]);
-    // useEffect(() => {
-    //     setShowLoadingBar(isLoading);
-    // }, [isLoading]);
+    console.log(values)
 
     const useNomineeShare = (fieldName, nomineeFieldName) => {
         const previousNomineeRef = useRef([]);
@@ -107,7 +57,6 @@ const EmployeeFamilyNomineeDetail = ({
                 );
                 const divisionResult =
                     count > 0 ? (100 / count).toFixed(2) : "0.00";
-                console.log(parseFloat(divisionResult));
                 values.familyNomineeDetail.forEach((detail, index) => {
                     if (detail[fieldName]) {
                         setFieldValue(
