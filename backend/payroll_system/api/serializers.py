@@ -1,7 +1,7 @@
 from dataclasses import field
 from rest_framework import serializers
 
-from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, DeductionsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning, EmployeeSalaryDetail, EmployeeFamilyNomineeDetial, EmployeePfEsiDetail
+from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, DeductionsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning, EmployeeSalaryDetail, EmployeeFamilyNomineeDetial, EmployeePfEsiDetail, WeeklyOffHolidayOff, PfEsiSetup, Calculations
 from rest_framework import serializers
 
 
@@ -168,14 +168,8 @@ class EmployeeProfessionalDetailSerializer(serializers.ModelSerializer):
         model = EmployeeProfessionalDetail
         fields = ['user', 'company', 'employee', 'date_of_joining', 'date_of_confirm', 'department', 'designation', 'category', 'salary_grade', 'shift', 'weekly_off', 'extra_off']
 
-# class EmployeeSalaryEarningSerializer(serializers.ModelSerializer):
-#     user = UserSerializer(read_only=True)
-#     class Meta:
-#         model = EmployeeSalaryEarning
-#         fields = ['user', 'employee', 'company', 'earnings_head', 'value', 'year']
 
 class EmployeeSalaryEarningSerializer(serializers.ModelSerializer):
-    # user = UserSerializer(read_only=True)
     earnings_head = EarningsHeadSerializer()
     class Meta:
         model = EmployeeSalaryEarning
@@ -199,3 +193,19 @@ class EmployeeFamilyNomineeDetialSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployeeFamilyNomineeDetial
         fields = ['id', 'company', 'employee', 'name', 'address', 'dob', 'relation', 'residing', 'esi_benefit', 'pf_benefits', 'is_esi_nominee', 'esi_nominee_share', 'is_pf_nominee', 'pf_nominee_share', 'is_fa_nominee', 'fa_nominee_share', 'is_gratuity_nominee', 'gratuity_nominee_share',]
+
+class WeeklyOffHolidayOffSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WeeklyOffHolidayOff
+        fields = ('company', 'min_days_for_weekly_off', 'min_days_for_holiday_off')
+    
+class PfEsiSetupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PfEsiSetup
+        fields = ('company', 'ac_1_epf_employee_percentage', 'ac_1_epf_employee_limit', 'ac_1_epf_employer_percentage', 'ac_1_epf_employer_limit', 'ac_10_eps_employer_percentage', 'ac_10_eps_employer_limit', 'ac_2_employer_percentage', 'ac_21_employer_percentage', 'ac_22_employer_percentage', 'employer_pf_code', 'esi_employee_percentage', 'esi_employee_limit', 'esi_employer_percentage', 'esi_employer_limit', 'employer_esi_code',)
+
+
+class CalculationsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Calculations
+        fields = ('company' ,'ot_calculation', 'el_calculation', 'notice_pay', 'service_calculation', 'gratuity_calculation', 'el_days_calculation',)

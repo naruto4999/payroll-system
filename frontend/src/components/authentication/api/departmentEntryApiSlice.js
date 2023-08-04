@@ -7,7 +7,7 @@ export const departmentEntryApiSlice = apiSlice.injectEndpoints({
                 url: `/api/department/${globalCompany.id}`,
                 method: 'GET',
             }),
-            keepUnusedDataFor: 1,
+            keepUnusedDataFor: 500,
             providesTags: ['Departments']
         }),
         addDepartment: builder.mutation({

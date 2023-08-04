@@ -1,5 +1,4 @@
 import { useRef, useEffect, useState } from "react";
-import { FaUserPlus } from "react-icons/fa6";
 import { useGetDepartmentsQuery } from "../../../../authentication/api/departmentEntryApiSlice";
 import { useGetDesignationsQuery } from "../../../../authentication/api/designationEntryApiSlice";
 import { useGetCategoriesQuery } from "../../../../authentication/api/categoryEntryApiSlice";
@@ -15,6 +14,16 @@ const timeFormat = (time) => {
     const formattedTime = `${timeParts[0]}:${timeParts[1]}`;
     return formattedTime;
 };
+
+const LoadingSpinner = () => (
+    <div>
+        <div className="bg-blueAccent-600 dark:bg-blueAccent-700 w-fit h-fit rounded flex p-2 items-center mx-auto">
+            <FaCircleNotch className="animate-spin text-gray-900 dark:text-slate-100 mr-2" />
+            <p className="text-gray-900 dark:text-slate-100">Processing...</p>
+        </div>
+    </div>
+);
+
 const EmployeeProfessionalDetail = ({
     handleSubmit,
     handleChange,
@@ -47,7 +56,6 @@ const EmployeeProfessionalDetail = ({
 
     const { data: fetchedShifts, isLoading: isLoadingShifts } =
         useGetShiftsQuery(globalCompany);
-    // const [sameAsLocal, setSameAsLocal] = useState(false);
 
     useEffect(() => {
         setShowLoadingBar(
@@ -74,7 +82,6 @@ const EmployeeProfessionalDetail = ({
             );
         }
     }, [values.dateOfJoining]);
-    console.log(addedEmployeeId);
 
     useEffect(() => {}, []);
 
@@ -84,16 +91,7 @@ const EmployeeProfessionalDetail = ({
         isLoadingCategories ||
         isLoadingSalaryGrade
     ) {
-        return (
-            <div>
-                <div className="bg-blueAccent-600 dark:bg-blueAccent-700 w-fit h-fit rounded flex p-2 items-center mx-auto">
-                    <FaCircleNotch className="animate-spin text-gray-900 dark:text-slate-100 mr-2" />
-                    <p className="text-gray-900 dark:text-slate-100">
-                        Processing...
-                    </p>
-                </div>
-            </div>
-        );
+        return <LoadingSpinner />;
     } else if (!addedEmployeeId && !isEditing) {
         return (
             <div className="mt-1 text-xl dark:text-redAccent-600 text-redAccent-500 font-bold mx-auto">
@@ -103,7 +101,6 @@ const EmployeeProfessionalDetail = ({
     } else {
         return (
             <div className="text-gray-900 dark:text-slate-100">
-                {/* <h1 className="font-medium text-2xl mb-2">Add Employee</h1> */}
                 <form
                     action=""
                     className="flex flex-col gap-2 justify-center"

@@ -7,7 +7,7 @@ export const shiftEntryApiSlice = apiSlice.injectEndpoints({
                 url: `/api/shift/${globalCompany.id}`,
                 method: 'GET',
             }),
-            keepUnusedDataFor: 1,
+            keepUnusedDataFor: 500,
             providesTags: ['Shifts']
         }),
         addShift: builder.mutation({

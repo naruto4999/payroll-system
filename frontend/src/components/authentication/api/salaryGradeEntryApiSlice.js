@@ -7,7 +7,7 @@ export const salaryGradeEntryApiSlice = apiSlice.injectEndpoints({
                 url: `/api/salary-grade/${globalCompany.id}`,
                 method: 'GET',
             }),
-            keepUnusedDataFor: 1,
+            keepUnusedDataFor: 500,
             providesTags: ['SalaryGrades']
         }),
         addSalaryGrade: builder.mutation({

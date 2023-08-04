@@ -7,7 +7,7 @@ export const designationEntryApiSlice = apiSlice.injectEndpoints({
                 url: `/api/designation/${globalCompany.id}`,
                 method: 'GET',
             }),
-            keepUnusedDataFor: 1,
+            keepUnusedDataFor: 500,
             providesTags: ['Designations']
         }),
         addDesignation: builder.mutation({

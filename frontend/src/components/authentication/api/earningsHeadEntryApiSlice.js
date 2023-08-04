@@ -7,7 +7,7 @@ export const earningsHeadEntryApiSlice = apiSlice.injectEndpoints({
                 url: `/api/earnings-head/${globalCompany.id}`,
                 method: 'GET',
             }),
-            keepUnusedDataFor: 1,
+            keepUnusedDataFor: 500,
             providesTags: ['EarningsHeads']
         }),
         addEarningsHead: builder.mutation({

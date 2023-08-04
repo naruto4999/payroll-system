@@ -7,7 +7,7 @@ export const newCompanyEntryApiSlice = apiSlice.injectEndpoints({
                 url: '/api/company',
                 method: 'GET',
             }),
-            keepUnusedDataFor: 1,
+            keepUnusedDataFor: 500,
             providesTags: ['Companies']
         }),
         addCompanies: builder.mutation({

@@ -7,7 +7,7 @@ export const categoryEntryApiSlice = apiSlice.injectEndpoints({
                 url: `/api/category/${globalCompany.id}`,
                 method: 'GET',
             }),
-            keepUnusedDataFor: 1,
+            keepUnusedDataFor: 500,
             providesTags: ['Categories']
         }),
         addCategory: builder.mutation({

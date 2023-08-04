@@ -23,8 +23,6 @@ import {
     useUpdateEmployeeProfessionalDetailMutation,
     useLazyGetSingleEmployeeProfessionalDetailQuery,
     useAddEmployeeSalaryEarningMutation,
-    useLazyGetSingleEmployeeSalaryEarningQuery,
-    useUpdateEmployeeSalaryEarningMutation,
     useAddEmployeeSalaryDetailMutation,
     useLazyGetSingleEmployeeSalaryDetailQuery,
     useUpdateEmployeeSalaryDetailMutation,
@@ -37,9 +35,6 @@ import {
     useDeleteEmployeeFamilyNomineeDetailMutation,
 } from "../../../../authentication/api/employeeEntryApiSlice";
 import { useGetEarningsHeadsQuery } from "../../../../authentication/api/earningsHeadEntryApiSlice";
-
-// import EditEmployee from "./EditEmployee";
-// import ViewEmployee from "./ViewEmployee";
 import { useOutletContext } from "react-router-dom";
 import ReactModal from "react-modal";
 import { Formik } from "formik";
@@ -57,7 +52,6 @@ import EmployeeSalaryDetail from "./EmployeeSalaryDetail";
 import EmployeeFamilyNomineeDetail from "./EmployeeFamilyNomineeDetail";
 import EmployeePfEsiDetail from "./EmployeePfEsiDetail";
 import * as yup from "yup";
-// import SuccessAlert from "../../../../UI/SuccessAlert";
 import { useDispatch } from "react-redux";
 import { alertActions } from "../../../../authentication/store/slices/alertSlice";
 
@@ -106,6 +100,26 @@ const checkNullUndefinedValues = (obj) => {
 const EmployeeEntryForm = () => {
     const globalCompany = useSelector((state) => state.globalCompany);
     const dispatch = useDispatch();
+
+    const dispatchAlert = (type) => {
+        if (type === "Success") {
+            dispatch(
+                alertActions.createAlert({
+                    message: "Saved",
+                    type: type,
+                    duration: 3000,
+                })
+            );
+        } else if (type === "Error") {
+            dispatch(
+                alertActions.createAlert({
+                    message: "Error Occurred",
+                    type: type,
+                    duration: 5000,
+                })
+            );
+        }
+    };
 
     const [
         getSingleEmployeePersonalDetail,
@@ -173,18 +187,6 @@ const EmployeeEntryForm = () => {
         // lastPromiseInfo,
     ] = useLazyGetSingleEmployeePfEsiDetailQuery();
 
-    const [
-        getSingleEmployeeSalaryEarning,
-        {
-            data: {
-                user: SalaryEarningUser,
-                company: SalaryEarningCompany,
-                ...singleEmployeeSalaryEarning
-            } = {},
-            isLoading: isLoadingSingleEmployeeSalaryEarning,
-        } = {},
-        // lastPromiseInfo,
-    ] = useLazyGetSingleEmployeeSalaryEarningQuery();
     const {
         data: fetchedData,
         isLoading,
@@ -249,10 +251,6 @@ const EmployeeEntryForm = () => {
         updateEmployeeProfessionalDetail,
         { isLoading: isUpdatingEmployeeProfessionalDetail },
     ] = useUpdateEmployeeProfessionalDetailMutation();
-    const [
-        updateEmployeeSalaryEarning,
-        { isLoading: isUpdatingEmployeeSalaryEarning },
-    ] = useUpdateEmployeeSalaryEarningMutation();
     const {
         data: fetchedEarningsHeads,
         isLoading: isLoadingEarningsHeads,
@@ -340,13 +338,10 @@ const EmployeeEntryForm = () => {
         editEmployeeFamilyNomineeDetail: false,
     });
     const [showLoadingBar, setShowLoadingBar] = useOutletContext();
-    const [viewEmployeePopover, setViewEmployeePopover] = useState(false);
     const [updateEmployeeId, setUpdateEmployeeId] = useState(null);
     const [addedEmployeeId, setAddedEmployeeId] = useState(null);
     // const [msg, setMsg] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
-
-    // const [viewEmployeeId, setViewEmployeeId] = useState("");
 
     const addEmployeePopoverHandler = (popoverName) => {
         setAddEmployeePopover((prevState) => {
@@ -373,180 +368,116 @@ const EmployeeEntryForm = () => {
         extraOff: "no_off",
     };
 
+    const editEmployeePopoverStateUpdater = (popoverName) => {
+        setEditEmployeePopover((prevState) => {
+            const updatedState = {};
+            Object.keys(prevState).forEach((key) => {
+                updatedState[key] = key === popoverName;
+            });
+            return updatedState;
+        });
+    };
+    console.log(singleEmployeeProfessionalDetail);
     const editEmployeePopoverHandler = async ({ popoverName, id }) => {
-        console.log(popoverName);
-        console.log(id);
         setUpdateEmployeeId(id);
-        // setAddedEmployeeId(id);
-        console.log(updateEmployeeId);
-        if (popoverName === "editEmployeePersonalDetail") {
-            try {
-                const data = await getSingleEmployeePersonalDetail({
-                    id: id,
-                    company: globalCompany.id,
-                }).unwrap();
-                console.log(data);
-                setEditEmployeePopover((prevState) => {
-                    const updatedState = {};
-                    Object.keys(prevState).forEach((key) => {
-                        updatedState[key] = key === popoverName;
-                    });
-                    return updatedState;
-                });
-                console.log(updateEmployeeId);
-            } catch (err) {
-                console.log(err);
-            }
-        } else if (popoverName === "editEmployeeProfessionalDetail") {
-            console.log("ishhhhhhhhh meeeeeeeee bish");
-            try {
-                const data = await getSingleEmployeeProfessionalDetail({
-                    id: id,
-                    company: globalCompany.id,
-                }).unwrap();
-                console.log(data);
-                setEditEmployeePopover((prevState) => {
-                    const updatedState = {};
-                    Object.keys(prevState).forEach((key) => {
-                        updatedState[key] = key === popoverName;
-                    });
-                    return updatedState;
-                });
-                console.log(updateEmployeeId);
-            } catch (err) {
-                if (err.status === 404) {
-                    console.log("me hereeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
-                    setEditEmployeePopover((prevState) => {
-                        const updatedState = {};
-                        Object.keys(prevState).forEach((key) => {
-                            updatedState[key] = key === popoverName;
-                        });
-                        return updatedState;
-                    });
-                }
-                console.log(err);
-            }
-        } else if (popoverName === "editEmployeeSalaryDetail") {
-            console.log("ishhhhhhhhh meeeeeeeee bish salary detail");
-            const currentDate = new Date();
-            const currentYear = currentDate.getFullYear();
-            try {
-                await Promise.all([
-                    getSingleEmployeeProfessionalDetail({
-                        id: id,
-                        company: globalCompany.id,
-                    }).unwrap(),
 
-                    getSingleEmployeeSalaryDetail({
-                        id: id,
-                        company: globalCompany.id,
-                    }).unwrap(),
-                ]);
-                setEditEmployeePopover((prevState) => {
-                    const updatedState = {};
-                    Object.keys(prevState).forEach((key) => {
-                        updatedState[key] = key === popoverName;
-                    });
-                    return updatedState;
-                });
-                console.log(updateEmployeeId);
-            } catch (err) {
-                console.log(err);
-                if (err.status === 404) {
-                    console.log("me hereeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
-                    setEditEmployeePopover((prevState) => {
-                        const updatedState = {};
-                        Object.keys(prevState).forEach((key) => {
-                            updatedState[key] = key === popoverName;
-                        });
-                        return updatedState;
-                    });
-                }
-            }
-        } else if (popoverName === "editEmployeePfEsiDetail") {
-            console.log("ishhhhhhhhh pfffffff bish");
-            try {
-                const data = await getSingleEmployeePfEsiDetail({
-                    id: id,
-                    company: globalCompany.id,
-                }).unwrap();
-                console.log(data);
-                setEditEmployeePopover((prevState) => {
-                    const updatedState = {};
-                    Object.keys(prevState).forEach((key) => {
-                        updatedState[key] = key === popoverName;
-                    });
-                    return updatedState;
-                });
-                console.log(updateEmployeeId);
-            } catch (err) {
-                if (err.status === 404) {
-                    console.log("me hereeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
-                    setEditEmployeePopover((prevState) => {
-                        const updatedState = {};
-                        Object.keys(prevState).forEach((key) => {
-                            updatedState[key] = key === popoverName;
-                        });
-                        return updatedState;
-                    });
-                }
-                console.log(err);
-            }
-        } else if (popoverName === "editEmployeeFamilyNomineeDetail") {
-            console.log("ishhhhhhhhh nomineeee bish");
+        try {
+            switch (popoverName) {
+                case "editEmployeePersonalDetail":
+                    const personalData = await getSingleEmployeePersonalDetail(
+                        { id: id, company: globalCompany.id },
+                        true
+                    ).unwrap();
+                    console.log(personalData);
+                    editEmployeePopoverStateUpdater(popoverName);
+                    break;
 
-            try {
-                const data = await getSingleEmployeePersonalDetail({
-                    id: id,
-                    company: globalCompany.id,
-                }).unwrap();
-                console.log(updateEmployeeId);
-                console.log(singleEmployeePersonalDetail);
-            } catch (err) {
-                console.log(err);
+                case "editEmployeeProfessionalDetail":
+                    const professionalData =
+                        await getSingleEmployeeProfessionalDetail(
+                            { id: id, company: globalCompany.id },
+                            true
+                        ).unwrap();
+                    console.log(professionalData);
+                    editEmployeePopoverStateUpdater(popoverName);
+                    break;
+
+                case "editEmployeeSalaryDetail":
+                    const currentDate = new Date();
+                    const currentYear = currentDate.getFullYear();
+                    await Promise.all([
+                        getSingleEmployeeProfessionalDetail(
+                            { id: id, company: globalCompany.id },
+                            true
+                        ).unwrap(),
+                        getSingleEmployeeSalaryDetail(
+                            {
+                                id: id,
+                                company: globalCompany.id,
+                            },
+                            true
+                        ).unwrap(),
+                    ]);
+                    editEmployeePopoverStateUpdater(popoverName);
+                    break;
+
+                case "editEmployeePfEsiDetail":
+                    const pfEsiData = await getSingleEmployeePfEsiDetail(
+                        {
+                            id: id,
+                            company: globalCompany.id,
+                        },
+                        true
+                    ).unwrap();
+                    console.log(pfEsiData);
+                    editEmployeePopoverStateUpdater(popoverName);
+                    break;
+
+                case "editEmployeeFamilyNomineeDetail":
+                    const [personalDetail, pfEsiDetail, nomineeData] =
+                        await Promise.all([
+                            getSingleEmployeePersonalDetail(
+                                {
+                                    id: id,
+                                    company: globalCompany.id,
+                                },
+                                true
+                            ).unwrap(),
+                            getSingleEmployeePfEsiDetail(
+                                {
+                                    id: id,
+                                    company: globalCompany.id,
+                                },
+                                true
+                            ).unwrap(),
+                            getEmployeeFamilyNomineeDetail(
+                                {
+                                    id: id,
+                                    company: globalCompany.id,
+                                },
+                                true
+                            ).unwrap(),
+                        ]);
+
+                    console.log("Personal Detail:", personalDetail);
+                    console.log("PF ESI Detail:", pfEsiDetail);
+                    console.log("Nominee Data:", nomineeData);
+
+                    editEmployeePopoverStateUpdater(popoverName);
+                    break;
+
+                default:
+                    console.log("Unknown popoverName:", popoverName);
             }
-            try {
-                const data = await getSingleEmployeePfEsiDetail({
-                    id: id,
-                    company: globalCompany.id,
-                }).unwrap();
-            } catch (err) {
-                if (err.status === 404) {
-                    console.log("me hereeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
-                }
-                console.log(err);
-            }
-            try {
-                const data = await getEmployeeFamilyNomineeDetail({
-                    id: id,
-                    company: globalCompany.id,
-                }).unwrap();
-                console.log(data);
-                setEditEmployeePopover((prevState) => {
-                    const updatedState = {};
-                    Object.keys(prevState).forEach((key) => {
-                        updatedState[key] = key === popoverName;
-                    });
-                    return updatedState;
-                });
-                console.log(updateEmployeeId);
-            } catch (err) {
-                if (err.status === 404) {
-                    console.log("me hereeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
-                    setEditEmployeePopover((prevState) => {
-                        const updatedState = {};
-                        Object.keys(prevState).forEach((key) => {
-                            updatedState[key] = key === popoverName;
-                        });
-                        return updatedState;
-                    });
-                }
-                console.log(err);
+        } catch (err) {
+            console.log(err);
+            if (err.status !== 404) {
+                // cancelButtonClicked(true);
+                dispatchAlert("Error");
             }
         }
+        editEmployeePopoverStateUpdater(popoverName);
     };
-
-    console.log(singleEmployeePersonalDetail);
 
     const cancelButtonClicked = useCallback((isEditing) => {
         if (isEditing) {
@@ -590,13 +521,7 @@ const EmployeeEntryForm = () => {
                 setErrorMessage("");
                 setAddedEmployeeId(data.id);
                 formikBag.resetForm();
-                dispatch(
-                    alertActions.createAlert({
-                        message: "Saved",
-                        type: "Success",
-                        duration: 3000,
-                    })
-                );
+                dispatchAlert("Success");
                 addEmployeePopoverHandler("addEmployeeProfessionalDetail");
             } catch (err) {
                 console.log(err);
@@ -604,19 +529,11 @@ const EmployeeEntryForm = () => {
                     console.log(err.data.error);
                     setErrorMessage(err.data.error);
                 }
-                dispatch(
-                    alertActions.createAlert({
-                        message: "Error Occurred",
-                        type: "Error",
-                        duration: 5000,
-                    })
-                );
+                dispatchAlert("Error");
             }
         },
         []
     );
-
-    console.time("filter array");
 
     const addProfessionalDetailButtonClicked = useCallback(
         async (values, formikBag) => {
@@ -635,13 +552,7 @@ const EmployeeEntryForm = () => {
                 }).unwrap();
                 console.log(data);
                 setErrorMessage("");
-                dispatch(
-                    alertActions.createAlert({
-                        message: "Saved",
-                        type: "Success",
-                        duration: 3000,
-                    })
-                );
+                dispatchAlert("Success");
 
                 if (updateEmployeeId === null) {
                     try {
@@ -663,13 +574,7 @@ const EmployeeEntryForm = () => {
                 }
             } catch (err) {
                 console.log(err);
-                dispatch(
-                    alertActions.createAlert({
-                        message: "Error Occurred",
-                        type: "Error",
-                        duration: 5000,
-                    })
-                );
+                dispatchAlert("Error");
                 if (err.status === 400) {
                     console.log(err.data.error);
                     setErrorMessage(err.data.error);
@@ -678,8 +583,6 @@ const EmployeeEntryForm = () => {
         },
         [addedEmployeeId, updateEmployeeId]
     );
-    console.log(singleEmployeeProfessionalDetail);
-    console.timeEnd("filter array");
 
     const updatePersonalDetailButtonClicked = async (values, formikBag) => {
         // console.log(formikBag);
@@ -710,32 +613,23 @@ const EmployeeEntryForm = () => {
                 }).unwrap();
                 console.log(data);
                 setErrorMessage("");
-                dispatch(
-                    alertActions.createAlert({
-                        message: "Saved",
-                        type: "Success",
-                        duration: 3000,
-                    })
-                );
+                dispatchAlert("Success");
 
                 try {
-                    const data = await getSingleEmployeePersonalDetail({
-                        id: updateEmployeeId,
-                        company: globalCompany.id,
-                    }).unwrap();
+                    const data = await getSingleEmployeePersonalDetail(
+                        {
+                            id: updateEmployeeId,
+                            company: globalCompany.id,
+                        },
+                        true
+                    ).unwrap();
 
                     console.log(updateEmployeeId);
                 } catch (err) {
                     console.log(err);
                 }
             } catch (err) {
-                dispatch(
-                    alertActions.createAlert({
-                        message: "Error Occurred",
-                        type: "Error",
-                        duration: 5000,
-                    })
-                );
+                dispatchAlert("Error");
                 console.log(err);
                 if (err.status === 400) {
                     console.log(err.data.error);
@@ -748,6 +642,8 @@ const EmployeeEntryForm = () => {
             setErrorMessage("");
         }
     };
+
+    console.log(singleEmployeeProfessionalDetail);
 
     const updateProfessionalDetailButtonClicked = async (values, formikBag) => {
         console.log(values);
@@ -768,13 +664,7 @@ const EmployeeEntryForm = () => {
                 }).unwrap();
                 console.log(data);
                 setErrorMessage("");
-                dispatch(
-                    alertActions.createAlert({
-                        message: "Saved",
-                        type: "Success",
-                        duration: 3000,
-                    })
-                );
+                dispatchAlert("Success");
 
                 try {
                     console.log("yo getting the professional detail here");
@@ -787,13 +677,7 @@ const EmployeeEntryForm = () => {
                     console.log(err);
                 }
             } catch (err) {
-                dispatch(
-                    alertActions.createAlert({
-                        message: "Error Occurred",
-                        type: "Error",
-                        duration: 5000,
-                    })
-                );
+                dispatchAlert("Error");
                 if (err.status === 400) {
                     console.log(err.data.error);
                     setErrorMessage(err.data.error);
@@ -859,13 +743,7 @@ const EmployeeEntryForm = () => {
                 addEmployeeSalaryDetail(salaryDetail).unwrap(),
             ]);
             console.log("Both requests completed successfully");
-            dispatch(
-                alertActions.createAlert({
-                    message: "Saved",
-                    type: "Success",
-                    duration: 3000,
-                })
-            );
+            dispatchAlert("Success");
             setErrorMessage("");
             if (updateEmployeeId === null) {
                 formikBag.resetForm();
@@ -877,13 +755,7 @@ const EmployeeEntryForm = () => {
                 });
             }
         } catch (err) {
-            dispatch(
-                alertActions.createAlert({
-                    message: "Error Occurred",
-                    type: "Error",
-                    duration: 5000,
-                })
-            );
+            dispatchAlert("Error");
             console.log(err);
             if (err.status === 400) {
                 console.log(err.data.overtimeRate);
@@ -917,42 +789,40 @@ const EmployeeEntryForm = () => {
                     company: globalCompany.id,
                 }).unwrap();
                 console.log(data);
-                alertActions.createAlert({
-                    message: "Saved",
-                    type: "Success",
-                    duration: 3000,
-                });
+                dispatchAlert("Success");
                 setErrorMessage("");
 
                 if (updateEmployeeId === null) {
                     formikBag.resetForm();
                     try {
-                        const data = await getSingleEmployeePersonalDetail({
-                            id: employeeId,
-                            company: globalCompany.id,
-                        }).unwrap();
+                        const [personalDetailData, pfEsiDetailData] =
+                            await Promise.all([
+                                getSingleEmployeePersonalDetail(
+                                    {
+                                        id: employeeId,
+                                        company: globalCompany.id,
+                                    },
+                                    true
+                                ).unwrap(),
+                                getSingleEmployeePfEsiDetail(
+                                    {
+                                        id: employeeId,
+                                        company: globalCompany.id,
+                                    },
+                                    true
+                                ).unwrap(),
+                            ]);
+                        addEmployeePopoverHandler(
+                            "addEmployeeFamilyNomineeDetail"
+                        );
                     } catch (err) {
-                        console.log(err);
+                        // Handle errors if needed
+                        console.log("Error:", err);
                     }
-                    try {
-                        const data = await getSingleEmployeePfEsiDetail({
-                            id: employeeId,
-                            company: globalCompany.id,
-                        }).unwrap();
-                    } catch (err) {
-                        if (err.status === 404) {
-                        }
-                        console.log(err);
-                    }
-                    addEmployeePopoverHandler("addEmployeeFamilyNomineeDetail");
                 }
             } catch (err) {
                 console.log(err);
-                alertActions.createAlert({
-                    message: "Error Occurred",
-                    type: "Error",
-                    duration: 5000,
-                });
+                dispatchAlert("Error");
                 if (err.status === 400) {
                     console.log(err.data.error);
                     setErrorMessage(err.data.error);
@@ -983,19 +853,11 @@ const EmployeeEntryForm = () => {
                     toSend
                 ).unwrap();
                 console.log(data);
-                alertActions.createAlert({
-                    message: "Saved",
-                    type: "Success",
-                    duration: 3000,
-                });
+                dispatchAlert("Success");
                 setErrorMessage("");
             } catch (err) {
                 console.log(err);
-                alertActions.createAlert({
-                    message: "Error Occurred",
-                    type: "Error",
-                    duration: 5000,
-                });
+                dispatchAlert("Error");
                 if (err.status === 400) {
                     console.log(err.data);
                     setErrorMessage(err.data);
@@ -1021,18 +883,15 @@ const EmployeeEntryForm = () => {
                 }).unwrap();
                 console.log(data);
                 setErrorMessage("");
-                dispatch(
-                    alertActions.createAlert({
-                        message: "Saved",
-                        type: "Success",
-                        duration: 3000,
-                    })
-                );
+                dispatchAlert("Success");
                 try {
-                    const data = await getSingleEmployeePfEsiDetail({
-                        id: updateEmployeeId,
-                        company: globalCompany.id,
-                    }).unwrap();
+                    const data = await getSingleEmployeePfEsiDetail(
+                        {
+                            id: updateEmployeeId,
+                            company: globalCompany.id,
+                        },
+                        true
+                    ).unwrap();
                     console.log(data);
 
                     console.log(updateEmployeeId);
@@ -1040,13 +899,7 @@ const EmployeeEntryForm = () => {
                     console.log(err);
                 }
             } catch (err) {
-                dispatch(
-                    alertActions.createAlert({
-                        message: "Error Occurred",
-                        type: "Error",
-                        duration: 5000,
-                    })
-                );
+                dispatchAlert("Error");
                 if (err.status === 400) {
                     console.log(err.data.error);
                     setErrorMessage(err.data.error);
@@ -1071,31 +924,22 @@ const EmployeeEntryForm = () => {
             ).unwrap();
 
             console.log("Requests completed successfully");
-            dispatch(
-                alertActions.createAlert({
-                    message: "Saved",
-                    type: "Success",
-                    duration: 3000,
-                })
-            );
+            dispatchAlert("Success");
 
             try {
-                const data = await getSingleEmployeeSalaryDetail({
-                    id: updateEmployeeId,
-                    company: globalCompany.id,
-                }).unwrap();
+                const data = await getSingleEmployeeSalaryDetail(
+                    {
+                        id: updateEmployeeId,
+                        company: globalCompany.id,
+                    },
+                    true
+                ).unwrap();
                 console.log(data);
             } catch (err) {
                 console.log(err);
             }
         } catch (err) {
-            dispatch(
-                alertActions.createAlert({
-                    message: "Error Occurred",
-                    type: "Error",
-                    duration: 5000,
-                })
-            );
+            dispatchAlert("Error");
             if (err.status === 400) {
                 console.log(err.data.error);
                 setErrorMessage(err.data.error);
@@ -1145,8 +989,11 @@ const EmployeeEntryForm = () => {
         console.log(newArray);
 
         try {
-            const addEmployeePromise =
-                addEmployeeFamilyNomineeDetail(toSend).unwrap();
+            let addEmployeePromise = null
+            if (toSend.familyNomineeDetail.length != 0) {
+                const addEmployeePromise =
+                    addEmployeeFamilyNomineeDetail(toSend).unwrap();
+            }
             const updateEmployeePromise =
                 updateEmployeeFamilyNomineeDetail(toSendUpdate).unwrap();
             const deletePromises = newArray.map((obj) =>
@@ -1169,21 +1016,9 @@ const EmployeeEntryForm = () => {
             console.log(deleteResponses);
 
             setErrorMessage("");
-            dispatch(
-                alertActions.createAlert({
-                    message: "Saved",
-                    type: "Success",
-                    duration: 3000,
-                })
-            );
+            dispatchAlert("Success");
         } catch (err) {
-            dispatch(
-                alertActions.createAlert({
-                    message: "Error Occurred",
-                    type: "Error",
-                    duration: 5000,
-                })
-            );
+            dispatchAlert("Error");
             console.log(err);
             if (err.status === 400) {
                 console.log(err.data);
@@ -1296,7 +1131,6 @@ const EmployeeEntryForm = () => {
                 isUpdatingEmployeePersonalDetail ||
                 isUpdatingEmployeePfEsiDetail ||
                 isUpdatingEmployeeProfessionalDetail ||
-                isUpdatingEmployeeSalaryEarning ||
                 isLoadingEarningsHeads ||
                 isAddingEmployeeSalaryEarning ||
                 isDeletingEmployeeFamilyNomineeDetail ||
@@ -1305,7 +1139,6 @@ const EmployeeEntryForm = () => {
                 isLoadingSingleEmployeeSalaryDetail ||
                 isLoadingSingleEmployeeProfessionalDetail ||
                 isLoadingSingleEmployeePfEsiDetail ||
-                isLoadingSingleEmployeeSalaryEarning ||
                 isAddingEmployeePfEsiDetail ||
                 isAddingEmployeeSalaryDetail ||
                 isAddingEmployeeFamilyNomineeDetail ||
@@ -1319,7 +1152,6 @@ const EmployeeEntryForm = () => {
         isUpdatingEmployeePersonalDetail,
         isUpdatingEmployeePfEsiDetail,
         isUpdatingEmployeeProfessionalDetail,
-        isUpdatingEmployeeSalaryEarning,
         isLoadingEarningsHeads,
         isAddingEmployeeSalaryEarning,
         isDeletingEmployeeFamilyNomineeDetail,
@@ -1328,7 +1160,6 @@ const EmployeeEntryForm = () => {
         isLoadingSingleEmployeeSalaryDetail,
         isLoadingSingleEmployeeProfessionalDetail,
         isLoadingSingleEmployeePfEsiDetail,
-        isLoadingSingleEmployeeSalaryEarning,
         isAddingEmployeePfEsiDetail,
         isAddingEmployeeSalaryDetail,
         isAddingEmployeeFamilyNomineeDetail,
@@ -1653,6 +1484,9 @@ const EmployeeEntryForm = () => {
                                                         ? singleEmployeeProfessionalDetail
                                                         : null
                                                 }
+                                                isSingleEmployeeProfessionalDetailSuccess={
+                                                    isSingleEmployeeProfessionalDetailSuccess
+                                                }
                                             />
                                         </>
                                     )}
@@ -1824,11 +1658,7 @@ const EmployeeEntryForm = () => {
                             {editEmployeePopover.editEmployeeProfessionalDetail && (
                                 <Formik
                                     initialValues={
-                                        singleEmployeeProfessionalDetail !==
-                                            undefined &&
-                                        Object.keys(
-                                            singleEmployeeProfessionalDetail
-                                        ).length !== 0
+                                        isSingleEmployeeProfessionalDetailSuccess
                                             ? checkNullUndefinedValues(
                                                   singleEmployeeProfessionalDetail
                                               )
@@ -1838,11 +1668,9 @@ const EmployeeEntryForm = () => {
                                         EmployeeProfessionalDetailSchema
                                     }
                                     onSubmit={
-                                        Object.keys(
-                                            singleEmployeeProfessionalDetail
-                                        ).length === 0
-                                            ? addProfessionalDetailButtonClicked
-                                            : updateProfessionalDetailButtonClicked
+                                        isSingleEmployeeProfessionalDetailSuccess
+                                            ? updateProfessionalDetailButtonClicked
+                                            : addProfessionalDetailButtonClicked
                                     }
                                     component={(props) => (
                                         <>
@@ -1871,21 +1699,51 @@ const EmployeeEntryForm = () => {
 
                             {editEmployeePopover.editEmployeeSalaryDetail && (
                                 <Formik
-                                    initialValues={{
-                                        earningsHead: {
-                                            //   ...editEarningHeadInitialValues,
-                                        },
-                                        year: isSingleEmployeeProfessionalDetailSuccess
-                                            ? parseInt(
-                                                  singleEmployeeProfessionalDetail.dateOfJoining.split(
-                                                      "-"
-                                                  )[0]
-                                              )
-                                            : null,
-                                        salaryDetail: {
-                                            ...singleEmployeeSalaryDetail,
-                                        },
-                                    }}
+                                    initialValues={
+                                        isSingleEmployeeSalaryDetailSuccess
+                                            ? {
+                                                  earningsHead: {
+                                                      //   ...editEarningHeadInitialValues,
+                                                  },
+                                                  year: isSingleEmployeeProfessionalDetailSuccess
+                                                      ? parseInt(
+                                                            singleEmployeeProfessionalDetail.dateOfJoining.split(
+                                                                "-"
+                                                            )[0]
+                                                        )
+                                                      : null,
+                                                  salaryDetail: {
+                                                      ...singleEmployeeSalaryDetail,
+                                                  },
+                                              }
+                                            : {
+                                                  earningsHead: {
+                                                      ...earningHeadInitialValues,
+                                                  },
+                                                  year: isSingleEmployeeProfessionalDetailSuccess
+                                                      ? parseInt(
+                                                            singleEmployeeProfessionalDetail.dateOfJoining.split(
+                                                                "-"
+                                                            )[0]
+                                                        )
+                                                      : "",
+                                                  salaryDetail: {
+                                                      overtimeType:
+                                                          "no_overtime",
+                                                      overtimeRate: "",
+                                                      salaryMode: "monthly",
+                                                      paymentMode:
+                                                          "bank_transfer",
+                                                      bankName: "",
+                                                      accountNumber: "",
+                                                      ifcs: "",
+                                                      labourWellfareFund: false,
+                                                      lateDeduction: false,
+                                                      bonusAllow: false,
+                                                      bonusExg: false,
+                                                  },
+                                              }
+                                    }
                                     validationSchema={generateEmployeeSalaryDetailSchema(
                                         null
                                     )}
@@ -1917,6 +1775,12 @@ const EmployeeEntryForm = () => {
                                                 }
                                                 updateEmployeeId={
                                                     updateEmployeeId
+                                                }
+                                                isSingleEmployeeSalaryDetailSuccess={
+                                                    isSingleEmployeeSalaryDetailSuccess
+                                                }
+                                                isSingleEmployeeProfessionalDetailSuccess={
+                                                    isSingleEmployeeProfessionalDetailSuccess
                                                 }
                                             />
                                         </>

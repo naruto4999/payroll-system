@@ -7,7 +7,7 @@ export const leaveGradeEntryApiSlice = apiSlice.injectEndpoints({
                 url: `/api/leave-grade/${globalCompany.id}`,
                 method: "GET",
             }),
-            keepUnusedDataFor: 1,
+            keepUnusedDataFor: 500,
             providesTags: ["LeaveGrades"],
         }),
         addLeaveGrade: builder.mutation({

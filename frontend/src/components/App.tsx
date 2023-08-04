@@ -22,6 +22,8 @@ import EarningsHeadEntry from "./menu/MasterEntry/forms/EarningsHeadEntryForm/Ea
 import DeductionsHeadEntryForm from "./menu/MasterEntry/forms/DeductionsHeadEntryForm/DeductionsHeadEntryForm";
 import EmployeeEntryForm from "./menu/MasterEntry/forms/EmployeeEntryForm/EmployeeEntryForm";
 import EmployeeSalaryForm from "./menu/MasterEntry/forms/EmployeeSalaryForm/EmployeeSalaryForm";
+import WeeklyOffHolidayOffForm from "./menu/MasterEntry/forms/WeeklyOffHolidayOffForm/WeeklyOffHolidayOffForm";
+import PfEsiSetupForm from "./menu/MasterEntry/forms/PfEsiSetup/PfEsiSetupForm";
 
 // import store, { persistor } from "./authentication/store/index"
 // import { PersistGate } from "redux-persist/integration/react";
@@ -126,6 +128,14 @@ function App() {
                     <Route
                         path="employee-salary"
                         element={<EmployeeSalaryForm />}
+                    />
+                    <Route
+                        path="weekly-off-holiday-off"
+                        element={<WeeklyOffHolidayOffForm />}
+                    />
+                    <Route
+                        path="pf-esi-setup"
+                        element={<PfEsiSetupForm />}
                     />
                     {/* <Route path="bank-entry" element={<BankEntryForm />} />
                     <Route path="category-entry" element={<CategoryEntryForm />} />

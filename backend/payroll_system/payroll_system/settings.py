@@ -41,9 +41,10 @@ CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:4173',
-    'https://1840-43-247-41-90.ngrok-free.app',
-    'https://197a-43-247-41-90.ngrok-free.app',
+    'https://08b3-43-247-41-64.ngrok-free.app',
+    'https://9f3a-43-247-41-64.ngrok-free.app',
     'http://localhost:5173',
+    'http://localhost:4173',
     'http://127.0.0.1:8000',
     'http://localhost:8000',
 ]
@@ -142,6 +143,7 @@ WSGI_APPLICATION = 'payroll_system.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
+# Sqlite (old one)
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -149,6 +151,17 @@ DATABASES = {
     }
 }
 
+# DATABASES = {
+#     'default': {
+#         #'ENGINE': 'django.db.backends.sqlite3',
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'railway',
+#         'USER': 'postgres',
+#         'PASSWORD': 'QWrx3uYkJcDcm4ttaupO',
+#         'HOST': 'containers-us-west-105.railway.app',
+#         'PORT': '7301',
+#     }
+# }
 
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
@@ -226,7 +239,7 @@ REST_FRAMEWORK = {
 
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(seconds=30),
+    'ACCESS_TOKEN_LIFETIME': timedelta(seconds=1800),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': False,

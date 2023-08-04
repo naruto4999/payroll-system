@@ -7,7 +7,7 @@ export const holidayEntryApiSlice = apiSlice.injectEndpoints({
                 url: `/api/holiday/${globalCompany.id}`,
                 method: "GET",
             }),
-            keepUnusedDataFor: 1,
+            keepUnusedDataFor: 500,
             providesTags: ["Holidays"],
         }),
         addHoliday: builder.mutation({

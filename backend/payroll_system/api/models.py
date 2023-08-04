@@ -596,6 +596,39 @@ class EmployeePfEsiDetail(models.Model):
     esi_dispensary = models.CharField(max_length=100, null=True, blank=True)
     esi_on_ot = models.BooleanField(null=False, blank=False, default=False)
 
+    def check_family_nominee_rules(self):
+        family_nominees = EmployeeFamilyNomineeDetial.objects.filter(employee=self.employee)
+
+        for nominee in family_nominees:
+            if not self.pf_allow:
+                nominee.pf_benefits = False
+                nominee.is_pf_nominee = False
+                nominee.pf_nominee_share = None
+            if not self.esi_allow:
+                nominee.esi_benefit = False
+                nominee.is_esi_nominee = False
+                nominee.esi_nominee_share = None
+
+            if not nominee.pf_benefits:
+                nominee.is_pf_nominee = False
+                nominee.pf_nominee_share = None
+            if not nominee.esi_benefit:
+                nominee.is_esi_nominee = False
+                nominee.esi_nominee_share = None
+            if not nominee.is_fa_nominee:
+                nominee.fa_nominee_share = None
+            if not nominee.is_gratuity_nominee:
+                nominee.gratuity_nominee_share = None
+
+            nominee.save()
+    
+    def save(self, *args, **kwargs):
+        if self.pk:  # Check if it's an update, not a new instance
+            super().save(*args, **kwargs)
+            self.check_family_nominee_rules()
+        else:
+            super().save(*args, **kwargs)
+
 
 class EmployeeFamilyNomineeDetial(models.Model):
 
@@ -632,10 +665,15 @@ class EmployeeFamilyNomineeDetial(models.Model):
         if not hasattr(self.employee, 'employee_pf_esi_detail'):
             raise ValidationError("Employee has no PF and ESI detail")
         else:
-            if self.employee.employee_pf_esi_detail and not self.employee.employee_pf_esi_detail.pf_allow:
+            pf_esi_detail = self.employee.employee_pf_esi_detail
+            if not pf_esi_detail.pf_allow:
                 self.pf_benefits = False
                 self.is_pf_nominee = False
                 self.pf_nominee_share = None
+            if not pf_esi_detail.esi_allow:
+                self.esi_benefit = False
+                self.is_esi_nominee = False
+                self.esi_nominee_share = None
         if not self.esi_benefit:
             self.is_esi_nominee = False
         if not self.pf_benefits:
@@ -651,6 +689,60 @@ class EmployeeFamilyNomineeDetial(models.Model):
         
             # self.save(update_fields=['pf_benefits', 'is_pf_nominee'])
         super().save(*args, **kwargs)
+
+class WeeklyOffHolidayOff(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="weekly_off_holiday_off_entries")
+    company = models.OneToOneField(Company, on_delete=models.CASCADE, related_name="weekly_off_holiday_off_entry", primary_key=True)
+    min_days_for_weekly_off = models.PositiveSmallIntegerField(default=0, null=False, blank=False)
+    min_days_for_holiday_off = models.PositiveSmallIntegerField(default=0, null=False, blank=False)
+    def __str__(self):
+        return f"{self.user.username} ({self.company.name}) - Weekly Off: {self.min_days_for_weekly_off} days, Holiday Off: {self.min_days_for_holiday_off} days"
+    
+class PfEsiSetup(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="pf_esi_setup_details")
+    company = models.OneToOneField(Company, on_delete=models.CASCADE, related_name="pf_esi_setup_details", primary_key=True)
+    ac_1_epf_employee_percentage = models.DecimalField(max_digits=5, decimal_places=2, validators=PERCENTAGE_VALIDATOR, null=False, blank=False, default=12)
+    ac_1_epf_employee_limit = models.PositiveIntegerField(null=False, blank=False, default=15000)
+    ac_1_epf_employer_percentage = models.DecimalField(max_digits=5, decimal_places=2, validators=PERCENTAGE_VALIDATOR, null=False, blank=False, default=3.67)
+    ac_1_epf_employer_limit = models.PositiveIntegerField(null=False, blank=False, default=15000)
+    ac_10_eps_employer_percentage = models.DecimalField(max_digits=5, decimal_places=2, validators=PERCENTAGE_VALIDATOR, null=False, blank=False, default=8.33)
+    ac_10_eps_employer_limit = models.PositiveIntegerField(null=False, blank=False, default=15000)
+    ac_2_employer_percentage = models.DecimalField(max_digits=5, decimal_places=2, validators=PERCENTAGE_VALIDATOR, null=False, blank=False, default=0.5)
+    ac_21_employer_percentage = models.DecimalField(max_digits=5, decimal_places=2, validators=PERCENTAGE_VALIDATOR, null=False, blank=False, default=0.5)
+    ac_22_employer_percentage = models.DecimalField(max_digits=5, decimal_places=2, validators=PERCENTAGE_VALIDATOR, null=False, blank=False, default=0)
+    employer_pf_code = models.CharField(max_length=100, null=True, blank=True)
+    esi_employee_percentage = models.DecimalField(max_digits=5, decimal_places=2, validators=PERCENTAGE_VALIDATOR, null=False, blank=False, default=0.75)
+    esi_employee_limit = models.PositiveIntegerField(null=False, blank=False, default=21000)
+    esi_employer_percentage = models.DecimalField(max_digits=5, decimal_places=2, validators=PERCENTAGE_VALIDATOR, null=False, blank=False, default=3.25)
+    esi_employer_limit = models.PositiveIntegerField(null=False, blank=False, default=21000)
+    employer_esi_code = models.CharField(max_length=100, null=True, blank=True)
+
+class Calculations(models.Model):
+    OT_CALCULATION_CHOICES = [
+        ('26', '26'),
+        ('30', '30'),
+        ('month_days', 'month_days'),
+    ]
+    CALCULATION_CHOICES = [
+        ('26', '26'),
+        ('30', '30')
+    ]
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="calculations")
+    company = models.OneToOneField(Company, on_delete=models.CASCADE, related_name="calculations", primary_key=True)
+    ot_calculation = models.CharField(max_length=10, choices=OT_CALCULATION_CHOICES, default='26', null=False, blank=False)
+    el_calculation =  models.CharField(max_length=2, choices=CALCULATION_CHOICES, default='26', null=False, blank=False)
+    notice_pay =  models.CharField(max_length=2, choices=CALCULATION_CHOICES, default='26', null=False, blank=False)
+    service_calculation =  models.CharField(max_length=2, choices=CALCULATION_CHOICES, default='26', null=False, blank=False)
+    gratuity_calculation =  models.CharField(max_length=2, choices=CALCULATION_CHOICES, default='26', null=False, blank=False)
+    el_days_calculation = models.PositiveSmallIntegerField(default=20, null=False, blank=False)
+
+
+
+
+
+
+
+
 
 
 
@@ -723,3 +815,19 @@ def create_default_earning_for_company(sender, instance, created, **kwargs):
         EarningsHead.objects.create(user=user,company=company, name='Conveyance', mandatory_earning=True)
         EarningsHead.objects.create(user=user,company=company, name='Other', mandatory_earning=True)
         EarningsHead.objects.create(user=user,company=company, name='Medical', mandatory_earning=True)
+
+@receiver(post_save, sender=Company)
+def create_default_holiday_off_weekly_off(sender, instance, created, **kwargs):
+    if created:
+        company = instance  # Assign the instance to a variable
+        user = company.user
+        # Create the default Weekly Off and Holiday Off on post save for company
+        WeeklyOffHolidayOff.objects.create(user=user,company=company, min_days_for_holiday_off=0, min_days_for_weekly_off=0)
+
+@receiver(post_save, sender=Company)
+def create_default_pf_esi_setup(sender, instance, created, **kwargs):
+    if created:
+        company = instance  # Assign the instance to a variable
+        user = company.user
+        # Create the default Weekly Off and Holiday Off on post save for company
+        PfEsiSetup.objects.create(user=user, company=company, ac1_epf_employee_percentage=12, ac1_epf_employee_limit=15000, ac1_epf_employer_percentage=3.67, ac1_epf_employer_limit=15000, ac10_eps_employer_percentage=8.33, ac10_eps_employer_limit=15000, ac2_employer_percentage=0.5, ac21_employer_percentage=0.5, ac22_employer_percentage=0, esi_employee_percentage=0.75, esi_employee_limit=21000, esi_employer_percentage=3.25, esi_employer_limit=21000,)
