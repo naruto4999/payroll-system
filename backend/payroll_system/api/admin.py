@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import User, Company, CompanyDetails, Deparment, Designation, SalaryGrade, OwnerToRegular, Category, LeaveGrade, Shift, Holiday, DeductionsHead, EarningsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryDetail, EmployeeSalaryEarning, EmployeePfEsiDetail, EmployeeFamilyNomineeDetial, WeeklyOffHolidayOff
+from .models import User, Company, CompanyDetails, Deparment, Designation, SalaryGrade, OwnerToRegular, Category, LeaveGrade, Shift, Holiday, DeductionsHead, EarningsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryDetail, EmployeeSalaryEarning, EmployeePfEsiDetail, EmployeeFamilyNomineeDetial, WeeklyOffHolidayOff, Calculations
 
 admin.site.register(User)
 admin.site.register(Company)
@@ -21,3 +21,4 @@ admin.site.register(EmployeeSalaryEarning)
 admin.site.register(EmployeePfEsiDetail)
 admin.site.register(EmployeeFamilyNomineeDetial)
 admin.site.register(WeeklyOffHolidayOff)
+admin.site.register(Calculations)

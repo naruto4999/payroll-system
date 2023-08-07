@@ -174,6 +174,11 @@ class EmployeeSalaryEarningSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployeeSalaryEarning
         fields = ['employee', 'company', 'earnings_head', 'value', 'from_date', 'to_date']
+
+class EmployeeSalaryEarningUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmployeeSalaryEarning
+        fields = ['employee', 'company', 'earnings_head', 'value', 'from_date', 'to_date']
     
 class EmployeeSalaryDetailSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)

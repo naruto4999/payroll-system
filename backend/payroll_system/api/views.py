@@ -1,7 +1,8 @@
 from django.forms import ValidationError
 from django.shortcuts import render
 from rest_framework import generics, status, mixins
-from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, DeductionsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer
+from django.db import transaction
+from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, DeductionsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer
 from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift, EmployeeSalaryEarning, EarningsHead
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -1050,7 +1051,7 @@ class EmployeeSalaryEarningListCreateAPIView(generics.ListCreateAPIView):
         
 class EmployeeSalaryEarningListUpdateAPIView(generics.UpdateAPIView):
     permission_classes= [IsAuthenticated]
-    serializer_class = EmployeeSalaryEarningSerializer
+    serializer_class = EmployeeSalaryEarningUpdateSerializer
     lookup_field = 'employee'
 
     def get_queryset(self, *args, **kwargs):
@@ -1061,213 +1062,503 @@ class EmployeeSalaryEarningListUpdateAPIView(generics.UpdateAPIView):
             return user.all_employees_earnings.filter(company=company_id, employee=employee)
         instance = OwnerToRegular.objects.get(user=user)
         return instance.owner.all_employees_earnings.filter(company=company_id, employee=employee)
-
-
+    
     def update(self, request, *args, **kwargs):
         indian_timezone = pytz.timezone('Asia/Kolkata')
         current_datetime = datetime.now(indian_timezone)
         current_indian_year = current_datetime.year
         employee_earnings = request.data['employee_earnings']
+        # print(employee_earnings)
         partial = kwargs.pop('partial', False)
         user = self.request.user
         if user.role != "OWNER":
             instance = OwnerToRegular.objects.get(user=user)
             user=instance
+        categorized_earnings = {}
+        for earning_record in employee_earnings:
+            earnings_head_id = earning_record['earnings_head']
 
-        for item in employee_earnings:
-            existing_earning_to_date_before_saving=None
-            earnings_head_id = item['earnings_head']
-            earnings_head_instance = EarningsHead.objects.get(pk=earnings_head_id)
-            earnings_head_instance_data = EarningsHeadSerializer(earnings_head_instance).data
+            # If the earnings_head_id is not already a key in the categorized_earnings dictionary, add it
+            if earnings_head_id not in categorized_earnings:
+                categorized_earnings[earnings_head_id] = []
 
-            # earnings_head_instance['company'] = earnings_head_instance['company_id']
+            # Append the earning record to the corresponding list based on earnings_head_id
+            categorized_earnings[earnings_head_id].append(earning_record)
 
-            item['earnings_head'] = earnings_head_instance_data
-            serializer = self.get_serializer(data=item)
+        for earnings_head_id, earning_records in categorized_earnings.items():
+            serializer = self.get_serializer(data=earning_records, many=True)
             serializer.is_valid(raise_exception=True)
-            employee_earning = serializer.validated_data
-            earnings_head = employee_earning['earnings_head']
-            from_date = employee_earning['from_date']
-            to_date = employee_earning['to_date']
-            value = employee_earning['value']
-            print(employee_earning)
-            # Get existing employee earnings for the earnings_head
+            validated_earning_records = serializer.validated_data
+
+            sorted_earning_records = sorted(validated_earning_records, key=lambda x: x['from_date'])
+
+            print(f"Earnings for earnings_head {earnings_head_id}:")
+            # print(sorted_earning_records)
+            first_object = sorted_earning_records[0]
+            last_object = sorted_earning_records[-1]
+            print(f'first object: {first_object}, last object: {last_object}')
+            # print(first_object['from_date'])
+            # print(first_object['earnings_head'])
+
             existing_earnings = self.get_queryset().filter(earnings_head=earnings_head_id).order_by('from_date')
-            existing_earnings.filter(from_date__gte=from_date, to_date__lte=to_date).delete()
+            #Delete Childs
+            existing_earnings.filter(from_date__gte=first_object['from_date'], to_date__lte=last_object['to_date']).delete()
             existing_earnings = self.get_queryset().filter(earnings_head=earnings_head_id).order_by('from_date')
 
-            # Find the index of the earning that contains the from_date
-            index_to_update = None
-            for idx, earning in enumerate(existing_earnings):
-                print(idx)
-                print(earning.from_date)
-                print(earning.to_date)
-
-                print(from_date)
-                if from_date >=  earning.from_date and from_date <= earning.to_date:
-                    index_to_update = idx
-                    break
-            print('before iffffffffffff')
-            print(index_to_update)
-            if index_to_update is not None:
-                print('afeter if')
-                existing_earning = existing_earnings[index_to_update]
-                print(value)
-                print(existing_earning.value)
-                if value!=existing_earning.value:
-                    if from_date==existing_earning.from_date and to_date==existing_earning.to_date:
-                        existing_earning.value = value
-                        print('here')
-                        existing_earning.save()
-                    elif from_date==existing_earning.from_date and to_date<existing_earning.to_date:
-                        existing_earning_from_date_before_saving = existing_earning.to_date
-                        print(existing_earning_from_date_before_saving)
-                        existing_earning.from_date = to_date + relativedelta(months=1)
-                        existing_earning.save()
-                        print(existing_earning.to_date)
-
-                        new_earning = EmployeeSalaryEarning.objects.create(
-                        user=user,
-                        employee=employee_earning['employee'],
-                        company=employee_earning['company'],
-                        earnings_head_id=earnings_head_id,
-                        value=value,
-                        from_date=from_date,
-                        to_date=to_date
-                        )
-                        print(new_earning)
-
-
+            #Checking if parent exists
+            parent_queryset = existing_earnings.filter(from_date__lte=first_object['from_date'], to_date__gte=last_object['to_date'])
+            if parent_queryset.exists():
+                parent_instance = parent_queryset[0]
+                print(f'this is parent info from date: {parent_instance.from_date}, to date: {parent_instance.to_date}')
+                if parent_instance.from_date == first_object['from_date']:
+                    if parent_instance.value == last_object['value']:
+                        #infinity earning not required here
+                        parent_instance.from_date = last_object['from_date']
+                        parent_instance.save()
+                        #Pop last object since value was same
+                        sorted_earning_records.pop(-1)
                     else:
-                        existing_earning_to_date_before_saving = existing_earning.to_date
-                        print(existing_earning_to_date_before_saving)
-                        existing_earning.to_date = from_date - relativedelta(months=1)
-                        existing_earning.save()
-                        print(existing_earning.to_date)
-                        if to_date < existing_earning_to_date_before_saving:
-                            if to_date.year == current_indian_year and to_date.month==12:
-                                print("nowwww innfite it")
-                                new_earning = EmployeeSalaryEarning.objects.create(
-                                user=user,
-                                employee=employee_earning['employee'],
-                                company=employee_earning['company'],
-                                earnings_head_id=earnings_head_id,
-                                value=value,
-                                from_date=from_date,
-                                to_date="9999-01-01"
-                                )
-                                print(new_earning)
-                            
+                        #Infinity Earning might be required here
+                        if last_object['to_date'].year == current_indian_year and last_object['to_date'].month == 12:
+                            print('time to set to infinity!!')
+                            parent_queryset.delete()
+                            sorted_earning_records[-1]['to_date'] = '9999-01-01'
+                        else:
+                            parent_instance.from_date = last_object['to_date'] + relativedelta(months=1)
+                            parent_instance.save()
+                            print(f'saved a parent whose from date was common with first object, here is parent info => from date: {parent_instance.from_date}, to date: {parent_instance.to_date}')
+
+                    if len(sorted_earning_records)!=0:
+                        print("here after infinity statement")
+                        front_object_non_interfering_queryset = self.get_queryset().filter(earnings_head=earnings_head_id, to_date=(first_object['from_date'] - relativedelta(months=1)))
+                        if front_object_non_interfering_queryset.exists():
+                            front_object_non_interfering_instance = front_object_non_interfering_queryset[0]
+                            if front_object_non_interfering_instance.value == first_object['value']:
+                                front_object_non_interfering_instance.to_date = first_object['to_date']
+                                front_object_non_interfering_instance.save()
+                                sorted_earning_records.pop(0)
+                                front_object_non_interfering_has_same_value = True
+                        else:
+                            print("something is wrong")
+
+                elif parent_instance.to_date == last_object['to_date']:
+                    #incoming earning will nerver have a to_date = "9999-01-01" so infinity object won't be made here
+                    if parent_instance.value == first_object['value']:
+                        parent_instance.to_date = first_object['to_date']
+                        parent_instance.save()
+                        #Pop first object since value was same
+                        sorted_earning_records.pop(0)
+                    else:
+                        parent_instance.to_date = first_object['from_date'] - relativedelta(months=1)
+                        parent_instance.save()
+                        print(f'saved a parent whose to date was common with last object, here is parent info => from date: {parent_instance.from_date}, to date: {parent_instance.to_date}')
+
+                    if len(sorted_earning_records)!=0:
+                        end_object_non_interfering_queryset = self.get_queryset().filte(earnings_head=earnings_head_id, from_date=(last_object['to_date'] + relativedelta(months=1)))
+                        if end_object_non_interfering_queryset.exists():
+                            end_object_non_interfering_instance = end_object_non_interfering_queryset[0]
+                            end_object_non_interfering_instance.from_date = last_object['from_date']
+                            end_object_non_interfering_instance.save()
+                            sorted_earning_records.pop(-1)
+                        else:
+                            print("something is wrong")
+
+                else:
+                    #Divide Parent into two
+                    parent_original_value = parent_instance.value
+                    parent_original_from_date = parent_instance.from_date
+                    parent_original_to_date = parent_instance.to_date
+
+                    #Create first half 
+                    if parent_instance.value == first_object['value']:
+                        parent_instance.to_date = first_object['to_date']
+                        parent_instance.save()
+                        #Pop first object since value was same
+                        sorted_earning_records.pop(0)
+                    else:
+                        parent_instance.to_date = first_object['from_date'] - relativedelta(months=1)
+                        parent_instance.save()
+                        print(f'Saved 1st half of parent info is => from date: {parent_instance.from_date}, to date: {parent_instance.to_date}')
+
+                    #Create 2nd half
+                    #Inifinity Earning Could exist here
+                    if parent_original_value == last_object['value']:
+                        if len(sorted_earning_records)==0:
+                            if last_object['to_date'].year == current_indian_year and last_object['to_date'].month == 12:
+                                parent_instance.to_date = "9999-01-01"
+                                parent_instance.save()
                             else:
-                                print("not saved yet")
-                                # serializer.save(user=user) #save the incoming earning head
-                                new_earning = EmployeeSalaryEarning.objects.create(
-                                user=user,
-                                employee=employee_earning['employee'],
-                                company=employee_earning['company'],
-                                earnings_head_id=earnings_head_id,
-                                value=value,
-                                from_date=from_date,
-                                to_date=to_date
-                                )
-                                print("yayyyyyyyyyyyy saved")
-                                auto_created_earning = EmployeeSalaryEarning.objects.create(
-                                user=user,
-                                employee=existing_earning.employee,
-                                company=existing_earning.company,
-                                earnings_head=existing_earning.earnings_head,
-                                value=existing_earning.value,
-                                from_date=to_date + relativedelta(months=1),
-                                to_date=existing_earning_to_date_before_saving
-                                )
-                                print(auto_created_earning)
+                                parent_instance.to_date = parent_original_to_date
+                                parent_instance.save()
+                        else:
+                            parent_second_half_from_date = last_object['from_date']
+                            # sorted_earning_records.pop(-1)
+                    else:
+                        if last_object['to_date'].year == current_indian_year and last_object['to_date'].month == 12:
+                            sorted_earning_records[-1]['to_date'] = '9999-01-01'
+                            print(f'Puting the sorted earning records to infity {sorted_earning_records[-1]}')
+                        else:
+                            parent_second_half_from_date = last_object['to_date'] + relativedelta(months=1)
+                    if len(sorted_earning_records)!=0 and sorted_earning_records[-1]['to_date']!='9999-01-01':
+                        sorted_earning_records.pop(-1)
+                        parent_second_half = EmployeeSalaryEarning.objects.create(
+                        user=user,
+                        employee=first_object['employee'],
+                        company=first_object['company'],
+                        earnings_head_id=earnings_head_id,
+                        value=parent_original_value,
+                        from_date=parent_second_half_from_date,
+                        to_date=parent_original_to_date)
+                        print(f'Saved 2nd half of parent info is => from date: {parent_second_half.from_date}, to date: {parent_second_half.to_date}')
 
-                        elif to_date == existing_earning_to_date_before_saving:
-                            print("inside elif of you know")
-                            # serializer.save(user=user) #save the incoming earning head
-                            new_earning = EmployeeSalaryEarning.objects.create(
-                            user=user,
-                            employee=employee_earning['employee'],
-                            company=employee_earning['company'],
-                            earnings_head_id=earnings_head_id,
-                            value=value,
-                            from_date=from_date,
-                            to_date=to_date
-                            )
-                        elif to_date > existing_earning_to_date_before_saving:
-                            index_for_to_date = None
-                            new_existing_earnings = self.get_queryset().filter(earnings_head=earnings_head_id).order_by('from_date')
-                            # new_existing_earnings.filter(from_date__gte=from_date, to_date__lte=to_date).delete()
-                            # new_existing_earnings = self.get_queryset().filter(earnings_head=earnings_head_id).order_by('from_date')
-
-                            for idx_new, earning_for_to_date in enumerate(new_existing_earnings):
-                                print(idx_new)
-                                print(earning_for_to_date.from_date)
-                                print(earning_for_to_date.to_date)
-
-                                print(to_date, 'of recieved')
-                                if to_date >=  earning_for_to_date.from_date and to_date <= earning_for_to_date.to_date:
-                                    index_for_to_date = idx_new
-                                    break
-                            print(index_for_to_date)
-                            if index_for_to_date is not None:
-                                existing_earning_for_to_date = new_existing_earnings[index_for_to_date]
-                                print(existing_earning_for_to_date)
-                                existing_earning_for_to_date.from_date = to_date  + relativedelta(months=1)
-                                existing_earning_for_to_date.save()
-                                print(existing_earning_for_to_date)
-                                print("now to create new earning ")
-                                new_earning = EmployeeSalaryEarning.objects.create(
-                                user=user,
-                                employee=employee_earning['employee'],
-                                company=employee_earning['company'],
-                                earnings_head_id=earnings_head_id,
-                                value=value,
-                                from_date=from_date,
-                                to_date=to_date
-                                )
-                            elif index_for_to_date is None:
-                                new_earning = EmployeeSalaryEarning.objects.create(
-                                user=user,
-                                employee=employee_earning['employee'],
-                                company=employee_earning['company'],
-                                earnings_head_id=earnings_head_id,
-                                value=value,
-                                from_date=from_date,
-                                to_date=to_date
-                                )
-
-                elif value==existing_earning.value:
-                    if to_date <= existing_earning.to_date:
-                        print('no need to update')
-                        pass
-                    elif to_date>existing_earning.to_date:
-                        existing_earnings.filter(from_date__gt=from_date, to_date__lt=to_date).delete()
-                        new_earning = EmployeeSalaryEarning.objects.create(
-                                user=user,
-                                employee=employee_earning['employee'],
-                                company=employee_earning['company'],
-                                earnings_head_id=earnings_head_id,
-                                value=value,
-                                from_date=from_date,
-                                to_date=to_date
-                                )
-                        print(new_earning)
-                      
+                for sorted_earning_record in sorted_earning_records:
+                    sorted_earning_record['user'] = user
+                    print(sorted_earning_record)
+                    EmployeeSalaryEarning.objects.create(**sorted_earning_record)
 
             else:
-                # If there is no existing earning to update, create a new one
-                print(employee_earning)
-                new_earning = EmployeeSalaryEarning.objects.create(
-                    user=user,
-                    employee=employee_earning['employee'],
-                    company=employee_earning['company'],
-                    earnings_head_id=earnings_head_id,
-                    value=value,
-                    from_date=from_date,
-                    to_date=to_date
-                )
+                front_object_interfering_has_same_value = False
+                front_object_non_interfering_has_same_value = False
+                #Checking if an existing earning is overlapping from the front
+                front_object_interfering_queryset = existing_earnings.filter(from_date__lt=first_object['from_date'], to_date__gte=first_object['from_date'])
+                if front_object_interfering_queryset.exists():
+                    front_object_interfering_instance = front_object_interfering_queryset[0]
+                    print(f'front object intering info => from date: {front_object_interfering_instance.from_date}, to date: {front_object_interfering_instance.to_date}')
+                    print(f'front_object_interfering_instance value: {front_object_interfering_instance.value} and first object value: {first_object["value"]}')
+                    if front_object_interfering_instance.value == first_object['value']:
+                        front_object_interfering_instance.to_date = first_object['to_date']
+                        front_object_interfering_instance.save()
+                        sorted_earning_records.pop(0)
+                        front_object_interfering_has_same_value = True
+                    else:
+                        front_object_interfering_instance.to_date = first_object['from_date'] - relativedelta(months=1)
+                        front_object_interfering_instance.save()
+                else:
+                    front_object_non_interfering_queryset = existing_earnings.filter(to_date=(first_object['from_date'] - relativedelta(months=1)))
+                    if front_object_non_interfering_queryset.exists():
+                        front_object_non_interfering_instance = front_object_non_interfering_queryset[0]
+                        if front_object_non_interfering_instance.value == first_object['value']:
+                            front_object_non_interfering_instance.to_date = first_object['to_date']
+                            front_object_non_interfering_instance.save()
+                            sorted_earning_records.pop(0)
+                            front_object_non_interfering_has_same_value = True
+                    else:
+                        print("something is wrong")
+
+                #Checking if an existing earning is overlapping from the end
+                end_object_interfering_queryset = existing_earnings.filter(from_date__lte=last_object['to_date'], to_date__gt=last_object['to_date'])
+                if end_object_interfering_queryset.exists():
+                    end_object_interfering_instance = end_object_interfering_queryset[0]
+                    print(f'end object interfering info => from date: {end_object_interfering_instance.from_date}, to date: {end_object_interfering_instance.to_date}')
+                    print(f'end_object_interfering_instance value: {end_object_interfering_instance.value} and last object value: {last_object["value"]}')
+                    if end_object_interfering_instance.value == last_object['value']:
+                        if len(sorted_earning_records) == 0 and front_object_interfering_queryset.exists() and front_object_interfering_has_same_value:
+                            front_object_interfering_instance.to_date = end_object_interfering_instance.to_date
+                            end_object_interfering_queryset.delete()
+                            front_object_interfering_instance.save()
+                            
+                        else:
+                            end_object_interfering_instance.from_date = last_object['from_date']
+                            end_object_interfering_instance.save()
+                            sorted_earning_records.pop(-1)
+                    else:
+                        if last_object['to_date'].year == current_indian_year and last_object['to_date'].month == 12:
+                            if len(sorted_earning_records) == 0:
+                                if front_object_interfering_has_same_value:
+                                    front_object_interfering_instance.to_date = "9999-01-01"
+                                    front_object_interfering_instance.save()
+                                elif front_object_non_interfering_has_same_value:
+                                    front_object_non_interfering_instance.to_date = '9999-01-01'
+                                    front_object_non_interfering_instance.save()
+                            else:
+                                sorted_earning_records[-1]['to_date'] = "9999-01-01"
+                            end_object_interfering_queryset.delete()
+                        else:
+                            end_object_interfering_instance.from_date = last_object['to_date'] + relativedelta(months=1)
+                            end_object_interfering_instance.save()
+                else:
+                    #Infinity Earning will never exist here becuase this would mean it has to start from current year + 1 year which we don't want
+                    end_object_non_interfering_queryset = existing_earnings.filter(from_date=(last_object['to_date'] + relativedelta(months=1)))
+                    if end_object_non_interfering_queryset.exists():
+                        end_object_non_interfering_instance = end_object_non_interfering_queryset[0]
+
+                        if len(sorted_earning_records) == 0 and front_object_non_interfering_queryset.exists() and front_object_non_interfering_has_same_value:
+                            front_object_non_interfering_instance.to_date = end_object_non_interfering_instance.to_date
+                            end_object_non_interfering_queryset.delete()
+                            front_object_non_interfering_instance.save()
+                        else:
+                            end_object_non_interfering_instance.from_date = last_object['from_date']
+                            end_object_non_interfering_instance.save()
+                            sorted_earning_records.pop(-1)
+                    else:
+                        print("something is wrong")
+
+
+                for sorted_earning_record in sorted_earning_records:
+                    sorted_earning_record['user'] = user
+                    print(sorted_earning_record)
+                    EmployeeSalaryEarning.objects.create(**sorted_earning_record)
+
+        # print(categorized_earnings)
         return Response({"message": "Employee earnings updated successfully"}, status=status.HTTP_200_OK)
+
+
+    # def update(self, request, *args, **kwargs):
+    #     indian_timezone = pytz.timezone('Asia/Kolkata')
+    #     current_datetime = datetime.now(indian_timezone)
+    #     current_indian_year = current_datetime.year
+    #     employee_earnings = request.data['employee_earnings']
+    #     partial = kwargs.pop('partial', False)
+    #     user = self.request.user
+    #     if user.role != "OWNER":
+    #         instance = OwnerToRegular.objects.get(user=user)
+    #         user=instance
+
+    #     for item in employee_earnings:
+    #         updated_in_first_loop = False
+    #         existing_earning_to_date_before_saving=None
+    #         earnings_head_id = item['earnings_head']
+    #         earnings_head_instance = EarningsHead.objects.get(pk=earnings_head_id)
+    #         earnings_head_instance_data = EarningsHeadSerializer(earnings_head_instance).data
+
+    #         # earnings_head_instance['company'] = earnings_head_instance['company_id']
+
+    #         item['earnings_head'] = earnings_head_instance_data
+    #         serializer = self.get_serializer(data=item)
+    #         serializer.is_valid(raise_exception=True)
+    #         employee_earning = serializer.validated_data
+    #         earnings_head = employee_earning['earnings_head']
+    #         from_date = employee_earning['from_date']
+    #         to_date = employee_earning['to_date']
+    #         value = employee_earning['value']
+    #         print(employee_earning)
+    #         # Get existing employee earnings for the earnings_head
+    #         existing_earnings = self.get_queryset().filter(earnings_head=earnings_head_id).order_by('from_date')
+    #         # existing_earnings.filter(from_date__gte=from_date, to_date__lte=to_date).delete()
+    #         existing_earnings = self.get_queryset().filter(earnings_head=earnings_head_id).order_by('from_date')
+
+    #         # Find the index of the earning that contains the from_date
+    #         index_to_update = None
+    #         for idx, earning in enumerate(existing_earnings):
+    #             if earning.value == value:
+    #                 if earning.to_date == (from_date - relativedelta(months=1)):
+    #                     print(earning.to_date, ' to date of existting earinng')
+    #                     print(from_date, ' from date of new earning')
+    #                     parent_earning = existing_earnings.filter(from_date__lte=from_date, to_date__gte=to_date)
+    #                     if parent_earning.exists():
+    #                         parent_earning_instance = parent_earning[0]
+    #                         print(parent_earning_instance, 'this is parent earning')
+    #                         parent_earning_instance.from_date = (to_date + relativedelta(months=1))
+    #                         parent_earning_instance.save()
+    #                     earning.to_date = to_date
+    #                     earning.save()
+    #                     updated_in_first_loop=True
+    #                 elif earning.from_date == (to_date + relativedelta(months=1)):
+    #                     print(earning.from_date, ' from date of existting earinng')
+    #                     print(to_date, ' to date of new earning')
+    #                     parent_earning = existing_earnings.filter(from_date__lte=from_date, to_date__gte=to_date)
+    #                     if parent_earning.exists():
+    #                         parent_earning_instance = parent_earning[0]
+    #                         parent_earning_instance.to_date = (from_date - relativedelta(months=1))
+    #                         parent_earning_instance.save()
+    #                     existing_earnings.filter(from_date__gte=from_date, to_date__lte=to_date).delete()
+    #                     earning.from_date = from_date
+    #                     earning.save()
+    #                     updated_in_first_loop= True
+    #         if not updated_in_first_loop:
+    #             for idx, earning in enumerate(existing_earnings):
+    #                 print(idx)
+    #                 print(earning.from_date)
+    #                 print(earning.to_date)
+
+    #                 print(from_date)
+                    
+    #                 if from_date >=  earning.from_date and from_date <= earning.to_date:
+    #                     index_to_update = idx
+    #                     break
+    #         print('before iffffffffffff')
+    #         print(index_to_update)
+    #         if index_to_update is not None:
+    #             print('afeter if')
+    #             existing_earning = existing_earnings[index_to_update]
+    #             print(value)
+    #             print(existing_earning.value)
+    #             if value!=existing_earning.value:
+    #                 if from_date==existing_earning.from_date and to_date==existing_earning.to_date:
+    #                     existing_earning.value = value
+    #                     print('here')
+    #                     existing_earning.save()
+    #                 elif from_date==existing_earning.from_date and to_date<existing_earning.to_date:
+    #                     existing_earning_from_date_before_saving = existing_earning.to_date
+    #                     print(existing_earning_from_date_before_saving)
+    #                     existing_earning.from_date = to_date + relativedelta(months=1)
+    #                     existing_earning.save()
+    #                     print(existing_earning.to_date)
+    #                     existing_earnings.filter(from_date__gte=from_date, to_date__lte=to_date).delete()
+    #                     new_earning = EmployeeSalaryEarning.objects.create(
+    #                     user=user,
+    #                     employee=employee_earning['employee'],
+    #                     company=employee_earning['company'],
+    #                     earnings_head_id=earnings_head_id,
+    #                     value=value,
+    #                     from_date=from_date,
+    #                     to_date=to_date
+    #                     )
+    #                     print(new_earning)
+    #                 elif from_date==existing_earning.from_date and to_date>existing_earning.to_date:
+    #                     existing_earnings.filter(from_date__gte=from_date, to_date__lte=to_date).delete()
+    #                     existing_earning_containing_to_date_queryset = existing_earnings.filter(from_date__lte=to_date, to_date__gt=to_date)
+    #                     if existing_earning_containing_to_date_queryset.exists():
+    #                         existing_earning_containing_to_date_instance = existing_earning_containing_to_date_queryset[0]
+    #                         existing_earning_containing_to_date_instance.from_date = to_date + relativedelta(months=1)
+    #                         existing_earning_containing_to_date_instance.save()
+    #                     new_earning = EmployeeSalaryEarning.objects.create(
+    #                     user=user,
+    #                     employee=employee_earning['employee'],
+    #                     company=employee_earning['company'],
+    #                     earnings_head_id=earnings_head_id,
+    #                     value=value,
+    #                     from_date=from_date,
+    #                     to_date=to_date
+    #                     )
+    #                     print(new_earning)
+                
+
+    #                 else:
+    #                     existing_earning_to_date_before_saving = existing_earning.to_date
+    #                     print(existing_earning_to_date_before_saving)
+    #                     existing_earning.to_date = from_date - relativedelta(months=1)
+    #                     existing_earning.save()
+    #                     print(existing_earning.to_date)
+    #                     if to_date < existing_earning_to_date_before_saving:
+    #                         if to_date.year == current_indian_year and to_date.month==12:
+    #                             print("nowwww innfite it")
+    #                             new_earning = EmployeeSalaryEarning.objects.create(
+    #                             user=user,
+    #                             employee=employee_earning['employee'],
+    #                             company=employee_earning['company'],
+    #                             earnings_head_id=earnings_head_id,
+    #                             value=value,
+    #                             from_date=from_date,
+    #                             to_date="9999-01-01"
+    #                             )
+    #                             print(new_earning)
+                            
+    #                         else:
+    #                             print("not saved yet")
+    #                             # serializer.save(user=user) #save the incoming earning head
+    #                             existing_earnings.filter(from_date__gte=from_date, to_date__lte=to_date).delete()
+    #                             new_earning = EmployeeSalaryEarning.objects.create(
+    #                             user=user,
+    #                             employee=employee_earning['employee'],
+    #                             company=employee_earning['company'],
+    #                             earnings_head_id=earnings_head_id,
+    #                             value=value,
+    #                             from_date=from_date,
+    #                             to_date=to_date
+    #                             )
+    #                             print("yayyyyyyyyyyyy saved")
+    #                             auto_created_earning = EmployeeSalaryEarning.objects.create(
+    #                             user=user,
+    #                             employee=existing_earning.employee,
+    #                             company=existing_earning.company,
+    #                             earnings_head=existing_earning.earnings_head,
+    #                             value=existing_earning.value,
+    #                             from_date=to_date + relativedelta(months=1),
+    #                             to_date=existing_earning_to_date_before_saving
+    #                             )
+    #                             print(auto_created_earning)
+    #                             print(f'details of auto created earning: from date:{auto_created_earning.from_date} to date:{auto_created_earning.to_date} value: {auto_created_earning.value}')
+
+    #                     elif to_date == existing_earning_to_date_before_saving:
+    #                         print("inside elif of you know")
+    #                         # serializer.save(user=user) #save the incoming earning head
+    #                         new_earning = EmployeeSalaryEarning.objects.create(
+    #                         user=user,
+    #                         employee=employee_earning['employee'],
+    #                         company=employee_earning['company'],
+    #                         earnings_head_id=earnings_head_id,
+    #                         value=value,
+    #                         from_date=from_date,
+    #                         to_date=to_date
+    #                         )
+    #                     elif to_date > existing_earning_to_date_before_saving:
+    #                         index_for_to_date = None
+    #                         new_existing_earnings = self.get_queryset().filter(earnings_head=earnings_head_id).order_by('from_date')
+    #                         # new_existing_earnings.filter(from_date__gte=from_date, to_date__lte=to_date).delete()
+    #                         # new_existing_earnings = self.get_queryset().filter(earnings_head=earnings_head_id).order_by('from_date')
+
+    #                         for idx_new, earning_for_to_date in enumerate(new_existing_earnings):
+    #                             print(idx_new)
+    #                             print(earning_for_to_date.from_date)
+    #                             print(earning_for_to_date.to_date)
+
+    #                             print(to_date, 'of recieved')
+    #                             if to_date >=  earning_for_to_date.from_date and to_date <= earning_for_to_date.to_date:
+    #                                 index_for_to_date = idx_new
+    #                                 break
+    #                         print(index_for_to_date)
+    #                         if index_for_to_date is not None:
+    #                             existing_earning_for_to_date = new_existing_earnings[index_for_to_date]
+    #                             print(existing_earning_for_to_date)
+    #                             existing_earning_for_to_date.from_date = to_date  + relativedelta(months=1)
+    #                             existing_earning_for_to_date.save()
+    #                             print(existing_earning_for_to_date)
+    #                             print("now to create new earning ")
+    #                             new_existing_earnings.filter(from_date__gte=from_date, to_date__lte=to_date,).delete()
+
+    #                             new_earning = EmployeeSalaryEarning.objects.create(
+    #                             user=user,
+    #                             employee=employee_earning['employee'],
+    #                             company=employee_earning['company'],
+    #                             earnings_head_id=earnings_head_id,
+    #                             value=value,
+    #                             from_date=from_date,
+    #                             to_date=to_date
+    #                             )
+    #                         # elif index_for_to_date is None:
+    #                         #     new_earning = EmployeeSalaryEarning.objects.create(
+    #                         #     user=user,
+    #                         #     employee=employee_earning['employee'],
+    #                         #     company=employee_earning['company'],
+    #                         #     earnings_head_id=earnings_head_id,
+    #                         #     value=value,
+    #                         #     from_date=from_date,
+    #                         #     to_date=to_date
+    #                         #     )
+
+    #             elif value==existing_earning.value:
+    #                 if to_date <= existing_earning.to_date:
+    #                     print('no need to update')
+    #                     pass
+    #                 elif to_date>existing_earning.to_date:
+    #                     existing_earning_containing_to_date = existing_earnings.filter(from_date__lte=to_date, to_date__gte=to_date)
+    #                     print(f'from date of object which contains to date: {existing_earning_containing_to_date[0].from_date} to date: {existing_earning_containing_to_date[0].to_date} value: {existing_earning_containing_to_date[0].value}')
+    #                     existing_earnings.filter(from_date__gte=from_date, to_date__lte=to_date).delete()
+    #                     new_earning = EmployeeSalaryEarning.objects.create(
+    #                             user=user,
+    #                             employee=employee_earning['employee'],
+    #                             company=employee_earning['company'],
+    #                             earnings_head_id=earnings_head_id,
+    #                             value=value,
+    #                             from_date=from_date,
+    #                             to_date=to_date
+    #                             )
+    #                     print(new_earning)
+                      
+    #         # else:
+    #         #     # If there is no existing earning to update, create a new one
+    #         #     print(employee_earning)
+    #         #     new_earning = EmployeeSalaryEarning.objects.create(
+    #         #         user=user,
+    #         #         employee=employee_earning['employee'],
+    #         #         company=employee_earning['company'],
+    #         #         earnings_head_id=earnings_head_id,
+    #         #         value=value,
+    #         #         from_date=from_date,
+    #         #         to_date=to_date
+    #         #     )
+    #     return Response({"message": "Employee earnings updated successfully"}, status=status.HTTP_200_OK)
     
 class EmployeeSalaryDetailCreateAPIView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
@@ -1541,9 +1832,9 @@ class CalculationsRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPI
     def get_queryset(self, *args, **kwargs):
         user = self.request.user
         if user.role == "OWNER":
-            return user.pf_esi_setup_details
+            return user.calculations
         instance = OwnerToRegular.objects.get(user=user)
-        return instance.owner.pf_esi_setup_details
+        return instance.owner.calculations
     
     def update(self, request, *args, **kwargs):
         user = self.request.user

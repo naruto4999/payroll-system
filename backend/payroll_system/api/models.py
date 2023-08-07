@@ -731,8 +731,8 @@ class Calculations(models.Model):
     company = models.OneToOneField(Company, on_delete=models.CASCADE, related_name="calculations", primary_key=True)
     ot_calculation = models.CharField(max_length=10, choices=OT_CALCULATION_CHOICES, default='26', null=False, blank=False)
     el_calculation =  models.CharField(max_length=2, choices=CALCULATION_CHOICES, default='26', null=False, blank=False)
-    notice_pay =  models.CharField(max_length=2, choices=CALCULATION_CHOICES, default='26', null=False, blank=False)
-    service_calculation =  models.CharField(max_length=2, choices=CALCULATION_CHOICES, default='26', null=False, blank=False)
+    notice_pay =  models.CharField(max_length=2, choices=CALCULATION_CHOICES, default='30', null=False, blank=False)
+    service_calculation =  models.CharField(max_length=2, choices=CALCULATION_CHOICES, default='30', null=False, blank=False)
     gratuity_calculation =  models.CharField(max_length=2, choices=CALCULATION_CHOICES, default='26', null=False, blank=False)
     el_days_calculation = models.PositiveSmallIntegerField(default=20, null=False, blank=False)
 
@@ -829,5 +829,11 @@ def create_default_pf_esi_setup(sender, instance, created, **kwargs):
     if created:
         company = instance  # Assign the instance to a variable
         user = company.user
-        # Create the default Weekly Off and Holiday Off on post save for company
-        PfEsiSetup.objects.create(user=user, company=company, ac1_epf_employee_percentage=12, ac1_epf_employee_limit=15000, ac1_epf_employer_percentage=3.67, ac1_epf_employer_limit=15000, ac10_eps_employer_percentage=8.33, ac10_eps_employer_limit=15000, ac2_employer_percentage=0.5, ac21_employer_percentage=0.5, ac22_employer_percentage=0, esi_employee_percentage=0.75, esi_employee_limit=21000, esi_employer_percentage=3.25, esi_employer_limit=21000,)
+        PfEsiSetup.objects.create( user=user, company=company, ac_1_epf_employee_percentage=12, ac_1_epf_employee_limit=15000, ac_1_epf_employer_percentage=3.67, ac_1_epf_employer_limit=15000, ac_10_eps_employer_percentage=8.33, ac_10_eps_employer_limit=15000, ac_2_employer_percentage=0.5, ac_21_employer_percentage=0.5, ac_22_employer_percentage=0, esi_employee_percentage=0.75, esi_employee_limit=21000, esi_employer_percentage=3.25, esi_employer_limit=21000, employer_pf_code=None, employer_esi_code=None,)
+        
+@receiver(post_save, sender=Company)
+def create_default_calculations(sender, instance, created, **kwargs):
+    if created:
+        company = instance  # Assign the instance to a variable
+        user = company.user
+        Calculations.objects.create( user=user, company=company, ot_calculation='26', el_calculation='26', notice_pay='26', service_calculation='26', gratuity_calculation='26', el_days_calculation=20,)
