@@ -25,6 +25,7 @@ import EmployeeSalaryForm from './menu/MasterEntry/forms/EmployeeSalaryForm/Empl
 import WeeklyOffHolidayOffForm from './menu/MasterEntry/forms/WeeklyOffHolidayOffForm/WeeklyOffHolidayOffForm';
 import PfEsiSetupForm from './menu/MasterEntry/forms/PfEsiSetup/PfEsiSetupForm';
 import CalculationsForm from './menu/MasterEntry/forms/CalculationsForm/CalculationsForm';
+import EmployeeShiiftsEntryForm from './menu/Transaction/forms/EmployeeShiftsEntry/EmployeeShiiftsEntryForm';
 
 // import store, { persistor } from "./authentication/store/index"
 // import { PersistGate } from "redux-persist/integration/react";
@@ -79,63 +80,82 @@ function App() {
 						</ProtectedRoute>
 					}
 				>
-					<Route
-						path="new-company-entry"
-						element={<NewCompanyEntryForm />}
-					/>
 					<Route path="select-company" element={<SelectCompany />} />
-					<Route
-						path="company-entry"
-						element={<CompanyEntryForm />}
-					/>
-					<Route
-						path="department-entry"
-						element={<DepartmentEntryForm />}
-					/>
-					<Route
-						path="designation-entry"
-						element={<DesignationEntryForm />}
-					/>
-					<Route
-						path="salary-grade-entry"
-						element={<SalaryGradeEntryForm />}
-					/>
-					<Route
-						path="category-entry"
-						element={<CategoryEntryForm />}
-					/>
-					<Route path="bank-entry" element={<BankEntryForm />} />
-					<Route
-						path="leave-grade-entry"
-						element={<LeaveGradeEntryForm />}
-					/>
-					<Route path="shift-entry" element={<ShiftEntryForm />} />
-					<Route
-						path="holiday-entry"
-						element={<HolidayEntryForm />}
-					/>
-					<Route
-						path="earnings-heads-entry"
-						element={<EarningsHeadEntry />}
-					/>
-					<Route
-						path="deductions-heads-entry"
-						element={<DeductionsHeadEntryForm />}
-					/>
-					<Route
-						path="employee-entry"
-						element={<EmployeeEntryForm />}
-					/>
-					<Route
-						path="employee-salary"
-						element={<EmployeeSalaryForm />}
-					/>
-					<Route
-						path="weekly-off-holiday-off"
-						element={<WeeklyOffHolidayOffForm />}
-					/>
-					<Route path="pf-esi-setup" element={<PfEsiSetupForm />} />
-					<Route path="calculations" element={<CalculationsForm />} />
+					<Route path="master-entry">
+						<Route
+							path="new-company-entry"
+							element={<NewCompanyEntryForm />}
+						/>
+
+						<Route
+							path="company-entry"
+							element={<CompanyEntryForm />}
+						/>
+						<Route
+							path="department-entry"
+							element={<DepartmentEntryForm />}
+						/>
+						<Route
+							path="designation-entry"
+							element={<DesignationEntryForm />}
+						/>
+						<Route
+							path="salary-grade-entry"
+							element={<SalaryGradeEntryForm />}
+						/>
+						<Route
+							path="category-entry"
+							element={<CategoryEntryForm />}
+						/>
+						<Route path="bank-entry" element={<BankEntryForm />} />
+						<Route
+							path="leave-grade-entry"
+							element={<LeaveGradeEntryForm />}
+						/>
+						<Route
+							path="shift-entry"
+							element={<ShiftEntryForm />}
+						/>
+						<Route
+							path="holiday-entry"
+							element={<HolidayEntryForm />}
+						/>
+						<Route
+							path="earnings-heads-entry"
+							element={<EarningsHeadEntry />}
+						/>
+						<Route
+							path="deductions-heads-entry"
+							element={<DeductionsHeadEntryForm />}
+						/>
+						<Route
+							path="employee-entry"
+							element={<EmployeeEntryForm />}
+						/>
+						<Route
+							path="employee-salary"
+							element={<EmployeeSalaryForm />}
+						/>
+						<Route
+							path="weekly-off-holiday-off"
+							element={<WeeklyOffHolidayOffForm />}
+						/>
+						<Route
+							path="pf-esi-setup"
+							element={<PfEsiSetupForm />}
+						/>
+						<Route
+							path="calculations"
+							element={<CalculationsForm />}
+						/>
+					</Route>
+					<Route path="transaction">
+						<Route
+							path="employee-shifts"
+							element={<EmployeeShiiftsEntryForm />}
+						/>
+					</Route>
+
 					{/* <Route path="bank-entry" element={<BankEntryForm />} />
                     <Route path="category-entry" element={<CategoryEntryForm />} />
                     <Route path="employee-entry" element={<EmployeeEntryForm />} />

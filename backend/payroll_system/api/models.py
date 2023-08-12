@@ -9,6 +9,10 @@ from django.utils import timezone
 from django.core.validators import MinValueValidator, MaxValueValidator
 from decimal import Decimal
 from django.db.models import Q
+from dateutil.relativedelta import relativedelta
+import calendar
+
+
 
 
 #imports for signals
@@ -52,6 +56,22 @@ from django.dispatch import receiver
 #         user.is_staff = True
 #         user.save(using=self._db)
 PERCENTAGE_VALIDATOR = [MinValueValidator(0), MaxValueValidator(100)]
+
+def is_valid_date(date):
+    date_str = date.strftime('%Y-%m-%d')
+    print(type(date_str))
+    try:
+        date = datetime.strptime(date_str, '%Y-%m-%d')
+        # Check if the day is valid for the month and year
+        _, max_day = calendar.monthrange(date.year, date.month)
+        return 1 <= date.day <= max_day
+    except ValueError:
+        return False
+    # try:
+    #     datetime.strptime(date_str, '%Y-%m-%d')
+    #     return True
+    # except ValueError:
+    #     return False
 
 class UserManager(BaseUserManager):
     def create_user(self, username, email, password=None, phone_no=None, **kwargs):
@@ -497,14 +517,19 @@ class EmployeeSalaryEarning(models.Model):
         ]
 
     def clean(self):
-       def clean(self):
         if isinstance(self.from_date, str):
             # Parse the string into a datetime object
-            self.from_date = datetime.strptime(self.from_date, "%Y-%m-%d")
-
+            print('in istance')
+            self.from_date = datetime.strptime(self.from_date, "%Y-%m-%d").date()
         if isinstance(self.to_date, str):
             # Parse the string into a datetime object
-            self.to_date = datetime.strptime(self.to_date, "%Y-%m-%d")
+            self.to_date = datetime.strptime(self.to_date, "%Y-%m-%d").date()
+        if isinstance(self.from_date, datetime):
+            self.from_date = self.from_date.date()
+        if isinstance(self.to_date, datetime):
+            self.to_date = self.to_date.date()
+        # Now both from_date and to_date are datetime objects
+        print(f'from_date type : {type(self.from_date)} value: {self.from_date} and to_date type: {type(self.to_date)} and value {self.to_date}')
 
         # Now both from_date and to_date are datetime objects
 
@@ -737,8 +762,163 @@ class Calculations(models.Model):
     el_days_calculation = models.PositiveSmallIntegerField(default=20, null=False, blank=False)
 
 
+class EmployeeShiftsManager(models.Manager):
+    def process_employee_shifts(self, employee_shift_data, user):
+        # Step 2: Delete overlapping shifts for the month
+        from_date = employee_shift_data['from_date']
+        to_date = employee_shift_data['to_date']
+        shift = employee_shift_data["shift"]
+        if is_valid_date(from_date) and is_valid_date(to_date):
+            self.filter(from_date__gte=from_date, to_date__lte=to_date).delete()
+        else:
+            raise ValidationError("Invalid date format for from_date or to_date.")
 
+        parent_shift_queryset = self.filter(from_date__lte=from_date, to_date__gte=to_date)
+        if parent_shift_queryset.exists():
+            parent_shift_instance = parent_shift_queryset[0]
+            print(f'this is parent info from date: {parent_shift_instance.from_date}, to date: {parent_shift_instance.to_date}')
+            if parent_shift_instance.shift != shift:
+                if parent_shift_instance.from_date == from_date:
+                        print(f'Parent shift instance from date is same {parent_shift_instance}')
+                        parent_shift_instance.from_date = to_date + relativedelta(days=1)
+                        parent_shift_instance.save()
+                        print(f'After Saving {parent_shift_instance}')
 
+                elif parent_shift_instance.to_date == to_date:
+                    parent_shift_instance.to_date = from_date - relativedelta(days=1)
+                    parent_shift_instance.save()
+                
+                else:
+                    #Divide Parent into two
+                    parent_original_shift = parent_shift_instance.shift
+                    parent_original_from_date = parent_shift_instance.from_date
+                    parent_original_to_date = parent_shift_instance.to_date
+                    
+                    #Creating First Half
+                    parent_shift_instance.to_date = from_date - relativedelta(days=1)
+                    parent_shift_instance.save()
+                    print(f'Saved 1st half of parent info is => from date: {parent_shift_instance.from_date}, to date: {parent_shift_instance.to_date}')
+
+                    #Creating Second Half
+                    self.create(user=user, employee=employee_shift_data['employee'], company=employee_shift_data['company'], from_date=employee_shift_data['to_date'] + relativedelta(days=1), to_date=parent_original_to_date, shift=parent_original_shift)
+                
+                #Creating Employee Shift
+                employee_shift_data['user'] = user
+                self.create(**employee_shift_data)
+        else:
+            #Checking if existing shift is overlapping from the front
+            front_object_interfering_has_same_value = False
+            front_object_interfering_queryset = self.filter(from_date__lt=from_date, to_date__gte=to_date)
+            front_object_non_interfering_has_same_value = False
+            if front_object_interfering_queryset.exists():
+                    front_object_interfering_instance = front_object_interfering_queryset[0]
+                    print(f'front object intering info => from date: {front_object_interfering_instance.from_date}, to date: {front_object_interfering_instance.to_date}')
+                    print(f'front_object_interfering_instance value: {front_object_interfering_instance.shift} and incomming shift: {employee_shift_data.shift}')
+                    if front_object_interfering_instance.shift == employee_shift_data['shift']:
+                        front_object_interfering_instance.to_date = to_date
+                        front_object_interfering_instance.save()
+                        front_object_interfering_has_same_value = True
+                    else:
+                        front_object_interfering_instance.to_date = from_date - relativedelta(days=1)
+                        front_object_interfering_instance.save()
+            else:
+                front_object_non_interfering_queryset = self.filter(to_date=(from_date - relativedelta(days=1)))
+                if front_object_non_interfering_queryset.exists():
+                    front_object_non_interfering_instance = front_object_non_interfering_queryset[0]
+                    if front_object_non_interfering_instance.shift == employee_shift_data['shift']:
+                        front_object_non_interfering_instance.to_date = to_date
+                        front_object_non_interfering_instance.save()
+                        front_object_non_interfering_has_same_value
+                else:
+                    print("something is wrong")
+
+            #Checking if existing shift is overlapping from the back
+            end_object_interfering_has_same_value = False
+            end_object_non_interfering_has_same_value = False
+            end_object_interfering_queryset = self.filter(from_date__lte=to_date, to_date__gt=to_date)
+            if end_object_interfering_queryset.exists():
+                    end_object_interfering_instance = end_object_interfering_queryset[0]
+                    print(f'end object interfering info => from date: {end_object_interfering_instance.from_date}, to date: {end_object_interfering_instance.to_date}')
+                    print(f'end_object_interfering_instance shift: {end_object_interfering_instance.shift} and incomming shift: {employee_shift_data["shift"]}')
+                    if end_object_interfering_instance.shift == employee_shift_data['shift']:
+                        if front_object_interfering_has_same_value:
+                            front_object_interfering_instance.to_date = end_object_interfering_instance.to_date
+                            end_object_interfering_queryset.delete()
+                            front_object_interfering_instance.save()
+                        elif front_object_non_interfering_has_same_value:
+                            front_object_non_interfering_instance.to_date = end_object_interfering_instance.to_date
+                            end_object_interfering_queryset.delete()
+                            front_object_non_interfering_instance.save()
+                        else:
+                            end_object_interfering_instance.from_date = employee_shift_data['from_date']
+                            end_object_interfering_instance.save()
+                        end_object_interfering_has_same_value = True
+                            
+                    else:
+                        end_object_interfering_instance.from_date = to_date + relativedelta(days=1)
+                        end_object_interfering_instance.save()
+            else:
+                end_object_non_interfering_queryset = self.filter(from_date=(to_date + relativedelta(days=1)))
+                if end_object_non_interfering_queryset.exists():
+                    end_object_non_interfering_instance = end_object_non_interfering_queryset[0]
+                    if end_object_non_interfering_instance.shift == employee_shift_data['shift']:
+                        if front_object_interfering_has_same_value:
+                            front_object_interfering_instance.to_date = end_object_non_interfering_instance.to_date
+                            end_object_non_interfering_queryset.delete()
+                            front_object_interfering_instance.save()
+                        elif front_object_non_interfering_has_same_value:
+                            front_object_non_interfering_instance.to_date = end_object_non_interfering_instance.to_date
+                            end_object_non_interfering_queryset.delete()
+                            front_object_non_interfering_instance.save()
+                        else:
+                            end_object_non_interfering_instance.from_date = employee_shift_data['from_date']
+                            end_object_non_interfering_instance.save()
+                        end_object_non_interfering_has_same_value = True
+            if not front_object_interfering_has_same_value and not front_object_non_interfering_has_same_value and not end_object_interfering_has_same_value and not end_object_non_interfering_has_same_value:
+                employee_shift_data['user'] = user
+                self.create(**employee_shift_data)
+
+class EmployeeShifts(models.Model):
+    objects = EmployeeShiftsManager()
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_employees_shifts")
+    employee = models.ForeignKey(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="shifts")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="all_company_employees_shifts")
+    shift = models.ForeignKey(Shift, on_delete=models.CASCADE, related_name="employees_shifts")
+    from_date = models.DateField(null=False, blank=False)
+    to_date = models.DateField(null=False, blank=False)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['employee', 'shift', 'from_date'], name='unique_employee_shift_from_date'),
+
+            #Covers the fact that a particuar earning head for an employee can have to_date set to "9999-01-01" for only one record
+            models.UniqueConstraint( fields=['shift', 'employee', 'to_date'], name='unique_employee_shift_to_date')
+        ]
+
+    def clean(self):
+        if isinstance(self.from_date, str):
+            # Parse the string into a datetime object
+            print('in istance')
+            self.from_date = datetime.strptime(self.from_date, "%Y-%m-%d").date()
+        if isinstance(self.to_date, str):
+            # Parse the string into a datetime object
+            self.to_date = datetime.strptime(self.to_date, "%Y-%m-%d").date()
+        if isinstance(self.from_date, datetime):
+            self.from_date = self.from_date.date()
+        if isinstance(self.to_date, datetime):
+            self.to_date = self.to_date.date()
+        # Now both from_date and to_date are datetime objects
+        print(f'from_date type : {type(self.from_date)} value: {self.from_date} and to_date type: {type(self.to_date)} and value {self.to_date}')
+        if self.from_date > self.to_date:
+            raise ValidationError("'from_date' must be before 'to_date'")
+        # if self.from_date.year < 1950 or self.from_date.year > 2100:
+        #     raise ValidationError("Invalid From Date value")
+        
+    def save(self, *args, **kwargs):
+        self.clean()
+        if self.shift.company != self.company or self.shift.user != self.user:
+            raise ValidationError("Invalid Shift selected.")
+        super().save(*args, **kwargs)
 
 
 

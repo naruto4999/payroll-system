@@ -97,6 +97,7 @@ export const apiSlice = createApi({
 		'EmployeeFamilyNomineeDetails',
 		'PfEsiSetup',
 		'Calculations',
+		'EmployeeShifts',
 	],
 	endpoints: (builder) => ({}),
 });

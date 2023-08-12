@@ -10,7 +10,6 @@ import {
 	FaUserShield,
 	FaUsersCog,
 	FaEye,
-	FaBusinessTime,
 } from 'react-icons/fa';
 import {
 	FaMountainSun,
@@ -22,6 +21,8 @@ import {
 	FaBoxesStacked,
 	FaCircleArrowRight,
 	FaCalculator,
+	FaTableList,
+	FaBusinessTime,
 } from 'react-icons/fa6';
 
 const menuItems = [
@@ -32,52 +33,52 @@ const menuItems = [
 			{
 				title: 'Add New Company',
 				icon: FaPlus,
-				path: '/home/new-company-entry',
+				path: '/home/master-entry/new-company-entry',
 			},
 			{
 				title: 'Company Entry',
 				icon: FaPen,
-				path: '/home/company-entry',
+				path: '/home/master-entry/company-entry',
 			},
 			{
 				title: 'Department Entry',
 				icon: FaThLarge,
-				path: '/home/department-entry',
+				path: '/home/master-entry/department-entry',
 			},
 			{
 				title: 'Designation Entry',
 				icon: FaLevelUpAlt,
-				path: '/home/designation-entry',
+				path: '/home/master-entry/designation-entry',
 			},
 			{
 				title: 'Salary Grade Entry',
 				icon: FaMoneyCheckAlt,
-				path: '/home/salary-grade-entry',
+				path: '/home/master-entry/salary-grade-entry',
 			},
 			{
 				title: 'Category Entry',
 				icon: FaMoneyCheckAlt,
-				path: '/home/category-entry',
+				path: '/home/master-entry/category-entry',
 			},
 			{
 				title: 'Bank Entry',
 				icon: FaMoneyCheckAlt,
-				path: '/home/bank-entry',
+				path: '/home/master-entry/bank-entry',
 			},
 			{
 				title: 'Leave Grade Entry',
 				icon: FaMoneyCheckAlt,
-				path: '/home/leave-grade-entry',
+				path: '/home/master-entry/leave-grade-entry',
 			},
 			{
 				title: 'Shift Entry',
 				icon: FaBusinessTime,
-				path: '/home/shift-entry',
+				path: '/home/master-entry/shift-entry',
 			},
 			{
 				title: 'Holiday Entry',
 				icon: FaMountainSun,
-				path: '/home/holiday-entry',
+				path: '/home/master-entry/holiday-entry',
 			},
 			{
 				title: 'Heads Entry',
@@ -86,29 +87,29 @@ const menuItems = [
 					{
 						title: 'Earnings',
 						icon: FaDollarSign,
-						path: '/home/earnings-heads-entry',
+						path: '/home/master-entry/earnings-heads-entry',
 					},
 					{
 						title: 'Deductions',
 						icon: FaDollarSign,
-						path: '/home/deductions-heads-entry',
+						path: '/home/master-entry/deductions-heads-entry',
 					},
 				],
 			},
 			{
 				title: 'Employee Entry',
 				icon: FaPerson,
-				path: '/home/employee-entry',
+				path: '/home/master-entry/employee-entry',
 			},
 			{
 				title: 'Employee Salary',
 				icon: FaDollarSign,
-				path: '/home/employee-salary',
+				path: '/home/master-entry/employee-salary',
 			},
 			{
 				title: 'Weekly / Holiday Off',
 				icon: FaCalendarCheck,
-				path: '/home/weekly-off-holiday-off',
+				path: '/home/master-entry/weekly-off-holiday-off',
 			},
 			{
 				title: 'Setup Entry',
@@ -117,17 +118,29 @@ const menuItems = [
 					{
 						title: 'ESI/PF Setup',
 						icon: FaCircleArrowRight,
-						path: '/home/pf-esi-setup',
+						path: '/home/master-entry/pf-esi-setup',
 					},
 					{
 						title: 'Calculations',
 						icon: FaCalculator,
-						path: '/home/calculations',
+						path: '/home/master-entry/calculations',
 					},
 				],
 			},
 		],
 	},
+	{
+		title: 'Transaction',
+		icon: FaTableList,
+		children: [
+			{
+				title: 'Employee Shifts Entry',
+				icon: FaBusinessTime,
+				path: '/home/transaction/employee-shifts',
+			},
+		],
+	},
+
 	{
 		title: 'Settings',
 		icon: FaCogs,

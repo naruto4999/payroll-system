@@ -1,7 +1,7 @@
 from dataclasses import field
 from rest_framework import serializers
 
-from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, DeductionsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning, EmployeeSalaryDetail, EmployeeFamilyNomineeDetial, EmployeePfEsiDetail, WeeklyOffHolidayOff, PfEsiSetup, Calculations
+from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, DeductionsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning, EmployeeSalaryDetail, EmployeeFamilyNomineeDetial, EmployeePfEsiDetail, WeeklyOffHolidayOff, PfEsiSetup, Calculations, EmployeeShifts
 from rest_framework import serializers
 
 
@@ -214,3 +214,14 @@ class CalculationsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Calculations
         fields = ('company' ,'ot_calculation', 'el_calculation', 'notice_pay', 'service_calculation', 'gratuity_calculation', 'el_days_calculation',)
+
+class EmployeeShiftsSerializer(serializers.ModelSerializer):
+    shift = ShiftSerializer()
+    class Meta:
+        model = EmployeeShifts
+        fields = ['employee', 'company', 'shift', 'from_date', 'to_date']
+
+class EmployeeShiftsUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmployeeShifts
+        fields = ['employee', 'company', 'shift', 'from_date', 'to_date']
