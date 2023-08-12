@@ -17,6 +17,12 @@
   <img src="docs/screenshots/register-page.png" alt="Register Page">
 </div>
 
+### Selecting Company
+
+<div align="center">
+  <img src="docs/screenshots/select-company.png" alt="Select Company Page">
+</div>
+
 ### Company Details
 
 <div align="center">
