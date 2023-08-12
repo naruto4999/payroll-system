@@ -29,6 +29,8 @@
   <img src="docs/screenshots/employee-personal-detail.png" alt="Employee Personal Detail">
   <img src="docs/screenshots/employee-professional-detail.png" alt="Employee Professional Detail">
   <img src="docs/screenshots/employee-salary-detail.png" alt="Employee Salary Detail">
+  <img src="docs/screenshots/employee-pf-esi-detail" alt="Employee Salary Detail">
+  <img src="docs/screenshots/employee-nominee-detail.png" alt="Employee Salary Detail">
   <!-- Add more screenshots here -->
 </div>
 
