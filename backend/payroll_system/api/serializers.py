@@ -166,7 +166,7 @@ class EmployeeProfessionalDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = EmployeeProfessionalDetail
-        fields = ['user', 'company', 'employee', 'date_of_joining', 'date_of_confirm', 'department', 'designation', 'category', 'salary_grade', 'shift', 'weekly_off', 'extra_off']
+        fields = ['user', 'company', 'employee', 'date_of_joining', 'date_of_confirm', 'department', 'designation', 'category', 'salary_grade', 'weekly_off', 'extra_off']
 
 
 class EmployeeSalaryEarningSerializer(serializers.ModelSerializer):

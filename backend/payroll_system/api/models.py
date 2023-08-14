@@ -480,7 +480,7 @@ class EmployeeProfessionalDetail(models.Model):
     designation = models.ForeignKey(Designation, on_delete=models.CASCADE, related_name="employee_professional_detail", null=True, blank=True)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="employee_professional_detail", null=True, blank=True)
     salary_grade = models.ForeignKey(SalaryGrade, on_delete=models.CASCADE, related_name="employee_professional_detail", null=True, blank=True)
-    shift = models.ForeignKey(Shift, on_delete=models.CASCADE, related_name="employee_professional_detail", null=True, blank=True)
+    # shift = models.ForeignKey(Shift, on_delete=models.CASCADE, related_name="employee_professional_detail", null=True, blank=True)
     weekly_off = models.CharField(max_length=6, choices=WEEKDAY_CHOICES, null=False, blank=False, default='sun')    
     extra_off = models.CharField(max_length=10, choices=EXTRA_OFF_CHOICES, default='no_off', null=False, blank=False)
 
@@ -494,8 +494,8 @@ class EmployeeProfessionalDetail(models.Model):
             raise ValidationError("Invalid category selected.")
         elif self.salary_grade and (self.salary_grade.company != self.company or self.salary_grade.user != self.user):
             raise ValidationError("Invalid salary grade selected.")
-        elif self.shift and (self.shift.company != self.company or self.shift.user != self.user):
-            raise ValidationError("Invalid shift selected.")
+        # elif self.shift and (self.shift.company != self.company or self.shift.user != self.user):
+        #     raise ValidationError("Invalid shift selected.")
         super().save(*args, **kwargs)
 
 
@@ -769,11 +769,11 @@ class EmployeeShiftsManager(models.Manager):
         to_date = employee_shift_data['to_date']
         shift = employee_shift_data["shift"]
         if is_valid_date(from_date) and is_valid_date(to_date):
-            self.filter(from_date__gte=from_date, to_date__lte=to_date).delete()
+            self.filter(from_date__gte=from_date, to_date__lte=to_date, employee=employee_shift_data['employee']).delete()
         else:
             raise ValidationError("Invalid date format for from_date or to_date.")
 
-        parent_shift_queryset = self.filter(from_date__lte=from_date, to_date__gte=to_date)
+        parent_shift_queryset = self.filter(from_date__lte=from_date, to_date__gte=to_date, employee=employee_shift_data['employee'])
         if parent_shift_queryset.exists():
             parent_shift_instance = parent_shift_queryset[0]
             print(f'this is parent info from date: {parent_shift_instance.from_date}, to date: {parent_shift_instance.to_date}')
@@ -808,12 +808,12 @@ class EmployeeShiftsManager(models.Manager):
         else:
             #Checking if existing shift is overlapping from the front
             front_object_interfering_has_same_value = False
-            front_object_interfering_queryset = self.filter(from_date__lt=from_date, to_date__gte=to_date)
+            front_object_interfering_queryset = self.filter(from_date__lt=from_date, to_date__gte=from_date, employee=employee_shift_data['employee'])
             front_object_non_interfering_has_same_value = False
             if front_object_interfering_queryset.exists():
                     front_object_interfering_instance = front_object_interfering_queryset[0]
                     print(f'front object intering info => from date: {front_object_interfering_instance.from_date}, to date: {front_object_interfering_instance.to_date}')
-                    print(f'front_object_interfering_instance value: {front_object_interfering_instance.shift} and incomming shift: {employee_shift_data.shift}')
+                    print(f'front_object_interfering_instance value: {front_object_interfering_instance.shift} and incomming shift: {employee_shift_data["shift"]}')
                     if front_object_interfering_instance.shift == employee_shift_data['shift']:
                         front_object_interfering_instance.to_date = to_date
                         front_object_interfering_instance.save()
@@ -822,20 +822,20 @@ class EmployeeShiftsManager(models.Manager):
                         front_object_interfering_instance.to_date = from_date - relativedelta(days=1)
                         front_object_interfering_instance.save()
             else:
-                front_object_non_interfering_queryset = self.filter(to_date=(from_date - relativedelta(days=1)))
+                front_object_non_interfering_queryset = self.filter(to_date=(from_date - relativedelta(days=1)), employee=employee_shift_data['employee'])
                 if front_object_non_interfering_queryset.exists():
                     front_object_non_interfering_instance = front_object_non_interfering_queryset[0]
                     if front_object_non_interfering_instance.shift == employee_shift_data['shift']:
                         front_object_non_interfering_instance.to_date = to_date
                         front_object_non_interfering_instance.save()
-                        front_object_non_interfering_has_same_value
+                        front_object_non_interfering_has_same_value = True
                 else:
                     print("something is wrong")
 
             #Checking if existing shift is overlapping from the back
             end_object_interfering_has_same_value = False
             end_object_non_interfering_has_same_value = False
-            end_object_interfering_queryset = self.filter(from_date__lte=to_date, to_date__gt=to_date)
+            end_object_interfering_queryset = self.filter(from_date__lte=to_date, to_date__gt=to_date, employee=employee_shift_data['employee'])
             if end_object_interfering_queryset.exists():
                     end_object_interfering_instance = end_object_interfering_queryset[0]
                     print(f'end object interfering info => from date: {end_object_interfering_instance.from_date}, to date: {end_object_interfering_instance.to_date}')
@@ -858,7 +858,7 @@ class EmployeeShiftsManager(models.Manager):
                         end_object_interfering_instance.from_date = to_date + relativedelta(days=1)
                         end_object_interfering_instance.save()
             else:
-                end_object_non_interfering_queryset = self.filter(from_date=(to_date + relativedelta(days=1)))
+                end_object_non_interfering_queryset = self.filter(from_date=(to_date + relativedelta(days=1)), employee=employee_shift_data['employee'])
                 if end_object_non_interfering_queryset.exists():
                     end_object_non_interfering_instance = end_object_non_interfering_queryset[0]
                     if end_object_non_interfering_instance.shift == employee_shift_data['shift']:
@@ -877,7 +877,59 @@ class EmployeeShiftsManager(models.Manager):
             if not front_object_interfering_has_same_value and not front_object_non_interfering_has_same_value and not end_object_interfering_has_same_value and not end_object_non_interfering_has_same_value:
                 employee_shift_data['user'] = user
                 self.create(**employee_shift_data)
+                
+    def process_employee_permanent_shift(self, employee_shift_data, user):
+        from_date = employee_shift_data['from_date']
+        to_date = employee_shift_data['to_date']
+        shift = employee_shift_data["shift"]
+        if is_valid_date(from_date) and is_valid_date(to_date):
+            self.filter(from_date__gte=from_date, to_date__lte=to_date, employee=employee_shift_data['employee']).delete()
+        else:
+            raise ValidationError("Invalid date format for from_date or to_date.")
+    
+        parent_shift_queryset = self.filter(from_date__lte=from_date, to_date__gte=to_date, employee=employee_shift_data['employee'])
+        if parent_shift_queryset.exists():
+            parent_shift_instance = parent_shift_queryset[0]
+            print(f'this is parent info from date: {parent_shift_instance.from_date}, to date: {parent_shift_instance.to_date}')
+            if parent_shift_instance.shift != shift:
 
+                if parent_shift_instance.to_date == to_date:
+                    parent_shift_instance.to_date = from_date - relativedelta(days=1)
+                    parent_shift_instance.save()
+                
+                else:
+                   print('something is wrong a lorger parent on both sides exist')
+                #Creating Employee Shift
+                employee_shift_data['user'] = user
+                self.create(**employee_shift_data)
+        else:
+            front_object_interfering_has_same_value = False
+            front_object_interfering_queryset = self.filter(from_date__lt=from_date, to_date__gte=from_date, employee=employee_shift_data['employee'])
+            front_object_non_interfering_has_same_value = False
+            if front_object_interfering_queryset.exists():
+                    front_object_interfering_instance = front_object_interfering_queryset[0]
+                    if front_object_interfering_instance.shift == employee_shift_data['shift']:
+                        front_object_interfering_instance.to_date = to_date
+                        front_object_interfering_instance.save()
+                        front_object_interfering_has_same_value = True
+                    else:
+                        front_object_interfering_instance.to_date = from_date - relativedelta(days=1)
+                        front_object_interfering_instance.save()
+            else:
+                front_object_non_interfering_queryset = self.filter(to_date=(from_date - relativedelta(days=1)), employee=employee_shift_data['employee'])
+                if front_object_non_interfering_queryset.exists():
+                    front_object_non_interfering_instance = front_object_non_interfering_queryset[0]
+                    if front_object_non_interfering_instance.shift == employee_shift_data['shift']:
+                        front_object_non_interfering_instance.to_date = to_date
+                        front_object_non_interfering_instance.save()
+                        front_object_non_interfering_has_same_value = True
+                else:
+                    print("something is wrong")
+            if not front_object_interfering_has_same_value and not front_object_non_interfering_has_same_value:
+                employee_shift_data['user'] = user
+                self.create(**employee_shift_data)
+
+        
 class EmployeeShifts(models.Model):
     objects = EmployeeShiftsManager()
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_employees_shifts")

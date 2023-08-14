@@ -15,14 +15,20 @@ import {
 } from 'react-icons/fa';
 import { useGetEmployeePersonalDetailsQuery } from '../../../../authentication/api/employeeEntryApiSlice';
 import { useGetShiftsQuery } from '../../../../authentication/api/shiftEntryApiSlice';
-import { useUpdateEmployeeShiftsMutation } from '../../../../authentication/api/employeeShiftsApiSlice';
+import {
+	useUpdateEmployeeShiftsMutation,
+	useUpdatePermanentEmployeeShiftMutation,
+} from '../../../../authentication/api/employeeShiftsApiSlice';
 import { useOutletContext } from 'react-router-dom';
 import ReactModal from 'react-modal';
 import { Formik } from 'formik';
 import { useDispatch, useSelector } from 'react-redux';
 import { alertActions } from '../../../../authentication/store/slices/alertSlice';
 import EditEmployeeShift from './EditEmployeeShift';
+import EditEmployeeShiftNavigationBar from './EditEmployeeShiftNavigationBar';
 import * as yup from 'yup';
+import PermanentEditEmployeeShift from './PermanentEditEmployeeShift';
+import createValidationSchema from './EmployeeShiftsSchema';
 // import { generateEmployeeSalarySchema } from './EmployeeSalarySchema';
 // import { useUpdateEmployeeSalaryEarningMutation } from '../../../../authentication/api/employeeEntryApiSlice';
 
@@ -53,109 +59,179 @@ const EmployeeShiiftsEntryForm = () => {
 	console.log(shifts);
 	const [updateEmployeeShifts, { isLoading: isUpdatingEmployeeShifts }] =
 		useUpdateEmployeeShiftsMutation();
+	const [
+		updatePermanentEmployeeShift,
+		{ isLoading: isUpdatingPermanentEmployeeShift },
+	] = useUpdatePermanentEmployeeShiftMutation();
 
-	const [editShiftPopover, setEditShiftPopover] = useState(false);
+	// const [editShiftPopover, setEditShiftPopover] = useState(false);
 	const [updateEmployeeShiftId, setUpdateEmployeeShiftId] = useState(null);
 	const [dateOfJoining, setDateOfJoining] = useState(null);
 	const [errorMessage, setErrorMessage] = useState('');
+	const [editEmployeeShiftPopover, setEditEmployeeShiftPopover] = useState({
+		dayWiseShiftEdit: false,
+		permanentShiftEdit: false,
+	});
+	const [employeeShiftsFound, setEmployeeShiftsFound] = useState(false);
 
-	const editEmployeeShiftsPopoverHandler = async (personalDetail) => {
+	const editEmployeeShiftsDetail = (personalDetail) => {
 		console.log(personalDetail);
 		console.log(personalDetail.dateOfJoining);
 		setDateOfJoining(personalDetail.dateOfJoining);
 		setUpdateEmployeeShiftId(personalDetail.id);
-		// setFirstRender(true);
-		setEditShiftPopover(!editShiftPopover);
+		editEmployeeShiftsPopoverHandler('dayWiseShiftEdit');
 	};
 
+	const editEmployeeShiftsPopoverHandler = useCallback((popoverName) => {
+		switch (popoverName) {
+			case 'dayWiseShiftEdit':
+				setEditEmployeeShiftPopover({
+					dayWiseShiftEdit: true,
+					permanentShiftEdit: false,
+				});
+				break;
+			case 'permanentShiftEdit':
+				setEditEmployeeShiftPopover({
+					dayWiseShiftEdit: false,
+					permanentShiftEdit: true,
+				});
+				break;
+			default:
+				console.log('Unknown popoverName:', popoverName);
+		}
+	});
+	console.log(dateOfJoining);
+
 	const cancelButtonClicked = useCallback(() => {
-		setEditShiftPopover(false);
+		setEditEmployeeShiftPopover({
+			dayWiseShiftEdit: false,
+			permanentShiftEdit: false,
+		});
 		setUpdateEmployeeShiftId(null);
 		// setFirstRender(false);
 		setDateOfJoining(null);
 	}, []);
 
-	const updateButtonClicked = async (values, formikBag) => {
-		const employeeShifts = [];
-		let fromDate = null;
-		let toDate = null;
-		let prevValue = parseInt(values.dayWiseShifts[1]);
-		const daysInMonth = new Date(values.year, values.month, 0).getDate();
-		const dateOfJoiningObj = new Date(dateOfJoining);
+	const updateButtonClicked = useCallback(
+		async (values, formikBag) => {
+			const employeeShifts = [];
+			let fromDate = 1;
+			let toDate = null;
+			let prevValue = parseInt(values.dayWiseShifts[1]);
+			const daysInMonth = new Date(
+				values.year,
+				values.month,
+				0
+			).getDate();
+			const dateOfJoiningObj = new Date(dateOfJoining);
 
-		for (let day = 1; day <= daysInMonth; day++) {
-			const calendarDate = new Date(
-				Date.UTC(values.year, values.month - 1, day, 0, 0, 0, 0)
-			);
+			for (let day = 1; day <= daysInMonth; day++) {
+				const calendarDate = new Date(
+					Date.UTC(values.year, values.month - 1, day, 0, 0, 0, 0)
+				);
 
-			if (calendarDate < dateOfJoiningObj) {
-				fromDate = day + 1;
-				prevValue = parseInt(values.dayWiseShifts[day + 1]);
-				toDate = day + 1;
-				continue;
-			}
-
-			const currentValue = parseInt(values.dayWiseShifts[day]);
-			if (currentValue !== prevValue) {
-				if (fromDate !== null && toDate !== null) {
-					// Push the segment to the employeeShifts array
-					employeeShifts.push({
-						fromDate: `${values.year}-${values.month}-${fromDate}`,
-						toDate: `${values.year}-${values.month}-${toDate}`,
-						shift: prevValue, // Use prevValue, since currentValue could have changed
-						employee: updateEmployeeShiftId,
-						company: globalCompany.id,
-					});
-
-					fromDate = day;
-					prevValue = currentValue;
+				if (calendarDate < dateOfJoiningObj) {
+					fromDate = day + 1;
+					prevValue = parseInt(values.dayWiseShifts[day + 1]);
+					toDate = day + 1;
+					continue;
 				}
+
+				const currentValue = parseInt(values.dayWiseShifts[day]);
+				if (currentValue !== prevValue) {
+					if (fromDate !== null && toDate !== null) {
+						// Push the segment to the employeeShifts array
+						employeeShifts.push({
+							fromDate: `${values.year}-${values.month}-${fromDate}`,
+							toDate: `${values.year}-${values.month}-${toDate}`,
+							shift: prevValue, // Use prevValue, since currentValue could have changed
+							employee: updateEmployeeShiftId,
+							company: globalCompany.id,
+						});
+
+						fromDate = day;
+						prevValue = currentValue;
+					}
+				}
+
+				toDate = day;
 			}
 
-			toDate = day;
-		}
+			if (fromDate !== null && toDate !== null) {
+				// Store the last segment for the earning head
+				employeeShifts.push({
+					fromDate: `${values.year}-${values.month}-${fromDate}`,
+					toDate: `${values.year}-${values.month}-${toDate}`,
+					shift: prevValue, // Use prevValue
+					employee: updateEmployeeShiftId,
+					company: globalCompany.id,
+				});
+			}
 
-		if (fromDate !== null && toDate !== null) {
-			// Store the last segment for the earning head
-			employeeShifts.push({
-				fromDate: `${values.year}-${values.month}-${fromDate}`,
-				toDate: `${values.year}-${values.month}-${toDate}`,
-				shift: prevValue, // Use prevValue
-				employee: updateEmployeeShiftId,
+			const toSend = {
 				company: globalCompany.id,
-			});
-		}
+				employee: updateEmployeeShiftId,
+				employeeShifts: employeeShifts,
+			};
+			console.log(employeeShifts);
 
-		const toSend = {
-			company: globalCompany.id,
-			employee: updateEmployeeShiftId,
-			employeeShifts: employeeShifts,
-		};
+			// Wrap your API call with try-catch for error handling
+			try {
+				const data = await updateEmployeeShifts(toSend).unwrap();
+				console.log(data);
+				dispatch(
+					alertActions.createAlert({
+						message: 'Saved',
+						type: 'Success',
+						duration: 3000,
+					})
+				);
+			} catch (err) {
+				console.log(err);
+				dispatch(
+					alertActions.createAlert({
+						message: 'Error Occurred',
+						type: 'Error',
+						duration: 5000,
+					})
+				);
+			}
+		},
+		[dateOfJoining, updateEmployeeShiftId]
+	);
 
-		// Wrap your API call with try-catch for error handling
-		try {
-			const data = await updateEmployeeShifts(toSend).unwrap();
-			console.log(data);
-			dispatch(
-				alertActions.createAlert({
-					message: 'Saved',
-					type: 'Success',
-					duration: 3000,
-				})
-			);
-		} catch (err) {
-			console.log(err);
-			dispatch(
-				alertActions.createAlert({
-					message: 'Error Occurred',
-					type: 'Error',
-					duration: 5000,
-				})
-			);
-		}
-	};
+	const updatePermanentButtonClicked = useCallback(
+		async (values, formikBag) => {
+			console.log(values);
+			try {
+				const data = await updatePermanentEmployeeShift({
+					...values,
+					company: globalCompany.id,
+					employee: updateEmployeeShiftId,
+				}).unwrap();
+				console.log(data);
+				dispatch(
+					alertActions.createAlert({
+						message: 'Saved',
+						type: 'Success',
+						duration: 3000,
+					})
+				);
+			} catch (err) {
+				console.log(err);
+				dispatch(
+					alertActions.createAlert({
+						message: 'Error Occurred',
+						type: 'Error',
+						duration: 5000,
+					})
+				);
+			}
+		},
+		[updateEmployeeShiftId, globalCompany]
+	);
 
-	console.log(shifts);
+	console.log(editEmployeeShiftPopover);
 
 	const columnHelper = createColumnHelper();
 
@@ -220,9 +296,7 @@ const EmployeeShiiftsEntryForm = () => {
 					<div
 						className="rounded bg-teal-600 p-1.5 hover:bg-teal-700 dark:bg-teal-700 dark:hover:bg-teal-600"
 						onClick={() => {
-							editEmployeeShiftsPopoverHandler(
-								props.row.original
-							);
+							editEmployeeShiftsDetail(props.row.original);
 						}}
 					>
 						<FaPen className="h-4" />
@@ -235,6 +309,11 @@ const EmployeeShiiftsEntryForm = () => {
 	const data = useMemo(
 		() => (employeePersonalDetails ? [...employeePersonalDetails] : []),
 		[employeePersonalDetails]
+	);
+
+	const PermanentvalidationSchema = useMemo(
+		() => (dateOfJoining ? createValidationSchema(dateOfJoining) : ''),
+		[dateOfJoining]
 	);
 
 	const table = useReactTable({
@@ -364,8 +443,11 @@ const EmployeeShiiftsEntryForm = () => {
 					</div>
 
 					<ReactModal
-						className="items-left scrollbar container fixed inset-0 mx-2 my-auto flex h-fit max-h-[100dvh] flex-col gap-4 overflow-y-scroll rounded bg-zinc-300 p-4 shadow-xl dark:bg-zinc-800 sm:mx-auto sm:max-w-[1100px]"
-						isOpen={editShiftPopover}
+						className="items-left scrollbar container fixed inset-0 my-auto flex h-fit max-h-[100dvh] flex-col gap-4 overflow-y-scroll rounded bg-zinc-300 p-4 shadow-xl dark:bg-zinc-800 sm:mx-auto sm:max-w-[1100px]"
+						isOpen={
+							editEmployeeShiftPopover.dayWiseShiftEdit ||
+							editEmployeeShiftPopover.permanentShiftEdit
+						}
 						onRequestClose={cancelButtonClicked}
 						style={{
 							overlay: {
@@ -373,26 +455,72 @@ const EmployeeShiiftsEntryForm = () => {
 							},
 						}}
 					>
-						<Formik
-							initialValues={initialValues}
-							validationSchema={''}
-							onSubmit={updateButtonClicked}
-							component={(props) => (
-								<EditEmployeeShift
-									{...props}
-									errorMessage={errorMessage}
-									setErrorMessage={setErrorMessage}
-									globalCompany={globalCompany}
-									updateEmployeeShiftId={
-										updateEmployeeShiftId
+						{dateOfJoining != null &&
+							employeeShiftsFound != false && (
+								<EditEmployeeShiftNavigationBar
+									editEmployeeShiftPopover={
+										editEmployeeShiftPopover
 									}
-									shifts={shifts}
-									// firstRender={firstRender}
-									// setFirstRender={setFirstRender}
-									dateOfJoining={dateOfJoining}
+									editEmployeeShiftsPopoverHandler={
+										editEmployeeShiftsPopoverHandler
+									}
 								/>
 							)}
-						/>
+
+						{editEmployeeShiftPopover.dayWiseShiftEdit && (
+							<Formik
+								initialValues={initialValues}
+								validationSchema={''}
+								onSubmit={updateButtonClicked}
+								component={(props) => (
+									<EditEmployeeShift
+										{...props}
+										errorMessage={errorMessage}
+										setErrorMessage={setErrorMessage}
+										globalCompany={globalCompany}
+										updateEmployeeShiftId={
+											updateEmployeeShiftId
+										}
+										shifts={shifts}
+										// firstRender={firstRender}
+										// setFirstRender={setFirstRender}
+										dateOfJoining={dateOfJoining}
+										cancelButtonClicked={
+											cancelButtonClicked
+										}
+										setEmployeeShiftsFound={
+											setEmployeeShiftsFound
+										}
+									/>
+								)}
+							/>
+						)}
+
+						{editEmployeeShiftPopover.permanentShiftEdit && (
+							<Formik
+								initialValues={{ fromDate: '', shift: '' }}
+								validationSchema={PermanentvalidationSchema}
+								onSubmit={updatePermanentButtonClicked}
+								component={(props) => (
+									<PermanentEditEmployeeShift
+										{...props}
+										errorMessage={errorMessage}
+										setErrorMessage={setErrorMessage}
+										globalCompany={globalCompany}
+										updateEmployeeShiftId={
+											updateEmployeeShiftId
+										}
+										shifts={shifts}
+										// firstRender={firstRender}
+										// setFirstRender={setFirstRender}
+										dateOfJoining={dateOfJoining}
+										cancelButtonClicked={
+											cancelButtonClicked
+										}
+									/>
+								)}
+							/>
+						)}
 					</ReactModal>
 				</section>
 			</>

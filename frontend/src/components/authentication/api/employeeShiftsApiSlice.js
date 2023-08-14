@@ -10,14 +10,14 @@ export const employeeShiftsApiSlice = apiSlice.injectEndpoints({
 			keepUnusedDataFor: 600,
 			providesTags: ['EmployeeShifts'],
 		}),
-		// addPfEsiSetup: builder.mutation({
-		// 	query: (body) => ({
-		// 		url: `/api/pf-esi-setup-create`,
-		// 		method: 'POST',
-		// 		body: body,
-		// 	}),
-		// 	invalidatesTags: ['PfEsiSetup'],
-		// }),
+		addEmployeeShifts: builder.mutation({
+			query: (body) => ({
+				url: `/api/employee-shifts`,
+				method: 'POST',
+				body: body,
+			}),
+			// invalidatesTags: [''],
+		}),
 		updateEmployeeShifts: builder.mutation({
 			query: (body) => ({
 				url: `/api/employee-shifts-update/${body.company}/${body.employee}`,
@@ -26,8 +26,20 @@ export const employeeShiftsApiSlice = apiSlice.injectEndpoints({
 			}),
 			invalidatesTags: ['EmployeeShifts'],
 		}),
+		updatePermanentEmployeeShift: builder.mutation({
+			query: (body) => ({
+				url: `/api/employee-shift-permanent-update/${body.company}/${body.employee}`,
+				method: 'PUT',
+				body: body,
+			}),
+			invalidatesTags: ['EmployeeShifts'],
+		}),
 	}),
 });
 
-export const { useGetEmployeeShiftsQuery, useUpdateEmployeeShiftsMutation } =
-	employeeShiftsApiSlice;
+export const {
+	useGetEmployeeShiftsQuery,
+	useUpdateEmployeeShiftsMutation,
+	useAddEmployeeShiftsMutation,
+	useUpdatePermanentEmployeeShiftMutation,
+} = employeeShiftsApiSlice;

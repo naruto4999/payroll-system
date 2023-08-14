@@ -1624,7 +1624,7 @@ class CalculationsRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPI
         serializer.save(user=user)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
-class EmployeeShiftsListCreateAPIView(generics.ListCreateAPIView):
+class EmployeeShiftsListAPIView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = EmployeeShiftsSerializer
 
@@ -1637,6 +1637,30 @@ class EmployeeShiftsListCreateAPIView(generics.ListCreateAPIView):
         instance = OwnerToRegular.objects.get(user=user)
         return instance.owner.all_employees_shifts.filter(company=company_id, employee=employee)
     
+    def list(self, request, *args, **kwargs):
+        year = self.kwargs.get('year')
+        queryset = self.get_queryset().filter(from_date__year__lte=year, to_date__year__gte=year)
+        serializer = self.get_serializer(queryset, many=True)
+        print(serializer.data)
+        return Response(serializer.data)
+    
+    # def perform_create(self, serializer):
+    #     user = self.request.user
+    #     if user.role == "OWNER":
+    #         return serializer.save(user=self.request.user)
+    #     instance = OwnerToRegular.objects.get(user=user)
+    #     return serializer.save(user=instance.owner)
+    
+class EmployeeShiftsCreateAPIView(generics.CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = EmployeeShiftsUpdateSerializer
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        if user.role == "OWNER":
+            return serializer.save(user=self.request.user)
+        instance = OwnerToRegular.objects.get(user=user)
+        return serializer.save(user=instance.owner)
 
 class EmployeeShiftsUpdateAPIView(generics.UpdateAPIView):
     permission_classes= [IsAuthenticated]
@@ -1664,6 +1688,34 @@ class EmployeeShiftsUpdateAPIView(generics.UpdateAPIView):
             serializer.is_valid(raise_exception=True)
             validated_shift = serializer.validated_data
             EmployeeShifts.objects.process_employee_shifts(user=user, employee_shift_data=validated_shift)
+        return Response({"message": "Employee earnings updated successfully"}, status=status.HTTP_200_OK)
+    
+class EmployeeShiftsPermanentUpdateAPIView(generics.UpdateAPIView):
+    permission_classes= [IsAuthenticated]
+    serializer_class = EmployeeShiftsUpdateSerializer
+    lookup_field = 'employee'
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        employee = self.kwargs.get('employee')
+        user = self.request.user
+        if user.role == "OWNER":
+            return user.all_employees_shifts.filter(company=company_id, employee=employee)
+        instance = OwnerToRegular.objects.get(user=user)
+        return instance.owner.all_employees_shifts.filter(company=company_id, employee=employee)
+    
+    def update(self, request, *args, **kwargs):
+        user = self.request.user
+        if user.role != "OWNER":
+            instance = OwnerToRegular.objects.get(user=user)
+            user=instance
+        employee_shift = request.data
+        employee_shift['to_date'] = datetime.strptime('9999-01-01', "%Y-%m-%d").date()
+        print(employee_shift)
+        serializer = self.get_serializer(data=employee_shift)
+        serializer.is_valid(raise_exception=True)
+        validated_shift = serializer.validated_data
+        EmployeeShifts.objects.process_employee_permanent_shift(user=user, employee_shift_data=validated_shift)
         return Response({"message": "Employee earnings updated successfully"}, status=status.HTTP_200_OK)
 
             
