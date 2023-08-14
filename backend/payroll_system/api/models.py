@@ -972,6 +972,20 @@ class EmployeeShifts(models.Model):
             raise ValidationError("Invalid Shift selected.")
         super().save(*args, **kwargs)
 
+# class EmployeeAttendance(models.Model):
+#     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_employees_attendance")
+#     employee = models.ForeignKey(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="attendance")
+#     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="all_company_employees_attendance")
+#     machine_in = models.TimeField(null=True, blank=True)
+#     machine_out = models.TimeField(null=True, blank=True)
+#     manual_in = models.TimeField(null=True, blank=True)
+#     manual_out = models.TimeField(null=True, blank=True)
+#     shift = models.ForeignKey(Shift, on_delete=models.CASCADE, related_name="employees_attendance_shift")
+#     first_half = 
+#     date = models.DateField(null=False, blank=False)
+
+
+
 
 
 
