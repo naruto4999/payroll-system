@@ -393,26 +393,18 @@ class LeaveGradeListCreateAPIView(generics.ListCreateAPIView):
         return instance.owner.leave_grades.filter(company=company_id)
     
     def create(self, request, *args, **kwargs):
+        print(request.data)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = self.request.user
-        company_id = self.kwargs.get('company_id')
-        company = Company.objects.get(id=company_id)
-        name = serializer.validated_data.get('name').lower()
-        
-        # Check uniqueness
-        clashing_names = self.get_queryset().annotate(lower_name=Lower('name')).filter(lower_name=name)
-        if clashing_names.exists():
-            error_message = "Leave grade with this name already exists."
-            return Response({"error": error_message}, status=status.HTTP_400_BAD_REQUEST)
-
-        if user.role == "OWNER":
-            serializer.save(user=user, company=company)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        else:
-            instance = OwnerToRegular.objects.get(user=user)
-            serializer.save(user=instance.owner, company=company)
+        if user.role != "OWNER":
+            user = OwnerToRegular.objects.get(user=user).owner
+        try:
+            serializer.save(user=user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except IntegrityError as e:
+            print(str(e))
+            return Response({"name" : "Leave Grade with this name already exists"}, status=status.HTTP_400_BAD_REQUEST)
 
 class LeaveGradeRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes= [IsAuthenticated]
@@ -429,26 +421,17 @@ class LeaveGradeRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIVi
     
     def update(self, request, *args, **kwargs):
         user = self.request.user
+        if user.role != "OWNER":
+            user = OwnerToRegular.objects.get(user=user).owner
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
-        name = serializer.validated_data.get('name').lower()
-
-        # Check uniqueness
-        clashing_names = self.get_queryset().annotate(lower_name=Lower('name')).filter(lower_name=name).exclude(id=instance.id)
-        
-        if clashing_names.exists():
-            error_message = "Leave grade with this name already exists."
-            return Response({"error": error_message}, status=status.HTTP_400_BAD_REQUEST)
-        
-        if user.role == "OWNER":
-            serializer.save(user=self.request.user)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        
-        else:
-            instance = OwnerToRegular.objects.get(user=user)
-            serializer.save(user=instance.owner)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+        try:
+            serializer.save(user=user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except IntegrityError as e:
+            print(str(e))
+            return Response({"name" : "Leave Grade with this name already exists"}, status=status.HTTP_400_BAD_REQUEST)
 
     
     def perform_destroy(self, instance):
@@ -1072,8 +1055,7 @@ class EmployeeSalaryEarningListUpdateAPIView(generics.UpdateAPIView):
         partial = kwargs.pop('partial', False)
         user = self.request.user
         if user.role != "OWNER":
-            instance = OwnerToRegular.objects.get(user=user)
-            user=instance
+            user = OwnerToRegular.objects.get(user=user).owner
         categorized_earnings = {}
         for earning_record in employee_earnings:
             earnings_head_id = earning_record['earnings_head']
@@ -1679,8 +1661,7 @@ class EmployeeShiftsUpdateAPIView(generics.UpdateAPIView):
     def update(self, request, *args, **kwargs):
         user = self.request.user
         if user.role != "OWNER":
-            instance = OwnerToRegular.objects.get(user=user)
-            user=instance
+            user = OwnerToRegular.objects.get(user=user).owner
         employee_shifts = request.data['employee_shifts']
         print(employee_shifts)
         for shift in employee_shifts:
@@ -1707,8 +1688,7 @@ class EmployeeShiftsPermanentUpdateAPIView(generics.UpdateAPIView):
     def update(self, request, *args, **kwargs):
         user = self.request.user
         if user.role != "OWNER":
-            instance = OwnerToRegular.objects.get(user=user)
-            user=instance
+            user = OwnerToRegular.objects.get(user=user).owner
         employee_shift = request.data
         employee_shift['to_date'] = datetime.strptime('9999-01-01', "%Y-%m-%d").date()
         print(employee_shift)

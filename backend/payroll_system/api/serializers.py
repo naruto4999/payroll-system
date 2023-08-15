@@ -91,10 +91,9 @@ class BankSerializer(serializers.ModelSerializer):
         fields = ('id', 'user', 'company', 'name')
 
 class LeaveGradeSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
     class Meta:
         model = LeaveGrade
-        fields = ('id', 'user', 'company', 'name' ,'limit', 'mandatory_leave')
+        fields = ('id', 'company', 'name' ,'limit', 'paid', 'generate_frequency', 'mandatory_leave')
         read_only_fields = ('mandatory_leave',)
 
 class ShiftSerializer(serializers.ModelSerializer):

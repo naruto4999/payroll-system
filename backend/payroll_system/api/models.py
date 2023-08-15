@@ -222,18 +222,28 @@ class LeaveGrade(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="leave_grades")
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="leave_grades")
     name = models.CharField(max_length=256, null=False, blank=False)
-    limit = models.PositiveSmallIntegerField(default=0, null=False, blank=False)
+    limit = models.PositiveSmallIntegerField(null=True, blank=True)
     mandatory_leave = models.BooleanField(default=False, null=False, blank=False)
+    paid = models.BooleanField(null=False, blank=False)
+    generate_frequency = models.PositiveSmallIntegerField(null=True, blank=True)
+
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=['user', 'company', 'name'], name='unique_leave_grade_name_per_user')
         ]
     def __str__(self):
         return f"{self.user.email} -> {self.company.name}: {self.name}"
-    # def clean(self):
-    #     # Check if the unique constraint is violated
-    #     if LeaveGrade.objects.filter(user=self.user, company=self.company, name=self.name).exists():
-    #         raise ValidationError("Leave grade with this name already exists for the user and company.")
+    
+    def clean(self):
+        if not self.paid:
+            if self.limit is not None:
+                raise ValidationError("If 'paid' is False, 'limit' must be null.")
+            if self.generate_frequency is not None:
+                raise ValidationError("If 'paid' is False, 'generate_frequency' must be null.")
+            
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
     
 class Shift(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="shifts")
@@ -973,6 +983,19 @@ class EmployeeShifts(models.Model):
         super().save(*args, **kwargs)
 
 # class EmployeeAttendance(models.Model):
+#     NON_PAID = [
+#         ("A", "A"),
+#         ("HD*", "HD*"),
+#         ("WO*", "WO*"),
+#         ("MS", "MS"),
+#     ]
+#     PAID = [
+#         ("P", "P"),
+#         ("HD", "HD"),
+#         ("WO", "WO"),
+#         ("CO", "CO"),
+#         ("OD", "OD"),
+#     ]
 #     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_employees_attendance")
 #     employee = models.ForeignKey(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="attendance")
 #     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="all_company_employees_attendance")
@@ -981,14 +1004,39 @@ class EmployeeShifts(models.Model):
 #     manual_in = models.TimeField(null=True, blank=True)
 #     manual_out = models.TimeField(null=True, blank=True)
 #     shift = models.ForeignKey(Shift, on_delete=models.CASCADE, related_name="employees_attendance_shift")
-#     first_half = 
+#     first_half = models.CharField(
+#         max_length=10,  # Adjust the max length accordingly
+#         choices=NON_PAID+PAID,
+#         null=True,
+#         blank=True,
+#     )
+#     first_half_leave_grade = models.ForeignKey(
+#         LeaveGrade,
+#         on_delete=models.SET_NULL,
+#         null=True,
+#         blank=True,
+#     )
+#     second_half = models.CharField(
+#         max_length=10,  # Adjust the max length accordingly
+#         choices=NON_PAID+PAID,
+#         null=True,
+#         blank=True,
+#     )
+#     second_half_leave_grade = models.ForeignKey(
+#         LeaveGrade,
+#         on_delete=models.SET_NULL,
+#         null=True,
+#         blank=True,
+#     )
 #     date = models.DateField(null=False, blank=False)
 
+#     def clean(self):
+#         if self.first_half and self.leave_grade:
+#             raise ValidationError("Both 'first_half' and 'leave_grade' cannot have values simultaneously.")
 
-
-
-
-
+#     def save(self, *args, **kwargs):
+#         self.clean()
+#         super().save(*args, **kwargs)
 
 
 
@@ -1005,14 +1053,10 @@ def create_default_leave_grades_for_company(sender, instance, created, **kwargs)
         company = instance  # Assign the instance to a variable
         user = company.user
         print("reciever ran")
-        # Create the first row for the new user
-        LeaveGrade.objects.create(user=user,company=company, name='CL', limit=7, mandatory_leave=True)
-        
-        # Create the second row for the new user
-        LeaveGrade.objects.create(user=user,company=company, name='EL', limit=15, mandatory_leave=True)
-        
-        # Create the third row for the new user
-        LeaveGrade.objects.create(user=user,company=company, name='SL', limit=7, mandatory_leave=True)
+        LeaveGrade.objects.create(user=user,company=company, name='CL', limit=7, mandatory_leave=True, paid=True, generate_frequency=40)        
+        LeaveGrade.objects.create(user=user,company=company, name='EL', limit=15, mandatory_leave=True, paid=True, generate_frequency=20)
+        LeaveGrade.objects.create(user=user,company=company, name='SL', limit=7, mandatory_leave=True, paid=True, generate_frequency=40)
+
 
 @receiver(post_save, sender=Company)
 def create_default_holidays_for_company(sender, instance, created, **kwargs):
