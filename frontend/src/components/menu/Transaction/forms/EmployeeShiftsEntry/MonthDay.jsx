@@ -2,10 +2,6 @@ import { Field, ErrorMessage } from 'formik';
 import { memo } from 'react';
 
 const MonthDays = memo(({ day, shifts, shiftValue, fieldName }) => {
-	// console.log(values?.dayWiseShifts[day]);
-	// const shiftValue = values?.dayWiseShifts[day];
-
-	// Check if the shiftValue is not an empty string before rendering the select box
 	const shouldRenderSelect = shiftValue !== '';
 	return (
 		<div className="relative h-20 rounded-sm border dark:border-slate-400 dark:border-opacity-30">

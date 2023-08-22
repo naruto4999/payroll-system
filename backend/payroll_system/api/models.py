@@ -982,61 +982,50 @@ class EmployeeShifts(models.Model):
             raise ValidationError("Invalid Shift selected.")
         super().save(*args, **kwargs)
 
-# class EmployeeAttendance(models.Model):
-#     NON_PAID = [
-#         ("A", "A"),
-#         ("HD*", "HD*"),
-#         ("WO*", "WO*"),
-#         ("MS", "MS"),
-#     ]
-#     PAID = [
-#         ("P", "P"),
-#         ("HD", "HD"),
-#         ("WO", "WO"),
-#         ("CO", "CO"),
-#         ("OD", "OD"),
-#     ]
-#     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_employees_attendance")
-#     employee = models.ForeignKey(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="attendance")
-#     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="all_company_employees_attendance")
-#     machine_in = models.TimeField(null=True, blank=True)
-#     machine_out = models.TimeField(null=True, blank=True)
-#     manual_in = models.TimeField(null=True, blank=True)
-#     manual_out = models.TimeField(null=True, blank=True)
-#     shift = models.ForeignKey(Shift, on_delete=models.CASCADE, related_name="employees_attendance_shift")
-#     first_half = models.CharField(
-#         max_length=10,  # Adjust the max length accordingly
-#         choices=NON_PAID+PAID,
-#         null=True,
-#         blank=True,
-#     )
-#     first_half_leave_grade = models.ForeignKey(
-#         LeaveGrade,
-#         on_delete=models.SET_NULL,
-#         null=True,
-#         blank=True,
-#     )
-#     second_half = models.CharField(
-#         max_length=10,  # Adjust the max length accordingly
-#         choices=NON_PAID+PAID,
-#         null=True,
-#         blank=True,
-#     )
-#     second_half_leave_grade = models.ForeignKey(
-#         LeaveGrade,
-#         on_delete=models.SET_NULL,
-#         null=True,
-#         blank=True,
-#     )
-#     date = models.DateField(null=False, blank=False)
 
-#     def clean(self):
-#         if self.first_half and self.leave_grade:
-#             raise ValidationError("Both 'first_half' and 'leave_grade' cannot have values simultaneously.")
+def validate_pay_multiplier_allowed_values(value):
+    allowed_values = [Decimal('1'), Decimal('0.5'), Decimal('0')]
+    if value not in allowed_values:
+        raise ValidationError(f"{value} is not a valid choice for this field.")
 
-#     def save(self, *args, **kwargs):
-#         self.clean()
-#         super().save(*args, **kwargs)
+class LimitedFloatField(models.DecimalField):
+    def __init__(self, *args, **kwargs):
+        kwargs['max_digits'] = 3  # Adjust as needed
+        kwargs['decimal_places'] = 1  # One decimal place
+        kwargs['validators'] = [validate_pay_multiplier_allowed_values]
+        kwargs['editable'] = False
+        super().__init__(*args, **kwargs)
+
+class EmployeeAttendance(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_employees_attendance")
+    employee = models.ForeignKey(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="attendance")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="all_company_employees_attendance")
+    machine_in = models.TimeField(null=True, blank=True)
+    machine_out = models.TimeField(null=True, blank=True)
+    manual_in = models.TimeField(null=True, blank=True)
+    manual_out = models.TimeField(null=True, blank=True)
+    first_half = models.ForeignKey(LeaveGrade, on_delete=models.SET_NULL, null=True, blank=True, related_name="employees_first_half_attendances_with_same_leave")
+    second_half = models.ForeignKey(LeaveGrade, on_delete=models.SET_NULL, null=True, blank=True, related_name="employees_second_half_attendances_with_same_leave")
+    date = models.DateField(null=False, blank=False)
+    ot_min = models.PositiveSmallIntegerField(null=True, blank=True)
+    late_min = models.PositiveSmallIntegerField(null=True, blank=True)
+    pay_multiplier = LimitedFloatField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['employee', 'date', 'company'], name='unique_employee_attendance_date_wise'),
+        ]
+
+    def save(self, *args, **kwargs):
+        if self.pay_multiplier is None:
+            if self.first_half.paid and self.second_half.paid:
+                self.pay_multiplier = 1
+            elif self.first_half.paid or self.second_half.paid:
+                self.pay_multiplier = 0.5
+            else:
+                self.pay_multiplier = 0
+            # self.pay_multiplier = calculate_pay_multiplier()
+        super().save(*args, **kwargs)
 
 
 

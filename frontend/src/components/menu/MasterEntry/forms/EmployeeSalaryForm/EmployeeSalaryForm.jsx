@@ -483,6 +483,7 @@ const EmployeeSalaryForm = () => {
 									firstRender={firstRender}
 									setFirstRender={setFirstRender}
 									monthOfJoining={monthOfJoining}
+									cancelButtonClicked={cancelButtonClicked}
 								/>
 							)}
 						/>

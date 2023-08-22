@@ -380,10 +380,7 @@ const EditSalary = React.memo(
 							<button
 								type="button"
 								className="w-20 rounded bg-zinc-400 p-2 text-base font-medium hover:bg-zinc-500 dark:bg-zinc-600 dark:hover:bg-zinc-700"
-								// onClick={() => {
-								//     cancelButtonClicked(isEditing);
-								//     setErrorMessage("");
-								// }}
+								onClick={cancelButtonClicked}
 							>
 								Cancel
 							</button>

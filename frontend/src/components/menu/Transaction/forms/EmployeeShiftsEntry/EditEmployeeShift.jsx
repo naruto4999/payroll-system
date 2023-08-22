@@ -20,8 +20,6 @@ const timeFormat = (time) => {
 const EditEmployeeShift = memo(
 	({
 		handleSubmit,
-		handleChange,
-		handleBlur,
 		values,
 		errors,
 		isValid,
@@ -38,8 +36,6 @@ const EditEmployeeShift = memo(
 		setErrorMessage,
 		errorMessage,
 		setEmployeeShiftsFound,
-		firstRender,
-		setFirstRender,
 		isSubmitting,
 	}) => {
 		// console.log(values);

@@ -138,6 +138,11 @@ const menuItems = [
 				icon: FaBusinessTime,
 				path: '/home/transaction/employee-shifts',
 			},
+			{
+				title: 'Time Updation',
+				icon: FaBusinessTime,
+				path: '/home/transaction/time-updation',
+			},
 		],
 	},
 
