@@ -342,6 +342,7 @@ const EditAttendance = memo(
 							setFieldValue(`attendance.${day}.firstHalf`, absent.id);
 						}
 					} else {
+						setFieldValue(`attendance.${day}.firstHalf`, present.id);
 						lateHrs += timeDifferenceInMinutes;
 					}
 				}
@@ -377,6 +378,8 @@ const EditAttendance = memo(
 								setFieldValue(`attendance.${day}.firstHalf`, absent.id);
 							}
 						} else {
+							console.log('in else block');
+							setFieldValue(`attendance.${day}.firstHalf`, present.id);
 							lateHrs += timeDifferenceInMinutes;
 						}
 					}
@@ -386,113 +389,110 @@ const EditAttendance = memo(
 			return lateHrs;
 		};
 
+		// const calculateAttendance = (day) => {
+		// 	if (values.attendance[day]?.manualMode == false) {
+		// 		let manualIn = values.attendance[day]?.manualIn;
+		// 		let manualOut = values.attendance[day]?.manualOut;
+		// 		const shift = getShift(values.year, values.month, day);
+		// 		let manualInObj;
+		// 		let manualOutObj;
+		// 		let shiftBeginningTime;
+		// 		let shiftEndTime;
+		// 		if (shift.beginningTime < shift.endTime) {
+		// 			shiftBeginningTime = getTimeInDateObj(shift.beginningTime, day);
+		// 			shiftEndTime = getTimeInDateObj(shift.endTime, day);
+
+		// 			//If manualIn < shift end time (without date object one)
+		// 			if (manualIn < shift.endTime.slice(0, 5)) {
+		// 				manualInObj = getTimeInDateObj(manualIn, day);
+		// 			} else if (manualIn > shift.endTime.slice(0, 5)) {
+		// 				// else if manualIn > shift end time (withoud date object one):
+		// 				manualInObj = getTimeInDateObj(manualIn, parseInt(day) - 1);
+		// 			}
+
+		// 			// If manualOut > shift begin time (without date object one):
+		// 			if (manualOut > shift.beginningTime.slice(0, 5)) {
+		// 				manualOutObj = getTimeInDateObj(manualOut, parseInt(day));
+		// 			} else if (manualOut < shift.beginningTime.slice(0, 5)) {
+		// 				manualOutObj = getTimeInDateObj(manualOut, parseInt(day) + 1);
+		// 			}
+		// 		} else if (shift.beginningTime > shift.endTime) {
+		// 			shiftBeginningTime = getTimeInDateObj(shift.beginningTime, day);
+		// 			shiftEndTime = getTimeInDateObj(shift.endTime, parseInt(day) + 1);
+		// 			if (manualIn > shift.endTime.slice(0, 5)) {
+		// 				manualInObj = getTimeInDateObj(manualIn, day);
+		// 			} else if (manualIn < shift.endTime.slice(0, 5)) {
+		// 				manualInObj = getTimeInDateObj(manualIn, parseInt(day) + 1);
+		// 			}
+		// 			// If manualOut < shift begin time (without date object):
+		// 			if (manualOut < shift.beginningTime.slice(0, 5)) {
+		// 				manualOutObj = getTimeInDateObj(manualOut, parseInt(day) + 1);
+		// 			} else if (manualOut > shift.beginningTime.slice(0, 5)) {
+		// 				manualOutObj = getTimeInDateObj(manualOut, day);
+		// 			}
+		// 		}
+
+		// 		if (shiftBeginningTime && shiftEndTime && manualInObj && manualOutObj) {
+		// 			const effectiveStartTime = manualInObj > shiftBeginningTime ? manualInObj : shiftBeginningTime;
+
+		// 			const effectiveEndTime = manualOutObj < shiftEndTime ? manualOutObj : shiftEndTime;
+		// 			const durationMilliseconds = effectiveEndTime - effectiveStartTime;
+		// 			const durationMinutes = Math.max(Math.floor(durationMilliseconds / (1000 * 60)), 0);
+		// 			// console.log(durationMinutes);
+
+		// 			if (durationMinutes >= parseInt(shift.fullDayMinimumMinutes)) {
+		// 				setFieldValue(`attendance.${day}.firstHalf`, present.id);
+		// 				setFieldValue(`attendance.${day}.secondHalf`, present.id);
+		// 			}
+		// 		}
+		// 	}
+		// };
 		const calculateAttendance = (day) => {
-			if (values.attendance[day]?.manualMode == false) {
-				let manualIn = values.attendance[day]?.manualIn;
-				let manualOut = values.attendance[day]?.manualOut;
+			const manualMode = values.attendance[day]?.manualMode;
+			if (!manualMode) {
+				const manualIn = values.attendance[day]?.manualIn;
+				const manualOut = values.attendance[day]?.manualOut;
 				const shift = getShift(values.year, values.month, day);
-				let manualInObj;
-				let manualOutObj;
-				let shiftBeginningTime;
-				let shiftEndTime;
-				if (shift.beginningTime < shift.endTime) {
-					shiftBeginningTime = getTimeInDateObj(shift.beginningTime, day);
-					shiftEndTime = getTimeInDateObj(shift.endTime, day);
+				const shiftBeginningTime = getTimeInDateObj(shift.beginningTime, day);
+				const shiftEndTime = getTimeInDateObj(shift.endTime, day);
+				const manualInObj =
+					manualIn < shift.endTime.slice(0, 5)
+						? getTimeInDateObj(manualIn, day)
+						: getTimeInDateObj(manualIn, shift.beginningTime < shift.endTime ? day - 1 : day + 1);
+				const manualOutObj =
+					manualOut > shift.beginningTime.slice(0, 5)
+						? getTimeInDateObj(manualOut, day)
+						: getTimeInDateObj(manualOut, shift.beginningTime < shift.endTime ? day + 1 : day);
 
-					//If manualIn < shift end time (without date object one)
-					if (manualIn < shift.endTime.slice(0, 5)) {
-						manualInObj = getTimeInDateObj(manualIn, day);
-					} else if (manualIn > shift.endTime.slice(0, 5)) {
-						// else if manualIn > shift end time (withoud date object one):
-						manualInObj = getTimeInDateObj(manualIn, parseInt(day) - 1);
-					}
-
-					// If manualOut > shift begin time (without date object one):
-					if (manualOut > shift.beginningTime.slice(0, 5)) {
-						manualOutObj = getTimeInDateObj(manualOut, parseInt(day));
-					} else if (manualOut < shift.beginningTime.slice(0, 5)) {
-						manualOutObj = getTimeInDateObj(manualOut, parseInt(day) + 1);
-					}
-				} else if (shift.beginningTime > shift.endTime) {
-					shiftBeginningTime = getTimeInDateObj(shift.beginningTime, day);
-					shiftEndTime = getTimeInDateObj(shift.endTime, parseInt(day) + 1);
-					if (manualIn > shift.endTime.slice(0, 5)) {
-						manualInObj = getTimeInDateObj(manualIn, day);
-					} else if (manualIn < shift.endTime.slice(0, 5)) {
-						manualInObj = getTimeInDateObj(manualIn, parseInt(day) + 1);
-					}
-					// If manualOut < shift begin time (without date object):
-					if (manualOut < shift.beginningTime.slice(0, 5)) {
-						manualOutObj = getTimeInDateObj(manualOut, parseInt(day) + 1);
-					} else if (manualOut > shift.beginningTime.slice(0, 5)) {
-						manualOutObj = getTimeInDateObj(manualOut, day);
-					}
-				}
-
-				if (shiftBeginningTime && shiftEndTime && manualInObj && manualOutObj) {
-					const effectiveStartTime = manualInObj > shiftBeginningTime ? manualInObj : shiftBeginningTime;
-
-					const effectiveEndTime = manualOutObj < shiftEndTime ? manualOutObj : shiftEndTime;
-					const durationMilliseconds = effectiveEndTime - effectiveStartTime;
-					const durationMinutes = Math.max(Math.floor(durationMilliseconds / (1000 * 60)), 0);
-					// console.log(durationMinutes);
+				if (manualInObj && manualOutObj) {
+					const effectiveStartTime = Math.max(manualInObj, shiftBeginningTime);
+					const effectiveEndTime = Math.min(manualOutObj, shiftEndTime);
+					const durationMilliseconds = Math.max(effectiveEndTime - effectiveStartTime, 0);
+					const durationMinutes = Math.floor(durationMilliseconds / (1000 * 60));
+					console.log(durationMinutes);
 
 					if (durationMinutes >= parseInt(shift.fullDayMinimumMinutes)) {
 						setFieldValue(`attendance.${day}.firstHalf`, present.id);
 						setFieldValue(`attendance.${day}.secondHalf`, present.id);
+					} else if (
+						durationMinutes >= parseInt(shift.halfDayMinimumMinutes) &&
+						durationMinutes < parseInt(shift.fullDayMinimumMinutes)
+					) {
+						if (values.attendance[day].firstHalf == present.id) {
+							setFieldValue(`attendance.${day}.secondHalf`, absent.id);
+						} else if (values.attendance[day].firstHalf == absent.id) {
+							setFieldValue(`attendance.${day}.secondHalf`, present.id);
+						}
+					} else if (durationMinutes < parseInt(shift.halfDayMinimumMinutes)) {
+						setFieldValue(`attendance.${day}.firstHalf`, absent.id);
+						setFieldValue(`attendance.${day}.secondHalf`, absent.id);
 					}
 				}
 			}
 		};
-		// const calculateFirstHalfSecondHalf = (day, type) => {
-		// 	const attendanceDate = new Date(values.year, values.month - 1, day);
-		// 	let presentCount = 0;
-
-		// 	// Check if the day value is less than 7 to consider previous month's days
-		// 	for (let i = 1; i <= 6; i++) {
-		// 		const previousDate = new Date(Date.UTC(values.year, values.month - 1, day - i));
-		// 		// console.log(previousDate);
-		// 		if (previousDate.getMonth() == parseInt(values.month) - 1) {
-		// 			// This Month
-		// 			let previousDay = previousDate.getDate();
-		// 			if (values.attendance[previousDay].firstHalf == present.id) {
-		// 				presentCount += 1;
-		// 			}
-		// 			if (values.attendance[previousDay].secondHalf == present.id) {
-		// 				presentCount += 1;
-		// 			}
-		// 			console.log('this month');
-		// 		} else if (previousDate.getMonth() == parseInt(values.month) - 2) {
-		// 			for (let i = 0; i < employeeAttendance.length; i++) {
-		// 				const attendanceDate = new Date(employeeAttendance[i].date);
-		// 				if (previousDate == attendanceDate) {
-		// 					if (employeeAttendance[i].firstHalf == present.id) {
-		// 						presentCount += 1;
-		// 					}
-		// 					if (employeeAttendance[i].secondHalf == present.id) {
-		// 						presentCount += 1;
-		// 					}
-		// 				}
-		// 			}
-		// 		}
-		// 		if (type == 'weeklyOff') {
-		// 			if (presentCount >= parseInt(weeklyOffHolidayOff.minDaysForWeeklyOff)) {
-		// 				return true;
-		// 			}
-		// 		}
-		// 		if (type == 'holidayOff') {
-		// 			if (presentCount >= parseInt(weeklyOffHolidayOff.minDaysForHolidayOff)) {
-		// 				return true;
-		// 			}
-		// 		}
-		// 	}
-		// 	return false;
-		// };
 
 		const calculateFirstHalfSecondHalf = (day, type) => {
-			const attendanceDate = new Date(values.year, values.month - 1, day);
 			let presentCount = 0;
-
 			for (let i = 1; i <= 6; i++) {
 				const previousDate = new Date(Date.UTC(values.year, values.month - 1, day - i));
 
@@ -524,127 +524,56 @@ const EditAttendance = memo(
 			return false;
 		};
 
-		// useEffect(() => {
-		// 	let timeoutId;
-
-		// 	const calculateAndSetOvertime = () => {
-		// 		for (const day in values.attendance) {
-		// 			if (values.attendance[day]?.manualIn != '' && values.attendance[day]?.manualOut != '') {
-		// 				const overtime = calculateOvertime(day);
-		// 				const lateHrs = calculateLateHrs(day);
-		// 				calculateAttendance(day);
-		// 				if (overtime > 0) {
-		// 					let otConsider = Math.floor(overtime / 30) * 30;
-		// 					let remainingOt = overtime % 30;
-		// 					if (remainingOt > 15) {
-		// 						otConsider = otConsider + 30;
-		// 					}
-		// 					if (otConsider > 0) {
-		// 						setFieldValue(`attendance.${day}.otMin`, otConsider);
-		// 					} else {
-		// 						setFieldValue(`attendance.${day}.otMin`, '');
-		// 					}
-		// 				} else {
-		// 					setFieldValue(`attendance.${day}.otMin`, '');
-		// 				}
-		// 				if (lateHrs > 0) {
-		// 					setFieldValue(`attendance.${day}.lateMin`, lateHrs);
-		// 				} else {
-		// 					setFieldValue(`attendance.${day}.lateMin`, '');
-		// 				}
-		// 			} else if (values.attendance[day]?.manualIn != '' && values.attendance[day]?.manualOut == '') {
-		// 				setFieldValue(`attendance.${day}.secondHalf`, missPunch.id);
-		// 			} else if (values.attendance[day]?.manualIn == '' && values.attendance[day]?.manualOut == '') {
-		// 				if (employeeProfessionalDetail) {
-		// 					const weeklyOffIndex = weeklyOffValues.indexOf(employeeProfessionalDetail?.weeklyOff);
-		// 					const attendanceWeekday = new Date(Date.UTC(values.year, values.month - 1, day)).getDay();
-		// 					if (attendanceWeekday == weeklyOffIndex) {
-		// 						if (calculateFirstHalfSecondHalf(day, 'weeklyOff')) {
-		// 							setFieldValue(`attendance.${day}.firstHalf`, weeklyOff.id);
-		// 							setFieldValue(`attendance.${day}.secondHalf`, weeklyOff.id);
-		// 							console.log('yesss');
-		// 						}
-		// 					}
-		// 				}
-		// 				for (let i = 0; i < holidays.length; i++) {
-		// 					const attendanceDay = new Date(Date.UTC(values.year, values.month - 1, day));
-		// 					const holidayDate = new Date(holidays[i].date);
-		// 					if (holidayDate.getTime() == attendanceDay.getTime()) {
-		// 						if (calculateFirstHalfSecondHalf(day, 'holidayOff')) {
-		// 							setFieldValue(`attendance.${day}.firstHalf`, holidayOff.id);
-		// 							setFieldValue(`attendance.${day}.secondHalf`, holidayOff.id);
-		// 							console.log('just set holiday off');
-		// 						}
-		// 					}
-		// 				}
-		// 			}
-		// 		}
-		// 	};
-
-		// 	if (employeeShifts) {
-		// 		// Clear previous timeout if any
-		// 		clearTimeout(timeoutId);
-
-		// 		// Set a new timeout for 1 second
-		// 		timeoutId = setTimeout(() => {
-		// 			calculateAndSetOvertime();
-		// 		}, 200);
-		// 	}
-
-		// 	// Clear the timeout when the component unmounts or when values.attendance changes
-		// 	return () => {
-		// 		clearTimeout(timeoutId);
-		// 	};
-		// }, [values.attendance]);
-
 		useEffect(() => {
 			let timeoutId;
 
 			const performCalculations = () => {
 				for (const day in values.attendance) {
-					const attendance = values.attendance[day];
-					const hasManualIn = attendance.manualIn !== '';
-					const hasManualOut = attendance.manualOut !== '';
+					if (!values.attendance[day].manualMode) {
+						const attendance = values.attendance[day];
+						const hasManualIn = attendance.manualIn !== '';
+						const hasManualOut = attendance.manualOut !== '';
 
-					if (hasManualIn && hasManualOut) {
-						const overtime = calculateOvertime(day);
-						const lateHrs = calculateLateHrs(day);
-						calculateAttendance(day);
+						if (hasManualIn && hasManualOut) {
+							const overtime = calculateOvertime(day);
+							const lateHrs = calculateLateHrs(day);
+							calculateAttendance(day);
 
-						setFieldValue(
-							`attendance.${day}.otMin`,
-							overtime > 0 ? Math.floor(overtime / 30) * 30 + (overtime % 30 > 15 ? 30 : 0) : ''
-						);
-						setFieldValue(`attendance.${day}.lateMin`, lateHrs > 0 ? lateHrs : '');
-					} else if (hasManualIn && !hasManualOut) {
-						setFieldValue(`attendance.${day}.secondHalf`, missPunch.id);
-					} else if (!hasManualIn && !hasManualOut) {
-						const attendanceDay = new Date(Date.UTC(values.year, values.month - 1, day));
+							setFieldValue(
+								`attendance.${day}.otMin`,
+								overtime > 0 ? Math.floor(overtime / 30) * 30 + (overtime % 30 > 15 ? 30 : 0) : ''
+							);
+							setFieldValue(`attendance.${day}.lateMin`, lateHrs > 0 ? lateHrs : '');
+						} else if (hasManualIn && !hasManualOut) {
+							setFieldValue(`attendance.${day}.secondHalf`, missPunch.id);
+						} else if (!hasManualIn && !hasManualOut) {
+							const attendanceDay = new Date(Date.UTC(values.year, values.month - 1, day));
 
-						if (employeeProfessionalDetail) {
-							const weeklyOffIndex = weeklyOffValues.indexOf(employeeProfessionalDetail.weeklyOff);
-							const attendanceWeekday = attendanceDay.getDay();
+							if (employeeProfessionalDetail) {
+								const weeklyOffIndex = weeklyOffValues.indexOf(employeeProfessionalDetail.weeklyOff);
+								const attendanceWeekday = attendanceDay.getDay();
 
-							if (
-								attendanceWeekday === weeklyOffIndex &&
-								calculateFirstHalfSecondHalf(day, 'weeklyOff')
-							) {
-								setFieldValue(`attendance.${day}.firstHalf`, weeklyOff.id);
-								setFieldValue(`attendance.${day}.secondHalf`, weeklyOff.id);
-								console.log('yesss');
+								if (
+									attendanceWeekday === weeklyOffIndex &&
+									calculateFirstHalfSecondHalf(day, 'weeklyOff')
+								) {
+									setFieldValue(`attendance.${day}.firstHalf`, weeklyOff.id);
+									setFieldValue(`attendance.${day}.secondHalf`, weeklyOff.id);
+									console.log('yesss');
+								}
 							}
-						}
 
-						for (const holiday of holidays) {
-							const holidayDate = new Date(holiday.date);
+							for (const holiday of holidays) {
+								const holidayDate = new Date(holiday.date);
 
-							if (
-								holidayDate.getTime() === attendanceDay.getTime() &&
-								calculateFirstHalfSecondHalf(day, 'holidayOff')
-							) {
-								setFieldValue(`attendance.${day}.firstHalf`, holidayOff.id);
-								setFieldValue(`attendance.${day}.secondHalf`, holidayOff.id);
-								console.log('just set holiday off');
+								if (
+									holidayDate.getTime() === attendanceDay.getTime() &&
+									calculateFirstHalfSecondHalf(day, 'holidayOff')
+								) {
+									setFieldValue(`attendance.${day}.firstHalf`, holidayOff.id);
+									setFieldValue(`attendance.${day}.secondHalf`, holidayOff.id);
+									console.log('just set holiday off');
+								}
 							}
 						}
 					}
