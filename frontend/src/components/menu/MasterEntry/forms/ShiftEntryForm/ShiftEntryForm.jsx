@@ -13,20 +13,20 @@ import {
 	FaAngleDown,
 	FaEye,
 } from 'react-icons/fa';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import {
 	useGetShiftsQuery,
 	useAddShiftMutation,
 	useUpdateShiftMutation,
 	useDeleteShiftMutation,
 } from '../../../../authentication/api/shiftEntryApiSlice';
-import EditShift from './EditShift';
 import ViewShift from './ViewShift';
 import { useOutletContext } from 'react-router-dom';
 import ReactModal from 'react-modal';
 import { Formik } from 'formik';
-import AddShift from './AddShift';
+import ShiftModal from './ShiftModal';
 import { ShiftSchema } from './ShiftEntrySchema';
+import { alertActions } from '../../../../authentication/store/slices/alertSlice';
 
 ReactModal.setAppElement('#root');
 
@@ -34,7 +34,17 @@ const classNames = (...classes) => {
 	return classes.filter(Boolean).join(' ');
 };
 
+const replaceNullWithEmpty = (obj) => {
+	const newObj = {};
+	console.log(obj);
+	for (const key in obj) {
+		newObj[key] = obj[key] === null ? '' : obj[key];
+	}
+	return newObj;
+};
+
 const ShiftEntryForm = () => {
+	const dispatch = useDispatch();
 	const globalCompany = useSelector((state) => state.globalCompany);
 
 	console.log(globalCompany);
@@ -75,31 +85,38 @@ const ShiftEntryForm = () => {
 		setViewShiftId(shift.id);
 	};
 
+	const cancelButtonClicked = () => {
+		setAddShiftPopover(false);
+		setErrorMessage('');
+		setUpdateShiftId(null);
+		setEditShiftPopover(false);
+	};
+
 	const addButtonClicked = async (values, formikBag) => {
-		console.log(formikBag);
-		const toSend = {
-			company: globalCompany.id,
-			name: values.shiftName,
-			beginning_time: values.shiftBeginningTime + ':00',
-			end_time: values.shiftEndTime + ':00',
-			lunch_time: values.lunchTime,
-			tea_time: values.teaTime,
-			late_grace: values.lateGrace,
-			ot_begin_after: values.otBeginAfter,
-			next_shift_dealy: values.nextShiftDelay,
-			accidental_punch_buffer: values.accidentalPunchBuffer,
-			half_day_minimum_minutes: values.halfDayMinimumMinutes,
-			full_day_minimum_minutes: values.fullDayMinimumMinutes,
-			short_leaves: values.shortLeaves,
-		};
+		console.log(values);
 		try {
-			const data = await addShift(toSend).unwrap();
-			console.log(data);
-			setErrorMessage('');
-			setAddShiftPopover(!addShiftPopover);
+			const data = await addShift({
+				...values,
+				company: globalCompany.id,
+			}).unwrap();
 			formikBag.resetForm();
+			dispatch(
+				alertActions.createAlert({
+					message: 'Saved',
+					type: 'Success',
+					duration: 3000,
+				})
+			);
+			cancelButtonClicked();
 		} catch (err) {
 			console.log(err);
+			dispatch(
+				alertActions.createAlert({
+					message: 'Error Occurred',
+					type: 'Error',
+					duration: 5000,
+				})
+			);
 			if (err.status === 400) {
 				setErrorMessage('Shift with this name already exists');
 			} else {
@@ -112,27 +129,28 @@ const ShiftEntryForm = () => {
 		console.log(values);
 		try {
 			const data = await updateShift({
+				...values,
 				id: updateShiftId,
-				name: values.shiftName,
 				company: globalCompany.id,
-				beginning_time: values.shiftBeginningTime + ':00',
-				end_time: values.shiftEndTime + ':00',
-				lunch_time: values.lunchTime,
-				tea_time: values.teaTime,
-				late_grace: values.lateGrace,
-				ot_begin_after: values.otBeginAfter,
-				next_shift_dealy: values.nextShiftDelay,
-				accidental_punch_buffer: values.accidentalPunchBuffer,
-				half_day_minimum_minutes: values.halfDayMinimumMinutes,
-				full_day_minimum_minutes: values.fullDayMinimumMinutes,
-				short_leaves: values.shortLeaves,
 			}).unwrap();
-			console.log(data);
-			setErrorMessage('');
 			formikBag.resetForm();
-			editShiftPopoverHandler({ id: '' });
+			dispatch(
+				alertActions.createAlert({
+					message: 'Saved',
+					type: 'Success',
+					duration: 3000,
+				})
+			);
+			cancelButtonClicked();
 		} catch (err) {
 			console.log(err);
+			dispatch(
+				alertActions.createAlert({
+					message: 'Error Occurred',
+					type: 'Error',
+					duration: 5000,
+				})
+			);
 			if (err.status === 400) {
 				setErrorMessage('Shift with this name already exists');
 			} else {
@@ -197,27 +215,6 @@ const ShiftEntryForm = () => {
 		() => (fetchedData ? [...fetchedData] : []),
 		[fetchedData]
 	);
-
-	const shiftForEdit = () => {
-		const shift = fetchedData.find((shift) => shift.id === updateShiftId);
-		return {
-			shiftName: shift.name,
-			shiftBeginningTime: shift.beginningTime
-				.split(':')
-				.slice(0, 2)
-				.join(':'),
-			shiftEndTime: shift.endTime.split(':').slice(0, 2).join(':'),
-			lunchTime: shift.lunchTime,
-			teaTime: shift.teaTime,
-			lateGrace: shift.lateGrace,
-			otBeginAfter: shift.otBeginAfter,
-			nextShiftDelay: shift.nextShiftDealy,
-			accidentalPunchBuffer: shift.accidentalPunchBuffer,
-			halfDayMinimumMinutes: shift.halfDayMinimumMinutes,
-			fullDayMinimumMinutes: shift.fullDayMinimumMinutes,
-			shortLeaves: shift.shortLeaves,
-		};
-	};
 
 	const table = useReactTable({
 		data,
@@ -358,50 +355,8 @@ const ShiftEntryForm = () => {
 
 				<ReactModal
 					className="items-left fixed inset-0 mx-2 my-auto flex h-fit flex-col gap-4 rounded bg-zinc-300 p-4 shadow-xl dark:bg-zinc-800 sm:mx-auto sm:max-w-2xl"
-					isOpen={addShiftPopover}
-					onRequestClose={() => setAddShiftPopover(false)}
-					style={{
-						overlay: {
-							backgroundColor: 'rgba(0, 0, 0, 0.75)',
-						},
-					}}
-				>
-					<Formik
-						initialValues={{
-							shiftName: '',
-							shiftBeginningTime: '',
-							shiftEndTime: '',
-							lunchTime: '',
-							teaTime: '',
-							lateGrace: '',
-							otBeginAfter: '',
-							nextShiftDelay: '',
-							accidentalPunchBuffer: '',
-							halfDayMinimumMinutes: '',
-							fullDayMinimumMinutes: '',
-							shortLeaves: '',
-						}}
-						validationSchema={ShiftSchema}
-						onSubmit={addButtonClicked}
-						component={(props) => (
-							<AddShift
-								{...props}
-								errorMessage={errorMessage}
-								setErrorMessage={setErrorMessage}
-								setAddShiftPopover={setAddShiftPopover}
-							/>
-						)}
-					/>
-				</ReactModal>
-
-				<ReactModal
-					className="items-left fixed inset-0 mx-2 my-auto flex h-fit flex-col gap-4 rounded bg-zinc-300 p-4 shadow-xl dark:bg-zinc-800 sm:mx-auto sm:max-w-2xl"
-					isOpen={editShiftPopover}
-					onRequestClose={() =>
-						editShiftPopoverHandler({
-							id: '',
-						})
-					}
+					isOpen={addShiftPopover || editShiftPopover}
+					onRequestClose={cancelButtonClicked}
 					style={{
 						overlay: {
 							backgroundColor: 'rgba(0, 0, 0, 0.75)',
@@ -410,12 +365,11 @@ const ShiftEntryForm = () => {
 				>
 					<Formik
 						initialValues={
-							updateShiftId
-								? shiftForEdit(updateShiftId)
-								: {
-										shiftName: '',
-										shiftBeginningTime: '',
-										shiftEndTime: '',
+							addShiftPopover
+								? {
+										name: '',
+										beginningTime: '',
+										endTime: '',
 										lunchTime: '',
 										teaTime: '',
 										lateGrace: '',
@@ -425,18 +379,28 @@ const ShiftEntryForm = () => {
 										halfDayMinimumMinutes: '',
 										fullDayMinimumMinutes: '',
 										shortLeaves: '',
+										maxLateAllowedMin: '',
 								  }
+								: replaceNullWithEmpty(
+										fetchedData.find(
+											(shift) =>
+												shift.id === updateShiftId
+										)
+								  )
 						}
 						validationSchema={ShiftSchema}
-						onSubmit={updateButtonClicked}
+						onSubmit={
+							addShiftPopover
+								? addButtonClicked
+								: updateButtonClicked
+						}
 						component={(props) => (
-							<EditShift
+							<ShiftModal
 								{...props}
 								errorMessage={errorMessage}
 								setErrorMessage={setErrorMessage}
-								editShiftPopoverHandler={
-									editShiftPopoverHandler
-								}
+								cancelButtonClicked={cancelButtonClicked}
+								isEditing={editShiftPopover}
 							/>
 						)}
 					/>

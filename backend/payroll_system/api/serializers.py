@@ -1,7 +1,7 @@
 from dataclasses import field
 from rest_framework import serializers
 
-from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, DeductionsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning, EmployeeSalaryDetail, EmployeeFamilyNomineeDetial, EmployeePfEsiDetail, WeeklyOffHolidayOff, PfEsiSetup, Calculations, EmployeeShifts
+from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, DeductionsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning, EmployeeSalaryDetail, EmployeeFamilyNomineeDetial, EmployeePfEsiDetail, WeeklyOffHolidayOff, PfEsiSetup, Calculations, EmployeeShifts, EmployeeAttendance
 from rest_framework import serializers
 
 
@@ -100,7 +100,7 @@ class ShiftSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     class Meta:
         model = Shift
-        fields = ('id', 'user', 'company', 'name' ,'beginning_time', 'end_time', 'lunch_time', 'tea_time', 'late_grace', 'ot_begin_after', 'half_day_minimum_minutes', 'full_day_minimum_minutes', 'short_leaves', 'next_shift_dealy', 'accidental_punch_buffer')
+        fields = ('id', 'user', 'company', 'name' ,'beginning_time', 'end_time', 'lunch_time', 'tea_time', 'late_grace', 'ot_begin_after', 'half_day_minimum_minutes', 'full_day_minimum_minutes', "max_late_allowed_min", 'short_leaves', 'next_shift_delay', 'accidental_punch_buffer')
 
 class HolidaySerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
@@ -224,3 +224,8 @@ class EmployeeShiftsUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployeeShifts
         fields = ['employee', 'company', 'shift', 'from_date', 'to_date']
+
+class EmployeeAttendanceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmployeeAttendance
+        fields = ['employee', 'company', 'machine_in', 'machine_out', 'manual_in', 'manual_out', 'first_half', 'second_half', 'date', 'ot_min', 'late_min']

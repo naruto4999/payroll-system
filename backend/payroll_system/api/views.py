@@ -2,7 +2,7 @@ from django.forms import ValidationError
 from django.shortcuts import render
 from rest_framework import generics, status, mixins
 from django.db import transaction
-from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, DeductionsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer
+from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, DeductionsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer
 from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift, EmployeeSalaryEarning, EarningsHead, EmployeeShifts
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -431,7 +431,7 @@ class LeaveGradeRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIVi
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         except IntegrityError as e:
             print(str(e))
-            return Response({"name" : "Leave Grade with this name already exists"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"name" : "Leave Grade with this name already exists"}, status=status.HTTP_400_BAD_REQUEST)\
 
     
     def perform_destroy(self, instance):
@@ -1626,12 +1626,6 @@ class EmployeeShiftsListAPIView(generics.ListAPIView):
         print(serializer.data)
         return Response(serializer.data)
     
-    # def perform_create(self, serializer):
-    #     user = self.request.user
-    #     if user.role == "OWNER":
-    #         return serializer.save(user=self.request.user)
-    #     instance = OwnerToRegular.objects.get(user=user)
-    #     return serializer.save(user=instance.owner)
     
 class EmployeeShiftsCreateAPIView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
@@ -1697,55 +1691,75 @@ class EmployeeShiftsPermanentUpdateAPIView(generics.UpdateAPIView):
         validated_shift = serializer.validated_data
         EmployeeShifts.objects.process_employee_permanent_shift(user=user, employee_shift_data=validated_shift)
         return Response({"message": "Employee earnings updated successfully"}, status=status.HTTP_200_OK)
-
-            
-
     
 
+# class EmployeeShiftsListAPIView(generics.ListAPIView):
+#     permission_classes = [IsAuthenticated]
+#     serializer_class = EmployeeShiftsSerializer
 
-    # def create(self, request, *args, **kwargs):
-    #     print(request.data)
-    #     employee_shifts = request.data['employee_shifts']
-    #     for data in employee_shifts:
-    #         earnings_head_id = data['earnings_head']
-    #         earnings_head_instance = EarningsHead.objects.get(pk=earnings_head_id)
-    #         earnings_head_instance_data = EarningsHeadSerializer(earnings_head_instance).data
-    #         data["earnings_head"] = earnings_head_instance_data
-    #         user = self.request.user
-    #         serializer = self.get_serializer(data=data)
-    #         serializer.is_valid(raise_exception=True)
-    #         validated_data = serializer.validated_data
-    #         instance = self.get_queryset().filter(earnings_head=earnings_head_id)
-    #         if instance.exists():
-    #             print("nuuuuu")
-    #         else:
-    #             print("yayyy")
-    #             validated_data['to_date'] = datetime.strptime('9999-01-01', "%Y-%m-%d").date()
-    #             # print(validated_data)
-    #         if user.role == "OWNER":
-    #             pass
-    #         else:
-    #             instance = OwnerToRegular.objects.get(user=user)
-    #             user=instance.owner
-    #         new_earning = EmployeeSalaryEarning.objects.create(
-    #                 user=user,
-    #                 employee=validated_data['employee'],
-    #                 company=validated_data['company'],
-    #                 earnings_head_id=earnings_head_id,
-    #                 value=validated_data['value'],
-    #                 from_date=validated_data['from_date'],
-    #                 to_date=validated_data['to_date']
-    #             )
-    #         print(new_earning)
-
-    #     return Response(serializer.data, status=status.HTTP_200_OK)
+#     def get_queryset(self, *args, **kwargs):
+#         company_id = self.kwargs.get('company_id')
+#         employee = self.kwargs.get('employee')
+#         user = self.request.user
+#         if user.role == "OWNER":
+#             return user.all_employees_shifts.filter(company=company_id, employee=employee)
+#         instance = OwnerToRegular.objects.get(user=user)
+#         return instance.owner.all_employees_shifts.filter(company=company_id, employee=employee)
     
+#     def list(self, request, *args, **kwargs):
+#         year = self.kwargs.get('year')
+#         queryset = self.get_queryset().filter(from_date__year__lte=year, to_date__year__gte=year)
+#         serializer = self.get_serializer(queryset, many=True)
+#         print(serializer.data)
+#         return Response(serializer.data)
+    
+class EmployeeAttendanceListCreateAPIView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = EmployeeAttendanceSerializer
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        employee = self.kwargs.get('employee')
+        user = self.request.user
+        if user.role == "OWNER":
+            return user.all_employees_attendance.filter(company=company_id, employee=employee)
+        # instance = OwnerToRegular.objects.get(user=user)
+        # return instance.owner.employee_family_nominee_details.filter(company=company_id, employee=employee)
+
+    def create(self, request, *args, **kwargs):
+        print(request.data)
+        print(request.data['employee_attendance'])
+        print(type(request.data['employee_attendance']))
+        try:
+            serializer = self.get_serializer(data=request.data['employee_attendance'], many=True)
+            serializer.is_valid(raise_exception=True)
+            user = self.request.user
+
+            if user.role == "OWNER":
+                serializer.save(user=user)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            # else:
+            #     instance = OwnerToRegular.objects.get(user=user)
+            #     serializer.save(user=instance.owner)
+            #     return Response(serializer.data, status=status.HTTP_200_OK)
+        except ValidationError as e:
+            print(e)
+            return Response({'error': e}, status=status.HTTP_400_BAD_REQUEST)
+        
     def list(self, request, *args, **kwargs):
-        year = self.kwargs.get('year')
-        queryset = self.get_queryset().filter(from_date__year__lte=year, to_date__year__gte=year)
+        print('yooooooooy')
+        from_date = self.kwargs.get('from_date')
+        to_date = self.kwargs.get('to_date')
+        queryset = self.get_queryset().filter(date__range=[from_date, to_date])
         serializer = self.get_serializer(queryset, many=True)
         print(serializer.data)
         return Response(serializer.data)
+
+
+
+            
+
+
 
 
 #Viewsets

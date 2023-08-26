@@ -255,7 +255,8 @@ class Shift(models.Model):
     tea_time = models.PositiveSmallIntegerField(default=0, null=False, blank=False) # In minutes
     late_grace = models.PositiveSmallIntegerField(default=0, null=False, blank=False) # In minutes
     ot_begin_after = models.PositiveSmallIntegerField(default=0, null=False, blank=False) # In minutes (minimum number of minutes that needs to fulfilled for Over Time to be applied)
-    next_shift_dealy = models.PositiveSmallIntegerField(default=0, null=False, blank=False)
+    next_shift_delay = models.PositiveSmallIntegerField(default=0, null=False, blank=False)
+    max_late_allowed_min = models.PositiveSmallIntegerField(null=False, blank=False)
     accidental_punch_buffer = models.PositiveSmallIntegerField(default=0, null=False, blank=False)
     half_day_minimum_minutes = models.PositiveSmallIntegerField(null=False, blank=False)
     full_day_minimum_minutes = models.PositiveSmallIntegerField(null=False, blank=False)
@@ -1045,6 +1046,16 @@ def create_default_leave_grades_for_company(sender, instance, created, **kwargs)
         LeaveGrade.objects.create(user=user,company=company, name='CL', limit=7, mandatory_leave=True, paid=True, generate_frequency=40)        
         LeaveGrade.objects.create(user=user,company=company, name='EL', limit=15, mandatory_leave=True, paid=True, generate_frequency=20)
         LeaveGrade.objects.create(user=user,company=company, name='SL', limit=7, mandatory_leave=True, paid=True, generate_frequency=40)
+        LeaveGrade.objects.create(user=user,company=company, name='A', mandatory_leave=True, paid=False)
+        LeaveGrade.objects.create(user=user,company=company, name='P', mandatory_leave=True, paid=True)
+        LeaveGrade.objects.create(user=user,company=company, name='HD*', mandatory_leave=True, paid=False)
+        LeaveGrade.objects.create(user=user,company=company, name='HD', mandatory_leave=True, paid=True)
+        LeaveGrade.objects.create(user=user,company=company, name='MS', mandatory_leave=True, paid=False)
+        LeaveGrade.objects.create(user=user,company=company, name='WO', mandatory_leave=True, paid=True)
+        LeaveGrade.objects.create(user=user,company=company, name='WO*', mandatory_leave=True, paid=False)
+        LeaveGrade.objects.create(user=user,company=company, name='OD', mandatory_leave=True, paid=True)
+        LeaveGrade.objects.create(user=user,company=company, name='CO', mandatory_leave=True, paid=True)
+
 
 
 @receiver(post_save, sender=Company)
@@ -1101,7 +1112,7 @@ def create_default_holiday_off_weekly_off(sender, instance, created, **kwargs):
         company = instance  # Assign the instance to a variable
         user = company.user
         # Create the default Weekly Off and Holiday Off on post save for company
-        WeeklyOffHolidayOff.objects.create(user=user,company=company, min_days_for_holiday_off=0, min_days_for_weekly_off=0)
+        WeeklyOffHolidayOff.objects.create(user=user,company=company, min_days_for_holiday_off=3, min_days_for_weekly_off=3)
 
 @receiver(post_save, sender=Company)
 def create_default_pf_esi_setup(sender, instance, created, **kwargs):

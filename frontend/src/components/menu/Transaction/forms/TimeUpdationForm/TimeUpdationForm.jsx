@@ -14,11 +14,8 @@ import {
 	FaEye,
 } from 'react-icons/fa';
 import { useGetEmployeePersonalDetailsQuery } from '../../../../authentication/api/employeeEntryApiSlice';
-// import { useGetShiftsQuery } from '../../../../authentication/api/shiftEntryApiSlice';
-// import {
-// 	useUpdateEmployeeShiftsMutation,
-// 	useUpdatePermanentEmployeeShiftMutation,
-// } from '../../../../authentication/api/employeeShiftsApiSlice';
+import { useAddEmployeeAttendanceMutation } from '../../../../authentication/api/timeUpdationApiSlice';
+
 import { useOutletContext } from 'react-router-dom';
 import ReactModal from 'react-modal';
 import { Formik } from 'formik';
@@ -27,6 +24,8 @@ import { alertActions } from '../../../../authentication/store/slices/alertSlice
 import EditAttendance from './EditAttendance';
 import { useGetLeaveGradesQuery } from '../../../../authentication/api/leaveGradeEntryApiSlice';
 import * as yup from 'yup';
+import { useGetWeeklyOffHolidayOffQuery } from '../../../../authentication/api/weeklyOffHolidayOffApiSlice';
+import { useGetHolidaysQuery } from '../../../../authentication/api/holidayEntryApiSlice';
 // import createValidationSchema from './EmployeeShiftsSchema';
 
 const classNames = (...classes) => {
@@ -50,7 +49,21 @@ const TimeUpdationForm = () => {
 		// isFetching,
 		// refetch,
 	} = useGetLeaveGradesQuery(globalCompany);
-	console.log(leaveGrades);
+
+	const {
+		data: { company, ...weeklyOffHolidayOff } = {},
+		isLoading,
+		isSuccess,
+		isError,
+		error,
+		isFetching,
+	} = useGetWeeklyOffHolidayOffQuery(globalCompany.id);
+
+	const {
+		data: holidays,
+		isLoading: isLoadingHolidays,
+		isSuccess: isLoadingHolidaysSuccess,
+	} = useGetHolidaysQuery(globalCompany);
 
 	const [showLoadingBar, setShowLoadingBar] = useOutletContext();
 	const {
@@ -62,17 +75,74 @@ const TimeUpdationForm = () => {
 	const [dateOfJoining, setDateOfJoining] = useState(null);
 	const [errorMessage, setErrorMessage] = useState('');
 	const [updateEmployeeId, setUpdateEmployeeId] = useState(null);
+	const [
+		addEmployeeAttendance,
+		{
+			isLoading: isAddingEmployeeAttendance,
+			// isError: errorRegisteringRegular,
+			isSuccess: isAddEmployeeAttendanceSuccess,
+		},
+	] = useAddEmployeeAttendanceMutation();
 
 	const updateButtonClicked = async (values, formikBag) => {
 		console.log(values);
+		const employee_attendance = [];
+		for (const day in values.attendance) {
+			if (values.attendance.hasOwnProperty(day)) {
+				employee_attendance.push({ ...values.attendance[day] });
+			}
+		}
+		employee_attendance.map((each_attendance) => {
+			each_attendance.company = globalCompany.id;
+			each_attendance.employee = updateEmployeeId;
+			each_attendance.otMin = null;
+			each_attendance.lateMin = null;
+			if (each_attendance.machineIn == '') {
+				each_attendance.machineIn = null;
+			}
+			if (each_attendance.machineOut == '') {
+				each_attendance.machineOut = null;
+			}
+			if (each_attendance.manualIn == '') {
+				each_attendance.manualIn = null;
+			}
+			if (each_attendance.manualOut == '') {
+				each_attendance.manualOut = null;
+			}
+		});
+		let toSend = {};
+		toSend.employee_attendance = employee_attendance;
+		toSend.employee = updateEmployeeId;
+		toSend.company = globalCompany.id;
+
+		console.log(toSend);
+
+		try {
+			const data = await addEmployeeAttendance(toSend).unwrap();
+			console.log(data);
+			dispatch(
+				alertActions.createAlert({
+					message: 'Saved',
+					type: 'Success',
+					duration: 3000,
+				})
+			);
+		} catch (err) {
+			console.log(err);
+			dispatch(
+				alertActions.createAlert({
+					message: 'Error Occurred',
+					type: 'Error',
+					duration: 5000,
+				})
+			);
+		}
 	};
 
 	const [editTimeUpdationPopover, setEditTimeUpdationPopover] =
 		useState(false);
 
 	const editTimeUpdationDetail = (personalDetail) => {
-		console.log(personalDetail);
-		console.log(personalDetail.dateOfJoining);
 		setDateOfJoining(personalDetail.dateOfJoining);
 		setUpdateEmployeeId(personalDetail.id);
 		setEditTimeUpdationPopover(true);
@@ -80,6 +150,9 @@ const TimeUpdationForm = () => {
 
 	const cancelButtonClicked = () => {
 		setEditTimeUpdationPopover(false);
+		setDateOfJoining(null);
+		setUpdateEmployeeId(null);
+		setErrorMessage('');
 	};
 
 	const generateInitialValues = () => {
@@ -92,11 +165,14 @@ const TimeUpdationForm = () => {
 			currentMonthIndex + 1,
 			0
 		).getDate();
-		console.log(daysInMonth);
+		// console.log(daysInMonth);
 
 		const initialValues = {
 			year: currentYear,
 			month: currentMonthIndex + 1,
+			manualLeave: '',
+			manualFromDate: '',
+			manualToDate: '',
 			attendance: {},
 		};
 
@@ -111,11 +187,11 @@ const TimeUpdationForm = () => {
 				otMin: '',
 				lateMin: '',
 				date: `${initialValues.year}-${initialValues.month}-${day}`,
+				manualMode: false,
 			};
 		}
 		return initialValues;
 	};
-	console.log(generateInitialValues());
 	const initialValues = useMemo(() => generateInitialValues(), []);
 
 	const columnHelper = createColumnHelper();
@@ -320,6 +396,7 @@ const TimeUpdationForm = () => {
 									dateOfJoining={dateOfJoining}
 									cancelButtonClicked={cancelButtonClicked}
 									leaveGrades={leaveGrades}
+									holidays={holidays}
 								/>
 							)}
 						/>

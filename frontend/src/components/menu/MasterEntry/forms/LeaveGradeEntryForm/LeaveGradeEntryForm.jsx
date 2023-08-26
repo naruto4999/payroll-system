@@ -207,14 +207,18 @@ const LeaveGradeEntryForm = () => {
 							<FaRegTrashAlt className="h-4" />
 						</div>
 					)}
-					<div
-						className="rounded bg-teal-600 p-1.5 hover:bg-teal-700 dark:bg-teal-700 dark:hover:bg-teal-600"
-						onClick={() =>
-							editLeaveGradePopoverHandler(props.row.original)
-						}
-					>
-						<FaPen className="h-4" />
-					</div>
+					{props.row.original.mandatoryLeave ? (
+						''
+					) : (
+						<div
+							className="rounded bg-teal-600 p-1.5 hover:bg-teal-700 dark:bg-teal-700 dark:hover:bg-teal-600"
+							onClick={() =>
+								editLeaveGradePopoverHandler(props.row.original)
+							}
+						>
+							<FaPen className="h-4" />
+						</div>
+					)}
 				</div>
 			),
 		}),

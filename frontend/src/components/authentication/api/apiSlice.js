@@ -98,6 +98,7 @@ export const apiSlice = createApi({
 		'PfEsiSetup',
 		'Calculations',
 		'EmployeeShifts',
+		'EmployeeAttendance',
 	],
 	endpoints: (builder) => ({}),
 });

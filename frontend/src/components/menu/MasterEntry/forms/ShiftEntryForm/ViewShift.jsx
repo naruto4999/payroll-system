@@ -83,7 +83,7 @@ const ViewShift = ({ viewShiftPopoverHandler, shift }) => {
 							Next Shift Delay
 						</h3>
 						<p className="text-sm font-medium sm:text-base">
-							{shift?.nextShiftDealy}
+							{shift?.nextShiftDelay}
 						</p>
 					</div>
 
@@ -111,6 +111,15 @@ const ViewShift = ({ viewShiftPopoverHandler, shift }) => {
 						</h3>
 						<p className="text-sm font-medium sm:text-base">
 							{shift?.fullDayMinimumMinutes}
+						</p>
+					</div>
+
+					<div className="rounded p-2 hover:bg-zinc-400 dark:hover:bg-zinc-700">
+						<h3 className="rounded text-sm font-bold text-blueAccent-600 text-opacity-100 dark:text-blueAccent-500 dark:text-opacity-70 sm:text-base">
+							Max late allowed Minutes
+						</h3>
+						<p className="text-sm font-medium sm:text-base">
+							{shift?.maxLateAllowedMin}{' '}
 						</p>
 					</div>
 

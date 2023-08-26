@@ -7,10 +7,10 @@ const classNames = (...classes) => {
 
 const AttendanceHeader = memo(() => {
 	return (
-		<div className="relative h-6 rounded-sm border border-b-0  dark:border-slate-400 dark:border-opacity-30">
+		<div className="relative h-6 rounded-sm border border-b-0  dark:border-slate-400 dark:border-opacity-30 dark:bg-zinc-900 dark:bg-opacity-70">
 			<section className="flex h-full flex-row divide-x divide-dashed divide-blueAccent-600/80">
 				<div className="my-auto w-[91.797px] pl-2 pr-2">
-					<h6 className="mx-auto w-fit cursor-default  text-xs">
+					<h6 className="mx-auto w-fit cursor-default text-xs">
 						Machine In
 					</h6>
 				</div>

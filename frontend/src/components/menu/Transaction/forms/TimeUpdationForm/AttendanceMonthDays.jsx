@@ -12,7 +12,7 @@ const AttendanceMonthDays = memo(
 		const date = new Date(`${year}-${month}-${day}`);
 		const weekdayIndex = date.getDay();
 		const daysInMonth = new Date(year, month, 0).getDate();
-		console.log(otMin);
+		// console.log(otMin);
 
 		// const OtDisplayhours = Math.floor(otMin / 60);
 		// const OtDisplayMinutes = otMin % 60;
@@ -20,7 +20,10 @@ const AttendanceMonthDays = memo(
 			<div
 				className={classNames(
 					day == daysInMonth ? '' : 'border-b-0',
-					'relative h-6 rounded-sm border  dark:border-slate-400 dark:border-opacity-30'
+					'relative h-6 rounded-sm border  dark:border-slate-400 dark:border-opacity-30 focus-within:dark:bg-zinc-900 hover:dark:bg-zinc-900 ',
+					weekdayIndex == 0
+						? 'dark:bg-red-700 dark:bg-opacity-40'
+						: ''
 				)}
 			>
 				<h6
@@ -37,7 +40,7 @@ const AttendanceMonthDays = memo(
 						name={`attendance.${day}.machineIn`}
 						id={`attendance.${day}.machineIn`}
 						disabled={true}
-						className="h-full w-fit cursor-not-allowed rounded-sm bg-zinc-300 bg-opacity-100 pl-2 pr-2 text-xs outline-none transition-colors duration-300    dark:bg-zinc-800 sm:text-base"
+						className="h-full w-fit cursor-not-allowed rounded-sm  bg-transparent pl-2 pr-2 text-xs outline-none transition-colors duration-300 sm:text-base"
 					/>
 					{/* <div></div> */}
 
@@ -46,21 +49,21 @@ const AttendanceMonthDays = memo(
 						name={`attendance.${day}.machineOut`}
 						id={`attendance.${day}.machineOut`}
 						disabled={true}
-						className="h-full w-fit cursor-not-allowed rounded-sm bg-zinc-300 bg-opacity-100 pl-2 pr-2 text-xs outline-none transition-colors duration-300    dark:bg-zinc-800 sm:text-base"
+						className="h-full w-fit cursor-not-allowed rounded-sm bg-transparent pl-2 pr-2 text-xs outline-none transition-colors duration-300  sm:text-base"
 					/>
 
 					<Field
 						type="time"
 						name={`attendance.${day}.manualIn`}
 						id={`attendance.${day}.manualIn`}
-						className="h-full w-fit rounded-sm bg-zinc-300 bg-opacity-100 pl-2 pr-2 text-xs outline-none transition-colors duration-300 hover:bg-zinc-200   dark:bg-zinc-800 dark:hover:bg-zinc-700 sm:text-base"
+						className="h-full w-fit rounded-sm bg-transparent pl-2 pr-2 text-xs outline-none transition-colors duration-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 focus:dark:bg-zinc-700 sm:text-base"
 					/>
 
 					<Field
 						type="time"
 						name={`attendance.${day}.manualOut`}
 						id={`attendance.${day}.manualOut`}
-						className="h-full w-fit rounded-sm bg-zinc-300 bg-opacity-100 pl-2 pr-2 text-xs outline-none transition-colors duration-300 hover:bg-zinc-200   dark:bg-zinc-800 dark:hover:bg-zinc-700 sm:text-base"
+						className="h-full w-fit rounded-sm bg-transparent pl-2 pr-2 text-xs outline-none transition-colors duration-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 focus:dark:bg-zinc-700 sm:text-base"
 					/>
 					<div className="my-auto w-24 pl-2 pr-2">
 						<h6 className="mx-auto w-fit cursor-default  text-xs">
@@ -73,13 +76,10 @@ const AttendanceMonthDays = memo(
 						name={`attendance.${day}.firstHalf`}
 						id={`attendance.${day}.firstHalf`}
 						className={classNames(
-							weekdayIndex == 0
-								? 'dark:bg-red-700 dark:bg-opacity-40'
-								: '',
-							'h-full w-20 rounded-sm bg-zinc-300 bg-opacity-100 pl-2 pr-2 text-xs outline-none transition-colors duration-300 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-xs dark:hover:bg-zinc-700 sm:text-base'
+							'h-full w-20 rounded-sm bg-transparent pl-2 pr-2 text-xs outline-none transition-colors duration-300 hover:bg-zinc-200 dark:text-xs dark:hover:bg-zinc-700 focus:dark:bg-zinc-700 sm:text-base'
 						)}
 					>
-						<option value={''}>N/A</option>
+						{/* <option value={''}>N/A</option> */}
 						{leaveGrades?.map((leaveGrade, index) => {
 							return (
 								<option key={index} value={leaveGrade.id}>
@@ -92,9 +92,10 @@ const AttendanceMonthDays = memo(
 						as="select"
 						name={`attendance.${day}.secondHalf`}
 						id={`attendance.${day}.secondHalf`}
-						className="h-full w-20 rounded-sm bg-zinc-300 bg-opacity-100 pl-2 pr-2 text-xs outline-none transition-colors duration-300 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-xs dark:hover:bg-zinc-700 sm:text-base"
+						className={classNames(
+							'h-full w-20 rounded-sm bg-transparent pl-2 pr-2 text-xs outline-none transition-colors duration-300 hover:bg-zinc-200 dark:text-xs dark:hover:bg-zinc-700 focus:dark:bg-zinc-700 sm:text-base'
+						)}
 					>
-						<option value={''}>N/A</option>
 						{leaveGrades?.map((leaveGrade, index) => {
 							return (
 								<option key={index} value={leaveGrade.id}>
@@ -112,9 +113,21 @@ const AttendanceMonthDays = memo(
 							  )}:${String(otMin % 60).padStart(2, '0')}`
 							: ''}
 					</h6>
-					<h6 className="my-auto w-20 cursor-default pl-2 pr-2 text-xs dark:text-yellow-600">
-						{lateMin}
+					<h6 className="my-auto w-20 cursor-default pl-2 pr-2 text-xs dark:text-orange-600">
+						{lateMin !== ''
+							? `${String(Math.floor(lateMin / 60)).padStart(
+									2,
+									'0'
+							  )}:${String(lateMin % 60).padStart(2, '0')}`
+							: ''}
 					</h6>
+					<div className="pl-2 pr-2">
+						<Field
+							type="checkbox"
+							name={`attendance.${day}.manualMode`}
+							className="my-auto h-4 w-4 rounded accent-teal-600"
+						/>
+					</div>
 				</section>
 
 				{/* </Field> */}
