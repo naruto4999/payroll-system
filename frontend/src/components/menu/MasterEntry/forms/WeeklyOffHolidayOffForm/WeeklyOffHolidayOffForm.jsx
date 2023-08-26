@@ -52,6 +52,7 @@ const WeeklyOffHolidayOffForm = () => {
 
 	const updateButtonClicked = async (values, formikBag) => {
 		console.log(values);
+
 		try {
 			const data = await updatedWeeklyOffHolidayOff({
 				...values,
@@ -78,11 +79,7 @@ const WeeklyOffHolidayOffForm = () => {
 	};
 
 	useEffect(() => {
-		setShowLoadingBar(
-			isLoading ||
-				isAddWeeklyOffHolidayOff ||
-				isUpdatingWeeklyOffHolidayOff
-		);
+		setShowLoadingBar(isLoading || isAddWeeklyOffHolidayOff || isUpdatingWeeklyOffHolidayOff);
 	}, [isLoading, isAddWeeklyOffHolidayOff, isUpdatingWeeklyOffHolidayOff]);
 
 	if (isLoading) {
@@ -97,9 +94,7 @@ const WeeklyOffHolidayOffForm = () => {
 			<section className="mx-5 mt-2">
 				<div className="flex flex-row flex-wrap place-content-between">
 					<div className="mr-4">
-						<h1 className="text-3xl font-medium">
-							Holiday / Weekly Off
-						</h1>
+						<h1 className="text-3xl font-medium">Holiday / Weekly Off</h1>
 						{/* <p className="text-sm my-2">
                             {isSuccess
                                 ? "Sub user already exists, below are the details."
@@ -136,8 +131,7 @@ const WeeklyOffHolidayOffForm = () => {
 									</label>
 									<Field
 										className={classNames(
-											errors.minDaysForHolidayOff &&
-												touched.minDaysForHolidayOff
+											errors.minDaysForHolidayOff && touched.minDaysForHolidayOff
 												? 'border-red-500 border-opacity-100 dark:border-red-700 dark:border-opacity-75'
 												: 'border-gray-800 border-opacity-25 dark:border-slate-100 dark:border-opacity-25',
 											'custom-number-input w-full rounded border-2  bg-zinc-200   bg-opacity-50 p-1 outline-none transition focus:border-opacity-100 dark:bg-zinc-800 dark:focus:border-opacity-75 lg:w-1/3'
@@ -146,9 +140,7 @@ const WeeklyOffHolidayOffForm = () => {
 										name={`minDaysForHolidayOff`}
 									/>
 									<div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
-										<ErrorMessage
-											name={`minDaysForHolidayOff`}
-										/>
+										<ErrorMessage name={`minDaysForHolidayOff`} />
 									</div>
 								</div>
 								<div>
@@ -160,8 +152,7 @@ const WeeklyOffHolidayOffForm = () => {
 									</label>
 									<Field
 										className={classNames(
-											errors.minDaysForWeeklyOff &&
-												touched.minDaysForWeeklyOff
+											errors.minDaysForWeeklyOff && touched.minDaysForWeeklyOff
 												? 'border-red-500 border-opacity-100 dark:border-red-700 dark:border-opacity-75'
 												: 'border-gray-800 border-opacity-25 dark:border-slate-100 dark:border-opacity-25',
 											'custom-number-input w-full rounded border-2  bg-zinc-200   bg-opacity-50 p-1 outline-none transition focus:border-opacity-100 dark:bg-zinc-800 dark:focus:border-opacity-75 lg:w-1/3'
@@ -170,9 +161,7 @@ const WeeklyOffHolidayOffForm = () => {
 										name={`minDaysForWeeklyOff`}
 									/>
 									<div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
-										<ErrorMessage
-											name={`minDaysForWeeklyOff`}
-										/>
+										<ErrorMessage name={`minDaysForWeeklyOff`} />
 									</div>
 								</div>
 

@@ -1011,6 +1011,7 @@ class EmployeeAttendance(models.Model):
     ot_min = models.PositiveSmallIntegerField(null=True, blank=True)
     late_min = models.PositiveSmallIntegerField(null=True, blank=True)
     pay_multiplier = LimitedFloatField()
+    manual_mode = models.BooleanField(default=False)
 
     class Meta:
         constraints = [

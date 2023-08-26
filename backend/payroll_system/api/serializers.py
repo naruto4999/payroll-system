@@ -228,4 +228,4 @@ class EmployeeShiftsUpdateSerializer(serializers.ModelSerializer):
 class EmployeeAttendanceSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployeeAttendance
-        fields = ['employee', 'company', 'machine_in', 'machine_out', 'manual_in', 'manual_out', 'first_half', 'second_half', 'date', 'ot_min', 'late_min']
+        fields = ['employee', 'company', 'machine_in', 'machine_out', 'manual_in', 'manual_out', 'first_half', 'second_half', 'date', 'ot_min', 'late_min', 'manual_mode']

@@ -6,13 +6,7 @@ import {
 	useReactTable,
 	getSortedRowModel,
 } from '@tanstack/react-table';
-import {
-	FaRegTrashAlt,
-	FaPen,
-	FaAngleUp,
-	FaAngleDown,
-	FaEye,
-} from 'react-icons/fa';
+import { FaRegTrashAlt, FaPen, FaAngleUp, FaAngleDown, FaEye } from 'react-icons/fa';
 import { useGetEmployeePersonalDetailsQuery } from '../../../../authentication/api/employeeEntryApiSlice';
 import { useAddEmployeeAttendanceMutation } from '../../../../authentication/api/timeUpdationApiSlice';
 
@@ -117,30 +111,29 @@ const TimeUpdationForm = () => {
 
 		console.log(toSend);
 
-		try {
-			const data = await addEmployeeAttendance(toSend).unwrap();
-			console.log(data);
-			dispatch(
-				alertActions.createAlert({
-					message: 'Saved',
-					type: 'Success',
-					duration: 3000,
-				})
-			);
-		} catch (err) {
-			console.log(err);
-			dispatch(
-				alertActions.createAlert({
-					message: 'Error Occurred',
-					type: 'Error',
-					duration: 5000,
-				})
-			);
-		}
+		// try {
+		// 	const data = await addEmployeeAttendance(toSend).unwrap();
+		// 	console.log(data);
+		// 	dispatch(
+		// 		alertActions.createAlert({
+		// 			message: 'Saved',
+		// 			type: 'Success',
+		// 			duration: 3000,
+		// 		})
+		// 	);
+		// } catch (err) {
+		// 	console.log(err);
+		// 	dispatch(
+		// 		alertActions.createAlert({
+		// 			message: 'Error Occurred',
+		// 			type: 'Error',
+		// 			duration: 5000,
+		// 		})
+		// 	);
+		// }
 	};
 
-	const [editTimeUpdationPopover, setEditTimeUpdationPopover] =
-		useState(false);
+	const [editTimeUpdationPopover, setEditTimeUpdationPopover] = useState(false);
 
 	const editTimeUpdationDetail = (personalDetail) => {
 		setDateOfJoining(personalDetail.dateOfJoining);
@@ -160,11 +153,7 @@ const TimeUpdationForm = () => {
 		const currentYear = currentDate.getFullYear();
 		// get method returns a zero-based index for the month
 		const currentMonthIndex = currentDate.getMonth();
-		const daysInMonth = new Date(
-			currentYear,
-			currentMonthIndex + 1,
-			0
-		).getDate();
+		const daysInMonth = new Date(currentYear, currentMonthIndex + 1, 0).getDate();
 		// console.log(daysInMonth);
 
 		const initialValues = {
@@ -273,12 +262,8 @@ const TimeUpdationForm = () => {
 				<section className="mx-5 mt-2">
 					<div className="flex flex-row flex-wrap place-content-between">
 						<div className="mr-4">
-							<h1 className="text-3xl font-medium">
-								Employee Shifts
-							</h1>
-							<p className="my-2 text-sm">
-								Edit and manage employees shifts here
-							</p>
+							<h1 className="text-3xl font-medium">Employee Shifts</h1>
+							<p className="my-2 text-sm">Edit and manage employees shifts here</p>
 						</div>
 					</div>
 					<div className="scrollbar mx-auto max-h-[80dvh] max-w-6xl overflow-y-auto rounded border border-black border-opacity-50 shadow-md lg:max-h-[84dvh]">
@@ -287,27 +272,19 @@ const TimeUpdationForm = () => {
 								{table.getHeaderGroups().map((headerGroup) => (
 									<tr key={headerGroup.id}>
 										{headerGroup.headers.map((header) => (
-											<th
-												key={header.id}
-												scope="col"
-												className="px-4 py-4 font-medium"
-											>
+											<th key={header.id} scope="col" className="px-4 py-4 font-medium">
 												{header.isPlaceholder ? null : (
 													<div className="">
 														<div
 															{...{
-																className:
-																	header.column.getCanSort()
-																		? 'cursor-pointer select-none flex flex-row justify-center'
-																		: '',
-																onClick:
-																	header.column.getToggleSortingHandler(),
+																className: header.column.getCanSort()
+																	? 'cursor-pointer select-none flex flex-row justify-center'
+																	: '',
+																onClick: header.column.getToggleSortingHandler(),
 															}}
 														>
 															{flexRender(
-																header.column
-																	.columnDef
-																	.header,
+																header.column.columnDef.header,
 																header.getContext()
 															)}
 
@@ -315,8 +292,7 @@ const TimeUpdationForm = () => {
 																<div className="relative pl-2">
 																	<FaAngleUp
 																		className={classNames(
-																			header.column.getIsSorted() ==
-																				'asc'
+																			header.column.getIsSorted() == 'asc'
 																				? 'text-teal-700'
 																				: '',
 																			'absolute -translate-y-2 text-lg'
@@ -324,8 +300,7 @@ const TimeUpdationForm = () => {
 																	/>
 																	<FaAngleDown
 																		className={classNames(
-																			header.column.getIsSorted() ==
-																				'desc'
+																			header.column.getIsSorted() == 'desc'
 																				? 'text-teal-700'
 																				: '',
 																			'absolute translate-y-2 text-lg'
@@ -345,22 +320,12 @@ const TimeUpdationForm = () => {
 							</thead>
 							<tbody className="max-h-20 divide-y divide-black divide-opacity-50 overflow-y-auto border-t border-black border-opacity-50">
 								{table.getRowModel().rows.map((row) => (
-									<tr
-										className="hover:bg-zinc-200 dark:hover:bg-zinc-800"
-										key={row.id}
-									>
+									<tr className="hover:bg-zinc-200 dark:hover:bg-zinc-800" key={row.id}>
 										{row.getVisibleCells().map((cell) => (
-											<td
-												className="px-4 py-4 font-normal"
-												key={cell.id}
-											>
+											<td className="px-4 py-4 font-normal" key={cell.id}>
 												<div className="text-sm">
 													<div className="font-medium">
-														{flexRender(
-															cell.column
-																.columnDef.cell,
-															cell.getContext()
-														)}
+														{flexRender(cell.column.columnDef.cell, cell.getContext())}
 													</div>
 												</div>
 											</td>

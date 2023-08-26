@@ -444,110 +444,207 @@ const EditAttendance = memo(
 				}
 			}
 		};
+		// const calculateFirstHalfSecondHalf = (day, type) => {
+		// 	const attendanceDate = new Date(values.year, values.month - 1, day);
+		// 	let presentCount = 0;
+
+		// 	// Check if the day value is less than 7 to consider previous month's days
+		// 	for (let i = 1; i <= 6; i++) {
+		// 		const previousDate = new Date(Date.UTC(values.year, values.month - 1, day - i));
+		// 		// console.log(previousDate);
+		// 		if (previousDate.getMonth() == parseInt(values.month) - 1) {
+		// 			// This Month
+		// 			let previousDay = previousDate.getDate();
+		// 			if (values.attendance[previousDay].firstHalf == present.id) {
+		// 				presentCount += 1;
+		// 			}
+		// 			if (values.attendance[previousDay].secondHalf == present.id) {
+		// 				presentCount += 1;
+		// 			}
+		// 			console.log('this month');
+		// 		} else if (previousDate.getMonth() == parseInt(values.month) - 2) {
+		// 			for (let i = 0; i < employeeAttendance.length; i++) {
+		// 				const attendanceDate = new Date(employeeAttendance[i].date);
+		// 				if (previousDate == attendanceDate) {
+		// 					if (employeeAttendance[i].firstHalf == present.id) {
+		// 						presentCount += 1;
+		// 					}
+		// 					if (employeeAttendance[i].secondHalf == present.id) {
+		// 						presentCount += 1;
+		// 					}
+		// 				}
+		// 			}
+		// 		}
+		// 		if (type == 'weeklyOff') {
+		// 			if (presentCount >= parseInt(weeklyOffHolidayOff.minDaysForWeeklyOff)) {
+		// 				return true;
+		// 			}
+		// 		}
+		// 		if (type == 'holidayOff') {
+		// 			if (presentCount >= parseInt(weeklyOffHolidayOff.minDaysForHolidayOff)) {
+		// 				return true;
+		// 			}
+		// 		}
+		// 	}
+		// 	return false;
+		// };
+
 		const calculateFirstHalfSecondHalf = (day, type) => {
 			const attendanceDate = new Date(values.year, values.month - 1, day);
 			let presentCount = 0;
 
-			// Check if the day value is less than 7 to consider previous month's days
 			for (let i = 1; i <= 6; i++) {
 				const previousDate = new Date(Date.UTC(values.year, values.month - 1, day - i));
-				// console.log(previousDate);
-				if (previousDate.getMonth() == parseInt(values.month) - 1) {
-					// This Month
-					let previousDay = previousDate.getDate();
-					if (values.attendance[previousDay].firstHalf == present.id) {
+
+				if (previousDate.getMonth() === values.month - 1) {
+					const previousDay = previousDate.getDate();
+					const attendance = values.attendance[previousDay];
+					if (attendance.firstHalf === present.id || attendance.secondHalf === present.id) {
 						presentCount += 1;
 					}
-					if (values.attendance[previousDay].secondHalf == present.id) {
-						presentCount += 1;
-					}
-					console.log('this month');
-				} else if (previousDate.getMonth() == parseInt(values.month) - 2) {
-					for (let i = 0; i < employeeAttendance.length; i++) {
-						const attendanceDate = new Date(employeeAttendance[i].date);
-						if (previousDate == attendanceDate) {
-							if (employeeAttendance[i].firstHalf == present.id) {
-								presentCount += 1;
-							}
-							if (employeeAttendance[i].secondHalf == present.id) {
+				} else if (previousDate.getMonth() === values.month - 2) {
+					for (const entry of employeeAttendance) {
+						const entryDate = new Date(entry.date);
+						if (previousDate.getTime() === entryDate.getTime()) {
+							if (entry.firstHalf === present.id || entry.secondHalf === present.id) {
 								presentCount += 1;
 							}
 						}
 					}
 				}
-				if (type == 'weeklyOff') {
-					if (presentCount >= parseInt(weeklyOffHolidayOff.minDaysForWeeklyOff)) {
-						return true;
-					}
-				}
-				if (type == 'holidayOff') {
-					if (presentCount >= parseInt(weeklyOffHolidayOff.minDaysForHolidayOff)) {
-						return true;
-					}
+
+				if (
+					(type === 'weeklyOff' && presentCount >= parseInt(weeklyOffHolidayOff.minDaysForWeeklyOff)) ||
+					(type === 'holidayOff' && presentCount >= parseInt(weeklyOffHolidayOff.minDaysForHolidayOff))
+				) {
+					return true;
 				}
 			}
+
 			return false;
 		};
 
-		function isSameDate(date1, date2) {
-			return (
-				date1.getFullYear() === date2.getFullYear() &&
-				date1.getMonth() === date2.getMonth() &&
-				date1.getDate() === date2.getDate()
-			);
-		}
+		// useEffect(() => {
+		// 	let timeoutId;
+
+		// 	const calculateAndSetOvertime = () => {
+		// 		for (const day in values.attendance) {
+		// 			if (values.attendance[day]?.manualIn != '' && values.attendance[day]?.manualOut != '') {
+		// 				const overtime = calculateOvertime(day);
+		// 				const lateHrs = calculateLateHrs(day);
+		// 				calculateAttendance(day);
+		// 				if (overtime > 0) {
+		// 					let otConsider = Math.floor(overtime / 30) * 30;
+		// 					let remainingOt = overtime % 30;
+		// 					if (remainingOt > 15) {
+		// 						otConsider = otConsider + 30;
+		// 					}
+		// 					if (otConsider > 0) {
+		// 						setFieldValue(`attendance.${day}.otMin`, otConsider);
+		// 					} else {
+		// 						setFieldValue(`attendance.${day}.otMin`, '');
+		// 					}
+		// 				} else {
+		// 					setFieldValue(`attendance.${day}.otMin`, '');
+		// 				}
+		// 				if (lateHrs > 0) {
+		// 					setFieldValue(`attendance.${day}.lateMin`, lateHrs);
+		// 				} else {
+		// 					setFieldValue(`attendance.${day}.lateMin`, '');
+		// 				}
+		// 			} else if (values.attendance[day]?.manualIn != '' && values.attendance[day]?.manualOut == '') {
+		// 				setFieldValue(`attendance.${day}.secondHalf`, missPunch.id);
+		// 			} else if (values.attendance[day]?.manualIn == '' && values.attendance[day]?.manualOut == '') {
+		// 				if (employeeProfessionalDetail) {
+		// 					const weeklyOffIndex = weeklyOffValues.indexOf(employeeProfessionalDetail?.weeklyOff);
+		// 					const attendanceWeekday = new Date(Date.UTC(values.year, values.month - 1, day)).getDay();
+		// 					if (attendanceWeekday == weeklyOffIndex) {
+		// 						if (calculateFirstHalfSecondHalf(day, 'weeklyOff')) {
+		// 							setFieldValue(`attendance.${day}.firstHalf`, weeklyOff.id);
+		// 							setFieldValue(`attendance.${day}.secondHalf`, weeklyOff.id);
+		// 							console.log('yesss');
+		// 						}
+		// 					}
+		// 				}
+		// 				for (let i = 0; i < holidays.length; i++) {
+		// 					const attendanceDay = new Date(Date.UTC(values.year, values.month - 1, day));
+		// 					const holidayDate = new Date(holidays[i].date);
+		// 					if (holidayDate.getTime() == attendanceDay.getTime()) {
+		// 						if (calculateFirstHalfSecondHalf(day, 'holidayOff')) {
+		// 							setFieldValue(`attendance.${day}.firstHalf`, holidayOff.id);
+		// 							setFieldValue(`attendance.${day}.secondHalf`, holidayOff.id);
+		// 							console.log('just set holiday off');
+		// 						}
+		// 					}
+		// 				}
+		// 			}
+		// 		}
+		// 	};
+
+		// 	if (employeeShifts) {
+		// 		// Clear previous timeout if any
+		// 		clearTimeout(timeoutId);
+
+		// 		// Set a new timeout for 1 second
+		// 		timeoutId = setTimeout(() => {
+		// 			calculateAndSetOvertime();
+		// 		}, 200);
+		// 	}
+
+		// 	// Clear the timeout when the component unmounts or when values.attendance changes
+		// 	return () => {
+		// 		clearTimeout(timeoutId);
+		// 	};
+		// }, [values.attendance]);
 
 		useEffect(() => {
 			let timeoutId;
 
-			const calculateAndSetOvertime = () => {
+			const performCalculations = () => {
 				for (const day in values.attendance) {
-					if (values.attendance[day]?.manualIn != '' && values.attendance[day]?.manualOut != '') {
+					const attendance = values.attendance[day];
+					const hasManualIn = attendance.manualIn !== '';
+					const hasManualOut = attendance.manualOut !== '';
+
+					if (hasManualIn && hasManualOut) {
 						const overtime = calculateOvertime(day);
 						const lateHrs = calculateLateHrs(day);
 						calculateAttendance(day);
-						if (overtime > 0) {
-							let otConsider = Math.floor(overtime / 30) * 30;
-							let remainingOt = overtime % 30;
-							if (remainingOt > 15) {
-								otConsider = otConsider + 30;
-							}
-							if (otConsider > 0) {
-								setFieldValue(`attendance.${day}.otMin`, otConsider);
-							} else {
-								setFieldValue(`attendance.${day}.otMin`, '');
-							}
-						} else {
-							setFieldValue(`attendance.${day}.otMin`, '');
-						}
-						if (lateHrs > 0) {
-							setFieldValue(`attendance.${day}.lateMin`, lateHrs);
-						} else {
-							setFieldValue(`attendance.${day}.lateMin`, '');
-						}
-					} else if (values.attendance[day]?.manualIn != '' && values.attendance[day]?.manualOut == '') {
+
+						setFieldValue(
+							`attendance.${day}.otMin`,
+							overtime > 0 ? Math.floor(overtime / 30) * 30 + (overtime % 30 > 15 ? 30 : 0) : ''
+						);
+						setFieldValue(`attendance.${day}.lateMin`, lateHrs > 0 ? lateHrs : '');
+					} else if (hasManualIn && !hasManualOut) {
 						setFieldValue(`attendance.${day}.secondHalf`, missPunch.id);
-					} else if (values.attendance[day]?.manualIn == '' && values.attendance[day]?.manualOut == '') {
+					} else if (!hasManualIn && !hasManualOut) {
+						const attendanceDay = new Date(Date.UTC(values.year, values.month - 1, day));
+
 						if (employeeProfessionalDetail) {
-							const weeklyOffIndex = weeklyOffValues.indexOf(employeeProfessionalDetail?.weeklyOff);
-							const attendanceWeekday = new Date(Date.UTC(values.year, values.month - 1, day)).getDay();
-							if (attendanceWeekday == weeklyOffIndex) {
-								if (calculateFirstHalfSecondHalf(day, 'weeklyOff')) {
-									setFieldValue(`attendance.${day}.firstHalf`, weeklyOff.id);
-									setFieldValue(`attendance.${day}.secondHalf`, weeklyOff.id);
-									console.log('yesss');
-								}
+							const weeklyOffIndex = weeklyOffValues.indexOf(employeeProfessionalDetail.weeklyOff);
+							const attendanceWeekday = attendanceDay.getDay();
+
+							if (
+								attendanceWeekday === weeklyOffIndex &&
+								calculateFirstHalfSecondHalf(day, 'weeklyOff')
+							) {
+								setFieldValue(`attendance.${day}.firstHalf`, weeklyOff.id);
+								setFieldValue(`attendance.${day}.secondHalf`, weeklyOff.id);
+								console.log('yesss');
 							}
 						}
-						for (let i = 0; i < holidays.length; i++) {
-							const attendanceDay = new Date(Date.UTC(values.year, values.month - 1, day));
-							const holidayDate = new Date(holidays[i].date);
-							if (holidayDate.getTime() == attendanceDay.getTime()) {
-								if (calculateFirstHalfSecondHalf(day, 'holidayOff')) {
-									setFieldValue(`attendance.${day}.firstHalf`, holidayOff.id);
-									setFieldValue(`attendance.${day}.secondHalf`, holidayOff.id);
-									console.log('just set holiday off');
-								}
+
+						for (const holiday of holidays) {
+							const holidayDate = new Date(holiday.date);
+
+							if (
+								holidayDate.getTime() === attendanceDay.getTime() &&
+								calculateFirstHalfSecondHalf(day, 'holidayOff')
+							) {
+								setFieldValue(`attendance.${day}.firstHalf`, holidayOff.id);
+								setFieldValue(`attendance.${day}.secondHalf`, holidayOff.id);
+								console.log('just set holiday off');
 							}
 						}
 					}
@@ -555,102 +652,16 @@ const EditAttendance = memo(
 			};
 
 			if (employeeShifts) {
-				// Clear previous timeout if any
 				clearTimeout(timeoutId);
-
-				// Set a new timeout for 1 second
 				timeoutId = setTimeout(() => {
-					calculateAndSetOvertime();
+					performCalculations();
 				}, 200);
 			}
 
-			// Clear the timeout when the component unmounts or when values.attendance changes
 			return () => {
 				clearTimeout(timeoutId);
 			};
 		}, [values.attendance]);
-
-		// useEffect(() => {
-		// 	// console.log(employeeAttendance)
-		// 	console.log(isEmployeeAttendanceSuccess);
-		// 	if (!isSubmitting && employeeAttendance && employeeProfessionalDetail) {
-		// 		console.log('in first ');
-		// 		if (isEmployeeAttendanceSuccess) {
-		// 			console.log('running use efefct');
-		// 			const daysInMonth = new Date(values.year, values.month, 0).getDate();
-		// 			const new_attendance = {};
-		// 			const weeklyOffIndex = weeklyOffValues.indexOf(employeeProfessionalDetail.weeklyOff);
-
-		// 			for (let day = 1; day <= daysInMonth; day++) {
-		// 				new_attendance[day] = {
-		// 					machineIn: '',
-		// 					machineOut: '',
-		// 					manualIn: '',
-		// 					manualOut: '',
-		// 					firstHalf: absent.id,
-		// 					secondHalf: absent.id,
-		// 					otMin: '',
-		// 					lateMin: '',
-		// 					date: `${values.year}-${values.month}-${day}`,
-		// 					manualMode: false,
-		// 				};
-		// 				const attendanceDate = new Date(Date.UTC(values.year, parseInt(values.month) - 1, day));
-		// 				const attendanceWeekday = attendanceDate.getDay();
-		// 				if (attendanceWeekday == weeklyOffIndex) {
-		// 					if (
-		// 						giveWeeklyOffHolidayOff(
-		// 							values.year,
-		// 							values.month,
-		// 							day,
-		// 							parseInt(weeklyOffHolidayOff.minDaysForWeeklyOff)
-		// 						)
-		// 					) {
-		// 						new_attendance[day].firstHalf = weeklyOff.id;
-		// 						new_attendance[day].secondHalf = weeklyOff.id;
-		// 					} else {
-		// 						new_attendance[day].firstHalf = weeklyOffSkip.id;
-		// 						new_attendance[day].secondHalf = weeklyOffSkip.id;
-		// 					}
-		// 				}
-		// 				for (let i = 0; i < holidays.length; i++) {
-		// 					const holidayDate = new Date(holidays[i].date);
-		// 					if (holidayDate.getTime() == attendanceDate.getTime()) {
-		// 						if (
-		// 							giveWeeklyOffHolidayOff(
-		// 								values.year,
-		// 								values.month,
-		// 								day,
-		// 								parseInt(weeklyOffHolidayOff.minDaysForHolidayOff)
-		// 							)
-		// 						) {
-		// 							new_attendance[day].firstHalf = holidayOff.id;
-		// 							new_attendance[day].secondHalf = holidayOff.id;
-		// 						} else {
-		// 							new_attendance[day].firstHalf = holidayOffSkip.id;
-		// 							new_attendance[day].secondHalf = holidayOffSkip.id;
-		// 						}
-		// 					}
-		// 				}
-
-		// 				const matchingEmployeeAttendance = employeeAttendance.find(
-		// 					(entry) => new Date(entry.date).getTime() === attendanceDate.getTime()
-		// 				);
-		// 				if (matchingEmployeeAttendance) {
-		// 					console.log(matchingEmployeeAttendance);
-		// 					// Update new_attendance values with values from matchingEmployeeAttendance
-		// 					for (const key in matchingEmployeeAttendance) {
-		// 						if (matchingEmployeeAttendance.hasOwnProperty(key)) {
-		// 							new_attendance[day][key] =
-		// 								matchingEmployeeAttendance[key] === null ? '' : matchingEmployeeAttendance[key];
-		// 						}
-		// 					}
-		// 				}
-
-		// 				setFieldValue(`attendance`, new_attendance);
-		// 			}
-		// 		}
-		// 	}
-		// }, [employeeAttendance]);
 
 		// Runs when fetch value of employeeAttendance changes
 		useEffect(() => {
@@ -807,6 +818,7 @@ const EditAttendance = memo(
 											leaveGrades={leaveGrades}
 											otMin={values.attendance[day].otMin}
 											lateMin={values.attendance[day].lateMin}
+											holidays={holidays}
 										/>
 									);
 								})}
