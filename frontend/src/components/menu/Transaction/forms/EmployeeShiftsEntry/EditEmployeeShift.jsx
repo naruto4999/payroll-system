@@ -38,7 +38,7 @@ const EditEmployeeShift = memo(
 		setEmployeeShiftsFound,
 		isSubmitting,
 	}) => {
-		// console.log(values);
+		console.log(values);
 		const {
 			data: employeeShifts,
 			isLoading: isLoadingEmployeeShifts,
@@ -59,21 +59,10 @@ const EditEmployeeShift = memo(
 		// values.month is not zero based index, it starts from 1
 		const firstDayOfMonth = new Date(values.year, values.month - 1, 1);
 		const daysInMonth = new Date(values.year, values.month, 0).getDate();
-		const dayArray = Array.from(
-			{ length: daysInMonth },
-			(_, index) => index + 1
-		);
+		const dayArray = Array.from({ length: daysInMonth }, (_, index) => index + 1);
 		const dayOfWeek = firstDayOfMonth.getDay();
 		// console.log(dayOfWeek);
-		const weekdays = [
-			'Sunday',
-			'Monday',
-			'Tuesday',
-			'Wednesday',
-			'Thursday',
-			'Friday',
-			'Saturday',
-		];
+		const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 		const months = [
 			'January',
@@ -92,11 +81,7 @@ const EditEmployeeShift = memo(
 		const currentDate = new Date();
 		const options = [];
 
-		for (
-			let i = new Date(dateOfJoining).getFullYear();
-			i <= currentDate.getFullYear();
-			i++
-		) {
+		for (let i = new Date(dateOfJoining).getFullYear(); i <= currentDate.getFullYear(); i++) {
 			options.push(
 				<option key={i} value={i}>
 					{i}
@@ -112,34 +97,17 @@ const EditEmployeeShift = memo(
 			// Using isSubmitting to prevent setting field values when the form is submitting since this component will get rerendered using submission and useEffect runs for the first render so this is to prevent that scenerio
 			if (isEmployeeShiftsSuccess && !isSubmitting) {
 				const dateOfJoiningObj = new Date(dateOfJoining);
-				if (
-					dateOfJoiningObj.getFullYear() == values.year &&
-					values.month - 1 < dateOfJoiningObj.getMonth()
-				) {
+				if (dateOfJoiningObj.getFullYear() == values.year && values.month - 1 < dateOfJoiningObj.getMonth()) {
 					// console.log('yup me here');
 					setFieldValue('month', dateOfJoiningObj.getMonth() + 1);
 				}
 
-				const daysInMonth = new Date(
-					values.year,
-					values.month,
-					0
-				).getDate();
+				const daysInMonth = new Date(values.year, values.month, 0).getDate();
 
 				const updatedDayWiseShifts = {}; // Create an object to hold the shifts
 
 				for (let date = 1; date <= daysInMonth; date++) {
-					let calendarDate = new Date(
-						Date.UTC(
-							values.year,
-							values.month - 1,
-							date,
-							0,
-							0,
-							0,
-							0
-						)
-					);
+					let calendarDate = new Date(Date.UTC(values.year, values.month - 1, date, 0, 0, 0, 0));
 
 					let foundShift = null;
 					for (const shift of employeeShifts) {
@@ -172,8 +140,7 @@ const EditEmployeeShift = memo(
 						No Shifts for this Employee Found
 					</h3>
 					<p className="mx-auto text-base text-redAccent-500 dark:text-redAccent-600">
-						Make sure you have selected a valid shift under
-						"Professional Details" Tab in "Employee Entry"
+						Make sure you have selected a valid shift under "Professional Details" Tab in "Employee Entry"
 					</p>
 				</>
 			);
@@ -181,11 +148,7 @@ const EditEmployeeShift = memo(
 			return (
 				<>
 					<div className="text-gray-900 dark:text-slate-100">
-						<form
-							action=""
-							className="flex flex-col justify-center gap-2"
-							onSubmit={handleSubmit}
-						>
+						<form action="" className="flex flex-col justify-center gap-2" onSubmit={handleSubmit}>
 							<section>
 								<label
 									htmlFor="year"
@@ -200,21 +163,15 @@ const EditEmployeeShift = memo(
 									className="my-1 mr-2 rounded-md bg-zinc-50 bg-opacity-50 p-1 dark:bg-zinc-700"
 								>
 									{months.map((month, index) => {
-										const dateOfJoiningObj = new Date(
-											dateOfJoining
-										);
+										const dateOfJoiningObj = new Date(dateOfJoining);
 										if (
-											values.year ==
-												dateOfJoiningObj.getFullYear() &&
+											values.year == dateOfJoiningObj.getFullYear() &&
 											index < dateOfJoiningObj.getMonth()
 										) {
 											return null; // Skip rendering months before dateOfJoiningMonth
 										}
 										return (
-											<option
-												key={index}
-												value={index + 1}
-											>
+											<option key={index} value={index + 1}>
 												{month}
 											</option>
 										);
@@ -235,33 +192,22 @@ const EditEmployeeShift = memo(
 											key={index}
 											className="w-full rounded-sm border border-slate-400 border-opacity-30"
 										>
-											<h2 className="mx-auto hidden w-fit font-bold sm:block">
-												{weekday}
-											</h2>
-											<h2 className="mx-auto w-fit font-bold sm:hidden">
-												{weekday.slice(0, 3)}
-											</h2>
+											<h2 className="mx-auto hidden w-fit font-bold sm:block">{weekday}</h2>
+											<h2 className="mx-auto w-fit font-bold sm:hidden">{weekday.slice(0, 3)}</h2>
 										</div>
 									);
 								})}
-								{Array.from({ length: dayOfWeek }).map(
-									(_, index) => (
-										<div
-											className="h-fit w-full"
-											key={index}
-										>
-											{/* <MonthDays /> */}
-										</div>
-									)
-								)}
+								{Array.from({ length: dayOfWeek }).map((_, index) => (
+									<div className="h-fit w-full" key={index}>
+										{/* <MonthDays /> */}
+									</div>
+								))}
 								{dayArray.map((day) => (
 									<div className="h-fit w-full" key={day}>
 										<MonthDays
 											day={day}
 											shifts={shifts}
-											shiftValue={
-												values?.dayWiseShifts[day]
-											}
+											shiftValue={values?.dayWiseShifts[day]}
 											fieldName={`dayWiseShifts.${day}`}
 										/>
 										{/* {console.log(day)} */}
@@ -272,9 +218,7 @@ const EditEmployeeShift = memo(
 							<section className="mt-4 mb-2 flex flex-row gap-4">
 								<button
 									className={classNames(
-										isValid
-											? 'hover:bg-teal-600  dark:hover:bg-teal-600'
-											: 'opacity-40',
+										isValid ? 'hover:bg-teal-600  dark:hover:bg-teal-600' : 'opacity-40',
 										'w-20 rounded bg-teal-500 p-2 text-base font-medium dark:bg-teal-700'
 									)}
 									type="submit"

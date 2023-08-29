@@ -18,14 +18,14 @@ export const timeUpdationApiSlice = apiSlice.injectEndpoints({
 			}),
 			invalidatesTags: ['EmployeeAttendance'],
 		}),
-		// updateShift: builder.mutation({
-		// 	query: (shift) => ({
-		// 		url: `/api/shift/${shift.company}/${shift.id}`,
-		// 		method: 'PUT',
-		// 		body: shift,
-		// 	}),
-		// 	invalidatesTags: ['Shifts'],
-		// }),
+		updateEmployeeAttendance: builder.mutation({
+			query: (body) => ({
+				url: `/api/employee-attendance-update/${body.company}/${body.employee}`,
+				method: 'PUT',
+				body: body,
+			}),
+			invalidatesTags: ['EmployeeAttendance'],
+		}),
 		// deleteShift: builder.mutation({
 		// 	query: (shift) => ({
 		// 		url: `/api/shift/${shift.company}/${shift.id}`,
@@ -39,4 +39,5 @@ export const timeUpdationApiSlice = apiSlice.injectEndpoints({
 export const {
 	useAddEmployeeAttendanceMutation,
 	useGetEmployeeAttendanceBetweenDatesQuery,
+	useUpdateEmployeeAttendanceMutation,
 } = timeUpdationApiSlice;

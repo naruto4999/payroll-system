@@ -1747,13 +1747,50 @@ class EmployeeAttendanceListCreateAPIView(generics.ListCreateAPIView):
             return Response({'error': e}, status=status.HTTP_400_BAD_REQUEST)
         
     def list(self, request, *args, **kwargs):
-        print('yooooooooy')
         from_date = self.kwargs.get('from_date')
         to_date = self.kwargs.get('to_date')
         queryset = self.get_queryset().filter(date__range=[from_date, to_date])
         serializer = self.get_serializer(queryset, many=True)
-        print(serializer.data)
         return Response(serializer.data)
+    
+class EmployeeAttendanceUpdateAPIView(generics.UpdateAPIView):
+    permission_classes= [IsAuthenticated]
+    serializer_class = EmployeeAttendanceSerializer
+    lookup_field = 'id'
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        employee = self.kwargs.get('employee')
+        user = self.request.user
+        if user.role == "OWNER":
+            return user.all_employees_attendance.filter(company=company_id, employee=employee)
+    
+    def update(self, request, *args, **kwargs):
+        print(request.data)
+        print(request.data['employee_attendance'])
+        employee_attendance = request.data['employee_attendance']
+        for day in employee_attendance:
+            instance = self.get_queryset().filter(id=day['id'])
+            serializer = self.get_serializer(instance.first(), data=day)
+            serializer.is_valid(raise_exception=True)
+            user = self.request.user
+            if user.role == "OWNER":
+                serializer.save(user=user)
+
+        # partial = kwargs.pop('partial', False)
+
+        # for data in family_nominee_detail:
+        #     instance = self.get_queryset().filter(id=data['id'])
+        #     serializer = self.get_serializer(instance.first(), data=data)
+        #     serializer.is_valid(raise_exception=True)
+        #     user = self.request.user
+        #     if user.role == "OWNER":
+        #         serializer.save(user=user)
+        #     else:
+        #         instance = OwnerToRegular.objects.get(user=user)
+        #         serializer.save(user=instance.owner)
+
+        return Response({"detail": "Successful"}, status=status.HTTP_200_OK)
 
 
 

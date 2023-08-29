@@ -13,7 +13,7 @@ const AttendanceMonthDays = memo(({ day, year, month, shift, leaveGrades, otMin,
 	const daysInMonth = new Date(year, month, 0).getDate();
 	const isHoliday = holidays.some((holiday) => new Date(holiday.date).getTime() === date.getTime());
 
-	console.log(isHoliday);
+	// console.log(isHoliday);
 
 	// const OtDisplayhours = Math.floor(otMin / 60);
 	// const OtDisplayMinutes = otMin % 60;

@@ -8,7 +8,10 @@ import {
 } from '@tanstack/react-table';
 import { FaRegTrashAlt, FaPen, FaAngleUp, FaAngleDown, FaEye } from 'react-icons/fa';
 import { useGetEmployeePersonalDetailsQuery } from '../../../../authentication/api/employeeEntryApiSlice';
-import { useAddEmployeeAttendanceMutation } from '../../../../authentication/api/timeUpdationApiSlice';
+import {
+	useAddEmployeeAttendanceMutation,
+	useUpdateEmployeeAttendanceMutation,
+} from '../../../../authentication/api/timeUpdationApiSlice';
 
 import { useOutletContext } from 'react-router-dom';
 import ReactModal from 'react-modal';
@@ -20,6 +23,7 @@ import { useGetLeaveGradesQuery } from '../../../../authentication/api/leaveGrad
 import * as yup from 'yup';
 import { useGetWeeklyOffHolidayOffQuery } from '../../../../authentication/api/weeklyOffHolidayOffApiSlice';
 import { useGetHolidaysQuery } from '../../../../authentication/api/holidayEntryApiSlice';
+import { TimeUpdationSchema } from './TimeUpdationSchema';
 // import createValidationSchema from './EmployeeShiftsSchema';
 
 const classNames = (...classes) => {
@@ -77,6 +81,14 @@ const TimeUpdationForm = () => {
 			isSuccess: isAddEmployeeAttendanceSuccess,
 		},
 	] = useAddEmployeeAttendanceMutation();
+	const [
+		updateEmployeeAttendance,
+		{
+			isLoading: isUpdatingEmployeeAttendance,
+			// isError: errorRegisteringRegular,
+			isSuccess: isUpdateEmployeeAttendanceSuccess,
+		},
+	] = useUpdateEmployeeAttendanceMutation();
 
 	const updateButtonClicked = async (values, formikBag) => {
 		console.log(values);
@@ -89,10 +101,15 @@ const TimeUpdationForm = () => {
 		employee_attendance.map((each_attendance) => {
 			each_attendance.company = globalCompany.id;
 			each_attendance.employee = updateEmployeeId;
-			each_attendance.otMin = null;
-			each_attendance.lateMin = null;
+			console.log();
 			if (each_attendance.machineIn == '') {
 				each_attendance.machineIn = null;
+			}
+			if (each_attendance.otMin == '') {
+				each_attendance.otMin = null;
+			}
+			if (each_attendance.lateMin == '') {
+				each_attendance.lateMin = null;
 			}
 			if (each_attendance.machineOut == '') {
 				each_attendance.machineOut = null;
@@ -111,26 +128,31 @@ const TimeUpdationForm = () => {
 
 		console.log(toSend);
 
-		// try {
-		// 	const data = await addEmployeeAttendance(toSend).unwrap();
-		// 	console.log(data);
-		// 	dispatch(
-		// 		alertActions.createAlert({
-		// 			message: 'Saved',
-		// 			type: 'Success',
-		// 			duration: 3000,
-		// 		})
-		// 	);
-		// } catch (err) {
-		// 	console.log(err);
-		// 	dispatch(
-		// 		alertActions.createAlert({
-		// 			message: 'Error Occurred',
-		// 			type: 'Error',
-		// 			duration: 5000,
-		// 		})
-		// 	);
-		// }
+		try {
+			if (employee_attendance[0].hasOwnProperty('id')) {
+				const data = await updateEmployeeAttendance(toSend).unwrap();
+			} else {
+				const data = await addEmployeeAttendance(toSend).unwrap();
+			}
+
+			console.log(data);
+			dispatch(
+				alertActions.createAlert({
+					message: 'Saved',
+					type: 'Success',
+					duration: 3000,
+				})
+			);
+		} catch (err) {
+			console.log(err);
+			dispatch(
+				alertActions.createAlert({
+					message: 'Error Occurred',
+					type: 'Error',
+					duration: 5000,
+				})
+			);
+		}
 	};
 
 	const [editTimeUpdationPopover, setEditTimeUpdationPopover] = useState(false);
@@ -348,7 +370,7 @@ const TimeUpdationForm = () => {
 					>
 						<Formik
 							initialValues={initialValues}
-							validationSchema={''}
+							validationSchema={TimeUpdationSchema}
 							onSubmit={updateButtonClicked}
 							component={(props) => (
 								<EditAttendance

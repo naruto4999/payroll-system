@@ -25,9 +25,7 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
 				method: 'GET',
 			}),
 			keepUnusedDataFor: 600,
-			providesTags: (result, error, id) => [
-				{ type: 'EmployeePersonalDetails', id: id.id },
-			],
+			providesTags: (result, error, id) => [{ type: 'EmployeePersonalDetails', id: id.id }],
 		}),
 		updateEmployeePersonalDetail: builder.mutation({
 			query: (employee) => ({
@@ -48,9 +46,7 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
 				method: 'GET',
 			}),
 			keepUnusedDataFor: 600,
-			providesTags: (result, error, id) => [
-				{ type: 'EmployeeProfessionalDetails', id: id.id },
-			],
+			providesTags: (result, error, id) => [{ type: 'EmployeeProfessionalDetails', id: id.id }],
 		}),
 		addEmployeeProfessionalDetail: builder.mutation({
 			query: (employeeProfessionalDetail) => ({
@@ -105,9 +101,7 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
 				method: 'GET',
 			}),
 			keepUnusedDataFor: 600,
-			providesTags: (result, error, id) => [
-				{ type: 'EmployeeSalaryDetails', id: id.id },
-			],
+			providesTags: (result, error, id) => [{ type: 'EmployeeSalaryDetails', id: id.id }],
 		}),
 		addEmployeeSalaryDetail: builder.mutation({
 			query: (employeeSalaryDetail) => ({
@@ -122,9 +116,7 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
 				method: 'PUT',
 				body: employee,
 			}),
-			invalidatesTags: (result, error, id) => [
-				{ type: 'EmployeeSalaryDetails', id: id.employee },
-			],
+			invalidatesTags: (result, error, id) => [{ type: 'EmployeeSalaryDetails', id: id.employee }],
 		}),
 
 		//Pf Esi Detail
@@ -134,9 +126,7 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
 				method: 'GET',
 			}),
 			keepUnusedDataFor: 600,
-			providesTags: (result, error, id) => [
-				{ type: 'EmployeePfEsiDetails', id: id.id },
-			],
+			providesTags: (result, error, id) => [{ type: 'EmployeePfEsiDetails', id: id.id }],
 		}),
 		addEmployeePfEsiDetail: builder.mutation({
 			query: (employeePfEsiDetail) => ({
@@ -193,9 +183,7 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
 			}),
 			invalidatesTags: (result, error, id) => {
 				console.log(id);
-				return [
-					{ type: 'EmployeeFamilyNomineeDetails', id: id.employee },
-				];
+				return [{ type: 'EmployeeFamilyNomineeDetails', id: id.employee }];
 			},
 		}),
 		deleteEmployeeFamilyNomineeDetail: builder.mutation({
@@ -205,9 +193,7 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
 			}),
 			invalidatesTags: (result, error, id) => {
 				console.log(id);
-				return [
-					{ type: 'EmployeeFamilyNomineeDetails', id: id.employee },
-				];
+				return [{ type: 'EmployeeFamilyNomineeDetails', id: id.employee }];
 			},
 		}),
 	}),
@@ -227,6 +213,7 @@ export const {
 	useUpdateEmployeeSalaryEarningMutation,
 	useAddEmployeeSalaryDetailMutation,
 	useLazyGetSingleEmployeeSalaryDetailQuery,
+	useGetSingleEmployeeSalaryDetailQuery,
 	useUpdateEmployeeSalaryDetailMutation,
 	useAddEmployeeFamilyNomineeDetailMutation,
 	useAddEmployeePfEsiDetailMutation,
