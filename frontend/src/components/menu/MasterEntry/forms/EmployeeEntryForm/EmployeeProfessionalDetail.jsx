@@ -6,7 +6,8 @@ import { useGetSalaryGradesQuery } from '../../../../authentication/api/salaryGr
 import { useGetShiftsQuery } from '../../../../authentication/api/shiftEntryApiSlice';
 import { FaCircleNotch } from 'react-icons/fa6';
 import { Field, ErrorMessage } from 'formik';
-import { useGetEmployeeShiftsQuery } from '../../../../authentication/api/employeeShiftsApiSlice';
+
+// import { useGetEmployeeShiftsQuery } from '../../../../authentication/api/employeeShiftsApiSlice';
 
 const classNames = (...classes) => {
 	return classes.filter(Boolean).join(' ');
@@ -43,79 +44,57 @@ const EmployeeProfessionalDetail = ({
 	isEditing,
 	dirty,
 	addedEmployeeId,
+	employeeShifts,
 }) => {
-	const { data: fetchedDepartments, isLoading: isLoadingDepartments } =
-		useGetDepartmentsQuery(globalCompany);
+	const { data: fetchedDepartments, isLoading: isLoadingDepartments } = useGetDepartmentsQuery(globalCompany);
 
-	const { data: fetchedDesignations, isLoading: isLoadingDesignations } =
-		useGetDesignationsQuery(globalCompany);
+	const { data: fetchedDesignations, isLoading: isLoadingDesignations } = useGetDesignationsQuery(globalCompany);
 
-	const { data: fetchedCategories, isLoading: isLoadingCategories } =
-		useGetCategoriesQuery(globalCompany);
+	const { data: fetchedCategories, isLoading: isLoadingCategories } = useGetCategoriesQuery(globalCompany);
 
-	const { data: fetchedSalaryGrades, isLoading: isLoadingSalaryGrade } =
-		useGetSalaryGradesQuery(globalCompany);
+	const { data: fetchedSalaryGrades, isLoading: isLoadingSalaryGrade } = useGetSalaryGradesQuery(globalCompany);
 
-	const { data: fetchedShifts, isLoading: isLoadingShifts } =
-		useGetShiftsQuery(globalCompany);
+	const { data: fetchedShifts, isLoading: isLoadingShifts } = useGetShiftsQuery(globalCompany);
 
 	useEffect(() => {
-		setShowLoadingBar(
-			isLoadingDepartments ||
-				isLoadingDesignations ||
-				isLoadingCategories ||
-				isLoadingSalaryGrade
-		);
-	}, [
-		isLoadingDepartments,
-		isLoadingDesignations,
-		isLoadingCategories,
-		isLoadingSalaryGrade,
-	]);
+		setShowLoadingBar(isLoadingDepartments || isLoadingDesignations || isLoadingCategories || isLoadingSalaryGrade);
+	}, [isLoadingDepartments, isLoadingDesignations, isLoadingCategories, isLoadingSalaryGrade]);
+
+	// console.log(values);
 
 	console.log(values);
-	console.log(errors);
+	console.log(employeeShifts);
 
-	const {
-		data: employeeShifts,
-		isLoading: isLoadingEmployeeShifts,
-		isSuccess: isEmployeeShiftsSuccess,
-		isFetching: isFetchingEmployeeShifts,
-	} = useGetEmployeeShiftsQuery(
-		{
-			employee: values.employeeProfessionalDetail.employee,
-			company: globalCompany.id,
-			year: new Date(
-				values.employeeProfessionalDetail.dateOfJoining
-			).getFullYear(),
-		},
-		{
-			skip: !isEditing,
-		}
-	);
+	// const {
+	// 	data: employeeShifts,
+	// 	isLoading: isLoadingEmployeeShifts,
+	// 	isSuccess: isEmployeeShiftsSuccess,
+	// 	isFetching: isFetchingEmployeeShifts,
+	// } = useGetEmployeeShiftsQuery(
+	// 	{
+	// 		employee: values.employeeProfessionalDetail.employee,
+	// 		company: globalCompany.id,
+	// 		year: new Date(
+	// 			values.employeeProfessionalDetail.dateOfJoining
+	// 		).getFullYear(),
+	// 	},
+	// 	{
+	// 		skip: !isEditing,
+	// 	}
+	// );
 
 	useEffect(() => {
 		if (values.employeeProfessionalDetail.dateOfJoining !== '') {
-			let selectedDate = new Date(
-				values.employeeProfessionalDetail.dateOfJoining
-			);
+			let selectedDate = new Date(values.employeeProfessionalDetail.dateOfJoining);
 			selectedDate.setMonth(selectedDate.getMonth() + 6);
 			selectedDate.setDate(selectedDate.getDate() - 1);
-			setFieldValue(
-				'employeeProfessionalDetail.dateOfConfirm',
-				selectedDate.toISOString().slice(0, 10)
-			);
+			setFieldValue('employeeProfessionalDetail.dateOfConfirm', selectedDate.toISOString().slice(0, 10));
 		}
 	}, [values.employeeProfessionalDetail.dateOfJoining]);
 
 	useEffect(() => {}, []);
 
-	if (
-		isLoadingDepartments ||
-		isLoadingDesignations ||
-		isLoadingCategories ||
-		isLoadingSalaryGrade
-	) {
+	if (isLoadingDepartments || isLoadingDesignations || isLoadingCategories || isLoadingSalaryGrade) {
 		return <LoadingSpinner />;
 	} else if (!addedEmployeeId && !isEditing) {
 		return (
@@ -126,11 +105,7 @@ const EmployeeProfessionalDetail = ({
 	} else {
 		return (
 			<div className="text-gray-900 dark:text-slate-100">
-				<form
-					action=""
-					className="flex flex-col justify-center gap-2"
-					onSubmit={handleSubmit}
-				>
+				<form action="" className="flex flex-col justify-center gap-2" onSubmit={handleSubmit}>
 					<section className="flex flex-row flex-wrap justify-center gap-10 lg:flex-nowrap">
 						<div className="w-fit">
 							<label
@@ -142,10 +117,8 @@ const EmployeeProfessionalDetail = ({
 							<div className="relative">
 								<Field
 									className={classNames(
-										errors?.employeeProfessionalDetail
-											?.dateOfJoining &&
-											touched?.employeeProfessionalDetail
-												?.dateOfJoining
+										errors?.employeeProfessionalDetail?.dateOfJoining &&
+											touched?.employeeProfessionalDetail?.dateOfJoining
 											? 'border-red-500 border-opacity-100 dark:border-red-700 dark:border-opacity-75'
 											: 'border-gray-800 border-opacity-25 dark:border-slate-100 dark:border-opacity-25',
 										'block w-full rounded border-2  bg-zinc-50   bg-opacity-50 p-1 outline-none transition focus:border-opacity-100 dark:bg-zinc-700 dark:focus:border-opacity-75'
@@ -167,10 +140,8 @@ const EmployeeProfessionalDetail = ({
 							<div className="relative">
 								<Field
 									className={classNames(
-										errors?.employeeProfessionalDetail
-											?.dateOfConfirm &&
-											touched?.employeeProfessionalDetail
-												?.dateOfConfirm
+										errors?.employeeProfessionalDetail?.dateOfConfirm &&
+											touched?.employeeProfessionalDetail?.dateOfConfirm
 											? 'border-red-500 border-opacity-100 dark:border-red-700 dark:border-opacity-75'
 											: 'border-gray-800 border-opacity-25 dark:border-slate-100 dark:border-opacity-25',
 										'block w-full rounded border-2  bg-zinc-50   bg-opacity-50 p-1 outline-none transition focus:border-opacity-100 dark:bg-zinc-700 dark:focus:border-opacity-75'
@@ -197,10 +168,7 @@ const EmployeeProfessionalDetail = ({
 							>
 								<option value="">-- Select an option --</option>
 								{fetchedDepartments?.map((department) => (
-									<option
-										key={department.id}
-										value={department.id}
-									>
+									<option key={department.id} value={department.id}>
 										{department.name}
 									</option>
 								))}
@@ -219,10 +187,7 @@ const EmployeeProfessionalDetail = ({
 							>
 								<option value="">-- Select an option --</option>
 								{fetchedDesignations?.map((designation) => (
-									<option
-										key={designation.id}
-										value={designation.id}
-									>
+									<option key={designation.id} value={designation.id}>
 										{designation.name}
 									</option>
 								))}
@@ -241,10 +206,7 @@ const EmployeeProfessionalDetail = ({
 							>
 								<option value="">-- Select an option --</option>
 								{fetchedCategories?.map((category) => (
-									<option
-										key={category.id}
-										value={category.id}
-									>
+									<option key={category.id} value={category.id}>
 										{category.name}
 									</option>
 								))}
@@ -266,19 +228,15 @@ const EmployeeProfessionalDetail = ({
 							>
 								<option value="">-- Select an option --</option>
 								{fetchedSalaryGrades?.map((salaryGrade) => (
-									<option
-										key={salaryGrade.id}
-										value={salaryGrade.id}
-									>
+									<option key={salaryGrade.id} value={salaryGrade.id}>
 										{salaryGrade.name}
 									</option>
 								))}
 							</Field>
 
-							{isEditing && isEmployeeShiftsSuccess ? (
+							{isEditing && employeeShifts?.length != 0 ? (
 								<p className="w-80 font-bold text-redAccent-600 dark:text-redAccent-500">
-									Please go to Employee Shifts Entry to make
-									any changes to Shift
+									Please go to Employee Shifts Entry to make any changes to Shift
 								</p>
 							) : (
 								<>
@@ -293,21 +251,12 @@ const EmployeeProfessionalDetail = ({
 										name="employeeShift.shift"
 										as="select"
 									>
-										<option value="">
-											-- Select an option --
-										</option>
+										<option value="">-- Select an option --</option>
 
 										{fetchedShifts?.map((shift) => (
-											<option
-												key={shift.id}
-												value={shift.id}
-											>
+											<option key={shift.id} value={shift.id}>
 												{shift.name}
-												{` [${timeFormat(
-													shift.beginningTime
-												)} - ${timeFormat(
-													shift.endTime
-												)}]`}
+												{` [${timeFormat(shift.beginningTime)} - ${timeFormat(shift.endTime)}]`}
 											</option>
 										))}
 									</Field>
@@ -383,17 +332,13 @@ const EmployeeProfessionalDetail = ({
 						</div>
 					</section>
 					{errorMessage && errorMessage.error && (
-						<p className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
-							{errorMessage.error}
-						</p>
+						<p className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">{errorMessage.error}</p>
 					)}
 
 					<section className="mt-4 mb-2 flex flex-row gap-4">
 						<button
 							className={classNames(
-								isValid
-									? 'hover:bg-teal-600  dark:hover:bg-teal-600'
-									: 'opacity-40',
+								isValid ? 'hover:bg-teal-600  dark:hover:bg-teal-600' : 'opacity-40',
 								'w-20 rounded bg-teal-500 p-2 text-base font-medium dark:bg-teal-700'
 							)}
 							type="submit"

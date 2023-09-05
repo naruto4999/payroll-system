@@ -1,16 +1,25 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import {
+	// column,
 	createColumnHelper,
 	flexRender,
 	getCoreRowModel,
 	useReactTable,
 	getSortedRowModel,
+	// columnFiltersState,
+	getFilteredRowModel,
+	// filterFn,
+	// filterFns,
 } from '@tanstack/react-table';
+// import EmployeeTable from './EmployeeTable';
+
+import { rankItem } from '@tanstack/match-sorter-utils';
 import { FaRegTrashAlt, FaPen, FaAngleUp, FaAngleDown, FaEye } from 'react-icons/fa';
 import { useGetEmployeePersonalDetailsQuery } from '../../../../authentication/api/employeeEntryApiSlice';
 import {
 	useAddEmployeeAttendanceMutation,
 	useUpdateEmployeeAttendanceMutation,
+	useGetCurrentMonthAllEmployeeAttendanceQuery,
 } from '../../../../authentication/api/timeUpdationApiSlice';
 
 import { useOutletContext } from 'react-router-dom';
@@ -90,8 +99,16 @@ const TimeUpdationForm = () => {
 		},
 	] = useUpdateEmployeeAttendanceMutation();
 
+	const [isTableFilterInputFocused, setIsTableFilterInputFocused] = useState(false);
+	const [firstRender, setFirstRender] = useState(true);
+
+	// const [columnFilters, setColumnFilters] = useState([{ id: 'paycode', value: { month: 8, year: 2023 } }]);
+
+	// const columnFilters = useMemo(() => [{ id: 'paycode', value: { month: 8, year: 2023 } }]);
+
+	const [globalFilter, setGlobalFilter] = useState('');
+
 	const updateButtonClicked = async (values, formikBag) => {
-		console.log(values);
 		const employee_attendance = [];
 		for (const day in values.attendance) {
 			if (values.attendance.hasOwnProperty(day)) {
@@ -101,7 +118,6 @@ const TimeUpdationForm = () => {
 		employee_attendance.map((each_attendance) => {
 			each_attendance.company = globalCompany.id;
 			each_attendance.employee = updateEmployeeId;
-			console.log();
 			if (each_attendance.machineIn == '') {
 				each_attendance.machineIn = null;
 			}
@@ -125,7 +141,7 @@ const TimeUpdationForm = () => {
 		toSend.employee_attendance = employee_attendance;
 		toSend.employee = updateEmployeeId;
 		toSend.company = globalCompany.id;
-
+		console.log(values);
 		console.log(toSend);
 
 		try {
@@ -135,7 +151,6 @@ const TimeUpdationForm = () => {
 				const data = await addEmployeeAttendance(toSend).unwrap();
 			}
 
-			console.log(data);
 			dispatch(
 				alertActions.createAlert({
 					message: 'Saved',
@@ -156,19 +171,6 @@ const TimeUpdationForm = () => {
 	};
 
 	const [editTimeUpdationPopover, setEditTimeUpdationPopover] = useState(false);
-
-	const editTimeUpdationDetail = (personalDetail) => {
-		setDateOfJoining(personalDetail.dateOfJoining);
-		setUpdateEmployeeId(personalDetail.id);
-		setEditTimeUpdationPopover(true);
-	};
-
-	const cancelButtonClicked = () => {
-		setEditTimeUpdationPopover(false);
-		setDateOfJoining(null);
-		setUpdateEmployeeId(null);
-		setErrorMessage('');
-	};
 
 	const generateInitialValues = () => {
 		const currentDate = new Date();
@@ -204,14 +206,14 @@ const TimeUpdationForm = () => {
 		return initialValues;
 	};
 	const initialValues = useMemo(() => generateInitialValues(), []);
-
 	const columnHelper = createColumnHelper();
 
 	const columns = [
 		columnHelper.accessor('paycode', {
-			header: () => 'Paycode',
+			header: () => 'PC',
 			cell: (props) => props.renderValue(),
 			//   footer: props => props.column.id,
+			// filterFn: 'fuzzy',
 		}),
 		columnHelper.accessor('attendanceCardNo', {
 			header: () => 'ACN',
@@ -224,49 +226,141 @@ const TimeUpdationForm = () => {
 			cell: (props) => props.renderValue(),
 			//   footer: info => info.column.id,
 		}),
-		columnHelper.accessor('dateOfJoining', {
-			header: () => 'DOJ',
-			cell: (props) => props.renderValue(),
-			//   footer: info => info.column.id,
-		}),
 		columnHelper.accessor('designation', {
 			header: () => 'Designation',
 			cell: (props) => props.renderValue(),
 			//   footer: info => info.column.id,
 		}),
-		columnHelper.display({
-			id: 'actions',
-			header: () => 'Actions',
-			cell: (props) => (
-				<div className="flex justify-center gap-4">
-					<div
-						className="rounded bg-teal-600 p-1.5 hover:bg-teal-700 dark:bg-teal-700 dark:hover:bg-teal-600"
-						onClick={() => {
-							editTimeUpdationDetail(props.row.original);
-						}}
-					>
-						<FaPen className="h-4" />
-					</div>
-				</div>
-			),
+		columnHelper.accessor('dateOfJoining', {
+			header: () => 'DOJ',
+			cell: (props) => props.renderValue(),
+			// enableHiding: true,
+			enableGlobalFilter: false,
+		}),
+		columnHelper.accessor('resignationDate', {
+			header: () => 'Resign Date',
+			cell: (props) => props.renderValue(),
+			enableHiding: true,
+			enableGlobalFilter: false,
 		}),
 	];
 
-	const data = useMemo(
-		() => (employeePersonalDetails ? [...employeePersonalDetails] : []),
-		[employeePersonalDetails]
-	);
+	const tbodyRef = useRef(null);
+
+	const [selectedDate, setSelectedDate] = useState({
+		year: new Date().getFullYear(),
+		month: new Date().getMonth() + 1,
+	});
+	const data = useMemo(() => {
+		if (!employeePersonalDetails) return [];
+
+		const filteredData = employeePersonalDetails.filter((employee) => {
+			const comparisonDate = new Date(Date.UTC(selectedDate.year, parseInt(selectedDate.month) - 1, 1));
+			// Extract the year and month from the original dateOfJoining
+			const [year, month] = employee.dateOfJoining.split('-').map(Number);
+			if (employee.resignationDate) {
+				const [resignYear, resignMonth] = employee.resignationDate.split('-').map(Number);
+				const resignDate = new Date(Date.UTC(resignYear, resignMonth, 0));
+				console.log(resignDate);
+				if (resignDate < comparisonDate) {
+					return false;
+				}
+			}
+
+			// Create a new date with the same year and month but set day to 1
+			const newDateOfJoining = new Date(Date.UTC(year, month - 1, 1));
+
+			// Compare the new date with "2023-08-01"
+			// console.log(newDateOfJoining);
+			// console.log(comparisonDate);
+
+			// Include the object if the new date is less than the comparison date
+			return newDateOfJoining <= comparisonDate;
+		});
+
+		return filteredData;
+	}, [employeePersonalDetails, selectedDate]);
 
 	const table = useReactTable({
 		data,
 		columns,
+		filterFns: {
+			// fuzzy: dojResignFilter,
+		},
 		initialState: {
 			sorting: [{ id: 'name', desc: false }],
+			columnVisibility: { dateOfJoining: true, resignationDate: false },
 		},
+		state: {
+			globalFilter,
+			// columnFilters,
+		},
+		// filterFns: {
+		// 	fuzzy: dojResignFilter,
+		// },
+		onGlobalFilterChange: setGlobalFilter,
+		// onColumnFiltersChange: setColumnFilters,
+
 		getCoreRowModel: getCoreRowModel(),
 		getSortedRowModel: getSortedRowModel(),
+		getFilteredRowModel: getFilteredRowModel(),
 		enableSortingRemoval: false,
+		// globalFilterFn: globalFuzzyFilter,
 	});
+	const focusedRowRef = useRef(null);
+	// console.assert.log(focusedRowRef)
+	let debouncedSetUpdateEmployeeId;
+
+	const onRowClick = (event, row) => {
+		const currentRow = tbodyRef.current?.children.namedItem(row.id);
+		clearTimeout(debouncedSetUpdateEmployeeId); // Clear the debounce timer
+		debouncedSetUpdateEmployeeId = setTimeout(() => {
+			focusedRowRef.current = currentRow.getAttribute('id');
+			setUpdateEmployeeId(row.original.id);
+		}, 300);
+	};
+
+	const handleKeyDown = (event, row) => {
+		event.stopPropagation();
+		event.preventDefault();
+		const currentRow = tbodyRef.current?.children.namedItem(row.id);
+
+		switch (event.key) {
+			case 'ArrowUp':
+				const previousRow = currentRow?.previousElementSibling;
+				if (previousRow) {
+					previousRow.focus();
+
+					// setUpdateEmployeeId(previousRow?.getAttribute('data-row-id'));
+					clearTimeout(debouncedSetUpdateEmployeeId); // Clear the debounce timer
+					debouncedSetUpdateEmployeeId = setTimeout(() => {
+						focusedRowRef.current = previousRow?.getAttribute('id');
+						setUpdateEmployeeId(previousRow?.getAttribute('data-row-id'));
+					}, 300);
+				}
+				// focusedRowRef.current = currentRow.previousElementSibling;
+				break;
+			case 'ArrowDown':
+				// currentRow?.nextElementSibling?.focus();
+
+				const nextRow = currentRow?.nextElementSibling;
+				if (nextRow) {
+					nextRow.focus();
+
+					// setUpdateEmployeeId(nextRow?.getAttribute('data-row-id'));
+					clearTimeout(debouncedSetUpdateEmployeeId); // Clear the debounce timer
+					debouncedSetUpdateEmployeeId = setTimeout(() => {
+						focusedRowRef.current = nextRow?.getAttribute('id');
+						setUpdateEmployeeId(nextRow?.getAttribute('data-row-id'));
+					}, 300);
+				}
+
+				// focusedRowRef.current = currentRow.nextElementSibling;
+				break;
+			default:
+				break;
+		}
+	};
 
 	if (globalCompany.id == null) {
 		return (
@@ -281,93 +375,14 @@ const TimeUpdationForm = () => {
 	} else {
 		return (
 			<>
-				<section className="mx-5 mt-2">
+				<section className="mx-2 mt-2">
 					<div className="flex flex-row flex-wrap place-content-between">
 						<div className="mr-4">
 							<h1 className="text-3xl font-medium">Employee Shifts</h1>
 							<p className="my-2 text-sm">Edit and manage employees shifts here</p>
 						</div>
 					</div>
-					<div className="scrollbar mx-auto max-h-[80dvh] max-w-6xl overflow-y-auto rounded border border-black border-opacity-50 shadow-md lg:max-h-[84dvh]">
-						<table className="w-full border-collapse text-center text-sm">
-							<thead className="sticky top-0 bg-blueAccent-600 dark:bg-blueAccent-700">
-								{table.getHeaderGroups().map((headerGroup) => (
-									<tr key={headerGroup.id}>
-										{headerGroup.headers.map((header) => (
-											<th key={header.id} scope="col" className="px-4 py-4 font-medium">
-												{header.isPlaceholder ? null : (
-													<div className="">
-														<div
-															{...{
-																className: header.column.getCanSort()
-																	? 'cursor-pointer select-none flex flex-row justify-center'
-																	: '',
-																onClick: header.column.getToggleSortingHandler(),
-															}}
-														>
-															{flexRender(
-																header.column.columnDef.header,
-																header.getContext()
-															)}
-
-															{header.column.getCanSort() ? (
-																<div className="relative pl-2">
-																	<FaAngleUp
-																		className={classNames(
-																			header.column.getIsSorted() == 'asc'
-																				? 'text-teal-700'
-																				: '',
-																			'absolute -translate-y-2 text-lg'
-																		)}
-																	/>
-																	<FaAngleDown
-																		className={classNames(
-																			header.column.getIsSorted() == 'desc'
-																				? 'text-teal-700'
-																				: '',
-																			'absolute translate-y-2 text-lg'
-																		)}
-																	/>
-																</div>
-															) : (
-																''
-															)}
-														</div>
-													</div>
-												)}
-											</th>
-										))}
-									</tr>
-								))}
-							</thead>
-							<tbody className="max-h-20 divide-y divide-black divide-opacity-50 overflow-y-auto border-t border-black border-opacity-50">
-								{table.getRowModel().rows.map((row) => (
-									<tr className="hover:bg-zinc-200 dark:hover:bg-zinc-800" key={row.id}>
-										{row.getVisibleCells().map((cell) => (
-											<td className="px-4 py-4 font-normal" key={cell.id}>
-												<div className="text-sm">
-													<div className="font-medium">
-														{flexRender(cell.column.columnDef.cell, cell.getContext())}
-													</div>
-												</div>
-											</td>
-										))}
-									</tr>
-								))}
-							</tbody>
-						</table>
-					</div>
-
-					<ReactModal
-						className="items-left scrollbar container fixed inset-0 my-auto flex h-fit max-h-[100dvh] flex-col gap-4 overflow-y-scroll rounded bg-zinc-300 p-4 pl-16 shadow-xl dark:bg-zinc-800 sm:mx-auto sm:max-w-7xl"
-						isOpen={editTimeUpdationPopover}
-						onRequestClose={cancelButtonClicked}
-						style={{
-							overlay: {
-								backgroundColor: 'rgba(0, 0, 0, 0.75)',
-							},
-						}}
-					>
+					<div className="ml-14 max-w-full">
 						<Formik
 							initialValues={initialValues}
 							validationSchema={TimeUpdationSchema}
@@ -380,14 +395,22 @@ const TimeUpdationForm = () => {
 									globalCompany={globalCompany}
 									updateEmployeeId={updateEmployeeId}
 									// shifts={shifts}
-									dateOfJoining={dateOfJoining}
-									cancelButtonClicked={cancelButtonClicked}
 									leaveGrades={leaveGrades}
 									holidays={holidays}
+									table={table}
+									globalFilter={globalFilter}
+									setGlobalFilter={setGlobalFilter}
+									tbodyRef={tbodyRef}
+									handleKeyDown={handleKeyDown}
+									onRowClick={onRowClick}
+									focusedRowRef={focusedRowRef}
+									isTableFilterInputFocused={isTableFilterInputFocused}
+									setIsTableFilterInputFocused={setIsTableFilterInputFocused}
+									setSelectedDate={setSelectedDate}
 								/>
 							)}
 						/>
-					</ReactModal>
+					</div>
 				</section>
 			</>
 		);

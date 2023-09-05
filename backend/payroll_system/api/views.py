@@ -19,6 +19,7 @@ from django.db.models import Q
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import pytz
+import calendar
 
 
 
@@ -859,10 +860,10 @@ class EmployeePersonalDetailRetrieveUpdateDestroyAPIView(generics.RetrieveUpdate
         return Response(serializer.data, status=status.HTTP_200_OK)
         
 
-class EmployeeProfessionalDetailCreateAPIView(generics.CreateAPIView):
+class EmployeeProfessionalDetailListCreateAPIView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = EmployeeProfessionalDetailSerializer
-    lookup_field = 'company_id'
+    # lookup_field = 'company_id'
 
     def get_queryset(self, *args, **kwargs):
         company_id = self.kwargs.get('company_id')
@@ -930,16 +931,18 @@ class EmployeeProfessionalDetailRetrieveUpdateDestroyAPIView(generics.RetrieveUp
             print(type(validated_data['date_of_joining']))
             if instance[0].date_of_joining != validated_data['date_of_joining']:
                 earning_instances = EmployeeSalaryEarning.objects.filter(user=user, employee=validated_data['employee'], from_date=instance[0].date_of_joining.replace(day=1))
-                print(len(earning_instances))
+                shift_instances = EmployeeShifts.objects.filter(user=user, employee=validated_data['employee'], from_date=instance[0].date_of_joining)
+                print(earning_instances)
+                print("shift length" ,len(shift_instances))
+                if len(shift_instances)>0:
+                    shift = shift_instances[0]
+                    shift.from_date=validated_data['date_of_joining']
+                    shift.save()
                 if len(earning_instances) > 0:
                     for earning in earning_instances:
-                        print(earning)
+                        # print(earning)
                         earning.from_date=validated_data['date_of_joining'].replace(day=1)
                         earning.save()
-                        print("saved")
-                # print(f'0 -> {earning_instances[0].earnings_head}')
-                # print(earning_instances[0].to_date)
-                
 
         print(validated_data)
         serializer.save(user=self.request.user)
@@ -1316,7 +1319,7 @@ class EmployeeSalaryEarningListUpdateAPIView(generics.UpdateAPIView):
 
 
     
-class EmployeeSalaryDetailCreateAPIView(generics.CreateAPIView):
+class EmployeeSalaryDetailListCreateAPIView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = EmployeeSalaryDetailSerializer
     lookup_field = 'company_id'
@@ -1626,6 +1629,53 @@ class EmployeeShiftsListAPIView(generics.ListAPIView):
         print(serializer.data)
         return Response(serializer.data)
     
+class AllEmployeeMonthyShiftsListAPIView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = EmployeeShiftsSerializer
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        # employee = self.kwargs.get('employee')
+        user = self.request.user
+        if user.role == "OWNER":
+            return user.all_employees_shifts.filter(company=company_id)
+        instance = OwnerToRegular.objects.get(user=user)
+        return instance.owner.all_employees_shifts.filter(company=company_id)
+    
+    def list(self, request, *args, **kwargs):
+
+        # year = self.kwargs.get('year')
+        # month = self.kwargs.get('month')
+        # from_date = datetime(year, month, 1).date() - relativedelta(days=6)
+        # last_day = calendar.monthrange(year, month)[1]
+        # to_date = datetime(year, month, last_day).date()
+
+
+        # print(type(from_date))
+        # print(from_date)
+        # print(to_date)
+        # # print(month)
+        # queryset = self.get_queryset().filter(date__range=[from_date, to_date])
+        # serializer = self.get_serializer(queryset, many=True)
+        # return Response(serializer.data)
+        # # return Response(status.HTTP_200_OK)
+
+        year = self.kwargs.get('year')
+        month = self.kwargs.get('month')
+        start_date = datetime(year, month, 1).date()
+        end_date = datetime(year, month+1, 1).date() - relativedelta(days=1)
+        print(len(self.get_queryset()))
+
+        queryset = self.get_queryset().filter(
+            from_date__lte=end_date,  # Shifts that start before or in the specified year
+            to_date__gte=start_date,    # Shifts that end in the specified year or later
+        )
+        serializer = self.get_serializer(queryset, many=True)
+        print(serializer.data)
+        print(len(serializer.data))
+        return Response(serializer.data)
+        # return Response(status.HTTP_200_OK)
+    
     
 class EmployeeShiftsCreateAPIView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
@@ -1719,10 +1769,10 @@ class EmployeeAttendanceListCreateAPIView(generics.ListCreateAPIView):
 
     def get_queryset(self, *args, **kwargs):
         company_id = self.kwargs.get('company_id')
-        employee = self.kwargs.get('employee')
+        # employee = self.kwargs.get('employee')
         user = self.request.user
         if user.role == "OWNER":
-            return user.all_employees_attendance.filter(company=company_id, employee=employee)
+            return user.all_employees_attendance.filter(company=company_id)
         # instance = OwnerToRegular.objects.get(user=user)
         # return instance.owner.employee_family_nominee_details.filter(company=company_id, employee=employee)
 
@@ -1747,11 +1797,21 @@ class EmployeeAttendanceListCreateAPIView(generics.ListCreateAPIView):
             return Response({'error': e}, status=status.HTTP_400_BAD_REQUEST)
         
     def list(self, request, *args, **kwargs):
-        from_date = self.kwargs.get('from_date')
-        to_date = self.kwargs.get('to_date')
+        year = self.kwargs.get('year')
+        month = self.kwargs.get('month')
+        from_date = datetime(year, month, 1).date() - relativedelta(days=6)
+        last_day = calendar.monthrange(year, month)[1]
+        to_date = datetime(year, month, last_day).date()
+
+
+        print(type(from_date))
+        print(from_date)
+        print(to_date)
+        # print(month)
         queryset = self.get_queryset().filter(date__range=[from_date, to_date])
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+        # return Response(status.HTTP_200_OK)
     
 class EmployeeAttendanceUpdateAPIView(generics.UpdateAPIView):
     permission_classes= [IsAuthenticated]

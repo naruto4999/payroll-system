@@ -1,15 +1,22 @@
-import React, { useRef, useEffect, useState, useMemo, memo } from 'react';
+import React, { useRef, useEffect, useState, useMemo, memo, useCallback } from 'react';
 import { FaUserPlus } from 'react-icons/fa6';
 import { FaCircleNotch } from 'react-icons/fa6';
 import { Field, ErrorMessage, Form } from 'formik';
-import { useGetEmployeeShiftsQuery } from '../../../../authentication/api/employeeShiftsApiSlice';
+// import { useGetEmployeeShiftsQuery } from '../../../../authentication/api/employeeShiftsApiSlice';
+import { useGetCurrentMonthAllEmployeeShiftsQuery } from '../../../../authentication/api/timeUpdationApiSlice';
 import AttendanceMonthDays from './AttendanceMonthDays';
 import AttendanceHeader from './AttendanceHeader';
 import { useSelector } from 'react-redux';
-import { useGetEmployeeAttendanceBetweenDatesQuery } from '../../../../authentication/api/timeUpdationApiSlice';
+// import { useGetEmployeeAttendanceBetweenDatesQuery } from '../../../../authentication/api/timeUpdationApiSlice';
 import { useGetWeeklyOffHolidayOffQuery } from '../../../../authentication/api/weeklyOffHolidayOffApiSlice';
-import { useGetSingleEmployeeProfessionalDetailQuery } from '../../../../authentication/api/employeeEntryApiSlice';
 import { useGetSingleEmployeeSalaryDetailQuery } from '../../../../authentication/api/employeeEntryApiSlice';
+import EmployeeTable from './EmployeeTable';
+import {
+	useGetCurrentMonthAllEmployeeAttendanceQuery,
+	useGetAllEmployeeProfessionalDetailQuery,
+	useGetAllEmployeeSalaryDetailQuery,
+} from '../../../../authentication/api/timeUpdationApiSlice';
+import TableFilterInput from './TableFilterInput';
 
 // After for the Beginnning is covered by late grace
 const AUTO_SHIFT_BEGINNING_BUFFER_BEFORE = 10;
@@ -31,25 +38,28 @@ const timeFormat = (time) => {
 const EditAttendance = memo(
 	({
 		handleSubmit,
+		handleChange,
 		values,
 		errors,
 		isValid,
 		touched,
 		setFieldValue,
 		globalCompany,
-		cancelButtonClicked,
-		isEditing,
-		dirty,
-		initialValues,
 		updateEmployeeId,
-		dateOfJoining,
-		shifts,
 		setErrorMessage,
-		errorMessage,
-		setEmployeeShiftsFound,
 		isSubmitting,
 		leaveGrades,
 		holidays,
+		table,
+		globalFilter,
+		setGlobalFilter,
+		tbodyRef,
+		handleKeyDown,
+		focusedRowRef,
+		isTableFilterInputFocused,
+		setIsTableFilterInputFocused,
+		onRowClick,
+		setSelectedDate,
 	}) => {
 		const months = [
 			'January',
@@ -78,51 +88,144 @@ const EditAttendance = memo(
 		const holidayOffSkip = useMemo(() => leaveGrades.find((grade) => grade.name === 'HD*'), [leaveGrades]);
 		const compensationOff = useMemo(() => leaveGrades.find((grade) => grade.name === 'CO'), [leaveGrades]);
 		const onDuty = useMemo(() => leaveGrades.find((grade) => grade.name === 'OD'), [leaveGrades]);
+		const isTableFilterInput = useRef(false);
 
 		const {
-			data: employeeShifts,
-			isLoading: isLoadingEmployeeShifts,
-			isSuccess: isEmployeeShiftsSuccess,
-			isFetching: isFetchingEmployeeShifts,
-		} = useGetEmployeeShiftsQuery(
+			data: allEmployeeAttendance,
+			isLoading: isLoadingAllEmployeeAttendance,
+			isSuccess: isAllEmployeeAttendanceSuccess,
+			isFetching: isFetchingAllEmployeeAttendance,
+		} = useGetCurrentMonthAllEmployeeAttendanceQuery(
 			{
-				employee: updateEmployeeId,
 				company: globalCompany.id,
 				year: values.year,
+				month: values.month,
 			},
 			{
-				skip: updateEmployeeId === null || undefined,
+				skip: globalCompany === null || globalCompany === '',
 			}
 		);
-
 		const {
-			data: employeeProfessionalDetail,
-			isLoading: isLoadingEmployeeProfessionalDetail,
-			isSuccess: isEmployeeProfessionalDetailSuccess,
-			isFetching: isFetchingEmployeeProfessionalDetail,
-		} = useGetSingleEmployeeProfessionalDetailQuery(
+			data: allEmployeeProfessionalDetail,
+			isLoading: isLoadingAllEmployeeProfessionalDetail,
+			isSuccess: isAllEmployeeProfessionalDetailSuccess,
+			isFetching: isFetchingAllEmployeeProfessionalDetail,
+		} = useGetAllEmployeeProfessionalDetailQuery(
 			{
-				id: updateEmployeeId,
 				company: globalCompany.id,
 			},
 			{
-				skip: updateEmployeeId === null || undefined,
+				skip: globalCompany === null || globalCompany === '',
 			}
 		);
-
 		const {
-			data: employeeSalaryDetail,
-			isLoading: isLoadingEmployeeSalaryDetail,
-			isSuccess: isEmployeeSalaryDetailSuccess,
-			isFetching: isFetchingEmployeeSalaryDetail,
-		} = useGetSingleEmployeeSalaryDetailQuery(
+			data: allEmployeeSalaryDetail,
+			isLoading: isLoadingAllEmployeeSalaryDetail,
+			isSuccess: isAllEmployeeSalaryDetailSuccess,
+			isFetching: isFetchingAllEmployeeSalaryDetail,
+		} = useGetAllEmployeeSalaryDetailQuery(
 			{
-				id: updateEmployeeId,
 				company: globalCompany.id,
 			},
 			{
-				skip: updateEmployeeId === null || undefined,
+				skip: globalCompany === null || globalCompany === '',
 			}
+		);
+		const currentEmployeeProfessionalDetail = useMemo(() => {
+			return updateEmployeeId && allEmployeeProfessionalDetail
+				? allEmployeeProfessionalDetail.find((item) => parseInt(item.employee) === parseInt(updateEmployeeId))
+				: null;
+		}, [allEmployeeProfessionalDetail, updateEmployeeId]);
+
+		const currentEmployeeSalaryDetail = useMemo(() => {
+			return updateEmployeeId && allEmployeeSalaryDetail
+				? allEmployeeSalaryDetail.find((item) => parseInt(item.employee) === parseInt(updateEmployeeId))
+				: null;
+		}, [allEmployeeSalaryDetail, updateEmployeeId]);
+
+		const calculateEarliestMonthYear = useMemo(() => {
+			// Find the object with the earliest dateOfJoining
+			if (allEmployeeProfessionalDetail) {
+				const earliestEmployee = allEmployeeProfessionalDetail.reduce((earliest, current) => {
+					if (!earliest || new Date(current.dateOfJoining) < new Date(earliest.dateOfJoining)) {
+						return current;
+					}
+					return earliest;
+				}, null);
+				if (earliestEmployee) {
+					const date = new Date(earliestEmployee.dateOfJoining);
+					return {
+						earliestMonth: date.getMonth() + 1, // Adding 1 because months are zero-based
+						earliestYear: date.getFullYear(),
+					};
+				} else {
+					return {
+						earliestMonth: null,
+						earliestYear: null,
+					};
+				}
+			}
+		}, [allEmployeeProfessionalDetail]);
+		// console.log(values.year, values.month);
+
+		const {
+			data: allEmployeeShifts,
+			isLoading: isLoadingAllEmployeeShifts,
+			isSuccess: isAllEmployeeShiftsSuccess,
+			isFetching: isFetchingAllEmployeeShifts,
+		} = useGetCurrentMonthAllEmployeeShiftsQuery(
+			{
+				company: globalCompany.id,
+				year: 2023,
+				month: 8,
+			},
+			{
+				skip: globalCompany === null || globalCompany === '',
+			}
+		);
+
+		const categorizedAllEmployeeAttendance = useMemo(() => {
+			if (allEmployeeAttendance) {
+				const result = {};
+
+				allEmployeeAttendance.forEach((obj) => {
+					const employeeId = obj.employee;
+
+					if (!result[employeeId]) {
+						result[employeeId] = [];
+					}
+
+					result[employeeId].push(obj);
+				});
+
+				return result;
+			} else {
+				return {};
+			}
+		}, [allEmployeeAttendance]);
+		const categorizedAllEmployeeShifts = useMemo(() => {
+			if (allEmployeeShifts) {
+				const result = {};
+
+				allEmployeeShifts.forEach((obj) => {
+					const employeeId = obj.employee;
+
+					if (!result[employeeId]) {
+						result[employeeId] = [];
+					}
+
+					result[employeeId].push(obj);
+				});
+
+				return result;
+			} else {
+				return {};
+			}
+		}, [allEmployeeShifts]);
+
+		const employeeAttendance = useMemo(
+			() => categorizedAllEmployeeAttendance?.[updateEmployeeId] || [],
+			[categorizedAllEmployeeAttendance]
 		);
 
 		const giveWeeklyOffHolidayOff = (year, month, day, minDays, auto = false) => {
@@ -159,85 +262,85 @@ const EditAttendance = memo(
 			isFetching,
 		} = useGetWeeklyOffHolidayOffQuery(globalCompany.id);
 
-		const datesToGet = () => {
-			// Calculating fromDate
-			let monthStart = new Date(Date.UTC(values.year, parseInt(values.month) - 1, 1 - 7));
-			const utcFromYear = monthStart.getUTCFullYear();
-			const utcFromMonth = monthStart.getUTCMonth() + 1; // Months are 0-based
-			const utcFromDay = monthStart.getUTCDate();
+		// const datesToGet = () => {
+		// 	// Calculating fromDate
+		// 	let monthStart = new Date(Date.UTC(values.year, parseInt(values.month) - 1, 1 - 7));
+		// 	const utcFromYear = monthStart.getUTCFullYear();
+		// 	const utcFromMonth = monthStart.getUTCMonth() + 1; // Months are 0-based
+		// 	const utcFromDay = monthStart.getUTCDate();
 
-			const utcFromDate = `${utcFromYear}-${utcFromMonth.toString().padStart(2, '0')}-${utcFromDay
-				.toString()
-				.padStart(2, '0')}`;
+		// 	const utcFromDate = `${utcFromYear}-${utcFromMonth.toString().padStart(2, '0')}-${utcFromDay
+		// 		.toString()
+		// 		.padStart(2, '0')}`;
 
-			const daysInMonth = new Date(values.year, values.month, 0).getDate();
+		// 	const daysInMonth = new Date(values.year, values.month, 0).getDate();
 
-			// Calculating toDate
-			let monthEnd = new Date(Date.UTC(values.year, parseInt(values.month) - 1, daysInMonth + 7));
+		// 	// Calculating toDate
+		// 	let monthEnd = new Date(Date.UTC(values.year, parseInt(values.month) - 1, daysInMonth + 7));
 
-			const utcToYear = monthEnd.getUTCFullYear();
-			const utcToMonth = monthEnd.getUTCMonth() + 1; // Months are 0-based
-			const utcToDay = monthEnd.getUTCDate();
+		// 	const utcToYear = monthEnd.getUTCFullYear();
+		// 	const utcToMonth = monthEnd.getUTCMonth() + 1; // Months are 0-based
+		// 	const utcToDay = monthEnd.getUTCDate();
 
-			const utcToDate = `${utcToYear}-${utcToMonth.toString().padStart(2, '0')}-${utcToDay
-				.toString()
-				.padStart(2, '0')}`;
-			return { fromDate: utcFromDate, toDate: utcToDate };
-		};
-
-		const {
-			data: employeeAttendance,
-			isLoading: isLoadingEmployeeAttendance,
-			isSuccess: isEmployeeAttendanceSuccess,
-			isFetching: isFetchingEmployeeAttendance,
-		} = useGetEmployeeAttendanceBetweenDatesQuery(
-			{
-				employee: updateEmployeeId,
-				company: globalCompany.id,
-				fromDate: datesToGet().fromDate,
-				toDate: datesToGet().toDate,
-			},
-			{
-				skip: updateEmployeeId === null,
-			}
-		);
-
-		const employeeAttendanceMemoized = useMemo(
-			() => (employeeAttendance ? employeeAttendance : ''),
-			[employeeAttendance]
-		);
-		// console.log(employeeAttendanceMemoized);
+		// 	const utcToDate = `${utcToYear}-${utcToMonth.toString().padStart(2, '0')}-${utcToDay
+		// 		.toString()
+		// 		.padStart(2, '0')}`;
+		// 	return { fromDate: utcFromDate, toDate: utcToDate };
+		// };
 
 		// Get the Value of Shift for a given date
-		const getShift = (year, month, day) => {
-			const targetDate = new Date(Date.UTC(year, month - 1, day));
-			const foundShift = employeeShifts?.find((shiftObj) => {
-				const fromDate = new Date(shiftObj.fromDate);
-				const toDate = new Date(shiftObj.toDate);
+		const getShift = useCallback(
+			(year, month, day) => {
+				// console.log(employeeShifts);
+				const targetDate = new Date(Date.UTC(year, month - 1, day));
+				const foundShift = categorizedAllEmployeeShifts?.[updateEmployeeId]?.find((shiftObj) => {
+					const fromDate = new Date(shiftObj.fromDate);
+					const toDate = new Date(shiftObj.toDate);
 
-				if (targetDate >= fromDate && targetDate <= toDate) {
-					return true;
-				}
+					if (targetDate >= fromDate && targetDate <= toDate) {
+						return true;
+					}
 
-				return false;
-			});
+					return false;
+				});
 
-			return foundShift ? foundShift.shift : null;
-		};
-		const sortedKeys = Object.keys(values.attendance)
-			.map((key) => parseInt(key))
-			.sort((a, b) => a - b);
+				return foundShift ? foundShift.shift : null;
+			},
+			[categorizedAllEmployeeShifts]
+		);
+		const sortedKeys = useMemo(
+			() =>
+				Object.keys(values.attendance)
+					.map((key) => parseInt(key))
+					.sort((a, b) => a - b),
+			[values.attendance]
+		);
 
 		// Creating Year values from DOJ till now
 		const currentDate = new Date();
-		const options = [];
-		for (let i = new Date(dateOfJoining).getFullYear(); i <= currentDate.getFullYear(); i++) {
-			options.push(
-				<option key={i} value={i}>
-					{i}
-				</option>
-			);
-		}
+
+		const options = useMemo(() => {
+			if (calculateEarliestMonthYear) {
+				const options = [];
+				for (let i = calculateEarliestMonthYear.earliestYear; i <= currentDate.getFullYear(); i++) {
+					options.push(
+						<option key={i} value={i}>
+							{i}
+						</option>
+					);
+				}
+				return options;
+			}
+		}, [calculateEarliestMonthYear]);
+
+		useEffect(() => {
+			if (values.year == calculateEarliestMonthYear?.earliestYear) {
+				if (values.month < calculateEarliestMonthYear.earliestMonth) {
+					setFieldValue(`month`, calculateEarliestMonthYear.earliestMonth);
+					setSelectedDate((prevValue) => ({ ...prevValue, month: calculateEarliestMonthYear.earliestMonth }));
+				}
+			}
+		}, [values.year]);
 
 		const getTimeParts = (timeString) => {
 			const timeParts = timeString.split(':');
@@ -259,204 +362,289 @@ const EditAttendance = memo(
 			let manualOut = values.attendance[day].manualOut;
 			let manualInObj = getTimeInDateObj(manualIn, day);
 			let manualOutObj = getTimeInDateObj(manualOut, manualIn < manualOut ? day : parseInt(day) + 1);
-			// console.log(manualInObj);
-			// console.log(manualOutObj);
+
 			const timeDifferenceInMilliseconds = manualOutObj - manualInObj;
 			const timeDifferenceInMinutes = timeDifferenceInMilliseconds / (1000 * 60);
 			overtime += timeDifferenceInMinutes;
 			return overtime;
 		};
 
-		const calculateOvertime = (day) => {
-			let manualIn = values.attendance[day].manualIn;
-			let manualOut = values.attendance[day].manualOut;
-			const shift = getShift(values.year, values.month, day);
-			let manualInObj;
-			let manualOutObj;
-			let overtime = 0;
-
-			if (shift.beginningTime < shift.endTime) {
-				const shiftBeginningTime = getTimeInDateObj(shift.beginningTime, day);
-				const shiftEndTime = getTimeInDateObj(shift.endTime, day);
-				// If manualIn < shift begin time (without date object one) and manualIn > "00:00":
-				if (manualIn != '' && manualIn < shift.beginningTime.slice(0, 5)) {
-					manualInObj = getTimeInDateObj(manualIn, day);
-				}
-
-				// else if manualIn > shift end time (withoud date object one) and manualIn < "00:00"
-				else if (manualIn != '' && manualIn > shift.endTime.slice(0, 5)) {
-					manualInObj = getTimeInDateObj(manualIn, parseInt(day) - 1);
-					// console.log('in lower if');
-				}
-				// If manualOut > shift end time (without date object one) and manualOut < "00:00":
-				if (manualOut != '' && manualOut > shift.endTime.slice(0, 5)) {
-					manualOutObj = getTimeInDateObj(manualOut, day);
-				} else if (manualOut != '' && manualOut < shift.beginningTime.slice(0, 5)) {
-					manualOutObj = getTimeInDateObj(manualOut, parseInt(day) + 1);
-				}
-				if (manualInObj != undefined) {
-					const timeDifferenceInMilliseconds = shiftBeginningTime - manualInObj;
-					const timeDifferenceInMinutes = timeDifferenceInMilliseconds / (1000 * 60);
-					if (timeDifferenceInMinutes > parseInt(shift.otBeginAfter)) {
-						overtime += timeDifferenceInMinutes;
-					}
-				}
-				if (manualOutObj != undefined) {
-					// console.log('existsssss in else manual out');
-					const timeDifferenceInMilliseconds = manualOutObj - shiftEndTime;
-					const timeDifferenceInMinutes = timeDifferenceInMilliseconds / (1000 * 60);
-					if (timeDifferenceInMinutes > parseInt(shift.otBeginAfter)) {
-						overtime += timeDifferenceInMinutes;
-					}
-				}
-				// setFieldValue(`attendance.${day}.otMin`, overtime);
-			} else if (shift.beginningTime > shift.endTime) {
-				const shiftBeginningTime = getTimeInDateObj(shift.beginningTime, day);
-				const shiftEndTime = getTimeInDateObj(shift.endTime, parseInt(day) + 1);
-				// If manualIn < shift begin time (without date object) and manualIn > shift end time (without object):
-
-				if (
-					manualIn != '' &&
-					manualIn < shift.beginningTime.slice(0, 5) &&
-					manualIn > shift.endTime.slice(0, 5)
-				) {
-					manualInObj = getTimeInDateObj(manualIn, day);
-				}
-
-				// If manualOut > shift end time (without the date object one) and and manualOut < shift begin time (without the date object one):
-				if (
-					manualOut != '' &&
-					manualOut > shift.endTime.slice(0, 5) &&
-					manualOut < shift.beginningTime.slice(0, 5)
-				) {
-					manualOutObj = getTimeInDateObj(manualOut, parseInt(day) + 1);
-				}
-				if (manualInObj !== undefined) {
-					// console.log('existsssss in else');
-					const timeDifferenceInMilliseconds = shiftBeginningTime - manualInObj;
-					const timeDifferenceInMinutes = timeDifferenceInMilliseconds / (1000 * 60);
-					if (timeDifferenceInMinutes > parseInt(shift.otBeginAfter)) {
-						overtime += timeDifferenceInMinutes;
-					}
-				}
-				if (manualOutObj !== undefined) {
-					// console.log('existsssss in else manual out');
-					const timeDifferenceInMilliseconds = manualOutObj - shiftEndTime;
-					const timeDifferenceInMinutes = timeDifferenceInMilliseconds / (1000 * 60);
-					if (timeDifferenceInMinutes > parseInt(shift.otBeginAfter)) {
-						overtime += timeDifferenceInMinutes;
-					}
-				}
-			}
-			return overtime;
-		};
-
-		const calculateLateHrs = (day) => {
-			let manualIn = values.attendance[day]?.manualIn;
-			const shift = getShift(values.year, values.month, day);
-			let manualInObj;
-			let lateHrs = 0;
-
-			if (shift.beginningTime < shift.endTime) {
-				const shiftBeginningTime = getTimeInDateObj(shift.beginningTime, day);
-				const shiftBeginningTimeWithGrace = new Date(
-					shiftBeginningTime.getTime() + parseInt(shift.lateGrace) * 60 * 1000
-				);
-				const shiftEndTime = getTimeInDateObj(shift.endTime, day);
-				// console.log(shiftBeginningTime);
-				manualInObj = getTimeInDateObj(manualIn, day);
-				if (manualInObj > shiftBeginningTimeWithGrace) {
-					const timeDifferenceInMilliseconds = manualInObj - shiftBeginningTime;
-					const timeDifferenceInMinutes = timeDifferenceInMilliseconds / (1000 * 60);
-					lateHrs += timeDifferenceInMinutes;
-				}
-			}
-
-			if (shift.beginningTime > shift.endTime) {
-				// console.log('yessssssssssssssssssssss');
-				const shiftBeginningTime = getTimeInDateObj(shift.beginningTime, day);
-				const shiftBeginningTimeWithGrace = new Date(
-					shiftBeginningTime.getTime() + parseInt(shift.lateGrace) * 60 * 1000
-				);
-				const shiftEndTime = getTimeInDateObj(shift.endTime, parseInt(day) + 1);
-				if (manualIn > shift.beginningTime.slice(0, 5)) {
-					manualInObj = getTimeInDateObj(manualIn, day);
-					if (manualInObj > shiftBeginningTimeWithGrace) {
-						const timeDifferenceInMilliseconds = manualInObj - shiftBeginningTime;
-						const timeDifferenceInMinutes = timeDifferenceInMilliseconds / (1000 * 60);
-						lateHrs += timeDifferenceInMinutes;
-					}
-				} else if (manualIn < shift.endTime.slice(0, 5)) {
-					manualInObj = getTimeInDateObj(manualIn, parseInt(day) + 1);
-					if (manualInObj > shiftBeginningTimeWithGrace) {
-						const timeDifferenceInMilliseconds = manualInObj - shiftBeginningTime;
-						const timeDifferenceInMinutes = timeDifferenceInMilliseconds / (1000 * 60);
-						lateHrs += timeDifferenceInMinutes;
-					}
-				}
-			}
-
-			return lateHrs;
-		};
-
-		const calculateAttendance = (day, lateMinValue) => {
-			const manualMode = values.attendance[day]?.manualMode;
-			if (!manualMode) {
-				const manualIn = values.attendance[day]?.manualIn;
-				const manualOut = values.attendance[day]?.manualOut;
+		const calculateOvertime = useCallback(
+			(day) => {
+				let manualIn = values.attendance[day].manualIn;
+				let manualOut = values.attendance[day].manualOut;
 				const shift = getShift(values.year, values.month, day);
-				const shiftBeginningTime = getTimeInDateObj(shift.beginningTime, day);
-				const shiftEndTime = getTimeInDateObj(shift.endTime, day);
-				const manualInObj =
-					manualIn < shift.endTime.slice(0, 5)
-						? getTimeInDateObj(manualIn, day)
-						: getTimeInDateObj(
-								manualIn,
-								shift.beginningTime < shift.endTime ? parseInt(day) - 1 : parseInt(day) + 1
-						  );
-				const manualOutObj =
-					manualOut > shift.beginningTime.slice(0, 5)
-						? getTimeInDateObj(manualOut, day)
-						: getTimeInDateObj(manualOut, shift.beginningTime < shift.endTime ? parseInt(day) + 1 : day);
+				let manualInObj;
+				let manualOutObj;
+				let overtime = 0;
 
-				if (manualInObj && manualOutObj) {
-					const effectiveStartTime = Math.max(manualInObj, shiftBeginningTime);
-					const effectiveEndTime = Math.min(manualOutObj, shiftEndTime);
-					const durationMilliseconds = Math.max(effectiveEndTime - effectiveStartTime, 0);
-					const durationMinutes = Math.floor(durationMilliseconds / (1000 * 60));
-					if (durationMinutes >= parseInt(shift.fullDayMinimumMinutes)) {
-						if (lateMinValue <= shift.maxLateAllowedMin) {
-							setFieldValue(`attendance.${day}.firstHalf`, present.id);
-							setFieldValue(`attendance.${day}.secondHalf`, present.id);
-						} else if (lateMinValue > shift.maxLateAllowedMin) {
-							setFieldValue(`attendance.${day}.firstHalf`, absent.id);
-							setFieldValue(`attendance.${day}.secondHalf`, present.id);
+				if (shift.beginningTime < shift.endTime) {
+					const shiftBeginningTime = getTimeInDateObj(shift.beginningTime, day);
+					const shiftEndTime = getTimeInDateObj(shift.endTime, day);
+					// If manualIn < shift begin time (without date object one) and manualIn > "00:00":
+					if (manualIn != '' && manualIn < shift.beginningTime.slice(0, 5)) {
+						manualInObj = getTimeInDateObj(manualIn, day);
+					}
+
+					// else if manualIn > shift end time (withoud date object one) and manualIn < "00:00"
+					else if (manualIn != '' && manualIn > shift.endTime.slice(0, 5)) {
+						manualInObj = getTimeInDateObj(manualIn, parseInt(day) - 1);
+						// console.log('in lower if');
+					}
+					// If manualOut > shift end time (without date object one) and manualOut < "00:00":
+					if (manualOut != '' && manualOut > shift.endTime.slice(0, 5)) {
+						manualOutObj = getTimeInDateObj(manualOut, day);
+					} else if (manualOut != '' && manualOut < shift.beginningTime.slice(0, 5)) {
+						manualOutObj = getTimeInDateObj(manualOut, parseInt(day) + 1);
+					}
+					if (manualInObj != undefined) {
+						const timeDifferenceInMilliseconds = shiftBeginningTime - manualInObj;
+						const timeDifferenceInMinutes = timeDifferenceInMilliseconds / (1000 * 60);
+						if (timeDifferenceInMinutes > parseInt(shift.otBeginAfter)) {
+							overtime += timeDifferenceInMinutes;
 						}
-					} else if (
-						durationMinutes >= parseInt(shift.halfDayMinimumMinutes) &&
-						durationMinutes < parseInt(shift.fullDayMinimumMinutes)
+					}
+					if (manualOutObj != undefined) {
+						// console.log('existsssss in else manual out');
+						const timeDifferenceInMilliseconds = manualOutObj - shiftEndTime;
+						const timeDifferenceInMinutes = timeDifferenceInMilliseconds / (1000 * 60);
+						if (timeDifferenceInMinutes > parseInt(shift.otBeginAfter)) {
+							overtime += timeDifferenceInMinutes;
+						}
+					}
+					// setFieldValue(`attendance.${day}.otMin`, overtime);
+				} else if (shift.beginningTime > shift.endTime) {
+					const shiftBeginningTime = getTimeInDateObj(shift.beginningTime, day);
+					const shiftEndTime = getTimeInDateObj(shift.endTime, parseInt(day) + 1);
+					// If manualIn < shift begin time (without date object) and manualIn > shift end time (without object):
+
+					if (
+						manualIn != '' &&
+						manualIn < shift.beginningTime.slice(0, 5) &&
+						manualIn > shift.endTime.slice(0, 5)
 					) {
-						if (lateMinValue <= shift.maxLateAllowedMin) {
-							setFieldValue(`attendance.${day}.firstHalf`, present.id);
-							setFieldValue(`attendance.${day}.secondHalf`, absent.id);
-						} else if (lateMinValue > parseInt(shift.maxLateAllowedMin)) {
-							// console.log('yes in correct one');
-							setFieldValue(`attendance.${day}.firstHalf`, absent.id);
-							setFieldValue(`attendance.${day}.secondHalf`, present.id);
+						manualInObj = getTimeInDateObj(manualIn, day);
+					}
+
+					// If manualOut > shift end time (without the date object one) and and manualOut < shift begin time (without the date object one):
+					if (
+						manualOut != '' &&
+						manualOut > shift.endTime.slice(0, 5) &&
+						manualOut < shift.beginningTime.slice(0, 5)
+					) {
+						manualOutObj = getTimeInDateObj(manualOut, parseInt(day) + 1);
+					}
+					if (manualInObj !== undefined) {
+						// console.log('existsssss in else');
+						const timeDifferenceInMilliseconds = shiftBeginningTime - manualInObj;
+						const timeDifferenceInMinutes = timeDifferenceInMilliseconds / (1000 * 60);
+						if (timeDifferenceInMinutes > parseInt(shift.otBeginAfter)) {
+							overtime += timeDifferenceInMinutes;
 						}
-					} else if (durationMinutes < parseInt(shift.halfDayMinimumMinutes)) {
-						setFieldValue(`attendance.${day}.firstHalf`, absent.id);
-						setFieldValue(`attendance.${day}.secondHalf`, absent.id);
+					}
+					if (manualOutObj !== undefined) {
+						// console.log('existsssss in else manual out');
+						const timeDifferenceInMilliseconds = manualOutObj - shiftEndTime;
+						const timeDifferenceInMinutes = timeDifferenceInMilliseconds / (1000 * 60);
+						if (timeDifferenceInMinutes > parseInt(shift.otBeginAfter)) {
+							overtime += timeDifferenceInMinutes;
+						}
 					}
 				}
-			}
-		};
+				return overtime;
+			},
+			[values.attendance]
+		);
 
-		const calculateFirstHalfSecondHalf = (day, type) => {
+		const calculateLateHrs = useCallback(
+			(day) => {
+				let manualIn = values.attendance[day]?.manualIn;
+				const shift = getShift(values.year, values.month, day);
+				let manualInObj;
+				let lateHrs = 0;
+
+				if (shift.beginningTime < shift.endTime) {
+					const shiftBeginningTime = getTimeInDateObj(shift.beginningTime, day);
+					const shiftBeginningTimeWithGrace = new Date(
+						shiftBeginningTime.getTime() + parseInt(shift.lateGrace) * 60 * 1000
+					);
+					const shiftEndTime = getTimeInDateObj(shift.endTime, day);
+					// console.log(shiftBeginningTime);
+					manualInObj = getTimeInDateObj(manualIn, day);
+					if (manualInObj > shiftBeginningTimeWithGrace) {
+						const timeDifferenceInMilliseconds = manualInObj - shiftBeginningTime;
+						const timeDifferenceInMinutes = timeDifferenceInMilliseconds / (1000 * 60);
+						lateHrs += timeDifferenceInMinutes;
+					}
+				}
+
+				if (shift.beginningTime > shift.endTime) {
+					// console.log('yessssssssssssssssssssss');
+					const shiftBeginningTime = getTimeInDateObj(shift.beginningTime, day);
+					const shiftBeginningTimeWithGrace = new Date(
+						shiftBeginningTime.getTime() + parseInt(shift.lateGrace) * 60 * 1000
+					);
+					const shiftEndTime = getTimeInDateObj(shift.endTime, parseInt(day) + 1);
+					if (manualIn > shift.beginningTime.slice(0, 5)) {
+						manualInObj = getTimeInDateObj(manualIn, day);
+						if (manualInObj > shiftBeginningTimeWithGrace) {
+							const timeDifferenceInMilliseconds = manualInObj - shiftBeginningTime;
+							const timeDifferenceInMinutes = timeDifferenceInMilliseconds / (1000 * 60);
+							lateHrs += timeDifferenceInMinutes;
+						}
+					} else if (manualIn < shift.endTime.slice(0, 5)) {
+						manualInObj = getTimeInDateObj(manualIn, parseInt(day) + 1);
+						if (manualInObj > shiftBeginningTimeWithGrace) {
+							const timeDifferenceInMilliseconds = manualInObj - shiftBeginningTime;
+							const timeDifferenceInMinutes = timeDifferenceInMilliseconds / (1000 * 60);
+							lateHrs += timeDifferenceInMinutes;
+						}
+					}
+				}
+
+				return lateHrs;
+			},
+			[[values.attendance]]
+		);
+
+		const calculateAttendance = useCallback(
+			(day, lateMinValue) => {
+				const manualMode = values.attendance[day]?.manualMode;
+				if (!manualMode) {
+					const manualIn = values.attendance[day]?.manualIn;
+					const manualOut = values.attendance[day]?.manualOut;
+					const shift = getShift(values.year, values.month, day);
+					const shiftBeginningTime = getTimeInDateObj(shift.beginningTime, day);
+					const shiftEndTime = getTimeInDateObj(shift.endTime, day);
+					const manualInObj =
+						manualIn < shift.endTime.slice(0, 5)
+							? getTimeInDateObj(manualIn, day)
+							: getTimeInDateObj(
+									manualIn,
+									shift.beginningTime < shift.endTime ? parseInt(day) - 1 : parseInt(day) + 1
+							  );
+					const manualOutObj =
+						manualOut > shift.beginningTime.slice(0, 5)
+							? getTimeInDateObj(manualOut, day)
+							: getTimeInDateObj(
+									manualOut,
+									shift.beginningTime < shift.endTime ? parseInt(day) + 1 : day
+							  );
+
+					if (manualInObj && manualOutObj) {
+						const effectiveStartTime = Math.max(manualInObj, shiftBeginningTime);
+						const effectiveEndTime = Math.min(manualOutObj, shiftEndTime);
+						const durationMilliseconds = Math.max(effectiveEndTime - effectiveStartTime, 0);
+						const durationMinutes = Math.floor(durationMilliseconds / (1000 * 60));
+						if (durationMinutes >= parseInt(shift.fullDayMinimumMinutes)) {
+							if (lateMinValue <= shift.maxLateAllowedMin) {
+								setFieldValue(`attendance.${day}.firstHalf`, present.id);
+								setFieldValue(`attendance.${day}.secondHalf`, present.id);
+							} else if (lateMinValue > shift.maxLateAllowedMin) {
+								setFieldValue(`attendance.${day}.firstHalf`, absent.id);
+								setFieldValue(`attendance.${day}.secondHalf`, present.id);
+							}
+						} else if (
+							durationMinutes >= parseInt(shift.halfDayMinimumMinutes) &&
+							durationMinutes < parseInt(shift.fullDayMinimumMinutes)
+						) {
+							if (lateMinValue <= shift.maxLateAllowedMin) {
+								setFieldValue(`attendance.${day}.firstHalf`, present.id);
+								setFieldValue(`attendance.${day}.secondHalf`, absent.id);
+							} else if (lateMinValue > parseInt(shift.maxLateAllowedMin)) {
+								setFieldValue(`attendance.${day}.firstHalf`, absent.id);
+								setFieldValue(`attendance.${day}.secondHalf`, present.id);
+							}
+						} else if (durationMinutes < parseInt(shift.halfDayMinimumMinutes)) {
+							setFieldValue(`attendance.${day}.firstHalf`, absent.id);
+							setFieldValue(`attendance.${day}.secondHalf`, absent.id);
+						}
+					}
+				}
+			},
+			[[values.attendance]]
+		);
+
+		// const calculateExtraOffDate = () => {
+		// 	const choice = currentEmployeeProfessionalDetail.extraOff;
+		// 	console.log(choice);
+		// 	// Define the weekdays and their corresponding day numbers (0 = Sunday, 1 = Monday, etc.)
+		// 	const weekdays = {
+		// 		sun: 0,
+		// 		mon: 1,
+		// 		tue: 2,
+		// 		wed: 3,
+		// 		thu: 4,
+		// 		fri: 5,
+		// 		sat: 6,
+		// 	};
+
+		// 	// Parse the choice to get the weekday and occurrence (e.g., 'sun2' => weekday: 'sun', occurrence: 2)
+		// 	const weekday = choice.slice(0, 3); // Extract the first 3 characters for the weekday
+		// 	const occurrence = parseInt(choice.slice(3));
+
+		// 	// Calculate the first occurrence of the selected weekday in the given month and year
+		// 	const firstDayOfMonth = new Date(values.year, parseInt(values.month) - 1, 1);
+		// 	const firstWeekdayOfMonth = firstDayOfMonth.getDay();
+		// 	const daysUntilFirstOccurrence = (weekdays[weekday] + 7 - firstWeekdayOfMonth) % 7;
+		// 	const firstOccurrenceDate = new Date(values.year, parseInt(values.month) - 1, 1 + daysUntilFirstOccurrence);
+
+		// 	// Calculate the date of the selected occurrence of the weekday
+		// 	const selectedOccurrenceDate = new Date(
+		// 		values.year,
+		// 		parseInt(values.month) - 1,
+		// 		firstOccurrenceDate.getDate() + (occurrence - 1) * 7
+		// 	);
+		// 	// console.log(selectedOccurrenceDate);
+		// 	return selectedOccurrenceDate;
+		// };
+		const memoizedExtraOffDate = useMemo(() => {
+			if (currentEmployeeProfessionalDetail) {
+				const choice = currentEmployeeProfessionalDetail.extraOff;
+				if (choice != 'no_off' && currentEmployeeProfessionalDetail) {
+					const weekdays = {
+						sun: 0,
+						mon: 1,
+						tue: 2,
+						wed: 3,
+						thu: 4,
+						fri: 5,
+						sat: 6,
+					};
+
+					const weekday = choice.slice(0, 3);
+					const occurrence = parseInt(choice.slice(3));
+					const firstDayOfMonth = new Date(values.year, parseInt(values.month) - 1, 1);
+					const firstWeekdayOfMonth = firstDayOfMonth.getDay();
+					const daysUntilFirstOccurrence = (weekdays[weekday] + 7 - firstWeekdayOfMonth) % 7;
+					const firstOccurrenceDate = new Date(
+						values.year,
+						parseInt(values.month) - 1,
+						1 + daysUntilFirstOccurrence
+					);
+					const selectedOccurrenceDate = new Date(
+						values.year,
+						parseInt(values.month) - 1,
+						firstOccurrenceDate.getDate() + (occurrence - 1) * 7
+					);
+
+					return selectedOccurrenceDate;
+				} else {
+					return null;
+				}
+			} else {
+				return null;
+			}
+		}, [values.month, values.year, currentEmployeeProfessionalDetail]);
+
+		const calculateFirstHalfSecondHalfForWeeklyAndHolidayOff = (day, type) => {
 			let presentCount = 0;
 			for (let i = 1; i <= 6; i++) {
 				const previousDate = new Date(Date.UTC(values.year, values.month - 1, parseInt(day) - i));
-
+				// Ask if the first Weekly off and holiday of the employee after joining do we have to put WO/HD or WO*/HD* if it has been less than 6 days
+				if (previousDate < new Date(currentEmployeeProfessionalDetail.dateOfJoining)) {
+					continue;
+				}
 				if (previousDate.getMonth() === values.month - 1) {
 					const previousDay = previousDate.getDate();
 					const attendance = values.attendance[previousDay];
@@ -476,7 +664,8 @@ const EditAttendance = memo(
 
 				if (
 					(type === 'weeklyOff' && presentCount >= parseInt(weeklyOffHolidayOff.minDaysForWeeklyOff)) ||
-					(type === 'holidayOff' && presentCount >= parseInt(weeklyOffHolidayOff.minDaysForHolidayOff))
+					(type === 'holidayOff' && presentCount >= parseInt(weeklyOffHolidayOff.minDaysForHolidayOff)) ||
+					(type === 'extraOff' && presentCount >= parseInt(weeklyOffHolidayOff.minDaysForWeeklyOff))
 				) {
 					return true;
 				}
@@ -489,19 +678,36 @@ const EditAttendance = memo(
 			let timeoutId;
 
 			const performCalculations = () => {
-				if (employeeProfessionalDetail && employeeSalaryDetail) {
+				if (currentEmployeeProfessionalDetail && currentEmployeeSalaryDetail) {
+					// let extraOff = null;
+					// if (currentEmployeeProfessionalDetail.extraOff != 'no_off') {
+					// 	extraOff = calculateExtraOffDate().getDate();
+					// 	console.log(extraOff);
+					// }
 					for (const day in values.attendance) {
 						let weeklyOffDay = false;
 						let holidayDay = false;
+
 						// if (!values.attendance[day].manualMode) {
 						const attendanceDay = new Date(Date.UTC(values.year, values.month - 1, day));
 
-						const weeklyOffIndex = weeklyOffValues.indexOf(employeeProfessionalDetail.weeklyOff);
+						const weeklyOffIndex = weeklyOffValues.indexOf(currentEmployeeProfessionalDetail.weeklyOff);
 						const attendanceWeekday = attendanceDay.getDay();
 						if (!values.attendance[day].manualMode) {
 							if (attendanceWeekday === weeklyOffIndex) {
 								weeklyOffDay = true;
-								if (calculateFirstHalfSecondHalf(day, 'weeklyOff')) {
+								if (calculateFirstHalfSecondHalfForWeeklyAndHolidayOff(day, 'weeklyOff')) {
+									setFieldValue(`attendance.${day}.firstHalf`, weeklyOff.id);
+									setFieldValue(`attendance.${day}.secondHalf`, weeklyOff.id);
+								} else {
+									setFieldValue(`attendance.${day}.firstHalf`, weeklyOffSkip.id);
+									setFieldValue(`attendance.${day}.secondHalf`, weeklyOffSkip.id);
+								}
+							}
+							if (memoizedExtraOffDate && parseInt(day) == memoizedExtraOffDate.getDate()) {
+								console.log('yesh offfff');
+								weeklyOffDay = true;
+								if (calculateFirstHalfSecondHalfForWeeklyAndHolidayOff(day, 'extraOff')) {
 									setFieldValue(`attendance.${day}.firstHalf`, weeklyOff.id);
 									setFieldValue(`attendance.${day}.secondHalf`, weeklyOff.id);
 								} else {
@@ -515,7 +721,7 @@ const EditAttendance = memo(
 
 								if (holidayDate.getTime() === attendanceDay.getTime()) {
 									holidayDay = true;
-									if (calculateFirstHalfSecondHalf(day, 'holidayOff')) {
+									if (calculateFirstHalfSecondHalfForWeeklyAndHolidayOff(day, 'holidayOff')) {
 										setFieldValue(`attendance.${day}.firstHalf`, holidayOff.id);
 										setFieldValue(`attendance.${day}.secondHalf`, holidayOff.id);
 									} else {
@@ -533,11 +739,11 @@ const EditAttendance = memo(
 
 						if (hasManualIn && hasManualOut) {
 							// Conditions for calculating Over Time
-							if (employeeSalaryDetail.overtimeType != 'no_overtime') {
+							if (currentEmployeeSalaryDetail.overtimeType != 'no_overtime') {
 								let overtime;
-								if (employeeSalaryDetail.overtimeType == 'all_days') {
+								if (currentEmployeeSalaryDetail.overtimeType == 'all_days') {
 									if (
-										attendanceWeekday === weeklyOffIndex ||
+										weeklyOffDay ||
 										(values.attendance[day].manualMode &&
 											(values.attendance[day].firstHalf == weeklyOff.id ||
 												values.attendance[day].firstHalf == weeklyOffSkip.id ||
@@ -559,7 +765,6 @@ const EditAttendance = memo(
 											(values.attendance[day].secondHalf == present.id ||
 												values.attendance[day].secondHalf == onDuty.id))
 									) {
-										// console.log('employee salary detail', employeeSalaryDetail);
 										overtime = calculateOvertime(day);
 									}
 									setFieldValue(
@@ -568,9 +773,9 @@ const EditAttendance = memo(
 											? Math.floor(overtime / 30) * 30 + (overtime % 30 > 15 ? 30 : 0)
 											: ''
 									);
-								} else if (employeeSalaryDetail.overtimeType == 'holiday_weekly_off') {
+								} else if (currentEmployeeSalaryDetail.overtimeType == 'holiday_weekly_off') {
 									if (
-										attendanceWeekday === weeklyOffIndex ||
+										weeklyOffDay ||
 										(values.attendance[day].manualMode &&
 											(values.attendance[day].firstHalf == weeklyOff.id ||
 												values.attendance[day].firstHalf == weeklyOffSkip.id ||
@@ -585,7 +790,6 @@ const EditAttendance = memo(
 										holidayDay
 									) {
 										overtime = calculateWeeklyHolidayOvertime(day);
-										// console.log(overtime);
 										setFieldValue(
 											`attendance.${day}.otMin`,
 											overtime > 0
@@ -610,7 +814,6 @@ const EditAttendance = memo(
 
 							// Conditions for calculating attendance automatically
 							if (!weeklyOffDay && !holidayDay && !values.attendance[day].manualMode) {
-								// console.log(day, ' yes here');
 								calculateAttendance(day, lateHrs);
 							}
 
@@ -639,7 +842,7 @@ const EditAttendance = memo(
 				}
 			};
 
-			if (employeeShifts && !isSubmitting) {
+			if (categorizedAllEmployeeShifts && !isSubmitting) {
 				clearTimeout(timeoutId);
 				timeoutId = setTimeout(() => {
 					performCalculations();
@@ -649,14 +852,14 @@ const EditAttendance = memo(
 			return () => {
 				clearTimeout(timeoutId);
 			};
-		}, [values.attendance, employeeProfessionalDetail, employeeSalaryDetail]);
+		}, [values.attendance, currentEmployeeProfessionalDetail, currentEmployeeSalaryDetail]);
 
 		// Runs when fetch value of employeeAttendance changes
 		useEffect(() => {
-			if (!isSubmitting && employeeAttendance && employeeProfessionalDetail && isEmployeeAttendanceSuccess) {
+			if (!isSubmitting && employeeAttendance && currentEmployeeProfessionalDetail && updateEmployeeId) {
 				const daysInMonth = new Date(values.year, values.month, 0).getDate();
 				const new_attendance = {};
-				const weeklyOffIndex = weeklyOffValues.indexOf(employeeProfessionalDetail.weeklyOff);
+				const weeklyOffIndex = weeklyOffValues.indexOf(currentEmployeeProfessionalDetail.weeklyOff);
 
 				for (let day = 1; day <= daysInMonth; day++) {
 					const attendanceDate = new Date(Date.UTC(values.year, values.month - 1, day));
@@ -664,7 +867,9 @@ const EditAttendance = memo(
 					const matchingEmployeeAttendance = employeeAttendance.find(
 						(entry) => new Date(entry.date).getTime() === attendanceDate.getTime()
 					);
-
+					if (attendanceDate < new Date(currentEmployeeProfessionalDetail.dateOfJoining)) {
+						continue;
+					}
 					new_attendance[day] = {
 						machineIn: '',
 						machineOut: '',
@@ -719,7 +924,7 @@ const EditAttendance = memo(
 
 				setFieldValue('attendance', new_attendance);
 			}
-		}, [employeeAttendance, employeeProfessionalDetail, employeeSalaryDetail]);
+		}, [employeeAttendance, currentEmployeeProfessionalDetail, currentEmployeeSalaryDetail]);
 
 		const getTimePart = (date) => {
 			const hours = String(date.getHours()).padStart(2, '0');
@@ -728,7 +933,7 @@ const EditAttendance = memo(
 			return `${hours}:${minutes}`;
 		};
 
-		const AutoFillAttendance = () => {
+		const AutoFillAttendance = useCallback(() => {
 			const manualFromDate = values.manualFromDate;
 			const manualToDate = values.manualToDate;
 
@@ -745,12 +950,11 @@ const EditAttendance = memo(
 						break;
 					}
 				}
-				// console.log(skipThisDay, day);
 				if (skipThisDay) {
 					continue;
 				}
-				if (employeeProfessionalDetail) {
-					const weeklyOffIndex = weeklyOffValues.indexOf(employeeProfessionalDetail?.weeklyOff);
+				if (currentEmployeeProfessionalDetail) {
+					const weeklyOffIndex = weeklyOffValues.indexOf(currentEmployeeProfessionalDetail?.weeklyOff);
 					const autoFillDate = new Date(Date.UTC(values.year, values.month - 1, day)).getDay();
 					if (autoFillDate == weeklyOffIndex) {
 						continue;
@@ -783,35 +987,63 @@ const EditAttendance = memo(
 				setFieldValue(`attendance.${day}.manualIn`, getTimePart(randomBeginningDate));
 				setFieldValue(`attendance.${day}.manualOut`, getTimePart(randomEndingDate));
 			}
-		};
+		}, [values.manualToDate, values.manualFromDate, currentEmployeeProfessionalDetail]);
 
-		if (isLoadingEmployeeShifts || isLoadingEmployeeSalaryDetail || isLoadingEmployeeProfessionalDetail) {
+		const clearAttendance = useCallback(() => {
+			const manualFromDate = values.manualFromDate;
+			const manualToDate = values.manualToDate;
+
+			const daysInMonth = new Date(values.year, values.month, 0).getDate();
+			const effectiveToDate = manualToDate < daysInMonth ? manualToDate : daysInMonth;
+
+			for (let day = manualFromDate; day <= effectiveToDate; day++) {
+				let skipThisDay = false;
+				setFieldValue(`attendance.${day}.manualIn`, '');
+				setFieldValue(`attendance.${day}.manualOut`, '');
+			}
+		}, [values.manualToDate, values.manualFromDate]);
+
+		if (isLoadingAllEmployeeSalaryDetail || isLoadingAllEmployeeProfessionalDetail) {
 			return <></>;
 		} else {
 			return (
 				<>
-					<div className="text-gray-900 dark:text-slate-100">
+					<div className="w-full text-gray-900 dark:text-slate-100">
 						<form action="" className="flex flex-row gap-2" onSubmit={handleSubmit}>
 							<section className="w-fit">
 								<AttendanceHeader />
-								{sortedKeys.map((day) => {
-									const shiftForCurrentDate = getShift(values.year, values.month, day);
-									return (
-										<AttendanceMonthDays
-											day={day}
-											key={day}
-											year={values.year}
-											month={values.month}
-											shift={shiftForCurrentDate.name}
-											leaveGrades={leaveGrades}
-											otMin={values.attendance[day].otMin}
-											lateMin={values.attendance[day].lateMin}
-											holidays={holidays}
-										/>
-									);
-								})}
+								{updateEmployeeId &&
+									categorizedAllEmployeeShifts &&
+									currentEmployeeSalaryDetail &&
+									sortedKeys.map((day) => {
+										const shiftForCurrentDate = getShift(values.year, values.month, day);
+										return (
+											<AttendanceMonthDays
+												day={day}
+												key={day}
+												year={values.year}
+												month={values.month}
+												shift={shiftForCurrentDate?.name}
+												leaveGrades={leaveGrades}
+												otMin={values.attendance[day].otMin}
+												lateMin={values.attendance[day].lateMin}
+												holidays={holidays}
+												memoizedExtraOffDate={memoizedExtraOffDate}
+											/>
+										);
+									})}
+								{sortedKeys.length == 0 && updateEmployeeId && (
+									<div className="mx-auto mt-6 w-fit font-bold dark:text-red-600">
+										Current Employee hadn't Joined till this date
+									</div>
+								)}
+								{!updateEmployeeId && (
+									<div className="mx-auto mt-6 w-fit font-bold dark:text-blueAccent-600">
+										Please Select an Employee First
+									</div>
+								)}
 							</section>
-							<section className="flex w-full flex-col gap-4">
+							<section className="flex w-full flex-col gap-4 p-6">
 								<div>
 									<label
 										htmlFor="year"
@@ -819,16 +1051,29 @@ const EditAttendance = memo(
 									>
 										Month and Year :
 									</label>
-									<Field
-										as="select"
+
+									<select
 										name="month"
+										id="month"
+										value={values.month}
+										onChange={(e) => {
+											handleChange(e);
+											setSelectedDate((prevValue) => ({ ...prevValue, month: e.target.value }));
+											console.log(`Name changed to: ${e.target.value}`);
+										}}
 										className="my-1 mr-2 rounded-md bg-zinc-50 bg-opacity-50 p-1 dark:bg-zinc-700"
 									>
 										{months.map((month, index) => {
-											const dateOfJoiningObj = new Date(dateOfJoining);
+											const earliestEmployeeJoiningObj = new Date(
+												Date.UTC(
+													calculateEarliestMonthYear.earliestYear,
+													calculateEarliestMonthYear.earliestMonth - 1,
+													1
+												)
+											);
 											if (
-												values.year == dateOfJoiningObj.getFullYear() &&
-												index < dateOfJoiningObj.getMonth()
+												values.year == earliestEmployeeJoiningObj.getFullYear() &&
+												index < earliestEmployeeJoiningObj.getMonth()
 											) {
 												return null; // Skip rendering months before dateOfJoiningMonth
 											}
@@ -838,14 +1083,20 @@ const EditAttendance = memo(
 												</option>
 											);
 										})}
-									</Field>
-									<Field
-										as="select"
+									</select>
+									<select
 										name="year"
+										id="month"
+										onChange={(e) => {
+											handleChange(e);
+											setSelectedDate((prevValue) => ({ ...prevValue, year: e.target.value }));
+											console.log(`Name changed to: ${e.target.value}`);
+										}}
+										value={values.year}
 										className="my-1 rounded-md bg-zinc-50 bg-opacity-50 p-1 dark:bg-zinc-700"
 									>
 										{options}
-									</Field>
+									</select>
 								</div>
 								<div className="flex flex-row justify-between">
 									<section className="w-fit">
@@ -913,7 +1164,7 @@ const EditAttendance = memo(
 										/>
 									</section>
 								</div>
-								<div className="flex w-full flex-col">
+								<div className="flex w-full flex-row gap-4">
 									<button
 										type="button"
 										className="h-8 w-20 rounded bg-blueAccent-400 p-1 text-base font-medium hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:hover:bg-blueAccent-600"
@@ -921,7 +1172,35 @@ const EditAttendance = memo(
 									>
 										Auto
 									</button>
+									<button
+										type="button"
+										className="h-8 w-20 rounded bg-slate-600 bg-opacity-30 p-1 text-base font-medium hover:bg-opacity-60 dark:bg-slate-400 dark:bg-opacity-30 dark:hover:bg-opacity-60"
+										onClick={clearAttendance}
+									>
+										Clear
+									</button>
 								</div>
+
+								{table && (
+									<div className=" max-w-full">
+										<TableFilterInput
+											setGlobalFilter={setGlobalFilter}
+											globalFilter={globalFilter}
+											isTableFilterInputFocused={isTableFilterInputFocused}
+											setIsTableFilterInputFocused={setIsTableFilterInputFocused}
+										/>
+										<EmployeeTable
+											table={table}
+											tbodyRef={tbodyRef}
+											handleKeyDown={handleKeyDown}
+											focusedRowRef={focusedRowRef}
+											isTableFilterInputFocused={isTableFilterInputFocused}
+											onRowClick={onRowClick}
+											// memoizedSelectedDate={memoizedSelectedDate}
+										/>
+									</div>
+								)}
+
 								<div className="mt-4 mb-2 flex w-fit flex-row gap-4">
 									<button
 										className={classNames(

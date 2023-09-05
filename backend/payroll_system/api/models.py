@@ -494,6 +494,8 @@ class EmployeeProfessionalDetail(models.Model):
     # shift = models.ForeignKey(Shift, on_delete=models.CASCADE, related_name="employee_professional_detail", null=True, blank=True)
     weekly_off = models.CharField(max_length=6, choices=WEEKDAY_CHOICES, null=False, blank=False, default='sun')    
     extra_off = models.CharField(max_length=10, choices=EXTRA_OFF_CHOICES, default='no_off', null=False, blank=False)
+    resigned = models.BooleanField(default=False, null=False, blank=False)
+    resignation_date = models.DateField(null=True, blank=True, default=None)
 
 
     def save(self, *args, **kwargs):
@@ -505,6 +507,10 @@ class EmployeeProfessionalDetail(models.Model):
             raise ValidationError("Invalid category selected.")
         elif self.salary_grade and (self.salary_grade.company != self.company or self.salary_grade.user != self.user):
             raise ValidationError("Invalid salary grade selected.")
+        elif not self.resigned and self.resignation_date is not None:
+            raise ValidationError("Non-resigned employees must not have a resignation date.")
+        elif self.resigned and self.resignation_date is None:
+            raise ValidationError("Resigned employees must have a resignation date.")
         # elif self.shift and (self.shift.company != self.company or self.shift.user != self.user):
         #     raise ValidationError("Invalid shift selected.")
         super().save(*args, **kwargs)

@@ -99,6 +99,7 @@ export const apiSlice = createApi({
 		'Calculations',
 		'EmployeeShifts',
 		'EmployeeAttendance',
+		'AllEmployeeProfessionalDetail',
 	],
 	endpoints: (builder) => ({}),
 });

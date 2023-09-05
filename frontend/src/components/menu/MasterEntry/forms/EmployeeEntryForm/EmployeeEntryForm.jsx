@@ -6,13 +6,7 @@ import {
 	useReactTable,
 	getSortedRowModel,
 } from '@tanstack/react-table';
-import {
-	FaRegTrashAlt,
-	FaPen,
-	FaAngleUp,
-	FaAngleDown,
-	FaEye,
-} from 'react-icons/fa';
+import { FaRegTrashAlt, FaPen, FaAngleUp, FaAngleDown, FaEye } from 'react-icons/fa';
 import { useSelector } from 'react-redux';
 import {
 	useGetEmployeePersonalDetailsQuery,
@@ -35,6 +29,7 @@ import {
 	useDeleteEmployeeFamilyNomineeDetailMutation,
 } from '../../../../authentication/api/employeeEntryApiSlice';
 import { useGetEarningsHeadsQuery } from '../../../../authentication/api/earningsHeadEntryApiSlice';
+import { useLazyGetEmployeeShiftsQuery } from '../../../../authentication/api/employeeShiftsApiSlice';
 import { useOutletContext } from 'react-router-dom';
 import ReactModal from 'react-modal';
 import { Formik } from 'formik';
@@ -69,9 +64,13 @@ function getObjectDifferences(obj1, obj2) {
 	}
 
 	for (const key in obj1) {
+		console.log('inside the for loop ');
 		if (obj1.hasOwnProperty(key) && obj2.hasOwnProperty(key)) {
+			console.log('inside the if');
 			let value1 = obj1[key];
 			let value2 = obj2[key];
+			console.log(value1);
+			console.log(value2);
 
 			if (value1 === null) {
 				obj1[key] = '';
@@ -139,26 +138,25 @@ const EmployeeEntryForm = () => {
 
 	const [
 		getEmployeeFamilyNomineeDetail,
-		{
-			data: employeeFamilyNomineeDetail,
-			isLoading: isLoadingEmployeeFamilyNomineeDetail,
-		},
+		{ data: employeeFamilyNomineeDetail, isLoading: isLoadingEmployeeFamilyNomineeDetail },
 		// lastPromiseInfo,
 	] = useLazyGetEmployeeFamilyNomineeDetailsQuery();
 
 	const [
 		getSingleEmployeeSalaryDetail,
 		{
-			data: {
-				user: SalaryDetailUser,
-				company: SalaryDetailCompany,
-				...singleEmployeeSalaryDetail
-			} = {},
+			data: { user: SalaryDetailUser, company: SalaryDetailCompany, ...singleEmployeeSalaryDetail } = {},
 			isLoading: isLoadingSingleEmployeeSalaryDetail,
 			isSuccess: isSingleEmployeeSalaryDetailSuccess,
 		} = {},
 		// lastPromiseInfo,
 	] = useLazyGetSingleEmployeeSalaryDetailQuery();
+
+	const [
+		getEmployeeShifts,
+		{ data: employeeShifts, isLoading: isLoadingemployeeShifts, isSuccess: isemployeeShiftsSuccess } = {},
+		// lastPromiseInfo,
+	] = useLazyGetEmployeeShiftsQuery();
 
 	const [
 		getSingleEmployeeProfessionalDetail,
@@ -177,11 +175,7 @@ const EmployeeEntryForm = () => {
 	const [
 		getSingleEmployeePfEsiDetail,
 		{
-			data: {
-				user: PfEsiDetailDetailUser,
-				company: PfEsiDetailDetailCompany,
-				...singleEmployeePfEsiDetail
-			} = {},
+			data: { user: PfEsiDetailDetailUser, company: PfEsiDetailDetailCompany, ...singleEmployeePfEsiDetail } = {},
 			isSuccess: getSingleEmployeePfEsiDetailIsSuccess,
 			isLoading: isLoadingSingleEmployeePfEsiDetail,
 		} = {},
@@ -197,78 +191,51 @@ const EmployeeEntryForm = () => {
 		isFetching,
 		refetch,
 	} = useGetEmployeePersonalDetailsQuery(globalCompany);
+	// console.log(fetchedData);
 
-	const [
-		addEmployeePersonalDetail,
-		{ isLoading: isAddingEmployeePersonalDetail },
-	] = useAddEmployeePersonalDetailMutation();
+	const [addEmployeePersonalDetail, { isLoading: isAddingEmployeePersonalDetail }] =
+		useAddEmployeePersonalDetailMutation();
 
-	const [addEmployeePfEsiDetail, { isLoading: isAddingEmployeePfEsiDetail }] =
-		useAddEmployeePfEsiDetailMutation();
-	const [
-		addEmployeeProfessionalDetail,
-		{ isLoading: isAddingEmployeeProfessionalDetail },
-	] = useAddEmployeeProfessionalDetailMutation();
-	const [
-		addEmployeeSalaryDetail,
-		{ isLoading: isAddingEmployeeSalaryDetail },
-	] = useAddEmployeeSalaryDetailMutation();
+	const [addEmployeePfEsiDetail, { isLoading: isAddingEmployeePfEsiDetail }] = useAddEmployeePfEsiDetailMutation();
+	const [addEmployeeProfessionalDetail, { isLoading: isAddingEmployeeProfessionalDetail }] =
+		useAddEmployeeProfessionalDetailMutation();
+	const [addEmployeeSalaryDetail, { isLoading: isAddingEmployeeSalaryDetail }] = useAddEmployeeSalaryDetailMutation();
 
-	const [addEmployeeShifts, { isLoading: isAddingEmoloyeeShifts }] =
-		useAddEmployeeShiftsMutation();
+	const [addEmployeeShifts, { isLoading: isAddingEmoloyeeShifts }] = useAddEmployeeShiftsMutation();
 
-	const [
-		addEmployeeFamilyNomineeDetail,
-		{ isLoading: isAddingEmployeeFamilyNomineeDetail },
-	] = useAddEmployeeFamilyNomineeDetailMutation();
+	const [addEmployeeFamilyNomineeDetail, { isLoading: isAddingEmployeeFamilyNomineeDetail }] =
+		useAddEmployeeFamilyNomineeDetailMutation();
 
 	const [
 		updateEmployeePersonalDetail,
-		{
-			isLoading: isUpdatingEmployeePersonalDetail,
-			isSuccess: isUpdateEmployeePersonalDetailSuccess,
-		},
+		{ isLoading: isUpdatingEmployeePersonalDetail, isSuccess: isUpdateEmployeePersonalDetailSuccess },
 	] = useUpdateEmployeePersonalDetailMutation();
 
 	const [
 		updateEmployeeFamilyNomineeDetail,
-		{
-			isLoading: isUpdatingEmployeeFamilyNomineeDetail,
-			isSuccess: isUpdateEmployeeFamilyNomineeDetaiSuccess,
-		},
+		{ isLoading: isUpdatingEmployeeFamilyNomineeDetail, isSuccess: isUpdateEmployeeFamilyNomineeDetaiSuccess },
 	] = useUpdateEmployeeFamilyNomineeDetailMutation();
 
 	const [
 		updateEmployeeSalaryDetail,
-		{
-			isLoading: isUpdatingEmployeeSalaryDetail,
-			isSuccess: isUpdateEmployeeSalaryDetailSuccess,
-		},
+		{ isLoading: isUpdatingEmployeeSalaryDetail, isSuccess: isUpdateEmployeeSalaryDetailSuccess },
 	] = useUpdateEmployeeSalaryDetailMutation();
 
-	const [
-		updateEmployeePfEsiDetail,
-		{ isLoading: isUpdatingEmployeePfEsiDetail },
-	] = useUpdateEmployeePfEsiDetailMutation();
+	const [updateEmployeePfEsiDetail, { isLoading: isUpdatingEmployeePfEsiDetail }] =
+		useUpdateEmployeePfEsiDetailMutation();
 
-	const [
-		updateEmployeeProfessionalDetail,
-		{ isLoading: isUpdatingEmployeeProfessionalDetail },
-	] = useUpdateEmployeeProfessionalDetailMutation();
+	const [updateEmployeeProfessionalDetail, { isLoading: isUpdatingEmployeeProfessionalDetail }] =
+		useUpdateEmployeeProfessionalDetailMutation();
 	const {
 		data: fetchedEarningsHeads,
 		isLoading: isLoadingEarningsHeads,
 		isSuccess: EarningsHeadsSuccess,
 	} = useGetEarningsHeadsQuery(globalCompany);
-	const [
-		addEmployeeSalaryEarning,
-		{ isLoading: isAddingEmployeeSalaryEarning },
-	] = useAddEmployeeSalaryEarningMutation();
+	const [addEmployeeSalaryEarning, { isLoading: isAddingEmployeeSalaryEarning }] =
+		useAddEmployeeSalaryEarningMutation();
 
-	const [
-		deleteEmployeeFamilyNomineeDetail,
-		{ isLoading: isDeletingEmployeeFamilyNomineeDetail },
-	] = useDeleteEmployeeFamilyNomineeDetailMutation();
+	const [deleteEmployeeFamilyNomineeDetail, { isLoading: isDeletingEmployeeFamilyNomineeDetail }] =
+		useDeleteEmployeeFamilyNomineeDetailMutation();
 
 	let earningHeadInitialValues = {};
 	if (EarningsHeadsSuccess) {
@@ -388,23 +355,40 @@ const EmployeeEntryForm = () => {
 					break;
 
 				case 'editEmployeeProfessionalDetail':
-					const professionalData =
-						await getSingleEmployeeProfessionalDetail(
-							{ id: id, company: globalCompany.id },
+					// const employeeShiftsData = await getEmployeeShifts(
+					// 	{
+					// 		company: globalCompany.id,
+					// 		employee: id,
+					// 		year: new Date().getFullYear(),
+					// 	},
+					// 	true
+					// );
+					// const professionalData = await getSingleEmployeeProfessionalDetail(
+					// 	{ id: id, company: globalCompany.id },
+					// 	true
+					// ).unwrap();
+					// console.log(professionalData);
+
+					await Promise.all([
+						getEmployeeShifts(
+							{
+								company: globalCompany.id,
+								employee: id,
+								year: new Date().getFullYear(),
+							},
 							true
-						).unwrap();
-					console.log(professionalData);
+						).unwrap(),
+						getSingleEmployeeProfessionalDetail({ id: id, company: globalCompany.id }, true).unwrap(),
+					]);
 					editEmployeePopoverStateUpdater(popoverName);
+
 					break;
 
 				case 'editEmployeeSalaryDetail':
 					const currentDate = new Date();
 					const currentYear = currentDate.getFullYear();
 					await Promise.all([
-						getSingleEmployeeProfessionalDetail(
-							{ id: id, company: globalCompany.id },
-							true
-						).unwrap(),
+						getSingleEmployeeProfessionalDetail({ id: id, company: globalCompany.id }, true).unwrap(),
 						getSingleEmployeeSalaryDetail(
 							{
 								id: id,
@@ -429,30 +413,29 @@ const EmployeeEntryForm = () => {
 					break;
 
 				case 'editEmployeeFamilyNomineeDetail':
-					const [personalDetail, pfEsiDetail, nomineeData] =
-						await Promise.all([
-							getSingleEmployeePersonalDetail(
-								{
-									id: id,
-									company: globalCompany.id,
-								},
-								true
-							).unwrap(),
-							getSingleEmployeePfEsiDetail(
-								{
-									id: id,
-									company: globalCompany.id,
-								},
-								true
-							).unwrap(),
-							getEmployeeFamilyNomineeDetail(
-								{
-									id: id,
-									company: globalCompany.id,
-								},
-								true
-							).unwrap(),
-						]);
+					const [personalDetail, pfEsiDetail, nomineeData] = await Promise.all([
+						getSingleEmployeePersonalDetail(
+							{
+								id: id,
+								company: globalCompany.id,
+							},
+							true
+						).unwrap(),
+						getSingleEmployeePfEsiDetail(
+							{
+								id: id,
+								company: globalCompany.id,
+							},
+							true
+						).unwrap(),
+						getEmployeeFamilyNomineeDetail(
+							{
+								id: id,
+								company: globalCompany.id,
+							},
+							true
+						).unwrap(),
+					]);
 
 					console.log('Personal Detail:', personalDetail);
 					console.log('PF ESI Detail:', pfEsiDetail);
@@ -497,38 +480,35 @@ const EmployeeEntryForm = () => {
 		setErrorMessage('');
 	}, []);
 
-	const addPersonalDetailButtonClicked = useCallback(
-		async (values, formikBag) => {
-			console.log(values);
-			const formData = new FormData();
-			for (const key in values) {
-				if (values.hasOwnProperty(key)) {
-					formData.append(key, values[key]);
-				}
+	const addPersonalDetailButtonClicked = useCallback(async (values, formikBag) => {
+		console.log(values);
+		const formData = new FormData();
+		for (const key in values) {
+			if (values.hasOwnProperty(key)) {
+				formData.append(key, values[key]);
 			}
-			formData.append('company', globalCompany.id);
+		}
+		formData.append('company', globalCompany.id);
 
-			try {
-				const data = await addEmployeePersonalDetail({
-					formData,
-				}).unwrap();
-				console.log(data);
-				setErrorMessage('');
-				setAddedEmployeeId(data.id);
-				formikBag.resetForm();
-				dispatchAlert('Success');
-				addEmployeePopoverHandler('addEmployeeProfessionalDetail');
-			} catch (err) {
-				console.log(err);
-				if (err.status === 400) {
-					console.log(err.data.error);
-					setErrorMessage(err.data.error);
-				}
-				dispatchAlert('Error');
+		try {
+			const data = await addEmployeePersonalDetail({
+				formData,
+			}).unwrap();
+			console.log(data);
+			setErrorMessage('');
+			setAddedEmployeeId(data.id);
+			formikBag.resetForm();
+			dispatchAlert('Success');
+			addEmployeePopoverHandler('addEmployeeProfessionalDetail');
+		} catch (err) {
+			console.log(err);
+			if (err.status === 400) {
+				console.log(err.data.error);
+				setErrorMessage(err.data.error);
 			}
-		},
-		[]
-	);
+			dispatchAlert('Error');
+		}
+	}, []);
 
 	const addProfessionalDetailButtonClicked = useCallback(
 		async (values, formikBag) => {
@@ -542,21 +522,18 @@ const EmployeeEntryForm = () => {
 				...values.employeeShift,
 			};
 			employeeShift.toDate = '9999-01-01';
-			employeeShift.fromDate =
-				values.employeeProfessionalDetail.dateOfJoining;
+			employeeShift.fromDate = values.employeeProfessionalDetail.dateOfJoining;
 			employeeShift.employee = employeeId;
 			employeeShift.company = globalCompany.id;
 
 			console.log(employeeShift);
 			try {
-				const addEmployeeShiftsPromise =
-					addEmployeeShifts(employeeShift).unwrap();
-				const addEmployeeProfessionalDetailPromise =
-					addEmployeeProfessionalDetail({
-						...values.employeeProfessionalDetail,
-						employee: employeeId,
-						company: globalCompany.id,
-					}).unwrap();
+				const addEmployeeShiftsPromise = addEmployeeShifts(employeeShift).unwrap();
+				const addEmployeeProfessionalDetailPromise = addEmployeeProfessionalDetail({
+					...values.employeeProfessionalDetail,
+					employee: employeeId,
+					company: globalCompany.id,
+				}).unwrap();
 
 				const [shiftsData, professionalDetailData] = await Promise.all([
 					addEmployeeShiftsPromise,
@@ -598,10 +575,7 @@ const EmployeeEntryForm = () => {
 		// console.log(formikBag);
 		console.log(values);
 		console.log(singleEmployeePersonalDetail);
-		const differences = getObjectDifferences(
-			singleEmployeePersonalDetail,
-			values
-		);
+		const differences = getObjectDifferences(singleEmployeePersonalDetail, values);
 		console.log(differences);
 		if (Object.keys(differences).length !== 0) {
 			console.log('in if fucking whatever');
@@ -656,13 +630,7 @@ const EmployeeEntryForm = () => {
 	console.log(singleEmployeeProfessionalDetail);
 
 	const updateProfessionalDetailButtonClicked = async (values, formikBag) => {
-		console.log(values);
-		console.log(singleEmployeeProfessionalDetail);
-		const differences = getObjectDifferences(
-			singleEmployeeProfessionalDetail,
-			values
-		);
-		console.log(differences);
+		const differences = getObjectDifferences(singleEmployeeProfessionalDetail, values.employeeProfessionalDetail);
 		if (Object.keys(differences).length !== 0) {
 			console.log('in if fucking whatever');
 
@@ -708,9 +676,7 @@ const EmployeeEntryForm = () => {
 		}
 
 		const monthofJoining = isSingleEmployeeProfessionalDetailSuccess
-			? parseInt(
-					singleEmployeeProfessionalDetail.dateOfJoining.split('-')[1]
-			  )
+			? parseInt(singleEmployeeProfessionalDetail.dateOfJoining.split('-')[1])
 			: '';
 		const from_date = `${values.year}-${monthofJoining}-01`;
 		const to_date = `${values.year}-12-01`;
@@ -788,13 +754,9 @@ const EmployeeEntryForm = () => {
 				const data = await addEmployeePfEsiDetail({
 					...values,
 					pfLimitIgnoreEmployerValue:
-						values.pfLimitIgnoreEmployerValue !== ''
-							? values.pfLimitIgnoreEmployerValue
-							: null,
+						values.pfLimitIgnoreEmployerValue !== '' ? values.pfLimitIgnoreEmployerValue : null,
 					pfLimitIgnoreEmployeeValue:
-						values.pfLimitIgnoreEmployeeValue !== ''
-							? values.pfLimitIgnoreEmployeeValue
-							: null,
+						values.pfLimitIgnoreEmployeeValue !== '' ? values.pfLimitIgnoreEmployeeValue : null,
 					employee: employeeId,
 					company: globalCompany.id,
 				}).unwrap();
@@ -805,26 +767,23 @@ const EmployeeEntryForm = () => {
 				if (updateEmployeeId === null) {
 					formikBag.resetForm();
 					try {
-						const [personalDetailData, pfEsiDetailData] =
-							await Promise.all([
-								getSingleEmployeePersonalDetail(
-									{
-										id: employeeId,
-										company: globalCompany.id,
-									},
-									true
-								).unwrap(),
-								getSingleEmployeePfEsiDetail(
-									{
-										id: employeeId,
-										company: globalCompany.id,
-									},
-									true
-								).unwrap(),
-							]);
-						addEmployeePopoverHandler(
-							'addEmployeeFamilyNomineeDetail'
-						);
+						const [personalDetailData, pfEsiDetailData] = await Promise.all([
+							getSingleEmployeePersonalDetail(
+								{
+									id: employeeId,
+									company: globalCompany.id,
+								},
+								true
+							).unwrap(),
+							getSingleEmployeePfEsiDetail(
+								{
+									id: employeeId,
+									company: globalCompany.id,
+								},
+								true
+							).unwrap(),
+						]);
+						addEmployeePopoverHandler('addEmployeeFamilyNomineeDetail');
 					} catch (err) {
 						// Handle errors if needed
 						console.log('Error:', err);
@@ -859,9 +818,7 @@ const EmployeeEntryForm = () => {
 			}
 			console.log(toSend);
 			try {
-				const data = await addEmployeeFamilyNomineeDetail(
-					toSend
-				).unwrap();
+				const data = await addEmployeeFamilyNomineeDetail(toSend).unwrap();
 				console.log(data);
 				dispatchAlert('Success');
 				setErrorMessage('');
@@ -879,10 +836,7 @@ const EmployeeEntryForm = () => {
 
 	const updatePfEsiDetailButtonClicked = async (values, formikBag) => {
 		console.log(values);
-		const differences = getObjectDifferences(
-			singleEmployeePfEsiDetail,
-			values
-		);
+		const differences = getObjectDifferences(singleEmployeePfEsiDetail, values);
 		console.log(differences);
 		if (Object.keys(differences).length !== 0) {
 			try {
@@ -929,9 +883,7 @@ const EmployeeEntryForm = () => {
 			employee: updateEmployeeId,
 		};
 		try {
-			const data = await updateEmployeeSalaryDetail(
-				salaryDetail
-			).unwrap();
+			const data = await updateEmployeeSalaryDetail(salaryDetail).unwrap();
 
 			console.log('Requests completed successfully');
 			dispatchAlert('Success');
@@ -959,10 +911,7 @@ const EmployeeEntryForm = () => {
 		}
 	};
 
-	const updateFamilyNomineeDetailButtonClicked = async (
-		values,
-		formikBag
-	) => {
+	const updateFamilyNomineeDetailButtonClicked = async (values, formikBag) => {
 		console.log(values);
 		const arrayWithId = [];
 		const arrayWithoutId = [];
@@ -1001,11 +950,9 @@ const EmployeeEntryForm = () => {
 		try {
 			let addEmployeePromise = null;
 			if (toSend.familyNomineeDetail.length != 0) {
-				const addEmployeePromise =
-					addEmployeeFamilyNomineeDetail(toSend).unwrap();
+				const addEmployeePromise = addEmployeeFamilyNomineeDetail(toSend).unwrap();
 			}
-			const updateEmployeePromise =
-				updateEmployeeFamilyNomineeDetail(toSendUpdate).unwrap();
+			const updateEmployeePromise = updateEmployeeFamilyNomineeDetail(toSendUpdate).unwrap();
 			const deletePromises = newArray.map((obj) =>
 				deleteEmployeeFamilyNomineeDetail({
 					id: obj.id,
@@ -1014,12 +961,11 @@ const EmployeeEntryForm = () => {
 				})
 			);
 
-			const [addEmployeeData, updateEmployeeData, ...deleteResponses] =
-				await Promise.all([
-					addEmployeePromise,
-					updateEmployeePromise,
-					...deletePromises,
-				]);
+			const [addEmployeeData, updateEmployeeData, ...deleteResponses] = await Promise.all([
+				addEmployeePromise,
+				updateEmployeePromise,
+				...deletePromises,
+			]);
 
 			console.log(addEmployeeData);
 			console.log(updateEmployeeData);
@@ -1074,6 +1020,11 @@ const EmployeeEntryForm = () => {
 			cell: (props) => props.renderValue(),
 			//   footer: info => info.column.id,
 		}),
+		columnHelper.accessor('resignationDate', {
+			header: () => 'Resign Date',
+			cell: (props) => props.renderValue(),
+			//   footer: info => info.column.id,
+		}),
 		columnHelper.accessor('designation', {
 			header: () => 'Designation',
 			cell: (props) => props.renderValue(),
@@ -1086,11 +1037,9 @@ const EmployeeEntryForm = () => {
 				<div className="flex justify-center gap-4">
 					<div
 						className="rounded bg-redAccent-500 p-1.5 hover:bg-redAccent-700 dark:bg-redAccent-700 dark:hover:bg-redAccent-500"
-						onClick={() =>
-							deleteButtonClicked(props.row.original.id)
-						}
+						onClick={() => deleteButtonClicked(props.row.original.id)}
 					>
-						<FaRegTrashAlt className="h-4" />
+						<FaRegTrashAlt className="h-4 text-white" />
 					</div>
 					<div
 						className="rounded bg-teal-600 p-1.5 hover:bg-teal-700 dark:bg-teal-700 dark:hover:bg-teal-600"
@@ -1101,7 +1050,7 @@ const EmployeeEntryForm = () => {
 							});
 						}}
 					>
-						<FaPen className="h-4" />
+						<FaPen className="h-4 text-white" />
 					</div>
 					{/* <div
                         className="p-1.5 dark:bg-blueAccent-600 rounded bg-blueAccent-600 dark:hover:bg-blueAccent-500 hover:bg-blueAccent-700"
@@ -1116,10 +1065,7 @@ const EmployeeEntryForm = () => {
 		}),
 	];
 
-	const data = useMemo(
-		() => (fetchedData ? [...fetchedData] : []),
-		[fetchedData]
-	);
+	const data = useMemo(() => (fetchedData ? [...fetchedData] : []), [fetchedData]);
 
 	const table = useReactTable({
 		data,
@@ -1194,17 +1140,11 @@ const EmployeeEntryForm = () => {
 					<div className="flex flex-row flex-wrap place-content-between">
 						<div className="mr-4">
 							<h1 className="text-3xl font-medium">Employees</h1>
-							<p className="my-2 text-sm">
-								Add and manage employees here
-							</p>
+							<p className="my-2 text-sm">Add and manage employees here</p>
 						</div>
 						<button
 							className="my-auto whitespace-nowrap rounded bg-teal-500 p-2 text-base font-medium hover:bg-teal-600 dark:bg-teal-700 dark:hover:bg-teal-600"
-							onClick={() =>
-								addEmployeePopoverHandler(
-									'addEmployeePersonalDetail'
-								)
-							}
+							onClick={() => addEmployeePopoverHandler('addEmployeePersonalDetail')}
 						>
 							Add Employee
 						</button>
@@ -1215,27 +1155,19 @@ const EmployeeEntryForm = () => {
 								{table.getHeaderGroups().map((headerGroup) => (
 									<tr key={headerGroup.id}>
 										{headerGroup.headers.map((header) => (
-											<th
-												key={header.id}
-												scope="col"
-												className="px-4 py-4 font-medium"
-											>
+											<th key={header.id} scope="col" className="px-4 py-4 font-medium">
 												{header.isPlaceholder ? null : (
 													<div className="">
 														<div
 															{...{
-																className:
-																	header.column.getCanSort()
-																		? 'cursor-pointer select-none flex flex-row justify-center'
-																		: '',
-																onClick:
-																	header.column.getToggleSortingHandler(),
+																className: header.column.getCanSort()
+																	? 'cursor-pointer select-none flex flex-row justify-center'
+																	: '',
+																onClick: header.column.getToggleSortingHandler(),
 															}}
 														>
 															{flexRender(
-																header.column
-																	.columnDef
-																	.header,
+																header.column.columnDef.header,
 																header.getContext()
 															)}
 
@@ -1246,8 +1178,7 @@ const EmployeeEntryForm = () => {
 																<div className="relative pl-2">
 																	<FaAngleUp
 																		className={classNames(
-																			header.column.getIsSorted() ==
-																				'asc'
+																			header.column.getIsSorted() == 'asc'
 																				? 'text-teal-700'
 																				: '',
 																			'absolute -translate-y-2 text-lg'
@@ -1255,8 +1186,7 @@ const EmployeeEntryForm = () => {
 																	/>
 																	<FaAngleDown
 																		className={classNames(
-																			header.column.getIsSorted() ==
-																				'desc'
+																			header.column.getIsSorted() == 'desc'
 																				? 'text-teal-700'
 																				: '',
 																			'absolute translate-y-2 text-lg'
@@ -1277,21 +1207,17 @@ const EmployeeEntryForm = () => {
 							<tbody className="max-h-20 divide-y divide-black divide-opacity-50 overflow-y-auto border-t border-black border-opacity-50">
 								{table.getRowModel().rows.map((row) => (
 									<tr
-										className="hover:bg-zinc-200 dark:hover:bg-zinc-800"
+										className={`hover:bg-zinc-200 dark:hover:bg-zinc-800 ${
+											row.original.resignationDate ? 'text-redAccent-500' : ''
+										}`}
 										key={row.id}
 									>
+										{console.log(row.original.resignationDate)}
 										{row.getVisibleCells().map((cell) => (
-											<td
-												className="px-4 py-4 font-normal"
-												key={cell.id}
-											>
+											<td className="px-4 py-4 font-normal" key={cell.id}>
 												<div className="text-sm">
 													<div className="font-medium">
-														{flexRender(
-															cell.column
-																.columnDef.cell,
-															cell.getContext()
-														)}
+														{flexRender(cell.column.columnDef.cell, cell.getContext())}
 													</div>
 												</div>
 											</td>
@@ -1322,18 +1248,12 @@ const EmployeeEntryForm = () => {
 						<>
 							<AddEmployeeNavigationBar
 								addEmployeePopover={addEmployeePopover}
-								addEmployeePopoverHandler={
-									addEmployeePopoverHandler
-								}
+								addEmployeePopoverHandler={addEmployeePopoverHandler}
 								editEmployeePopover={editEmployeePopover}
-								editEmployeePopoverHandler={
-									editEmployeePopoverHandler
-								}
+								editEmployeePopoverHandler={editEmployeePopoverHandler}
 								isEditing={false}
 								updateEmployeeId={updateEmployeeId}
-								getSingleEmployeeProfessionalDetail={
-									getSingleEmployeeProfessionalDetail
-								}
+								getSingleEmployeeProfessionalDetail={getSingleEmployeeProfessionalDetail}
 								globalCompany={globalCompany.id}
 							/>
 							{addEmployeePopover.addEmployeePersonalDetail && (
@@ -1378,21 +1298,15 @@ const EmployeeEntryForm = () => {
 										permanentStateOrUnionTerritory: '',
 										permanentPincode: '',
 									}}
-									validationSchema={
-										EmployeePersonalDetailSchema
-									}
+									validationSchema={EmployeePersonalDetailSchema}
 									onSubmit={addPersonalDetailButtonClicked}
 									component={(props) => (
 										<>
 											<EmployeePersonalDetail
 												{...props}
 												errorMessage={errorMessage}
-												setErrorMessage={
-													setErrorMessage
-												}
-												cancelButtonClicked={
-													cancelButtonClicked
-												}
+												setErrorMessage={setErrorMessage}
+												cancelButtonClicked={cancelButtonClicked}
 												isEditing={false}
 											/>
 										</>
@@ -1402,34 +1316,20 @@ const EmployeeEntryForm = () => {
 
 							{addEmployeePopover.addEmployeeProfessionalDetail && (
 								<Formik
-									initialValues={
-										editEmployeeProfessionalDetailInitialValues
-									}
-									validationSchema={
-										EmployeeProfessionalDetailSchema
-									}
-									onSubmit={
-										addProfessionalDetailButtonClicked
-									}
+									initialValues={editEmployeeProfessionalDetailInitialValues}
+									validationSchema={EmployeeProfessionalDetailSchema(false)}
+									onSubmit={addProfessionalDetailButtonClicked}
 									component={(props) => (
 										<>
 											<EmployeeProfessionalDetail
 												{...props}
 												errorMessage={errorMessage}
-												setErrorMessage={
-													setErrorMessage
-												}
+												setErrorMessage={setErrorMessage}
 												globalCompany={globalCompany}
-												setShowLoadingBar={
-													setShowLoadingBar
-												}
+												setShowLoadingBar={setShowLoadingBar}
 												isEditing={false}
-												cancelButtonClicked={
-													cancelButtonClicked
-												}
-												addedEmployeeId={
-													addedEmployeeId
-												}
+												cancelButtonClicked={cancelButtonClicked}
+												addedEmployeeId={addedEmployeeId}
 											/>
 										</>
 									)}
@@ -1443,11 +1343,7 @@ const EmployeeEntryForm = () => {
 											...earningHeadInitialValues,
 										},
 										year: isSingleEmployeeProfessionalDetailSuccess
-											? parseInt(
-													singleEmployeeProfessionalDetail.dateOfJoining.split(
-														'-'
-													)[0]
-											  )
+											? parseInt(singleEmployeeProfessionalDetail.dateOfJoining.split('-')[0])
 											: '',
 										salaryDetail: {
 											overtimeType: 'no_overtime',
@@ -1463,32 +1359,22 @@ const EmployeeEntryForm = () => {
 											bonusExg: false,
 										},
 									}}
-									validationSchema={generateEmployeeSalaryDetailSchema(
-										earningHeadInitialValues
-									)}
+									validationSchema={generateEmployeeSalaryDetailSchema(earningHeadInitialValues)}
 									onSubmit={addSalaryDetailButtonClicked}
 									component={(props) => (
 										<>
 											<EmployeeSalaryDetail
 												{...props}
 												errorMessage={errorMessage}
-												setErrorMessage={
-													setErrorMessage
-												}
+												setErrorMessage={setErrorMessage}
 												// setAddEmployeePopover={
 												//     setAddEmployeePopover
 												// }
 												globalCompany={globalCompany}
-												setShowLoadingBar={
-													setShowLoadingBar
-												}
+												setShowLoadingBar={setShowLoadingBar}
 												isEditing={false}
-												cancelButtonClicked={
-													cancelButtonClicked
-												}
-												addedEmployeeId={
-													addedEmployeeId
-												}
+												cancelButtonClicked={cancelButtonClicked}
+												addedEmployeeId={addedEmployeeId}
 												singleEmployeeProfessionalDetail={
 													isSingleEmployeeProfessionalDetailSuccess
 														? singleEmployeeProfessionalDetail
@@ -1505,9 +1391,7 @@ const EmployeeEntryForm = () => {
 
 							{addEmployeePopover.addEmployeePfEsiDetail && (
 								<Formik
-									initialValues={
-										employeePfEsiDetailInitialValues
-									}
+									initialValues={employeePfEsiDetailInitialValues}
 									validationSchema={EmployeePfEsiDetailSchema}
 									onSubmit={addPfEsiDetailButtonClicked}
 									component={(props) => (
@@ -1515,23 +1399,15 @@ const EmployeeEntryForm = () => {
 											<EmployeePfEsiDetail
 												{...props}
 												errorMessage={errorMessage}
-												setErrorMessage={
-													setErrorMessage
-												}
+												setErrorMessage={setErrorMessage}
 												// setAddEmployeePopover={
 												//     setAddEmployeePopover
 												// }
 												globalCompany={globalCompany}
-												setShowLoadingBar={
-													setShowLoadingBar
-												}
+												setShowLoadingBar={setShowLoadingBar}
 												isEditing={false}
-												cancelButtonClicked={
-													cancelButtonClicked
-												}
-												addedEmployeeId={
-													addedEmployeeId
-												}
+												cancelButtonClicked={cancelButtonClicked}
+												addedEmployeeId={addedEmployeeId}
 											/>
 										</>
 									)}
@@ -1552,31 +1428,19 @@ const EmployeeEntryForm = () => {
 											},
 										],
 									}}
-									validationSchema={
-										EmployeeFamilyNomineeDetailSchema
-									}
-									onSubmit={
-										addFamilyNomineeDetailButtonClicked
-									}
+									validationSchema={EmployeeFamilyNomineeDetailSchema}
+									onSubmit={addFamilyNomineeDetailButtonClicked}
 									component={(props) => (
 										<>
 											<EmployeeFamilyNomineeDetail
 												{...props}
 												errorMessage={errorMessage}
-												setErrorMessage={
-													setErrorMessage
-												}
+												setErrorMessage={setErrorMessage}
 												globalCompany={globalCompany}
-												setShowLoadingBar={
-													setShowLoadingBar
-												}
+												setShowLoadingBar={setShowLoadingBar}
 												isEditing={false}
-												cancelButtonClicked={
-													cancelButtonClicked
-												}
-												addedEmployeeId={
-													addedEmployeeId
-												}
+												cancelButtonClicked={cancelButtonClicked}
+												addedEmployeeId={addedEmployeeId}
 												familyNomineeDetailInitailValues={{
 													...familyNomineeDetailInitailValues,
 													address:
@@ -1619,45 +1483,30 @@ const EmployeeEntryForm = () => {
 						<>
 							<AddEmployeeNavigationBar
 								addEmployeePopover={addEmployeePopover}
-								addEmployeePopoverHandler={
-									addEmployeePopoverHandler
-								}
+								addEmployeePopoverHandler={addEmployeePopoverHandler}
 								editEmployeePopover={editEmployeePopover}
-								editEmployeePopoverHandler={
-									editEmployeePopoverHandler
-								}
+								editEmployeePopoverHandler={editEmployeePopoverHandler}
 								isEditing={true}
 								updateEmployeeId={updateEmployeeId}
-								getSingleEmployeeProfessionalDetail={
-									getSingleEmployeeProfessionalDetail
-								}
+								getSingleEmployeeProfessionalDetail={getSingleEmployeeProfessionalDetail}
 								globalCompany={globalCompany.id}
 							/>
 							{editEmployeePopover.editEmployeePersonalDetail && (
 								<Formik
 									initialValues={
-										singleEmployeePersonalDetail !==
-										undefined
-											? checkNullUndefinedValues(
-													singleEmployeePersonalDetail
-											  )
+										singleEmployeePersonalDetail !== undefined
+											? checkNullUndefinedValues(singleEmployeePersonalDetail)
 											: {}
 									}
-									validationSchema={
-										EmployeePersonalDetailSchema
-									}
+									validationSchema={EmployeePersonalDetailSchema}
 									onSubmit={updatePersonalDetailButtonClicked}
 									component={(props) => (
 										<>
 											<EmployeePersonalDetail
 												{...props}
 												errorMessage={errorMessage}
-												setErrorMessage={
-													setErrorMessage
-												}
-												cancelButtonClicked={
-													cancelButtonClicked
-												}
+												setErrorMessage={setErrorMessage}
+												cancelButtonClicked={cancelButtonClicked}
 												isEditing={true}
 											/>
 										</>
@@ -1670,15 +1519,16 @@ const EmployeeEntryForm = () => {
 									initialValues={
 										isSingleEmployeeProfessionalDetailSuccess
 											? {
-													employeeProfessionalDetail:
-														checkNullUndefinedValues(
-															singleEmployeeProfessionalDetail
-														),
+													employeeProfessionalDetail: checkNullUndefinedValues(
+														singleEmployeeProfessionalDetail
+													),
 											  }
 											: editEmployeeProfessionalDetailInitialValues
 									}
 									validationSchema={
-										EmployeeProfessionalDetailSchema
+										isSingleEmployeeProfessionalDetailSuccess
+											? EmployeeProfessionalDetailSchema(true)
+											: EmployeeProfessionalDetailSchema(false)
 									}
 									onSubmit={
 										isSingleEmployeeProfessionalDetailSuccess
@@ -1690,20 +1540,15 @@ const EmployeeEntryForm = () => {
 											<EmployeeProfessionalDetail
 												{...props}
 												errorMessage={errorMessage}
-												setErrorMessage={
-													setErrorMessage
-												}
+												setErrorMessage={setErrorMessage}
 												// setEditEmployeePopover={
 												//     setEditEmployeePopover
 												// }
 												globalCompany={globalCompany}
-												setShowLoadingBar={
-													setShowLoadingBar
-												}
+												setShowLoadingBar={setShowLoadingBar}
 												isEditing={true}
-												cancelButtonClicked={
-													cancelButtonClicked
-												}
+												cancelButtonClicked={cancelButtonClicked}
+												employeeShifts={employeeShifts}
 											/>
 										</>
 									)}
@@ -1741,12 +1586,10 @@ const EmployeeEntryForm = () => {
 														  )
 														: '',
 													salaryDetail: {
-														overtimeType:
-															'no_overtime',
+														overtimeType: 'no_overtime',
 														overtimeRate: '',
 														salaryMode: 'monthly',
-														paymentMode:
-															'bank_transfer',
+														paymentMode: 'bank_transfer',
 														bankName: '',
 														accountNumber: '',
 														ifcs: '',
@@ -1757,9 +1600,7 @@ const EmployeeEntryForm = () => {
 													},
 											  }
 									}
-									validationSchema={generateEmployeeSalaryDetailSchema(
-										null
-									)}
+									validationSchema={generateEmployeeSalaryDetailSchema(null)}
 									onSubmit={
 										isSingleEmployeeSalaryDetailSuccess
 											? updateSalaryDetailButtonClicked
@@ -1770,25 +1611,17 @@ const EmployeeEntryForm = () => {
 											<EmployeeSalaryDetail
 												{...props}
 												errorMessage={errorMessage}
-												setErrorMessage={
-													setErrorMessage
-												}
+												setErrorMessage={setErrorMessage}
 												globalCompany={globalCompany}
-												setShowLoadingBar={
-													setShowLoadingBar
-												}
+												setShowLoadingBar={setShowLoadingBar}
 												isEditing={true}
-												cancelButtonClicked={
-													cancelButtonClicked
-												}
+												cancelButtonClicked={cancelButtonClicked}
 												singleEmployeeProfessionalDetail={
 													isSingleEmployeeProfessionalDetailSuccess
 														? singleEmployeeProfessionalDetail
 														: null
 												}
-												updateEmployeeId={
-													updateEmployeeId
-												}
+												updateEmployeeId={updateEmployeeId}
 												isSingleEmployeeSalaryDetailSuccess={
 													isSingleEmployeeSalaryDetailSuccess
 												}
@@ -1804,15 +1637,12 @@ const EmployeeEntryForm = () => {
 								<Formik
 									initialValues={
 										getSingleEmployeePfEsiDetailIsSuccess
-											? checkNullUndefinedValues(
-													singleEmployeePfEsiDetail
-											  )
+											? checkNullUndefinedValues(singleEmployeePfEsiDetail)
 											: {}
 									}
 									validationSchema={EmployeePfEsiDetailSchema}
 									onSubmit={
-										Object.keys(singleEmployeePfEsiDetail)
-											.length !== 0
+										Object.keys(singleEmployeePfEsiDetail).length !== 0
 											? updatePfEsiDetailButtonClicked
 											: addPfEsiDetailButtonClicked
 									}
@@ -1821,17 +1651,11 @@ const EmployeeEntryForm = () => {
 											<EmployeePfEsiDetail
 												{...props}
 												errorMessage={errorMessage}
-												setErrorMessage={
-													setErrorMessage
-												}
+												setErrorMessage={setErrorMessage}
 												globalCompany={globalCompany}
-												setShowLoadingBar={
-													setShowLoadingBar
-												}
+												setShowLoadingBar={setShowLoadingBar}
 												isEditing={true}
-												cancelButtonClicked={
-													cancelButtonClicked
-												}
+												cancelButtonClicked={cancelButtonClicked}
 											/>
 										</>
 									)}
@@ -1841,21 +1665,14 @@ const EmployeeEntryForm = () => {
 							{editEmployeePopover.editEmployeeFamilyNomineeDetail && (
 								<Formik
 									initialValues={{
-										familyNomineeDetail:
-											employeeFamilyNomineeDetail.map(
-												(obj) => {
-													const modifiedObj = {
-														...obj,
-													}; // Create a shallow copy of the object
-													return checkNullUndefinedValues(
-														modifiedObj
-													); // Apply the modification function to the copied object
-												}
-											),
+										familyNomineeDetail: employeeFamilyNomineeDetail.map((obj) => {
+											const modifiedObj = {
+												...obj,
+											}; // Create a shallow copy of the object
+											return checkNullUndefinedValues(modifiedObj); // Apply the modification function to the copied object
+										}),
 									}}
-									validationSchema={
-										EmployeeFamilyNomineeDetailSchema
-									}
+									validationSchema={EmployeeFamilyNomineeDetailSchema}
 									onSubmit={
 										getSingleEmployeePfEsiDetailIsSuccess
 											? updateFamilyNomineeDetailButtonClicked
@@ -1866,17 +1683,11 @@ const EmployeeEntryForm = () => {
 											<EmployeeFamilyNomineeDetail
 												{...props}
 												errorMessage={errorMessage}
-												setErrorMessage={
-													setErrorMessage
-												}
+												setErrorMessage={setErrorMessage}
 												globalCompany={globalCompany}
-												setShowLoadingBar={
-													setShowLoadingBar
-												}
+												setShowLoadingBar={setShowLoadingBar}
 												isEditing={true}
-												cancelButtonClicked={
-													cancelButtonClicked
-												}
+												cancelButtonClicked={cancelButtonClicked}
 												familyNomineeDetailInitailValues={{
 													...familyNomineeDetailInitailValues,
 													address:
@@ -1886,9 +1697,7 @@ const EmployeeEntryForm = () => {
 														' ' +
 														singleEmployeePersonalDetail.localStateOrUnionTerritory,
 												}}
-												updateEmployeeId={
-													updateEmployeeId
-												}
+												updateEmployeeId={updateEmployeeId}
 												singleEmployeePfEsiDetail={
 													getSingleEmployeePfEsiDetailIsSuccess
 														? singleEmployeePfEsiDetail

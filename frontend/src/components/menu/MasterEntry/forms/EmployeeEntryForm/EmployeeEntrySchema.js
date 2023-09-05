@@ -46,22 +46,10 @@ export const EmployeePersonalDetailSchema = yup.object().shape({
 		.required('Required')
 		.matches(/^\d+$/, 'Attendance card number must contain only numbers')
 		.max(7, 'Attendance card number must have a maximum of 7 digits'),
-	name: yup
-		.string()
-		.required('Required')
-		.max(100, 'Must be at most 100 characters'),
-	fatherOrHusbandName: yup
-		.string()
-		.max(100, 'Must be at most 100 characters')
-		.nullable(), // Allows the field to be null (optional),
-	motherName: yup
-		.string()
-		.max(100, 'Must be at most 100 characters')
-		.nullable(), // Allows the field to be null (optional),
-	wifeName: yup
-		.string()
-		.max(100, 'Must be at most 100 characters')
-		.nullable(), // Allows the field to be null (optional),
+	name: yup.string().required('Required').max(100, 'Must be at most 100 characters'),
+	fatherOrHusbandName: yup.string().max(100, 'Must be at most 100 characters').nullable(), // Allows the field to be null (optional),
+	motherName: yup.string().max(100, 'Must be at most 100 characters').nullable(), // Allows the field to be null (optional),
+	wifeName: yup.string().max(100, 'Must be at most 100 characters').nullable(), // Allows the field to be null (optional),
 	dob: yup
 		.date()
 		.max(new Date(), 'Date of birth must be before or on the current date')
@@ -85,30 +73,14 @@ export const EmployeePersonalDetailSchema = yup.object().shape({
 		.matches(/^[0-9]+$/, 'Phone number must contain only digits')
 		.length(10, 'Phone number must be 10 digits long')
 		.nullable(), // Allows the field to be null (optional),
-	religion: yup
-		.string()
-		.max(50, 'Religion must be at most 50 characters')
-		.nullable(), // Allows the field to be null (optional),
-	email: yup
-		.string()
-		.email('Invalid email format')
-		.max(150, 'Email must be at most 150 characters')
-		.nullable(), // Allows the field to be null (optional),
+	religion: yup.string().max(50, 'Religion must be at most 50 characters').nullable(), // Allows the field to be null (optional),
+	email: yup.string().email('Invalid email format').max(150, 'Email must be at most 150 characters').nullable(), // Allows the field to be null (optional),
 	handicapped: yup.boolean().required('Handicapped field is required'),
-	gender: yup
-		.string()
-		.oneOf(['M', 'F', 'O'], 'Invalid gender selection')
-		.nullable(), // Allows the field to be null (optional),
-	maritalStatus: yup
-		.string()
-		.oneOf(['S', 'M', 'D', 'W'], 'Invalid Marital Status')
-		.nullable(), // Allows the field to be null (optional),
+	gender: yup.string().oneOf(['M', 'F', 'O'], 'Invalid gender selection').nullable(), // Allows the field to be null (optional),
+	maritalStatus: yup.string().oneOf(['S', 'M', 'D', 'W'], 'Invalid Marital Status').nullable(), // Allows the field to be null (optional),
 	bloodGroup: yup
 		.string()
-		.oneOf(
-			['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
-			'Invalid Blood Group'
-		)
+		.oneOf(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'], 'Invalid Blood Group')
 		.nullable(), // Allows the field to be null (optional),
 
 	// 3rd column
@@ -117,10 +89,7 @@ export const EmployeePersonalDetailSchema = yup.object().shape({
 		.length(10, 'Should be 10 characters long')
 		.matches(/^[A-Za-z]{5}[0-9]{4}[A-Za-z]{1}$/, 'Invalid format')
 		.nullable(), // Allows the field to be null (optional),
-	drivingLicence: yup
-		.string()
-		.max(16, 'Field must be at most 16 characters')
-		.nullable(),
+	drivingLicence: yup.string().max(16, 'Field must be at most 16 characters').nullable(),
 	passport: yup.string().length(8, 'Passport must be 8 characters'),
 	aadhaar: yup
 		.string()
@@ -130,40 +99,15 @@ export const EmployeePersonalDetailSchema = yup.object().shape({
 	educationQualification: yup
 		.string()
 		.oneOf(
-			[
-				'0',
-				'1',
-				'2',
-				'3',
-				'4',
-				'5',
-				'6',
-				'7',
-				'8',
-				'9',
-				'10',
-				'11',
-				'12',
-				'G',
-				'PG',
-			],
+			['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', 'G', 'PG'],
 			'Please select a valid educational qualification'
 		)
 		.nullable(),
-	technicalQualification: yup
-		.string()
-		.max(50, 'Field must be at most 50 characters long')
-		.nullable(),
-	localAddress: yup
-		.string()
-		.max(250, 'Field must be at most 250 characters long')
-		.nullable(),
+	technicalQualification: yup.string().max(50, 'Field must be at most 50 characters long').nullable(),
+	localAddress: yup.string().max(250, 'Field must be at most 250 characters long').nullable(),
 
 	// 4th column
-	localDistrict: yup
-		.string()
-		.max(30, 'Field must be at most 30 characters long')
-		.nullable(),
+	localDistrict: yup.string().max(30, 'Field must be at most 30 characters long').nullable(),
 	localStateOrUnionTerritory: yup
 		.string()
 		.oneOf(
@@ -213,15 +157,9 @@ export const EmployeePersonalDetailSchema = yup.object().shape({
 		.matches(/^\d+$/, 'Local Pin Code must contain only digits')
 		.length(6, 'Local Pin Code must be 6 digits long'),
 
-	permanentAddress: yup
-		.string()
-		.max(250, 'Field must be at most 250 characters long')
-		.nullable(),
+	permanentAddress: yup.string().max(250, 'Field must be at most 250 characters long').nullable(),
 
-	permanentDistrict: yup
-		.string()
-		.max(30, 'Field must be at most 30 characters long')
-		.nullable(),
+	permanentDistrict: yup.string().max(30, 'Field must be at most 30 characters long').nullable(),
 	permanentStateOrUnionTerritory: yup
 		.string()
 		.oneOf(
@@ -272,63 +210,120 @@ export const EmployeePersonalDetailSchema = yup.object().shape({
 		.length(6, 'Permanent Pin Code must be 6 digits long'),
 });
 
-export const EmployeeProfessionalDetailSchema = yup.object().shape({
-	employeeProfessionalDetail: yup.object().shape({
-		dateOfJoining: yup.date().required('Required'), // Allows the field to be null (optional),
-		dateOfConfirm: yup.date().required('Required'),
-		department: yup.string().nullable(),
-		designation: yup.string().nullable(),
-		category: yup.string().nullable(),
-		salaryGrade: yup.string().nullable(),
-		weeklyOff: yup
-			.string()
-			.oneOf(
-				['no_off', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
-				'Invalid weekly off option'
-			)
-			.nullable(),
-		extraOff: yup
-			.string()
-			.oneOf(
-				[
-					'no_off',
-					'mon1',
-					'mon2',
-					'mon3',
-					'mon4',
-					'tue1',
-					'tue2',
-					'tue3',
-					'tue4',
-					'wed1',
-					'wed2',
-					'wed3',
-					'wed4',
-					'thu1',
-					'thu2',
-					'thu3',
-					'thu4',
-					'fri1',
-					'fri2',
-					'fri3',
-					'fri4',
-					'sat1',
-					'sat2',
-					'sat3',
-					'sat4',
-					'sun1',
-					'sun2',
-					'sun3',
-					'sun4',
-				],
-				'Invalid extra off option'
-			)
-			.nullable(),
-	}),
-	employeeShift: yup.object().shape({
-		shift: yup.string().required('Shift is required').nullable(false),
-	}),
-});
+// export const EmployeeProfessionalDetailSchema = yup.object().shape({
+// 	employeeProfessionalDetail: yup.object().shape({
+// 		dateOfJoining: yup.date().required('Required'), // Allows the field to be null (optional),
+// 		dateOfConfirm: yup.date().required('Required'),
+// 		department: yup.string().nullable(),
+// 		designation: yup.string().nullable(),
+// 		category: yup.string().nullable(),
+// 		salaryGrade: yup.string().nullable(),
+// 		weeklyOff: yup
+// 			.string()
+// 			.oneOf(
+// 				['no_off', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
+// 				'Invalid weekly off option'
+// 			)
+// 			.nullable(),
+// 		extraOff: yup
+// 			.string()
+// 			.oneOf(
+// 				[
+// 					'no_off',
+// 					'mon1',
+// 					'mon2',
+// 					'mon3',
+// 					'mon4',
+// 					'tue1',
+// 					'tue2',
+// 					'tue3',
+// 					'tue4',
+// 					'wed1',
+// 					'wed2',
+// 					'wed3',
+// 					'wed4',
+// 					'thu1',
+// 					'thu2',
+// 					'thu3',
+// 					'thu4',
+// 					'fri1',
+// 					'fri2',
+// 					'fri3',
+// 					'fri4',
+// 					'sat1',
+// 					'sat2',
+// 					'sat3',
+// 					'sat4',
+// 					'sun1',
+// 					'sun2',
+// 					'sun3',
+// 					'sun4',
+// 				],
+// 				'Invalid extra off option'
+// 			)
+// 			.nullable(),
+// 	}),
+// 	employeeShift: yup.object().shape({
+// 		shift: yup.string().required('Shift is required').nullable(false),
+// 	}),
+// });
+
+export const EmployeeProfessionalDetailSchema = (isEditing) => {
+	return yup.object().shape({
+		employeeProfessionalDetail: yup.object().shape({
+			dateOfJoining: yup.date().required('Required'),
+			dateOfConfirm: yup.date().required('Required'),
+			department: yup.string().nullable(),
+			designation: yup.string().nullable(),
+			category: yup.string().nullable(),
+			salaryGrade: yup.string().nullable(),
+			weeklyOff: yup
+				.string()
+				.oneOf(['no_off', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'], 'Invalid weekly off option')
+				.nullable(),
+			extraOff: yup
+				.string()
+				.oneOf(
+					[
+						'no_off',
+						'mon1',
+						'mon2',
+						'mon3',
+						'mon4',
+						'tue1',
+						'tue2',
+						'tue3',
+						'tue4',
+						'wed1',
+						'wed2',
+						'wed3',
+						'wed4',
+						'thu1',
+						'thu2',
+						'thu3',
+						'thu4',
+						'fri1',
+						'fri2',
+						'fri3',
+						'fri4',
+						'sat1',
+						'sat2',
+						'sat3',
+						'sat4',
+						'sun1',
+						'sun2',
+						'sun3',
+						'sun4',
+					],
+					'Invalid extra off option'
+				)
+				.nullable(),
+		}),
+		employeeShift: yup.object().shape({
+			shift: isEditing == false ? yup.string().required('Shift is required') : yup.string().nullable(false),
+		}),
+	});
+};
 
 export const EmployeePfEsiDetailSchema = yup.object().shape({
 	pfNumber: yup.string().max(50, 'Max Length is 50').trim(),
@@ -378,19 +373,14 @@ export const EmployeeFamilyNomineeDetailSchema = yup.object().shape({
 					pfNomineeShare
 						.required('Required')
 						.max(100, "Can't exceed 100")
-						.test(
-							'totalShare',
-							'Total % should not exceed 100',
-							(value, context) => {
-								let valuesArray =
-									context.from[1].value.familyNomineeDetail;
-								let totalShare = 0;
-								valuesArray.forEach((detail) => {
-									totalShare += detail.pfNomineeShare || 0;
-								});
-								return totalShare <= 100;
-							}
-						),
+						.test('totalShare', 'Total % should not exceed 100', (value, context) => {
+							let valuesArray = context.from[1].value.familyNomineeDetail;
+							let totalShare = 0;
+							valuesArray.forEach((detail) => {
+								totalShare += detail.pfNomineeShare || 0;
+							});
+							return totalShare <= 100;
+						}),
 			}),
 
 			esiNomineeShare: yup.number().when('isEsiNominee', {
@@ -399,19 +389,14 @@ export const EmployeeFamilyNomineeDetailSchema = yup.object().shape({
 					esiNomineeShare
 						.required('Required')
 						.max(100, "Can't exceed 100")
-						.test(
-							'totalShare',
-							'Total % should not exceed 100',
-							(value, context) => {
-								let valuesArray =
-									context.from[1].value.familyNomineeDetail;
-								let totalShare = 0;
-								valuesArray.forEach((detail) => {
-									totalShare += detail.esiNomineeShare || 0;
-								});
-								return totalShare <= 100;
-							}
-						),
+						.test('totalShare', 'Total % should not exceed 100', (value, context) => {
+							let valuesArray = context.from[1].value.familyNomineeDetail;
+							let totalShare = 0;
+							valuesArray.forEach((detail) => {
+								totalShare += detail.esiNomineeShare || 0;
+							});
+							return totalShare <= 100;
+						}),
 			}),
 
 			faNomineeShare: yup.number().when('isFaNominee', {
@@ -420,19 +405,14 @@ export const EmployeeFamilyNomineeDetailSchema = yup.object().shape({
 					faNomineeShare
 						.required('Required')
 						.max(100, "Can't exceed 100")
-						.test(
-							'totalShare',
-							'Total % should not exceed 100',
-							(value, context) => {
-								let valuesArray =
-									context.from[1].value.familyNomineeDetail;
-								let totalShare = 0;
-								valuesArray.forEach((detail) => {
-									totalShare += detail.faNomineeShare || 0;
-								});
-								return totalShare <= 100;
-							}
-						),
+						.test('totalShare', 'Total % should not exceed 100', (value, context) => {
+							let valuesArray = context.from[1].value.familyNomineeDetail;
+							let totalShare = 0;
+							valuesArray.forEach((detail) => {
+								totalShare += detail.faNomineeShare || 0;
+							});
+							return totalShare <= 100;
+						}),
 			}),
 
 			gratuityNomineeShare: yup.number().when('isGratuityNominee', {
@@ -441,28 +421,20 @@ export const EmployeeFamilyNomineeDetailSchema = yup.object().shape({
 					gratuityNomineeShare
 						.required('Required')
 						.max(100, "Can't exceed 100")
-						.test(
-							'totalShare',
-							'Total % should not exceed 100',
-							(value, context) => {
-								let valuesArray =
-									context.from[1].value.familyNomineeDetail;
-								let totalShare = 0;
-								valuesArray.forEach((detail) => {
-									totalShare +=
-										detail.gratuityNomineeShare || 0;
-								});
-								return totalShare <= 100;
-							}
-						),
+						.test('totalShare', 'Total % should not exceed 100', (value, context) => {
+							let valuesArray = context.from[1].value.familyNomineeDetail;
+							let totalShare = 0;
+							valuesArray.forEach((detail) => {
+								totalShare += detail.gratuityNomineeShare || 0;
+							});
+							return totalShare <= 100;
+						}),
 			}),
 		})
 	),
 });
 
-export const generateEmployeeSalaryDetailSchema = (
-	earningHeadInitialValues
-) => {
+export const generateEmployeeSalaryDetailSchema = (earningHeadInitialValues) => {
 	if (earningHeadInitialValues != null) {
 		let EmployeeSalaryDetailSchema = yup.object().shape({
 			earningsHead: yup.object().shape(
@@ -479,9 +451,7 @@ export const generateEmployeeSalaryDetailSchema = (
 				.min(1950, 'Year must be greater than or equal to 1950')
 				.max(2100, 'Year must be less than or equal to 2100'),
 			salaryDetail: yup.object().shape({
-				overtimeType: yup
-					.string()
-					.required('Overtime Type is required'),
+				overtimeType: yup.string().required('Overtime Type is required'),
 				overtimeRate: yup.string(),
 				salaryMode: yup.string().required('Salary Mode is required'),
 				paymentMode: yup.string().required('Payment Mode is required'),
@@ -503,9 +473,7 @@ export const generateEmployeeSalaryDetailSchema = (
 				.min(1950, 'Year must be greater than or equal to 1950')
 				.max(2100, 'Year must be less than or equal to 2100'),
 			salaryDetail: yup.object().shape({
-				overtimeType: yup
-					.string()
-					.required('Overtime Type is required'),
+				overtimeType: yup.string().required('Overtime Type is required'),
 				overtimeRate: yup.string(),
 				salaryMode: yup.string().required('Salary Mode is required'),
 				paymentMode: yup.string().required('Payment Mode is required'),

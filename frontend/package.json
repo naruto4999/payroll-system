@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@reduxjs/toolkit": "^1.9.2",
+    "@tanstack/match-sorter-utils": "^8.8.4",
     "@tanstack/react-table": "^8.9.1",
     "dayjs": "^1.11.7",
     "formik": "^2.2.9",

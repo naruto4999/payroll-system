@@ -39,6 +39,7 @@ export const employeeShiftsApiSlice = apiSlice.injectEndpoints({
 
 export const {
 	useGetEmployeeShiftsQuery,
+	useLazyGetEmployeeShiftsQuery,
 	useUpdateEmployeeShiftsMutation,
 	useAddEmployeeShiftsMutation,
 	useUpdatePermanentEmployeeShiftMutation,

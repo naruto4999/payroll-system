@@ -154,18 +154,18 @@ class EmployeeListSerializer(serializers.Serializer):
     attendance_card_no = serializers.IntegerField(read_only=True)
     date_of_joining = serializers.DateField(source='employee_professional_detail.date_of_joining', read_only=True)
     designation = serializers.CharField(source='employee_professional_detail.designation', read_only=True)
+    resignation_date = serializers.DateField(source='employee_professional_detail.resignation_date', read_only=True)
     class Meta:
-        fields = ['id', 'name', 'paycode', 'attendance_card_no', 'date_of_joining', 'designation']
+        fields = ['id', 'name', 'paycode', 'attendance_card_no', 'date_of_joining', 'designation', 'resignation_date']
 
 
 class EmployeeProfessionalDetailSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
     weekly_off = serializers.ChoiceField(choices=EmployeeProfessionalDetail.WEEKDAY_CHOICES, allow_blank=False)
     extra_off = serializers.ChoiceField(choices=EmployeeProfessionalDetail.EXTRA_OFF_CHOICES, allow_blank=False)
 
     class Meta:
         model = EmployeeProfessionalDetail
-        fields = ['user', 'company', 'employee', 'date_of_joining', 'date_of_confirm', 'department', 'designation', 'category', 'salary_grade', 'weekly_off', 'extra_off']
+        fields = ['company', 'employee', 'date_of_joining', 'date_of_confirm', 'department', 'designation', 'category', 'salary_grade', 'weekly_off', 'extra_off', 'resigned', 'resignation_date']
 
 
 class EmployeeSalaryEarningSerializer(serializers.ModelSerializer):
@@ -180,10 +180,9 @@ class EmployeeSalaryEarningUpdateSerializer(serializers.ModelSerializer):
         fields = ['employee', 'company', 'earnings_head', 'value', 'from_date', 'to_date']
     
 class EmployeeSalaryDetailSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
     class Meta:
         model = EmployeeSalaryDetail
-        fields = ['user', 'company', 'employee', 'overtime_type', 'overtime_rate', 'salary_mode', 'payment_mode', 'bank_name', 'account_number', 'ifcs', 'labour_wellfare_fund', 'late_deduction', 'bonus_allow', 'bonus_exg']
+        fields = ['company', 'employee', 'overtime_type', 'overtime_rate', 'salary_mode', 'payment_mode', 'bank_name', 'account_number', 'ifcs', 'labour_wellfare_fund', 'late_deduction', 'bonus_allow', 'bonus_exg']
 
 
 class EmployeePfEsiDetailSerializer(serializers.ModelSerializer):

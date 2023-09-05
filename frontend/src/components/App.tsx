@@ -83,82 +83,28 @@ function App() {
 				>
 					<Route path="select-company" element={<SelectCompany />} />
 					<Route path="master-entry">
-						<Route
-							path="new-company-entry"
-							element={<NewCompanyEntryForm />}
-						/>
+						<Route path="new-company-entry" element={<NewCompanyEntryForm />} />
 
-						<Route
-							path="company-entry"
-							element={<CompanyEntryForm />}
-						/>
-						<Route
-							path="department-entry"
-							element={<DepartmentEntryForm />}
-						/>
-						<Route
-							path="designation-entry"
-							element={<DesignationEntryForm />}
-						/>
-						<Route
-							path="salary-grade-entry"
-							element={<SalaryGradeEntryForm />}
-						/>
-						<Route
-							path="category-entry"
-							element={<CategoryEntryForm />}
-						/>
+						<Route path="company-entry" element={<CompanyEntryForm />} />
+						<Route path="department-entry" element={<DepartmentEntryForm />} />
+						<Route path="designation-entry" element={<DesignationEntryForm />} />
+						<Route path="salary-grade-entry" element={<SalaryGradeEntryForm />} />
+						<Route path="category-entry" element={<CategoryEntryForm />} />
 						<Route path="bank-entry" element={<BankEntryForm />} />
-						<Route
-							path="leave-grade-entry"
-							element={<LeaveGradeEntryForm />}
-						/>
-						<Route
-							path="shift-entry"
-							element={<ShiftEntryForm />}
-						/>
-						<Route
-							path="holiday-entry"
-							element={<HolidayEntryForm />}
-						/>
-						<Route
-							path="earnings-heads-entry"
-							element={<EarningsHeadEntry />}
-						/>
-						<Route
-							path="deductions-heads-entry"
-							element={<DeductionsHeadEntryForm />}
-						/>
-						<Route
-							path="employee-entry"
-							element={<EmployeeEntryForm />}
-						/>
-						<Route
-							path="employee-salary"
-							element={<EmployeeSalaryForm />}
-						/>
-						<Route
-							path="weekly-off-holiday-off"
-							element={<WeeklyOffHolidayOffForm />}
-						/>
-						<Route
-							path="pf-esi-setup"
-							element={<PfEsiSetupForm />}
-						/>
-						<Route
-							path="calculations"
-							element={<CalculationsForm />}
-						/>
+						<Route path="leave-grade-entry" element={<LeaveGradeEntryForm />} />
+						<Route path="shift-entry" element={<ShiftEntryForm />} />
+						<Route path="holiday-entry" element={<HolidayEntryForm />} />
+						<Route path="earnings-heads-entry" element={<EarningsHeadEntry />} />
+						<Route path="deductions-heads-entry" element={<DeductionsHeadEntryForm />} />
+						<Route path="employee-entry" element={<EmployeeEntryForm />} />
+						<Route path="employee-salary" element={<EmployeeSalaryForm />} />
+						<Route path="weekly-off-holiday-off" element={<WeeklyOffHolidayOffForm />} />
+						<Route path="pf-esi-setup" element={<PfEsiSetupForm />} />
+						<Route path="calculations" element={<CalculationsForm />} />
 					</Route>
 					<Route path="transaction">
-						<Route
-							path="employee-shifts"
-							element={<EmployeeShiiftsEntryForm />}
-						/>
-						<Route
-							path="time-updation"
-							element={<TimeUpdationForm />}
-						/>
+						<Route path="employee-shifts" element={<EmployeeShiiftsEntryForm />} />
+						<Route path="time-updation" element={<TimeUpdationForm />} />
 					</Route>
 
 					{/* <Route path="bank-entry" element={<BankEntryForm />} />
@@ -176,22 +122,13 @@ function App() {
 						</ProtectedRoute>
 					}
 				>
-					<Route
-						path="regular-registration"
-						element={<RegularRegisterForm />}
-					/>
-					<Route
-						path="visible-companies"
-						element={<VisibleCompaniesForm />}
-					/>
+					<Route path="regular-registration" element={<RegularRegisterForm />} />
+					<Route path="visible-companies" element={<VisibleCompaniesForm />} />
 				</Route>
 				<Route path="login" element={<LoginForm />} />
 				<Route path="register" element={<RegisterForm />} />
 				<Route path="forgot-password" element={<ForgotPassform />} />
-				<Route
-					path="pass-confirm/:uid/:token"
-					element={<PassConfirmForm />}
-				/>
+				<Route path="pass-confirm/:uid/:token" element={<PassConfirmForm />} />
 			</Routes>
 		</div>
 	);
