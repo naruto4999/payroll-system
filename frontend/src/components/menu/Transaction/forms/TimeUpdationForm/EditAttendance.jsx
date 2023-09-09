@@ -17,6 +17,7 @@ import {
 	useGetAllEmployeeSalaryDetailQuery,
 } from '../../../../authentication/api/timeUpdationApiSlice';
 import TableFilterInput from './TableFilterInput';
+import GenerativeLeaveTable from './GenerativeLeaveTable';
 
 // After for the Beginnning is covered by late grace
 const AUTO_SHIFT_BEGINNING_BUFFER_BEFORE = 10;
@@ -1029,6 +1030,9 @@ const EditAttendance = memo(
 												lateMin={values.attendance[day].lateMin}
 												holidays={holidays}
 												memoizedExtraOffDate={memoizedExtraOffDate}
+												firstHalf={values.attendance[day].firstHalf}
+												secondHalf={values.attendance[day].secondHalf}
+												absent={absent}
 											/>
 										);
 									})}
@@ -1197,6 +1201,16 @@ const EditAttendance = memo(
 											isTableFilterInputFocused={isTableFilterInputFocused}
 											onRowClick={onRowClick}
 											// memoizedSelectedDate={memoizedSelectedDate}
+										/>
+									</div>
+								)}
+								{table && (
+									<div>
+										<GenerativeLeaveTable
+											globalCompany={globalCompany}
+											year={values.year}
+											updateEmployeeId={updateEmployeeId}
+											month={values.month}
 										/>
 									</div>
 								)}

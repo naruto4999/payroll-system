@@ -19,6 +19,5 @@
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }],
   "typescript.disableAutomaticTypeAcquisition": true
-
 }
 

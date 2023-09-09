@@ -2,8 +2,8 @@ from django.forms import ValidationError
 from django.shortcuts import render
 from rest_framework import generics, status, mixins
 from django.db import transaction
-from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, DeductionsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer
-from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift, EmployeeSalaryEarning, EarningsHead, EmployeeShifts
+from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, DeductionsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer, EmployeeGenerativeLeaveRecordSerializer, EmployeeLeaveOpeningSerializer, EmployeePresentCountSerializer
+from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift, EmployeeSalaryEarning, EarningsHead, EmployeeShifts, EmployeeGenerativeLeaveRecord
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
@@ -1707,7 +1707,7 @@ class EmployeeShiftsUpdateAPIView(generics.UpdateAPIView):
         if user.role != "OWNER":
             user = OwnerToRegular.objects.get(user=user).owner
         employee_shifts = request.data['employee_shifts']
-        print(employee_shifts)
+        # print(employee_shifts)
         for shift in employee_shifts:
             serializer = self.get_serializer(data=shift)
             serializer.is_valid(raise_exception=True)
@@ -1735,7 +1735,7 @@ class EmployeeShiftsPermanentUpdateAPIView(generics.UpdateAPIView):
             user = OwnerToRegular.objects.get(user=user).owner
         employee_shift = request.data
         employee_shift['to_date'] = datetime.strptime('9999-01-01', "%Y-%m-%d").date()
-        print(employee_shift)
+        # print(employee_shift)
         serializer = self.get_serializer(data=employee_shift)
         serializer.is_valid(raise_exception=True)
         validated_shift = serializer.validated_data
@@ -1777,17 +1777,22 @@ class EmployeeAttendanceListCreateAPIView(generics.ListCreateAPIView):
         # return instance.owner.employee_family_nominee_details.filter(company=company_id, employee=employee)
 
     def create(self, request, *args, **kwargs):
-        print(request.data)
-        print(request.data['employee_attendance'])
-        print(type(request.data['employee_attendance']))
         try:
             serializer = self.get_serializer(data=request.data['employee_attendance'], many=True)
             serializer.is_valid(raise_exception=True)
             user = self.request.user
+            total_expected_instances= len(serializer.validated_data)
+            date_for_one_instance = serializer.validated_data[0]['date']
+            employee = serializer.validated_data[0]['employee']
+            company = serializer.validated_data[0]['company']
+            print(date_for_one_instance.month)
+            print(date_for_one_instance.year)
 
             if user.role == "OWNER":
                 serializer.save(user=user)
+                EmployeeGenerativeLeaveRecord.objects.generate_monthly_record(total_expected_instances=total_expected_instances, user=user, year=date_for_one_instance.year, month=date_for_one_instance.month, employee=employee, company=company)
                 return Response(serializer.data, status=status.HTTP_200_OK)
+                # return Response({"msg": "try"}, status=status.HTTP_200_OK)
             # else:
             #     instance = OwnerToRegular.objects.get(user=user)
             #     serializer.save(user=instance.owner)
@@ -1804,9 +1809,9 @@ class EmployeeAttendanceListCreateAPIView(generics.ListCreateAPIView):
         to_date = datetime(year, month, last_day).date()
 
 
-        print(type(from_date))
-        print(from_date)
-        print(to_date)
+        # print(type(from_date))
+        # print(from_date)
+        # print(to_date)
         # print(month)
         queryset = self.get_queryset().filter(date__range=[from_date, to_date])
         serializer = self.get_serializer(queryset, many=True)
@@ -1826,31 +1831,66 @@ class EmployeeAttendanceUpdateAPIView(generics.UpdateAPIView):
             return user.all_employees_attendance.filter(company=company_id, employee=employee)
     
     def update(self, request, *args, **kwargs):
-        print(request.data)
-        print(request.data['employee_attendance'])
-        employee_attendance = request.data['employee_attendance']
-        for day in employee_attendance:
-            instance = self.get_queryset().filter(id=day['id'])
-            serializer = self.get_serializer(instance.first(), data=day)
-            serializer.is_valid(raise_exception=True)
+        # print(request.data)
+        # print(request.data['employee_attendance'])
+        try:
             user = self.request.user
+            employee_attendance = request.data['employee_attendance']
+            total_expected_instances= len(employee_attendance)
+            date_for_one_instance = datetime.strptime(employee_attendance[0]['date'], "%Y-%m-%d").date()
+            print(f"Date: {date_for_one_instance} Type: {type(date_for_one_instance)}")
+            employee_id = employee_attendance[0]['employee']
+            company_id = employee_attendance[0]['company']
+            print(f"Employee: {employee_id} Company: {company_id}")
+            print(total_expected_instances)
+            for day in employee_attendance:
+                instance = self.get_queryset().filter(id=day['id'])
+                serializer = self.get_serializer(instance.first(), data=day)
+                serializer.is_valid(raise_exception=True)
+                if user.role == "OWNER":
+                    serializer.save(user=user)
+
             if user.role == "OWNER":
-                serializer.save(user=user)
+                EmployeeGenerativeLeaveRecord.objects.update_monthly_record(total_expected_instances=total_expected_instances, user=user, year=date_for_one_instance.year, month=date_for_one_instance.month, employee_id=employee_id, company_id=company_id)
 
-        # partial = kwargs.pop('partial', False)
+            return Response({"detail": "Successful"}, status=status.HTTP_200_OK)
+        except Exception as e:
+            print("Some Error Occured")
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
 
-        # for data in family_nominee_detail:
-        #     instance = self.get_queryset().filter(id=data['id'])
-        #     serializer = self.get_serializer(instance.first(), data=data)
-        #     serializer.is_valid(raise_exception=True)
-        #     user = self.request.user
-        #     if user.role == "OWNER":
-        #         serializer.save(user=user)
-        #     else:
-        #         instance = OwnerToRegular.objects.get(user=user)
-        #         serializer.save(user=instance.owner)
+class EmployeeGenerativeLeaveRecordListAPIView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = EmployeeGenerativeLeaveRecordSerializer
 
-        return Response({"detail": "Successful"}, status=status.HTTP_200_OK)
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        year = self.kwargs.get('year')
+        user = self.request.user
+        if user.role == "OWNER":
+            return user.all_company_employees_generative_leave_record.filter(company=company_id, date__year=year)
+        
+class EmployeePresentCountListAPIView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = EmployeePresentCountSerializer
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        year = self.kwargs.get('year')
+        user = self.request.user
+        if user.role == "OWNER":
+            return user.all_company_employees_present_count.filter(company=company_id, date__year=year)
+
+class EmployeeLeaveOpeningListAPIView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = EmployeeLeaveOpeningSerializer
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        year = self.kwargs.get('year')
+        user = self.request.user
+        if user.role == "OWNER":
+            return user.all_company_employees_leave_openings.filter(company=company_id, year=year)
 
 
 

@@ -6,7 +6,20 @@ const classNames = (...classes) => {
 };
 
 const AttendanceMonthDays = memo(
-	({ day, year, month, shift, leaveGrades, otMin, lateMin, holidays, memoizedExtraOffDate }) => {
+	({
+		day,
+		year,
+		month,
+		shift,
+		leaveGrades,
+		otMin,
+		lateMin,
+		holidays,
+		memoizedExtraOffDate,
+		firstHalf,
+		secondHalf,
+		absent,
+	}) => {
 		// console.log(shift);
 		const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 		const date = new Date(Date.UTC(year, month - 1, day));
@@ -14,6 +27,7 @@ const AttendanceMonthDays = memo(
 		const daysInMonth = new Date(year, month, 0).getDate();
 		const isHoliday = holidays.some((holiday) => new Date(holiday.date).getTime() === date.getTime());
 		const isExtraOff = memoizedExtraOffDate?.getDate() == parseInt(day);
+		console.log(absent);
 
 		// console.log(isHoliday);
 
@@ -74,9 +88,9 @@ const AttendanceMonthDays = memo(
 						as="select"
 						name={`attendance.${day}.firstHalf`}
 						id={`attendance.${day}.firstHalf`}
-						className={classNames(
-							'h-full w-20 rounded-sm bg-transparent pl-2 pr-2 text-xs outline-none transition-colors duration-300 hover:bg-zinc-200 dark:text-xs dark:hover:bg-zinc-700 focus:dark:bg-zinc-700 sm:text-base'
-						)}
+						className={`h-full w-20 rounded-sm bg-transparent pl-2 pr-2 text-xs outline-none transition-colors duration-300 hover:bg-zinc-200 dark:text-xs dark:hover:bg-zinc-700 focus:dark:bg-zinc-700 sm:text-base ${
+							firstHalf == absent.id ? 'text-red-600' : ''
+						}`}
 					>
 						{/* <option value={''}>N/A</option> */}
 						{leaveGrades?.map((leaveGrade, index) => {
@@ -91,9 +105,9 @@ const AttendanceMonthDays = memo(
 						as="select"
 						name={`attendance.${day}.secondHalf`}
 						id={`attendance.${day}.secondHalf`}
-						className={classNames(
-							'h-full w-20 rounded-sm bg-transparent pl-2 pr-2 text-xs outline-none transition-colors duration-300 hover:bg-zinc-200 dark:text-xs dark:hover:bg-zinc-700 focus:dark:bg-zinc-700 sm:text-base'
-						)}
+						className={`h-full w-20 rounded-sm bg-transparent pl-2 pr-2 text-xs outline-none transition-colors duration-300 hover:bg-zinc-200 dark:text-xs dark:hover:bg-zinc-700 focus:dark:bg-zinc-700 sm:text-base ${
+							secondHalf == absent.id ? 'text-red-600' : ''
+						}`}
 					>
 						{leaveGrades?.map((leaveGrade, index) => {
 							return (

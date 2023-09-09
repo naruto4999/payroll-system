@@ -1034,8 +1034,128 @@ class EmployeeAttendance(models.Model):
                 self.pay_multiplier = 0
             # self.pay_multiplier = calculate_pay_multiplier()
         super().save(*args, **kwargs)
+    
+
+class EmployeeGenerativeLeaveRecordManager(models.Manager):
+    def generate_monthly_record(self, total_expected_instances, user, year, month, employee, company):
+        leave_grades_queryset = LeaveGrade.objects.filter(user=user, company=company, paid=True, generate_frequency__isnull=False)
+        leave_grade_dict = {leave_grade.id: {'leave_count': 0, 'name': leave_grade.name} for leave_grade in leave_grades_queryset}
+        employee_professional_detail = EmployeeProfessionalDetail.objects.get(user=user, employee=employee, company=company)
+
+        if year > employee_professional_detail.date_of_joining.year or (month > employee_professional_detail.date_of_joining.month and year == employee_professional_detail.date_of_joining.year):
+            from_date = datetime(year, month, 1).date()
+            to_date = datetime(year, month, total_expected_instances).date()
+        elif month == employee_professional_detail.date_of_joining.month and year == employee_professional_detail.date_of_joining.year:
+            day = employee_professional_detail.date_of_joining.day
+            from_date = datetime(year, month, day).date()
+            to_date = datetime(year, month, day + total_expected_instances - 1).date()
+
+        present_count = 0
+        employee_attendance_queryset = EmployeeAttendance.objects.filter(user=user, employee=employee, company=company, date__gte=from_date, date__lte=to_date)
+
+        for employee_attendance in employee_attendance_queryset:
+            present_count += 1 if employee_attendance.first_half.name == "P" else 0
+            present_count += 1 if employee_attendance.second_half.name == "P" else 0
+
+            for leave_id in (employee_attendance.first_half.id, employee_attendance.second_half.id):
+                if leave_id in leave_grade_dict:
+                    leave_grade_dict[leave_id]['leave_count'] += 1
+
+        for key, value in leave_grade_dict.items():
+            self.create(user=user, employee=employee, company=company, leave_id=key, date=from_date.replace(day=1), leave_count=value['leave_count'])
+        EmployeePresentCount.objects.create(present_count=present_count, user=user, company=company, employee=employee, date=from_date.replace(day=1))
+
+        print(f"Present Count: {present_count}")
+        print(leave_grade_dict)    
+
+    def update_monthly_record(self, total_expected_instances, user, year, month, employee_id, company_id):
+        leave_grades_queryset = LeaveGrade.objects.filter(user=user, company_id=company_id, paid=True, generate_frequency__isnull=False)
+        leave_grade_dict = {leave_grade.id: {'leave_count': 0, 'name': leave_grade.name} for leave_grade in leave_grades_queryset}
+        employee_professional_detail = EmployeeProfessionalDetail.objects.get(user=user, employee_id=employee_id, company_id=company_id)
+
+        if year > employee_professional_detail.date_of_joining.year or (month > employee_professional_detail.date_of_joining.month and year == employee_professional_detail.date_of_joining.year):
+            from_date = datetime(year, month, 1).date()
+            to_date = datetime(year, month, total_expected_instances).date()
+        elif month == employee_professional_detail.date_of_joining.month and year == employee_professional_detail.date_of_joining.year:
+            day = employee_professional_detail.date_of_joining.day
+            from_date = datetime(year, month, day).date()
+            to_date = datetime(year, month, day + total_expected_instances - 1).date()
+
+        present_count = 0
+        employee_attendance_queryset = EmployeeAttendance.objects.filter(user=user, employee_id=employee_id, company_id=company_id, date__gte=from_date, date__lte=to_date)
+
+        for employee_attendance in employee_attendance_queryset:
+            present_count += 1 if employee_attendance.first_half.name == "P" else 0
+            present_count += 1 if employee_attendance.second_half.name == "P" else 0
+
+            for leave_id in (employee_attendance.first_half.id, employee_attendance.second_half.id):
+                if leave_id in leave_grade_dict:
+                    leave_grade_dict[leave_id]['leave_count'] += 1
+
+        # Update existing records without using F() expressions
+        present_count_record = EmployeePresentCount.objects.filter(user=user, employee_id=employee_id, company_id=company_id, date=from_date.replace(day=1)).first()
+        if present_count_record:
+            present_count_record.present_count = present_count
+            present_count_record.save()
+        else:
+            EmployeePresentCount.create(user=user, employee_id=employee_id, company_id=company_id, present_count=present_count, date=from_date.replace(day=1))
+
+        for key, value in leave_grade_dict.items():
+            record = self.filter(user=user, employee_id=employee_id, company_id=company_id, leave_id=key, date=from_date.replace(day=1)).first()
+            if record:
+                # record.present_count = present_count
+                record.leave_count = value['leave_count']
+                record.save()
+            else:
+                self.create(user=user, employee_id=employee_id, company_id=company_id, leave_id=key, date=from_date.replace(day=1), leave_count=value['leave_count'])
 
 
+
+        print(f"Present Count: {present_count}")
+        print(leave_grade_dict)
+
+class EmployeeGenerativeLeaveRecord(models.Model):
+    objects = EmployeeGenerativeLeaveRecordManager()
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_company_employees_generative_leave_record")
+    employee = models.ForeignKey(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="generative_leave_record")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="all_employees_generative_leave_record")
+    leave = models.ForeignKey(LeaveGrade, on_delete=models.CASCADE, related_name="current_generative_leave_record")
+    date = models.DateField(null=False, blank=False) #day of date is always 1
+    # present_count = models.PositiveSmallIntegerField(null=False, blank=False, default=0)
+    leave_count = models.PositiveSmallIntegerField(null=False, blank=False, default=0)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['employee', 'date', 'company', 'leave'], name='unique_date_per_employee_per_company'),
+        ]
+
+class EmployeePresentCount(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_company_employees_present_count")
+    employee = models.ForeignKey(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="present_count")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="all_employees_present_count")
+    present_count = models.PositiveSmallIntegerField(null=False, blank=False, default=0)
+    date = models.DateField(null=False, blank=False) #day of date is always 1
+
+
+
+
+
+
+class EmployeeLeaveOpening(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_company_employees_leave_openings")
+    employee = models.ForeignKey(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="leave_opening")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="all_employees_leave_openings")
+    leave = models.ForeignKey(LeaveGrade, on_delete=models.CASCADE, related_name="all_leave_openings")
+    leave_count = models.PositiveSmallIntegerField(null=False, blank=False, default=0)
+    year = models.PositiveSmallIntegerField(null=False, blank=False, validators=[
+            MinValueValidator(1900, message="Year cannot be less than 1900."),
+            MaxValueValidator(2100, message="Year cannot be more than 2100."),
+        ])
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['employee', 'year', 'company'], name='unique_year_per_employee_per_company'),
+        ]
 
 
 
@@ -1134,3 +1254,11 @@ def create_default_calculations(sender, instance, created, **kwargs):
         company = instance  # Assign the instance to a variable
         user = company.user
         Calculations.objects.create( user=user, company=company, ot_calculation='26', el_calculation='26', notice_pay='26', service_calculation='26', gratuity_calculation='26', el_days_calculation=20,)
+
+@receiver(post_save, sender=EmployeeAttendance)
+def create_generative_leave_record(sender, instance, created, **kwargs):
+    if created:
+        employee_attendance = instance  # Assign the instance to a variable
+        user = employee_attendance.user
+        print(employee_attendance)
+        # Calculations.objects.create( user=user, company=company, ot_calculation='26', el_calculation='26', notice_pay='26', service_calculation='26', gratuity_calculation='26', el_days_calculation=20,)

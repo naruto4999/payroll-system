@@ -42,13 +42,37 @@ export const timeUpdationApiSlice = apiSlice.injectEndpoints({
 			keepUnusedDataFor: 1,
 			providesTags: ['AllEmployeeSalaryDetail'],
 		}),
+		getAllEmployeeGenerativeLeaveRecord: builder.query({
+			query: (body) => ({
+				url: `/api/all-employee-generative-leave-record/${body.company}/${body.year}`,
+				method: 'GET',
+			}),
+			keepUnusedDataFor: 1,
+			providesTags: ['AllEmployeeGenerativeLeaveRecord'],
+		}),
+		getAllEmployeeLeaveOpening: builder.query({
+			query: (body) => ({
+				url: `/api/all-employee-leave-opening/${body.company}/${body.year}`,
+				method: 'GET',
+			}),
+			keepUnusedDataFor: 1,
+			providesTags: ['AllEmployeeLeaveOpening'],
+		}),
+		getAllEmployeePresentCount: builder.query({
+			query: (body) => ({
+				url: `/api/all-employee-present-count/${body.company}/${body.year}`,
+				method: 'GET',
+			}),
+			keepUnusedDataFor: 1,
+			providesTags: ['AllEmployeePresentCount'],
+		}),
 		addEmployeeAttendance: builder.mutation({
 			query: (body) => ({
 				url: `/api/employee-attendance/${body.company}/${body.employee}`,
 				method: 'POST',
 				body: body,
 			}),
-			invalidatesTags: ['EmployeeAttendance'],
+			invalidatesTags: ['EmployeeAttendance', 'AllEmployeePresentCount', 'AllEmployeeGenerativeLeaveRecord'],
 		}),
 		updateEmployeeAttendance: builder.mutation({
 			query: (body) => ({
@@ -56,7 +80,7 @@ export const timeUpdationApiSlice = apiSlice.injectEndpoints({
 				method: 'PUT',
 				body: body,
 			}),
-			invalidatesTags: ['EmployeeAttendance'],
+			invalidatesTags: ['EmployeeAttendance', 'AllEmployeePresentCount', 'AllEmployeeGenerativeLeaveRecord'],
 		}),
 		// deleteShift: builder.mutation({
 		// 	query: (shift) => ({
@@ -76,4 +100,7 @@ export const {
 	useGetCurrentMonthAllEmployeeShiftsQuery,
 	useGetAllEmployeeProfessionalDetailQuery,
 	useGetAllEmployeeSalaryDetailQuery,
+	useGetAllEmployeeGenerativeLeaveRecordQuery,
+	useGetAllEmployeeLeaveOpeningQuery,
+	useGetAllEmployeePresentCountQuery,
 } = timeUpdationApiSlice;

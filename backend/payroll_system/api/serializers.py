@@ -1,7 +1,7 @@
 from dataclasses import field
 from rest_framework import serializers
 
-from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, DeductionsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning, EmployeeSalaryDetail, EmployeeFamilyNomineeDetial, EmployeePfEsiDetail, WeeklyOffHolidayOff, PfEsiSetup, Calculations, EmployeeShifts, EmployeeAttendance
+from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, DeductionsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning, EmployeeSalaryDetail, EmployeeFamilyNomineeDetial, EmployeePfEsiDetail, WeeklyOffHolidayOff, PfEsiSetup, Calculations, EmployeeShifts, EmployeeAttendance, EmployeeGenerativeLeaveRecord, EmployeeLeaveOpening, EmployeePresentCount
 from rest_framework import serializers
 
 
@@ -228,3 +228,19 @@ class EmployeeAttendanceSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployeeAttendance
         fields = ['id', 'employee', 'company', 'machine_in', 'machine_out', 'manual_in', 'manual_out', 'first_half', 'second_half', 'date', 'ot_min', 'late_min', 'manual_mode']
+
+class EmployeeGenerativeLeaveRecordSerializer(serializers.ModelSerializer):
+    leave = LeaveGradeSerializer()
+    class Meta:
+        model = EmployeeGenerativeLeaveRecord
+        fields = ['id', 'employee', 'company', 'leave', 'date', 'leave_count']
+
+class EmployeePresentCountSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmployeePresentCount
+        fields = ['id', 'employee', 'company', 'date', 'present_count']
+
+class EmployeeLeaveOpeningSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmployeeLeaveOpening
+        fields = ['id', 'employee', 'company', 'leave', 'leave_count', 'year']

@@ -28,7 +28,7 @@ const EmployeeTable = ({
 	}, []);
 
 	return (
-		<div className="p-4">
+		<div className="py-2">
 			<div className="scrollbar mx-auto max-h-[30dvh] max-w-full overflow-y-auto rounded border border-black border-opacity-50 shadow-md lg:max-h-[30dvh]">
 				<table className="w-full border-collapse text-center text-xs">
 					<thead className="sticky top-0 z-20 bg-blueAccent-600 dark:bg-blueAccent-700">
