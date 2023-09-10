@@ -18,6 +18,7 @@ import {
 } from '../../../../authentication/api/timeUpdationApiSlice';
 import TableFilterInput from './TableFilterInput';
 import GenerativeLeaveTable from './GenerativeLeaveTable';
+import AttendanceFooter from './AttendanceFooter';
 
 // After for the Beginnning is covered by late grace
 const AUTO_SHIFT_BEGINNING_BUFFER_BEFORE = 10;
@@ -79,7 +80,7 @@ const EditAttendance = memo(
 		const weeklyOffValues = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'no_off'];
 
 		const auth = useSelector((state) => state.auth);
-		// console.log(values);
+		console.log(values);
 		const absent = useMemo(() => leaveGrades.find((grade) => grade.name === 'A'), [leaveGrades]);
 		const missPunch = useMemo(() => leaveGrades.find((grade) => grade.name === 'MS'), [leaveGrades]);
 		const present = useMemo(() => leaveGrades.find((grade) => grade.name === 'P'), [leaveGrades]);
@@ -263,33 +264,6 @@ const EditAttendance = memo(
 			isFetching,
 		} = useGetWeeklyOffHolidayOffQuery(globalCompany.id);
 
-		// const datesToGet = () => {
-		// 	// Calculating fromDate
-		// 	let monthStart = new Date(Date.UTC(values.year, parseInt(values.month) - 1, 1 - 7));
-		// 	const utcFromYear = monthStart.getUTCFullYear();
-		// 	const utcFromMonth = monthStart.getUTCMonth() + 1; // Months are 0-based
-		// 	const utcFromDay = monthStart.getUTCDate();
-
-		// 	const utcFromDate = `${utcFromYear}-${utcFromMonth.toString().padStart(2, '0')}-${utcFromDay
-		// 		.toString()
-		// 		.padStart(2, '0')}`;
-
-		// 	const daysInMonth = new Date(values.year, values.month, 0).getDate();
-
-		// 	// Calculating toDate
-		// 	let monthEnd = new Date(Date.UTC(values.year, parseInt(values.month) - 1, daysInMonth + 7));
-
-		// 	const utcToYear = monthEnd.getUTCFullYear();
-		// 	const utcToMonth = monthEnd.getUTCMonth() + 1; // Months are 0-based
-		// 	const utcToDay = monthEnd.getUTCDate();
-
-		// 	const utcToDate = `${utcToYear}-${utcToMonth.toString().padStart(2, '0')}-${utcToDay
-		// 		.toString()
-		// 		.padStart(2, '0')}`;
-		// 	return { fromDate: utcFromDate, toDate: utcToDate };
-		// };
-
-		// Get the Value of Shift for a given date
 		const getShift = useCallback(
 			(year, month, day) => {
 				// console.log(employeeShifts);
@@ -935,11 +909,20 @@ const EditAttendance = memo(
 		};
 
 		const AutoFillAttendance = useCallback(() => {
-			const manualFromDate = values.manualFromDate;
+			let manualFromDate = values.manualFromDate;
 			const manualToDate = values.manualToDate;
+			const manualFromDateObj = new Date(Date.UTC(values.year, values.month - 1, parseInt(manualFromDate)));
+			const dojObj = new Date(currentEmployeeProfessionalDetail.dateOfJoining);
+			console.log(dojObj);
+			console.log(manualFromDateObj);
+			console.log(dojObj.getDate());
+			if (manualFromDateObj < dojObj) {
+				manualFromDate = dojObj.getDate();
+			}
 
 			const daysInMonth = new Date(values.year, values.month, 0).getDate();
 			const effectiveToDate = manualToDate < daysInMonth ? manualToDate : daysInMonth;
+			console.log(manualFromDate);
 
 			for (let day = manualFromDate; day <= effectiveToDate; day++) {
 				let skipThisDay = false;
@@ -1045,6 +1028,21 @@ const EditAttendance = memo(
 									<div className="mx-auto mt-6 w-fit font-bold dark:text-blueAccent-600">
 										Please Select an Employee First
 									</div>
+								)}
+								{updateEmployeeId && (
+									<AttendanceFooter
+										absent={absent}
+										attendance={values.attendance}
+										holidayOffSkip={holidayOffSkip}
+										weeklyOffSkip={weeklyOffSkip}
+										missPunch={missPunch}
+										onDuty={onDuty}
+										present={present}
+										holidayOff={holidayOff}
+										weeklyOff={weeklyOff}
+										leaveGrades={leaveGrades}
+										isSubmitting={isSubmitting}
+									/>
 								)}
 							</section>
 							<section className="flex w-full flex-col gap-4 p-6">

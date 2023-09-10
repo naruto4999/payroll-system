@@ -1,6 +1,4 @@
-import { FaRegTrashAlt, FaPen, FaAngleUp, FaAngleDown, FaEye } from 'react-icons/fa';
-import { FaCircleCheck } from 'react-icons/fa6';
-import { useRef, useEffect, useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import {
 	useGetAllEmployeeLeaveOpeningQuery,
 	useGetAllEmployeePresentCountQuery,
@@ -54,9 +52,6 @@ const GenerativeLeaveTable = ({ globalCompany, year, updateEmployeeId, month }) 
 			skip: globalCompany === null || globalCompany === '' || year == '',
 		}
 	);
-	console.log(allEmployeeGenerativeLeaveRecord);
-	console.log(allEmployeeLeaveOpening);
-	console.log(allEmployeePresentCount);
 
 	const currentEmployeePresentCount = useMemo(() => {
 		// First, filter the array to get objects that belong to the selected employee.
@@ -82,16 +77,12 @@ const GenerativeLeaveTable = ({ globalCompany, year, updateEmployeeId, month }) 
 				(currentEmployeePresentCount.monthly[year][month] || 0) + item.presentCount;
 
 			// Update the yearly cumulative sum.
-			console.log('Present Count: ', item.presentCount);
 			currentEmployeePresentCount.yearly += item.presentCount;
 		});
-		console.log('yoooo');
 
 		// Return the memoized object.
 		return currentEmployeePresentCount;
 	}, [allEmployeePresentCount, updateEmployeeId]);
-
-	console.log(currentEmployeePresentCount);
 
 	const currentEmployeeGenerativeLeaveCount = useMemo(() => {
 		const memoizedObject = {};
@@ -132,7 +123,6 @@ const GenerativeLeaveTable = ({ globalCompany, year, updateEmployeeId, month }) 
 
 		return memoizedObject;
 	}, [allEmployeeGenerativeLeaveRecord, updateEmployeeId]);
-	console.log(currentEmployeeGenerativeLeaveCount);
 
 	return (
 		<div className="scrollbar mx-auto max-h-[30dvh] max-w-full overflow-y-auto rounded border border-black border-opacity-50 shadow-md lg:max-h-[30dvh]">
@@ -184,11 +174,6 @@ const GenerativeLeaveTable = ({ globalCompany, year, updateEmployeeId, month }) 
 							</td>
 						</tr>
 					))}
-					{/* <tr>
-						<td>Data 1</td>
-						<td>Data 2</td>
-						<td>Data 3</td>
-					</tr> */}
 				</tbody>
 			</table>
 		</div>

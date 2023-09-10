@@ -27,9 +27,6 @@ const AttendanceMonthDays = memo(
 		const daysInMonth = new Date(year, month, 0).getDate();
 		const isHoliday = holidays.some((holiday) => new Date(holiday.date).getTime() === date.getTime());
 		const isExtraOff = memoizedExtraOffDate?.getDate() == parseInt(day);
-		console.log(absent);
-
-		// console.log(isHoliday);
 
 		// const OtDisplayhours = Math.floor(otMin / 60);
 		// const OtDisplayMinutes = otMin % 60;
