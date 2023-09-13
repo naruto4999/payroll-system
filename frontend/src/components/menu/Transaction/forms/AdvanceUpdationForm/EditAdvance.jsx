@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { Field, ErrorMessage, FieldArray } from 'formik';
+import { useGetEmployeeAdvancePaymentsQuery } from '../../../../authentication/api/advanceUpdationApiSlice';
 
 const classNames = (...classes) => {
 	return classes.filter(Boolean).join(' ');
@@ -15,14 +16,38 @@ const EditAdvance = React.memo(
 		cancelButtonClicked,
 		updateEmployeeId,
 		isValid,
+		isSubmitting,
 	}) => {
 		const advanceInitialValues = {
 			principal: 0,
 			date: '',
 			emi: 0,
-			tenureMonths: '',
-			repaidAmount: '',
+			tenureMonthsLeft: '',
+			repaidAmount: 0,
 		};
+
+		const {
+			data: employeeAdvancePayments,
+			isLoading: isLoadingEmployeeAdvancePayments,
+			isSuccess: isEmployeeAdvancePaymentsSuccess,
+			isFetching: isFetchingEmployeeAdvancePayments,
+		} = useGetEmployeeAdvancePaymentsQuery(
+			{
+				company: globalCompany.id,
+				employee: updateEmployeeId,
+			},
+			{
+				skip: globalCompany === null || globalCompany === '' || !updateEmployeeId,
+			}
+		);
+		// console.log(employeeAdvancePayments);
+
+		useEffect(() => {
+			if (employeeAdvancePayments && employeeAdvancePayments?.length != 0 && !isSubmitting) {
+				setFieldValue(`employeeAdvanceDetails`, employeeAdvancePayments);
+			}
+		}, [employeeAdvancePayments]);
+
 		const calculateTenureInMonths = (principal, emi) => {
 			let months = Math.floor(principal / emi);
 			if (principal % emi != 0) {
@@ -33,34 +58,20 @@ const EditAdvance = React.memo(
 		console.log(values);
 
 		useEffect(() => {
-			// Loop through the updatedAdvanceDetails array and calculate/set tenureMonths for each object
-			values.employeeAdvanceDetails.map((details, index) => {
-				console.log(index);
-				if (details.principal != 0 && details.emi != 0) {
-					console.log(details.principal);
-					console.log(details.emi);
-					const tenureMonths = calculateTenureInMonths(parseInt(details.principal), parseFloat(details.emi));
-					const years = Math.floor(tenureMonths / 12);
-					const months = tenureMonths % 12;
-					const formattedTenure =
-						tenureMonths >= 12 ? `${years} Years and ${months} Months` : `${months} Months`;
-					console.log(formattedTenure);
-					setFieldValue(`employeeAdvanceDetails.${index}.tenureMonths`, formattedTenure);
-				} else {
-					setFieldValue(`employeeAdvanceDetails.${index}.tenureMonths`, '');
-				}
-
-				// Format the tenureMonths as "x Years and y Months"
-
-				// Update the detail object with the calculated tenureMonths
-				//   return {
-				//     ...detail,
-				//     tenureMonths: formattedTenure,
-				//   };
-			});
-
-			// Update the state with the updatedAdvanceDetails
-			// setUpdatedAdvanceDetails(updatedDetails);
+			// Loop through the updatedAdvanceDetails array and calculate/set tenureMonthsLeft for each object
+			if (!isSubmitting) {
+				values.employeeAdvanceDetails.map((details, index) => {
+					if (details.principal != 0 && details.emi != 0) {
+						const tenureMonthsLeft = calculateTenureInMonths(
+							parseInt(details.principal),
+							parseFloat(details.emi)
+						);
+						setFieldValue(`employeeAdvanceDetails.${index}.tenureMonthsLeft`, tenureMonthsLeft);
+					} else {
+						setFieldValue(`employeeAdvanceDetails.${index}.tenureMonthsLeft`, '');
+					}
+				});
+			}
 		}, [values.employeeAdvanceDetails]); // Empty dependency array t
 		return (
 			<div className="text-gray-900 dark:text-slate-100">
@@ -73,7 +84,7 @@ const EditAdvance = React.memo(
 								render={(arrayHelpers) => {
 									return (
 										<div>
-											{values.employeeAdvanceDetails.map((member, index) => (
+											{values.employeeAdvanceDetails?.map((member, index) => (
 												<div
 													key={index}
 													className="my-1 flex flex-row flex-wrap gap-1 rounded border-2 border-gray-800 border-opacity-25 p-2 dark:border-slate-100 dark:border-opacity-25"
@@ -86,7 +97,19 @@ const EditAdvance = React.memo(
 															<button
 																type="button"
 																className="inline-flex items-center justify-center rounded-md bg-redAccent-500 p-2 hover:bg-redAccent-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 dark:bg-redAccent-700 dark:hover:bg-redAccent-600"
-																onClick={() => arrayHelpers.remove(index)}
+																onClick={() => {
+																	const idToDelete =
+																		values.employeeAdvanceDetails[index]?.id;
+																	if (idToDelete) {
+																		// Assuming you are using Formik's setFieldValue to update the form values
+
+																		setFieldValue('detailsToDelete', [
+																			...values.detailsToDelete,
+																			idToDelete,
+																		]);
+																	}
+																	arrayHelpers.remove(index);
+																}}
 															>
 																<svg
 																	className="h-4 w-4"
@@ -121,7 +144,7 @@ const EditAdvance = React.memo(
 																			?.principal
 																		? 'border-red-500 border-opacity-100 dark:border-red-700 dark:border-opacity-75'
 																		: 'border-gray-800 border-opacity-25 dark:border-slate-100 dark:border-opacity-25',
-																	'min-w-32 block rounded border-2  bg-zinc-50   bg-opacity-50 p-1 outline-none transition focus:border-opacity-100 dark:bg-zinc-700 dark:focus:border-opacity-75'
+																	'block w-32 rounded border-2  bg-zinc-50   bg-opacity-50 p-1 outline-none transition focus:border-opacity-100 dark:bg-zinc-700 dark:focus:border-opacity-75'
 																)}
 																type="number"
 																name={`employeeAdvanceDetails.${index}.principal`}
@@ -141,7 +164,7 @@ const EditAdvance = React.memo(
 																		touched.employeeAdvanceDetails?.[index]?.emi
 																		? 'border-red-500 border-opacity-100 dark:border-red-700 dark:border-opacity-75'
 																		: 'border-gray-800 border-opacity-25 dark:border-slate-100 dark:border-opacity-25',
-																	'min-w-32 block rounded border-2  bg-zinc-50   bg-opacity-50 p-1 outline-none transition focus:border-opacity-100 dark:bg-zinc-700 dark:focus:border-opacity-75'
+																	'block w-32 rounded border-2  bg-zinc-50   bg-opacity-50 p-1 outline-none transition focus:border-opacity-100 dark:bg-zinc-700 dark:focus:border-opacity-75'
 																)}
 																type="number"
 																name={`employeeAdvanceDetails.${index}.emi`}
@@ -150,26 +173,35 @@ const EditAdvance = React.memo(
 
 														<div>
 															<label
-																htmlFor={`employeeAdvanceDetails.${index}.tenureMonths`}
+																htmlFor={`employeeAdvanceDetails.${index}.tenureMonthsLeft`}
 																className="text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
 															>
-																Tenure
+																Tenure Left
 															</label>
-															<Field
+															<div className=" my-auto p-1 text-amber-700 dark:text-amber-600">
+																{`${Math.floor(
+																	values.employeeAdvanceDetails?.[index]
+																		?.tenureMonthsLeft / 12
+																)} Years ${
+																	values.employeeAdvanceDetails?.[index]
+																		?.tenureMonthsLeft % 12
+																} Months`}
+															</div>
+															{/* <Field
 																className={classNames(
 																	errors.employeeAdvanceDetails?.[index]
-																		?.tenureMonths &&
+																		?.tenureMonthsLeft &&
 																		touched.employeeAdvanceDetails?.[index]
-																			?.tenureMonths
+																			?.tenureMonthsLeft
 																		? 'border-red-500 border-opacity-100 dark:border-red-700 dark:border-opacity-75'
 																		: 'border-gray-800 border-opacity-25 dark:border-slate-100 dark:border-opacity-25',
-																	'min-w-32 block rounded border-2  bg-zinc-50   bg-opacity-50 p-1 outline-none transition focus:border-opacity-100 dark:bg-zinc-700 dark:focus:border-opacity-75'
+																	'w-32 block rounded border-2  bg-zinc-50   bg-opacity-50 p-1 outline-none transition focus:border-opacity-100 dark:bg-zinc-700 dark:focus:border-opacity-75'
 																)}
 																type="text"
 																// value={'asd'}
-																name={`employeeAdvanceDetails.${index}.tenureMonths`}
+																name={`employeeAdvanceDetails.${index}.tenureMonthsLeft`}
 																disabled={true}
-															/>
+															/> */}
 														</div>
 
 														<div>
@@ -185,7 +217,7 @@ const EditAdvance = React.memo(
 																		touched.employeeAdvanceDetails?.[index]?.date
 																		? 'border-red-500 border-opacity-100 dark:border-red-700 dark:border-opacity-75'
 																		: 'border-gray-800 border-opacity-25 dark:border-slate-100 dark:border-opacity-25',
-																	'min-w-32 block rounded border-2  bg-zinc-50   bg-opacity-50 p-1 outline-none transition focus:border-opacity-100 dark:bg-zinc-700 dark:focus:border-opacity-75'
+																	'block w-fit rounded border-2  bg-zinc-50   bg-opacity-50 p-1 outline-none transition focus:border-opacity-100 dark:bg-zinc-700 dark:focus:border-opacity-75'
 																)}
 																type="date"
 																name={`employeeAdvanceDetails.${index}.date`}
@@ -207,7 +239,7 @@ const EditAdvance = React.memo(
 																			?.repaidAmount
 																		? 'border-red-500 border-opacity-100 dark:border-red-700 dark:border-opacity-75'
 																		: 'border-gray-800 border-opacity-25 dark:border-slate-100 dark:border-opacity-25',
-																	'min-w-32 block rounded border-2  bg-zinc-50   bg-opacity-50 p-1 outline-none transition focus:border-opacity-100 dark:bg-zinc-700 dark:focus:border-opacity-75'
+																	'block w-32 rounded border-2  bg-zinc-50   bg-opacity-50 p-1 outline-none transition focus:border-opacity-100 dark:bg-zinc-700 dark:focus:border-opacity-75'
 																)}
 																type="number"
 																name={`employeeAdvanceDetails.${index}.repaidAmount`}

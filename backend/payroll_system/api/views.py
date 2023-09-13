@@ -1902,13 +1902,79 @@ class EmployeeAdvancePaymentListCreateAPIView(generics.ListCreateAPIView):
         user = self.request.user
         if user.role == "OWNER":
             return user.all_company_employees_advance_payments.filter(company=company_id, employee=employee_id)
+    
+    def create(self, request, *args, **kwargs):
+        try:
+            serializer = self.get_serializer(data=request.data['employee_advance_details'], many=True)
+            serializer.is_valid(raise_exception=True)
+            user = self.request.user
+
+            if user.role == "OWNER":
+                serializer.save(user=user)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+                # return Response({"msg": "try"}, status=status.HTTP_200_OK)
+            # else:
+            #     instance = OwnerToRegular.objects.get(user=user)
+            #     serializer.save(user=instance.owner)
+            #     return Response(serializer.data, status=status.HTTP_200_OK)
+        except ValidationError as e:
+            print(e)
+            return Response({'error': e}, status=status.HTTP_400_BAD_REQUEST)
         
-    def perform_create(self, serializer):
+
+class EmployeeAdvancePaymentRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes= [IsAuthenticated]
+    serializer_class = EmployeeAdvancePaymentSerializer
+    lookup_field = 'id'
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        employee_id = self.kwargs.get('employee_id')
         user = self.request.user
         if user.role == "OWNER":
-            return serializer.save(user=self.request.user)
-        # instance = OwnerToRegular.objects.get(user=user)
-        # return serializer.save(user=instance.owner)
+            return user.all_company_employees_advance_payments.filter(company=company_id, employee=employee_id)
+    
+    def update(self, request, *args, **kwargs):
+        print(request.data)
+        print(request.data['employee_advance_details'])
+        # return Response({"detail": "Sub User deleted successfully."}, status=status.HTTP_200_OK)
+
+        try:
+            user = self.request.user
+            employee_advance_details = request.data['employee_advance_details']
+            for detail in employee_advance_details:
+                instance = self.get_queryset().filter(id=detail['id'])
+                serializer = self.get_serializer(instance.first(), data=detail)
+                serializer.is_valid(raise_exception=True)
+                if user.role == "OWNER":
+                    serializer.save(user=user)
+            return Response({"detail": "Successful"}, status=status.HTTP_200_OK)
+        except Exception as e:
+            print("Some Error Occured")
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+    def destroy(self, request, *args, **kwargs):
+        try:        
+            user = self.request.user
+            ids_to_delete = self.kwargs.get('ids')
+            ids_to_delete = ids_to_delete.split(',')
+            print(ids_to_delete)
+            queryset = self.get_queryset()
+            for id in ids_to_delete:
+                instance = queryset.filter(id=int(id)).first()
+                if instance:
+                    # Check if the user has permission to delete this instance
+                    if user.role == "OWNER":
+                        instance.delete()
+                else:
+                    return Response({"detail": f"Detail with ID {id} not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"detail": "Deleted successfully"}, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            print("Some Error Occurred")
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        
 
 
 

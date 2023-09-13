@@ -248,4 +248,4 @@ class EmployeeLeaveOpeningSerializer(serializers.ModelSerializer):
 class EmployeeAdvancePaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployeeAdvancePayment
-        fields = ('id', 'employee', 'company', 'principal', 'emi', 'date', 'closed', 'closed_date', 'tenure_months', 'repaid_amount')
+        fields = ('id', 'employee', 'company', 'principal', 'emi', 'date', 'closed', 'closed_date', 'tenure_months_left', 'repaid_amount')

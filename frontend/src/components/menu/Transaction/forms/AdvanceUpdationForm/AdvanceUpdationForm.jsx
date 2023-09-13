@@ -17,6 +17,11 @@ import { alertActions } from '../../../../authentication/store/slices/alertSlice
 import * as yup from 'yup';
 // import { generateEmployeeSalarySchema } from './EmployeeSalarySchema';
 import EditAdvance from './EditAdvance';
+import {
+	useAddEmployeeAdvancePaymentsMutation,
+	useUpdateEmployeeAdvancePaymentsMutation,
+	useDeleteEmployeeAdvancePaymentsMutation,
+} from '../../../../authentication/api/advanceUpdationApiSlice';
 
 const classNames = (...classes) => {
 	return classes.filter(Boolean).join(' ');
@@ -44,6 +49,33 @@ const AdvanceUpdationForm = () => {
 		setUpdateEmployeeId(null);
 	};
 
+	const [
+		addEmployeeAdvancePayments,
+		{
+			isLoading: isAddingEmployeeAdvancePayments,
+			// isError: errorRegisteringRegular,
+			isSuccess: isAddEmployeeAdvancePaymentsSuccess,
+		},
+	] = useAddEmployeeAdvancePaymentsMutation();
+
+	const [
+		deleteEmployeeAdvancePayments,
+		{
+			isLoading: isDeletingEmployeeAdvancePayments,
+			// isError: errorRegisteringRegular,
+			isSuccess: isDeleteEmployeeAdvancePaymentsSuccess,
+		},
+	] = useDeleteEmployeeAdvancePaymentsMutation();
+
+	const [
+		updateEmployeeAdvancePayments,
+		{
+			isLoading: isUpdatingEmployeeAdvancePayments,
+			// isError: errorRegisteringRegular,
+			isSuccess: isUpdateAddEmployeeAdvancePaymentsSuccess,
+		},
+	] = useUpdateEmployeeAdvancePaymentsMutation();
+
 	const editEmployeeAdvancePopoverHandler = async (personalDetail) => {
 		console.log(personalDetail);
 		// const year = new Date(personalDetail.dateOfJoining).getFullYear();
@@ -59,6 +91,58 @@ const AdvanceUpdationForm = () => {
 
 	const updateButtonClicked = useCallback(async (values, formikBag) => {
 		console.log(values);
+		const objectsWithId = [];
+		const objectsWithoutId = [];
+
+		values.employeeAdvanceDetails.forEach((item) => {
+			if ('id' in item) {
+				objectsWithId.push(item);
+			} else {
+				objectsWithoutId.push({ ...item, company: globalCompany.id, employee: updateEmployeeId });
+			}
+		});
+
+		console.log("Objects with 'id' key:", objectsWithId);
+		console.log("Objects without 'id' key:", objectsWithoutId);
+		let toCreate = {
+			employeeAdvanceDetails: objectsWithoutId,
+			company: globalCompany.id,
+			employee: updateEmployeeId,
+		};
+		let toUpdate = {
+			employeeAdvanceDetails: objectsWithId,
+			company: globalCompany.id,
+			employee: updateEmployeeId,
+		};
+
+		try {
+			const data = await addEmployeeAdvancePayments(toCreate).unwrap();
+			const updateddData = await updateEmployeeAdvancePayments(toUpdate).unwrap();
+			if (values.detailsToDelete.length != 0) {
+				const deletedData = await deleteEmployeeAdvancePayments({
+					company: globalCompany.id,
+					employee: updateEmployeeId,
+					detailsToDelete: [...values.detailsToDelete],
+				}).unwrap();
+			}
+
+			dispatch(
+				alertActions.createAlert({
+					message: 'Saved',
+					type: 'Success',
+					duration: 3000,
+				})
+			);
+		} catch (err) {
+			console.log(err);
+			dispatch(
+				alertActions.createAlert({
+					message: 'Error Occurred',
+					type: 'Error',
+					duration: 5000,
+				})
+			);
+		}
 	});
 
 	// const advanceInitialValues = {
@@ -244,9 +328,9 @@ const AdvanceUpdationForm = () => {
 					}}
 				>
 					<Formik
-						initialValues={{ employeeAdvanceDetails: [] }}
+						initialValues={{ employeeAdvanceDetails: [], detailsToDelete: [] }}
 						validationSchema={''}
-						onSubmit={() => console.log('yooo')}
+						onSubmit={updateButtonClicked}
 						component={(props) => (
 							<EditAdvance
 								{...props}

@@ -1163,7 +1163,7 @@ class EmployeeAdvancePayment(models.Model):
     date = models.DateField(null=False, blank=False)
     closed = models.BooleanField(null=False, blank=False, default=False)
     closed_date = models.DateField(null=True, blank=True)
-    tenure_months = models.PositiveSmallIntegerField(null=False, blank=False)
+    tenure_months_left = models.PositiveSmallIntegerField(null=False, blank=False)
     repaid_amount = models.PositiveIntegerField(null=False, blank=False, default=0)
 
     # class Meta:
