@@ -1137,10 +1137,6 @@ class EmployeePresentCount(models.Model):
     date = models.DateField(null=False, blank=False) #day of date is always 1
 
 
-
-
-
-
 class EmployeeLeaveOpening(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_company_employees_leave_openings")
     employee = models.ForeignKey(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="leave_opening")
@@ -1156,6 +1152,24 @@ class EmployeeLeaveOpening(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['employee', 'year', 'company'], name='unique_year_per_employee_per_company'),
         ]
+
+
+class EmployeeAdvancePayment(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_company_employees_advance_payments")
+    employee = models.ForeignKey(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="advance_payments")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="all_employees_advance_payments")
+    principal = models.PositiveIntegerField(null=False, blank=False)
+    emi = models.PositiveIntegerField(null=False, blank=False)
+    date = models.DateField(null=False, blank=False)
+    closed = models.BooleanField(null=False, blank=False, default=False)
+    closed_date = models.DateField(null=True, blank=True)
+    tenure_months = models.PositiveSmallIntegerField(null=False, blank=False)
+    repaid_amount = models.PositiveIntegerField(null=False, blank=False, default=0)
+
+    # class Meta:
+    #     constraints = [
+    #         models.UniqueConstraint(fields=['employee', 'year', 'company'], name='unique_advance_payment_per_employee_per_company'),
+    #     ]
 
 
 

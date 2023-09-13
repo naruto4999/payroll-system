@@ -178,11 +178,11 @@ const EditAttendance = memo(
 		} = useGetCurrentMonthAllEmployeeShiftsQuery(
 			{
 				company: globalCompany.id,
-				year: 2023,
-				month: 8,
+				year: values.year,
+				month: values.month,
 			},
 			{
-				skip: globalCompany === null || globalCompany === '',
+				skip: globalCompany === null || globalCompany === '' || values.month == '' || values.year == '',
 			}
 		);
 

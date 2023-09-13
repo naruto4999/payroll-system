@@ -143,6 +143,11 @@ const menuItems = [
 				icon: FaBusinessTime,
 				path: '/home/transaction/time-updation',
 			},
+			{
+				title: 'Advance Updation',
+				icon: FaMoneyBill1,
+				path: '/home/transaction/advance-updation',
+			},
 		],
 	},
 

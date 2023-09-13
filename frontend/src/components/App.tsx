@@ -27,6 +27,7 @@ import PfEsiSetupForm from './menu/MasterEntry/forms/PfEsiSetup/PfEsiSetupForm';
 import CalculationsForm from './menu/MasterEntry/forms/CalculationsForm/CalculationsForm';
 import EmployeeShiiftsEntryForm from './menu/Transaction/forms/EmployeeShiftsEntry/EmployeeShiiftsEntryForm';
 import TimeUpdationForm from './menu/Transaction/forms/TimeUpdationForm/TimeUpdationForm';
+import AdvanceUpdationForm from './menu/Transaction/forms/AdvanceUpdationForm/AdvanceUpdationForm';
 
 // import store, { persistor } from "./authentication/store/index"
 // import { PersistGate } from "redux-persist/integration/react";
@@ -105,6 +106,7 @@ function App() {
 					<Route path="transaction">
 						<Route path="employee-shifts" element={<EmployeeShiiftsEntryForm />} />
 						<Route path="time-updation" element={<TimeUpdationForm />} />
+						<Route path="advance-updation" element={<AdvanceUpdationForm />} />
 					</Route>
 
 					{/* <Route path="bank-entry" element={<BankEntryForm />} />
