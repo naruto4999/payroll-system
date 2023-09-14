@@ -632,6 +632,7 @@ class EmployeePfEsiDetail(models.Model):
     pf_percent_ignore_employee_value = models.DecimalField(max_digits=4, decimal_places=2, validators=PERCENTAGE_VALIDATOR, null=True, blank=True)
     pf_percent_ignore_employer = models.BooleanField(null=False, blank=False, default=False)
     pf_percent_ignore_employer_value = models.DecimalField(max_digits=4, decimal_places=2, validators=PERCENTAGE_VALIDATOR, null=True, blank=True)
+    vpf_amount = models.PositiveIntegerField(null=False, blank=False, default=0)
     uan_number = models.CharField(max_length=30, null=True, blank=True)
     esi_allow = models.BooleanField(null=False, blank=False, default=False)
     esi_number = models.CharField(max_length=30, null=True, blank=True)

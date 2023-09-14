@@ -175,7 +175,7 @@ const EmployeeEntryForm = () => {
 	const [
 		getSingleEmployeePfEsiDetail,
 		{
-			data: { user: PfEsiDetailDetailUser, company: PfEsiDetailDetailCompany, ...singleEmployeePfEsiDetail } = {},
+			data: { company: PfEsiDetailDetailCompany, ...singleEmployeePfEsiDetail } = {},
 			isSuccess: getSingleEmployeePfEsiDetailIsSuccess,
 			isLoading: isLoadingSingleEmployeePfEsiDetail,
 		} = {},
@@ -278,6 +278,7 @@ const EmployeeEntryForm = () => {
 		esiNumber: '',
 		esiDispensary: '',
 		esiOnOt: false,
+		vpfAmount: 0,
 	};
 
 	const [addEmployeePopover, setAddEmployeePopover] = useState({

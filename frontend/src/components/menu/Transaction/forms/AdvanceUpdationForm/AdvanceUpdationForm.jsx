@@ -22,6 +22,7 @@ import {
 	useUpdateEmployeeAdvancePaymentsMutation,
 	useDeleteEmployeeAdvancePaymentsMutation,
 } from '../../../../authentication/api/advanceUpdationApiSlice';
+import createAdvanceUpdationValidationSchema from './AdvanceUpdationSchema';
 
 const classNames = (...classes) => {
 	return classes.filter(Boolean).join(' ');
@@ -33,6 +34,7 @@ const AdvanceUpdationForm = () => {
 
 	const [editEmployeeAdvanceModal, setEditEmployeeAdvanceModal] = useState(false);
 	const [updateEmployeeId, setUpdateEmployeeId] = useState(null);
+	const [currentEmployeeDetail, setCurrentEmployeeDetail] = useState(null);
 
 	const {
 		data: fetchedData,
@@ -81,6 +83,8 @@ const AdvanceUpdationForm = () => {
 		// const year = new Date(personalDetail.dateOfJoining).getFullYear();
 		// const month = new Date(personalDetail.dateOfJoining).getMonth() + 1; // Adding 1 because getMonth() returns values from 0 to 11.
 		// console.log(month);
+		console.log(personalDetail);
+		setCurrentEmployeeDetail(personalDetail);
 
 		// setYearOfJoining(year);
 		// setMonthOfJoining(month);
@@ -88,6 +92,15 @@ const AdvanceUpdationForm = () => {
 		// setFirstRender(true);
 		setEditEmployeeAdvanceModal(true);
 	};
+
+	const advanceUpdationSchema = useMemo(() =>
+		updateEmployeeId && currentEmployeeDetail
+			? createAdvanceUpdationValidationSchema(
+					currentEmployeeDetail.dateOfJoining,
+					currentEmployeeDetail.resignationDate
+			  )
+			: ''
+	);
 
 	const updateButtonClicked = useCallback(async (values, formikBag) => {
 		console.log(values);
@@ -115,17 +128,32 @@ const AdvanceUpdationForm = () => {
 			employee: updateEmployeeId,
 		};
 
+		console.log(formikBag);
+
 		try {
-			const data = await addEmployeeAdvancePayments(toCreate).unwrap();
-			const updateddData = await updateEmployeeAdvancePayments(toUpdate).unwrap();
-			if (values.detailsToDelete.length != 0) {
-				const deletedData = await deleteEmployeeAdvancePayments({
-					company: globalCompany.id,
-					employee: updateEmployeeId,
-					detailsToDelete: [...values.detailsToDelete],
-				}).unwrap();
+			const promises = [];
+
+			// Add the promises for each request to the promises array
+			promises.push(addEmployeeAdvancePayments(toCreate));
+			promises.push(updateEmployeeAdvancePayments(toUpdate));
+
+			if (values.detailsToDelete.length !== 0) {
+				promises.push(
+					deleteEmployeeAdvancePayments({
+						company: globalCompany.id,
+						employee: updateEmployeeId,
+						detailsToDelete: [...values.detailsToDelete],
+					})
+				);
 			}
 
+			// Execute all promises concurrently
+			const results = await Promise.all(promises);
+
+			// Handle the results as needed
+			const [data, updatedData, deletedData] = results;
+
+			// Handle success
 			dispatch(
 				alertActions.createAlert({
 					message: 'Saved',
@@ -143,6 +171,13 @@ const AdvanceUpdationForm = () => {
 				})
 			);
 		}
+
+		formikBag.resetForm({
+			values: {
+				employeeAdvanceDetails: [...values.employeeAdvanceDetails],
+				detailsToDelete: [],
+			},
+		});
 	});
 
 	// const advanceInitialValues = {
@@ -329,7 +364,7 @@ const AdvanceUpdationForm = () => {
 				>
 					<Formik
 						initialValues={{ employeeAdvanceDetails: [], detailsToDelete: [] }}
-						validationSchema={''}
+						validationSchema={advanceUpdationSchema}
 						onSubmit={updateButtonClicked}
 						component={(props) => (
 							<EditAdvance

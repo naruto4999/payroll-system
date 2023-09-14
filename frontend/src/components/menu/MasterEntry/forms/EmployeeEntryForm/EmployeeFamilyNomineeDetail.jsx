@@ -109,7 +109,7 @@ const EmployeeFamilyNomineeDetail = ({
 								render={(arrayHelpers) => {
 									return (
 										<div>
-											{values.familyNomineeDetail.map((member, index) => (
+											{values.familyNomineeDetail?.map((member, index) => (
 												<div
 													key={index}
 													className="my-1 flex flex-row flex-wrap gap-1 rounded border-2 border-gray-800 border-opacity-25 p-2 dark:border-slate-100 dark:border-opacity-25"

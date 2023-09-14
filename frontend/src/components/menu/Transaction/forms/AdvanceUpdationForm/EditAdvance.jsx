@@ -17,6 +17,7 @@ const EditAdvance = React.memo(
 		updateEmployeeId,
 		isValid,
 		isSubmitting,
+		touched,
 	}) => {
 		const advanceInitialValues = {
 			principal: 0,
@@ -48,14 +49,15 @@ const EditAdvance = React.memo(
 			}
 		}, [employeeAdvancePayments]);
 
-		const calculateTenureInMonths = (principal, emi) => {
-			let months = Math.floor(principal / emi);
-			if (principal % emi != 0) {
+		const calculateTenureInMonths = (principal, emi, repaidAmount) => {
+			let months = Math.floor((principal - repaidAmount) / emi);
+			if ((principal - repaidAmount) % emi != 0) {
 				months += 1;
 			}
 			return months;
 		};
 		console.log(values);
+		console.log(errors);
 
 		useEffect(() => {
 			// Loop through the updatedAdvanceDetails array and calculate/set tenureMonthsLeft for each object
@@ -64,7 +66,8 @@ const EditAdvance = React.memo(
 					if (details.principal != 0 && details.emi != 0) {
 						const tenureMonthsLeft = calculateTenureInMonths(
 							parseInt(details.principal),
-							parseFloat(details.emi)
+							parseInt(details.emi),
+							parseInt(details.repaidAmount)
 						);
 						setFieldValue(`employeeAdvanceDetails.${index}.tenureMonthsLeft`, tenureMonthsLeft);
 					} else {
@@ -72,7 +75,7 @@ const EditAdvance = React.memo(
 					}
 				});
 			}
-		}, [values.employeeAdvanceDetails]); // Empty dependency array t
+		}, [values.employeeAdvanceDetails]);
 		return (
 			<div className="text-gray-900 dark:text-slate-100">
 				{/* <h1 className="font-medium text-2xl mb-2">Add Employee</h1> */}
@@ -149,6 +152,11 @@ const EditAdvance = React.memo(
 																type="number"
 																name={`employeeAdvanceDetails.${index}.principal`}
 															/>
+															<div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
+																<ErrorMessage
+																	name={`employeeAdvanceDetails.${index}.principal`}
+																/>
+															</div>
 														</div>
 
 														<div>
@@ -169,6 +177,11 @@ const EditAdvance = React.memo(
 																type="number"
 																name={`employeeAdvanceDetails.${index}.emi`}
 															/>
+															<div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
+																<ErrorMessage
+																	name={`employeeAdvanceDetails.${index}.emi`}
+																/>
+															</div>
 														</div>
 
 														<div>
@@ -222,6 +235,11 @@ const EditAdvance = React.memo(
 																type="date"
 																name={`employeeAdvanceDetails.${index}.date`}
 															/>
+															<div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
+																<ErrorMessage
+																	name={`employeeAdvanceDetails.${index}.date`}
+																/>
+															</div>
 														</div>
 
 														<div>
@@ -231,7 +249,11 @@ const EditAdvance = React.memo(
 															>
 																Repaid Amount
 															</label>
-															<Field
+
+															<div className=" my-auto p-1 text-green-700 dark:text-green-600">
+																{`${values.employeeAdvanceDetails?.[index]?.repaidAmount}`}
+															</div>
+															{/* <Field
 																className={classNames(
 																	errors.employeeAdvanceDetails?.[index]
 																		?.repaidAmount &&
@@ -244,7 +266,7 @@ const EditAdvance = React.memo(
 																type="number"
 																name={`employeeAdvanceDetails.${index}.repaidAmount`}
 																disabled={true}
-															/>
+															/> */}
 														</div>
 													</div>
 												</div>
@@ -286,11 +308,11 @@ const EditAdvance = React.memo(
 					<section className="mt-4 mb-2 flex flex-row gap-4">
 						<button
 							className={classNames(
-								isValid ? 'hover:bg-teal-600  dark:hover:bg-teal-600' : 'opacity-40',
+								!isSubmitting && isValid ? 'hover:bg-teal-600  dark:hover:bg-teal-600' : 'opacity-40',
 								'w-20 rounded bg-teal-500 p-2 text-base font-medium dark:bg-teal-700'
 							)}
 							type="submit"
-							// disabled={!isValid}
+							disabled={isSubmitting || !isValid}
 							onClick={handleSubmit}
 						>
 							Update
@@ -298,10 +320,7 @@ const EditAdvance = React.memo(
 						<button
 							type="button"
 							className="w-20 rounded bg-zinc-400 p-2 text-base font-medium hover:bg-zinc-500 dark:bg-zinc-600 dark:hover:bg-zinc-700"
-							onClick={() => {
-								cancelButtonClicked(isEditing);
-								// setErrorMessage('');
-							}}
+							onClick={cancelButtonClicked}
 						>
 							Cancel
 						</button>
