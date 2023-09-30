@@ -19,7 +19,7 @@ import LeaveGradeEntryForm from './menu/MasterEntry/forms/LeaveGradeEntryForm/Le
 import ShiftEntryForm from './menu/MasterEntry/forms/ShiftEntryForm/ShiftEntryForm';
 import HolidayEntryForm from './menu/MasterEntry/forms/HolidayEntryForm/HolidayEntryForm';
 import EarningsHeadEntry from './menu/MasterEntry/forms/EarningsHeadEntryForm/EarningsHeadEntry';
-import DeductionsHeadEntryForm from './menu/MasterEntry/forms/DeductionsHeadEntryForm/DeductionsHeadEntryForm';
+// import DeductionsHeadEntryForm from './menu/MasterEntry/forms/DeductionsHeadEntryForm/DeductionsHeadEntryForm';
 import EmployeeEntryForm from './menu/MasterEntry/forms/EmployeeEntryForm/EmployeeEntryForm';
 import EmployeeSalaryForm from './menu/MasterEntry/forms/EmployeeSalaryForm/EmployeeSalaryForm';
 import WeeklyOffHolidayOffForm from './menu/MasterEntry/forms/WeeklyOffHolidayOffForm/WeeklyOffHolidayOffForm';
@@ -28,6 +28,7 @@ import CalculationsForm from './menu/MasterEntry/forms/CalculationsForm/Calculat
 import EmployeeShiiftsEntryForm from './menu/Transaction/forms/EmployeeShiftsEntry/EmployeeShiiftsEntryForm';
 import TimeUpdationForm from './menu/Transaction/forms/TimeUpdationForm/TimeUpdationForm';
 import AdvanceUpdationForm from './menu/Transaction/forms/AdvanceUpdationForm/AdvanceUpdationForm';
+import SalaryPreparationForm from './menu/Transaction/forms/SalaryPreparationForm/SalaryPreparationForm';
 
 // import store, { persistor } from "./authentication/store/index"
 // import { PersistGate } from "redux-persist/integration/react";
@@ -96,7 +97,7 @@ function App() {
 						<Route path="shift-entry" element={<ShiftEntryForm />} />
 						<Route path="holiday-entry" element={<HolidayEntryForm />} />
 						<Route path="earnings-heads-entry" element={<EarningsHeadEntry />} />
-						<Route path="deductions-heads-entry" element={<DeductionsHeadEntryForm />} />
+						{/* <Route path="deductions-heads-entry" element={<DeductionsHeadEntryForm />} /> */}
 						<Route path="employee-entry" element={<EmployeeEntryForm />} />
 						<Route path="employee-salary" element={<EmployeeSalaryForm />} />
 						<Route path="weekly-off-holiday-off" element={<WeeklyOffHolidayOffForm />} />
@@ -107,6 +108,7 @@ function App() {
 						<Route path="employee-shifts" element={<EmployeeShiiftsEntryForm />} />
 						<Route path="time-updation" element={<TimeUpdationForm />} />
 						<Route path="advance-updation" element={<AdvanceUpdationForm />} />
+						<Route path="salary-preparation" element={<SalaryPreparationForm />} />
 					</Route>
 
 					{/* <Route path="bank-entry" element={<BankEntryForm />} />

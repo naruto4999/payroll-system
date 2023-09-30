@@ -308,7 +308,6 @@ const TimeUpdationForm = () => {
 		// globalFilterFn: globalFuzzyFilter,
 	});
 	const focusedRowRef = useRef(null);
-	// console.assert.log(focusedRowRef)
 	let debouncedSetUpdateEmployeeId;
 
 	const onRowClick = (event, row) => {

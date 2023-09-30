@@ -57,6 +57,14 @@ from django.dispatch import receiver
 #         user.save(using=self._db)
 PERCENTAGE_VALIDATOR = [MinValueValidator(0), MaxValueValidator(100)]
 
+PAYMENT_MODE_CHOICES = (
+        ('bank_transfer', 'Bank Transfer'),
+        ('cheque', 'Cheque'),
+        ('cash', 'Cash'),
+        ('rtgs', 'RTGS'),
+        ('neft', 'NEFT'),
+    )
+
 def is_valid_date(date):
     date_str = date.strftime('%Y-%m-%d')
     print(type(date_str))
@@ -586,13 +594,7 @@ class EmployeeSalaryDetail(models.Model):
         ('daily', 'Daily'),
         ('piece_rate', 'Piece Rate'),
     )
-    PAYMENT_MODE_CHOICES = (
-        ('bank_transfer', 'Bank Transfer'),
-        ('cheque', 'Cheque'),
-        ('cash', 'Cash'),
-        ('rtgs', 'RTGS'),
-        ('neft', 'NEFT'),
-    )
+    
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="employee_salary_details")
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="employee_salary_details")
     employee = models.OneToOneField(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="employee_salary_detail", primary_key=True)
@@ -759,6 +761,10 @@ class PfEsiSetup(models.Model):
     esi_employer_percentage = models.DecimalField(max_digits=5, decimal_places=2, validators=PERCENTAGE_VALIDATOR, null=False, blank=False, default=3.25)
     esi_employer_limit = models.PositiveIntegerField(null=False, blank=False, default=21000)
     employer_esi_code = models.CharField(max_length=100, null=True, blank=True)
+    enable_labour_welfare_fund = models.BooleanField(null=False, blank=False, default=False)
+    labour_wellfare_fund_employer_code = models.CharField(max_length=100, null=True, blank=True)
+    labour_welfare_fund_percentage = models.DecimalField(max_digits=5, decimal_places=2, validators=PERCENTAGE_VALIDATOR, null=False, blank=False, default=0.2)
+    labour_welfare_fund_limit = models.PositiveIntegerField(null=False, blank=False, default=31)
 
 class Calculations(models.Model):
     OT_CALCULATION_CHOICES = [
@@ -1052,19 +1058,49 @@ class EmployeeGenerativeLeaveRecordManager(models.Manager):
             to_date = datetime(year, month, day + total_expected_instances - 1).date()
 
         present_count = 0
+        weekly_off_days_count = 0
+        holiday_days_count = 0
+        paid_days_count = 0
+        not_paid_days_count = 0
+        total_ot_minutes_monthly = 0
+        total_late_min = 0
+
         employee_attendance_queryset = EmployeeAttendance.objects.filter(user=user, employee=employee, company=company, date__gte=from_date, date__lte=to_date)
 
         for employee_attendance in employee_attendance_queryset:
+            # Present Count
             present_count += 1 if employee_attendance.first_half.name == "P" else 0
             present_count += 1 if employee_attendance.second_half.name == "P" else 0
+
+            # Weekly Off Count
+            weekly_off_days_count += 1 if employee_attendance.first_half.name == "WO" else 0
+            weekly_off_days_count += 1 if employee_attendance.second_half.name == "WO" else 0
+
+            #Holiday Off Count
+            holiday_days_count += 1 if employee_attendance.first_half.name == "HD" else 0
+            holiday_days_count += 1 if employee_attendance.second_half.name == "HD" else 0
+
+            #Paid Days Count
+            paid_days_count += 1 if employee_attendance.first_half.paid == True else 0
+            paid_days_count += 1 if employee_attendance.second_half.paid == True else 0
+
+            #Not Paid Days Count
+            not_paid_days_count += 1 if employee_attendance.first_half.paid == False else 0
+            not_paid_days_count += 1 if employee_attendance.second_half.paid == False else 0
+
+            total_ot_minutes_monthly += employee_attendance.ot_min if employee_attendance.ot_min != None else 0
+            total_late_min += employee_attendance.late_min if employee_attendance.late_min != None else 0
+            print(f"Total OT: {total_ot_minutes_monthly} Total Late: {total_late_min}")
 
             for leave_id in (employee_attendance.first_half.id, employee_attendance.second_half.id):
                 if leave_id in leave_grade_dict:
                     leave_grade_dict[leave_id]['leave_count'] += 1
 
+        net_ot_minutes_monthly = max(total_ot_minutes_monthly - ((total_late_min // 30) * 30 + (30 if total_late_min % 30 >= 20 else 0)), 0)
+
         for key, value in leave_grade_dict.items():
             self.create(user=user, employee=employee, company=company, leave_id=key, date=from_date.replace(day=1), leave_count=value['leave_count'])
-        EmployeePresentCount.objects.create(present_count=present_count, user=user, company=company, employee=employee, date=from_date.replace(day=1))
+        EmployeeMonthlyAttendanceDetails.objects.create(present_count=present_count, weekly_off_days_count=weekly_off_days_count, holiday_days_count=holiday_days_count, paid_days_count=paid_days_count, not_paid_days_count=not_paid_days_count, net_ot_minutes_monthly=net_ot_minutes_monthly, user=user, company=company, employee=employee, date=from_date.replace(day=1))
 
         print(f"Present Count: {present_count}")
         print(leave_grade_dict)    
@@ -1083,23 +1119,57 @@ class EmployeeGenerativeLeaveRecordManager(models.Manager):
             to_date = datetime(year, month, day + total_expected_instances - 1).date()
 
         present_count = 0
+        weekly_off_days_count = 0
+        holiday_days_count = 0
+        paid_days_count = 0
+        not_paid_days_count = 0
+        total_ot_minutes_monthly = 0
+        total_late_min = 0
         employee_attendance_queryset = EmployeeAttendance.objects.filter(user=user, employee_id=employee_id, company_id=company_id, date__gte=from_date, date__lte=to_date)
 
         for employee_attendance in employee_attendance_queryset:
+            # Present Count
             present_count += 1 if employee_attendance.first_half.name == "P" else 0
             present_count += 1 if employee_attendance.second_half.name == "P" else 0
+
+            #Weekly Off Count
+            weekly_off_days_count += 1 if employee_attendance.first_half.name == "WO" else 0
+            weekly_off_days_count += 1 if employee_attendance.second_half.name == "WO" else 0
+
+            #Holiday Off Count
+            holiday_days_count += 1 if employee_attendance.first_half.name == "HD" else 0
+            holiday_days_count += 1 if employee_attendance.second_half.name == "HD" else 0
+
+            #Paid Days Count
+            paid_days_count += 1 if employee_attendance.first_half.paid == True else 0
+            paid_days_count += 1 if employee_attendance.second_half.paid == True else 0
+
+            #Not Paid Days Count
+            not_paid_days_count += 1 if employee_attendance.first_half.paid == False else 0
+            not_paid_days_count += 1 if employee_attendance.second_half.paid == False else 0
+
+            total_ot_minutes_monthly += employee_attendance.ot_min if employee_attendance.ot_min != None else 0
+            total_late_min += employee_attendance.late_min if employee_attendance.late_min != None else 0
 
             for leave_id in (employee_attendance.first_half.id, employee_attendance.second_half.id):
                 if leave_id in leave_grade_dict:
                     leave_grade_dict[leave_id]['leave_count'] += 1
 
+        net_ot_minutes_monthly = max(total_ot_minutes_monthly - ((total_late_min // 30) * 30 + (30 if total_late_min % 30 >= 20 else 0)), 0)
+
+
         # Update existing records without using F() expressions
-        present_count_record = EmployeePresentCount.objects.filter(user=user, employee_id=employee_id, company_id=company_id, date=from_date.replace(day=1)).first()
+        present_count_record = EmployeeMonthlyAttendanceDetails.objects.filter(user=user, employee_id=employee_id, company_id=company_id, date=from_date.replace(day=1)).first()
         if present_count_record:
             present_count_record.present_count = present_count
+            present_count_record.weekly_off_days_count = weekly_off_days_count
+            present_count_record.holiday_days_count = holiday_days_count
+            present_count_record.paid_days_count = paid_days_count
+            present_count_record.not_paid_days_count = not_paid_days_count
+            present_count_record.net_ot_minutes_monthly = net_ot_minutes_monthly
             present_count_record.save()
         else:
-            EmployeePresentCount.create(user=user, employee_id=employee_id, company_id=company_id, present_count=present_count, date=from_date.replace(day=1))
+            EmployeeMonthlyAttendanceDetails.create(user=user, employee_id=employee_id, company_id=company_id, present_count=present_count, weekly_off_days_count=weekly_off_days_count, holiday_days_count=holiday_days_count, paid_days_count=paid_days_count, not_paid_days_count=not_paid_days_count, net_ot_minutes_monthly=net_ot_minutes_monthly, date=from_date.replace(day=1))
 
         for key, value in leave_grade_dict.items():
             record = self.filter(user=user, employee_id=employee_id, company_id=company_id, leave_id=key, date=from_date.replace(day=1)).first()
@@ -1122,20 +1192,26 @@ class EmployeeGenerativeLeaveRecord(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="all_employees_generative_leave_record")
     leave = models.ForeignKey(LeaveGrade, on_delete=models.CASCADE, related_name="current_generative_leave_record")
     date = models.DateField(null=False, blank=False) #day of date is always 1
-    # present_count = models.PositiveSmallIntegerField(null=False, blank=False, default=0)
     leave_count = models.PositiveSmallIntegerField(null=False, blank=False, default=0)
+
 
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=['employee', 'date', 'company', 'leave'], name='unique_date_per_employee_per_company'),
         ]
 
-class EmployeePresentCount(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_company_employees_present_count")
+class EmployeeMonthlyAttendanceDetails(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_company_employees_monthly_attendance_details")
     employee = models.ForeignKey(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="present_count")
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="all_employees_present_count")
     present_count = models.PositiveSmallIntegerField(null=False, blank=False, default=0)
     date = models.DateField(null=False, blank=False) #day of date is always 1
+    # working_days = models.PositiveSmallIntegerField(null=False, blank=False, default=0) Same as present count
+    weekly_off_days_count = models.PositiveSmallIntegerField(null=False, blank=False, default=0)
+    paid_days_count = models.PositiveSmallIntegerField(null=False, blank=False, default=0)
+    holiday_days_count = models.PositiveSmallIntegerField(null=False, blank=False, default=0)
+    not_paid_days_count = models.PositiveSmallIntegerField(null=False, blank=False, default=0)
+    net_ot_minutes_monthly = models.PositiveIntegerField(null=False, blank=False, default=0)
 
 
 class EmployeeLeaveOpening(models.Model):
@@ -1173,6 +1249,48 @@ class EmployeeAdvancePayment(models.Model):
     #     ]
 
 
+class EmployeeSalaryPrepared(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_company_employees_salaries_prepared")
+    employee = models.ForeignKey(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="salaries_prepared")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="all_employees_salaries_prepared")
+    date = models.DateField(null=False, blank=False) #date should always be 1
+    incentive_amount = models.PositiveIntegerField(null=False, blank=False, default=0)
+    pf_deducted = models.PositiveIntegerField(null=False, blank=False, default=0)
+    esi_deducted = models.PositiveIntegerField(null=False, blank=False, default=0)
+    vpf_deducted = models.PositiveIntegerField(null=False, blank=False, default=0)
+    advance_deducted = models.PositiveIntegerField(null=False, blank=False, default=0)
+    tds_deducted = models.PositiveIntegerField(null=False, blank=False, default=0)
+    labour_welfare_fund_deducted = models.PositiveIntegerField(null=False, blank=False, default=0)
+    others_deducted = models.PositiveIntegerField(null=False, blank=False, default=0)
+    paid_days_count = models.PositiveSmallIntegerField(null=False, blank=False, default=0)
+    present_count = models.PositiveSmallIntegerField(null=False, blank=False, default=0)
+    weekly_off_days_count = models.PositiveSmallIntegerField(null=False, blank=False, default=0)
+    holiday_days_count = models.PositiveSmallIntegerField(null=False, blank=False, default=0)
+    not_paid_days_count = models.PositiveSmallIntegerField(null=False, blank=False, default=0)
+    net_ot_minutes_monthly = models.PositiveSmallIntegerField(null=False, blank=False, default=0)
+    net_ot_amount_monthly = models.PositiveIntegerField(null=False, blank=False, default=0)
+    payment_mode = models.CharField(max_length=20, choices=PAYMENT_MODE_CHOICES, null=False, blank=False, default='bank_transfer')
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['date', 'employee'], name='unique_salary_for_each_month'),
+        ]
+
+
+
+class EarnedAmount(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_company_employees_earned_amounts")
+    earnings_head = models.ForeignKey(EarningsHead, on_delete=models.CASCADE, related_name="earning_head_earned_amount")
+    salary_prepared = models.ForeignKey(EmployeeSalaryPrepared, on_delete=models.CASCADE, related_name="current_salary_earned_amounts")
+    rate = models.PositiveIntegerField(null=False, blank=False, default=0)
+    earned_amount = models.PositiveIntegerField(null=False, blank=False, default=0)
+    arear_amount = models.PositiveIntegerField(null=False, blank=False, default=0)
+
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['earnings_head', 'salary_prepared'], name='unique_earned_amount_for_each_earnings_head'),
+        ]
 
 
     
@@ -1222,19 +1340,19 @@ def create_default_holidays_for_company(sender, instance, created, **kwargs):
         # Create the third row for the new user
         Holiday.objects.create(user=user,company=company, name='Independence Day', date=independence_day, mandatory_holiday=True)
 
-@receiver(post_save, sender=Company)
-def create_default_deductions_for_company(sender, instance, created, **kwargs):
-    if created:
-        company = instance  # Assign the instance to a variable
-        user = company.user
-        # Create the default deduction on post save for company
-        DeductionsHead.objects.create(user=user,company=company, name='PF', mandatory_deduction=True)
-        DeductionsHead.objects.create(user=user,company=company, name='ESI', mandatory_deduction=True)
-        DeductionsHead.objects.create(user=user,company=company, name='VPF', mandatory_deduction=True)
-        DeductionsHead.objects.create(user=user,company=company, name='Loan', mandatory_deduction=True)
-        DeductionsHead.objects.create(user=user,company=company, name='Advance', mandatory_deduction=True)
-        DeductionsHead.objects.create(user=user,company=company, name='TDS', mandatory_deduction=True)
-        DeductionsHead.objects.create(user=user,company=company, name='Others', mandatory_deduction=True)
+# @receiver(post_save, sender=Company)
+# def create_default_deductions_for_company(sender, instance, created, **kwargs):
+#     if created:
+#         company = instance  # Assign the instance to a variable
+#         user = company.user
+#         # Create the default deduction on post save for company
+#         DeductionsHead.objects.create(user=user,company=company, name='PF', mandatory_deduction=True)
+#         DeductionsHead.objects.create(user=user,company=company, name='ESI', mandatory_deduction=True)
+#         DeductionsHead.objects.create(user=user,company=company, name='VPF', mandatory_deduction=True)
+#         DeductionsHead.objects.create(user=user,company=company, name='Loan', mandatory_deduction=True)
+#         DeductionsHead.objects.create(user=user,company=company, name='Advance', mandatory_deduction=True)
+#         DeductionsHead.objects.create(user=user,company=company, name='TDS', mandatory_deduction=True)
+#         DeductionsHead.objects.create(user=user,company=company, name='Others', mandatory_deduction=True)
 
 @receiver(post_save, sender=Company)
 def create_default_earning_for_company(sender, instance, created, **kwargs):
@@ -1261,7 +1379,7 @@ def create_default_pf_esi_setup(sender, instance, created, **kwargs):
     if created:
         company = instance  # Assign the instance to a variable
         user = company.user
-        PfEsiSetup.objects.create( user=user, company=company, ac_1_epf_employee_percentage=12, ac_1_epf_employee_limit=15000, ac_1_epf_employer_percentage=3.67, ac_1_epf_employer_limit=15000, ac_10_eps_employer_percentage=8.33, ac_10_eps_employer_limit=15000, ac_2_employer_percentage=0.5, ac_21_employer_percentage=0.5, ac_22_employer_percentage=0, esi_employee_percentage=0.75, esi_employee_limit=21000, esi_employer_percentage=3.25, esi_employer_limit=21000, employer_pf_code=None, employer_esi_code=None,)
+        PfEsiSetup.objects.create( user=user, company=company, ac_1_epf_employee_percentage=12, ac_1_epf_employee_limit=15000, ac_1_epf_employer_percentage=3.67, ac_1_epf_employer_limit=15000, ac_10_eps_employer_percentage=8.33, ac_10_eps_employer_limit=15000, ac_2_employer_percentage=0.5, ac_21_employer_percentage=0.5, ac_22_employer_percentage=0, esi_employee_percentage=0.75, esi_employee_limit=21000, esi_employer_percentage=3.25, esi_employer_limit=21000, employer_pf_code=None, employer_esi_code=None, enable_labour_welfare_fund=False, labour_welfare_fund_percentage=0.2, labour_welfare_fund_limit=31)
         
 @receiver(post_save, sender=Company)
 def create_default_calculations(sender, instance, created, **kwargs):
@@ -1277,3 +1395,13 @@ def create_generative_leave_record(sender, instance, created, **kwargs):
         user = employee_attendance.user
         print(employee_attendance)
         # Calculations.objects.create( user=user, company=company, ot_calculation='26', el_calculation='26', notice_pay='26', service_calculation='26', gratuity_calculation='26', el_days_calculation=20,)
+
+# @receiver(post_save, sender=EmployeeSalaryPrepared)
+# def employee_salary_prepared_post_save(sender, instance, created, **kwargs):
+#     """
+#     This function is called when an EmployeeSalaryPrepared instance is saved.
+#     """
+#     if created:
+#         print(f"Created: {instance.id}")
+#     else:
+#        print(f"Updated: {instance.id}")

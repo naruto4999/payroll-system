@@ -1,5 +1,5 @@
 from django.urls import path, include
-from .views import CompanyListCreateAPIView, CompanyDetailsMixinView, CompanyRetrieveUpdateDestroyAPIView, DepartmentListCreateAPIView, DepartmentRetrieveUpdateDestroyAPIView, DesignationListCreateAPIView, DesignationRetrieveUpdateDestroyAPIView, SalaryGradeListCreateAPIView, SalaryGradeRetrieveUpdateDestroyAPIView, RegularRegisterListCreateAPIViewView, RegularRetrieveDestroyAPIView, CompanyVisibilityPatchAPIView, CategoryListCreateAPIView, CategoryRetrieveUpdateDestroyAPIView, BankListCreateAPIView, BankRetrieveUpdateDestroyAPIView, LeaveGradeListCreateAPIView, LeaveGradeRetrieveUpdateDestroyAPIView, ShiftListCreateAPIView, ShiftRetrieveUpdateDestroyAPIView, HolidayListCreateAPIView, HolidayRetrieveUpdateDestroyAPIView, EarningsHeadListCreateAPIView, EarningsHeadRetrieveUpdateDestroyAPIView, DeductionsHeadListCreateAPIView, DeductionsHeadRetrieveUpdateDestroyAPIView, EmployeePersonalDetailListCreateView, EmployeePersonalDetailRetrieveUpdateDestroyAPIView, EmployeeProfessionalDetailListCreateAPIView, EmployeeProfessionalDetailRetrieveUpdateDestroyAPIView, EmployeeSalaryEarningListCreateAPIView, EmployeeSalaryEarningListUpdateAPIView,EmployeeSalaryDetailListCreateAPIView, EmployeeSalaryDetailRetrieveUpdateAPIView, EmployeeFamilyNomineeDetialListCreateAPIView, EmployeePfEsiDetailCreateAPIView, EmployeePfEsiDetailRetrieveUpdateDestroyAPIView, EmployeeFamilyNomineeDetialRetrieveUpdateDestroyAPIView, WeeklyOffHolidayOffCreateAPIView, WeeklyOffHolidayOffRetrieveUpdateDestroyAPIView, PfEsiSetupCreateAPIView, PfEsiSetupRetrieveUpdateDestroyAPIView, CalculationsCreateAPIView, CalculationsRetrieveUpdateDestroyAPIView, EmployeeShiftsListAPIView, EmployeeShiftsUpdateAPIView, EmployeeShiftsCreateAPIView, EmployeeShiftsPermanentUpdateAPIView, EmployeeAttendanceListCreateAPIView, EmployeeAttendanceUpdateAPIView, AllEmployeeMonthyShiftsListAPIView, EmployeeGenerativeLeaveRecordListAPIView, EmployeeLeaveOpeningListAPIView, EmployeePresentCountListAPIView, EmployeeAdvancePaymentListCreateAPIView, EmployeeAdvancePaymentRetrieveUpdateDestroyAPIView
+from .views import CompanyListCreateAPIView, CompanyDetailsMixinView, CompanyRetrieveUpdateDestroyAPIView, DepartmentListCreateAPIView, DepartmentRetrieveUpdateDestroyAPIView, DesignationListCreateAPIView, DesignationRetrieveUpdateDestroyAPIView, SalaryGradeListCreateAPIView, SalaryGradeRetrieveUpdateDestroyAPIView, RegularRegisterListCreateAPIViewView, RegularRetrieveDestroyAPIView, CompanyVisibilityPatchAPIView, CategoryListCreateAPIView, CategoryRetrieveUpdateDestroyAPIView, BankListCreateAPIView, BankRetrieveUpdateDestroyAPIView, LeaveGradeListCreateAPIView, LeaveGradeRetrieveUpdateDestroyAPIView, ShiftListCreateAPIView, ShiftRetrieveUpdateDestroyAPIView, HolidayListCreateAPIView, HolidayRetrieveUpdateDestroyAPIView, EarningsHeadListCreateAPIView, EarningsHeadRetrieveUpdateDestroyAPIView, EmployeePersonalDetailListCreateView, EmployeePersonalDetailRetrieveUpdateDestroyAPIView, EmployeeProfessionalDetailListCreateAPIView, EmployeeProfessionalDetailRetrieveUpdateDestroyAPIView, EmployeeSalaryEarningListCreateAPIView, EmployeeSalaryEarningListUpdateAPIView,EmployeeSalaryDetailListCreateAPIView, EmployeeSalaryDetailRetrieveUpdateAPIView, EmployeeFamilyNomineeDetialListCreateAPIView, EmployeePfEsiDetailListCreateAPIView, EmployeePfEsiDetailRetrieveUpdateDestroyAPIView, EmployeeFamilyNomineeDetialRetrieveUpdateDestroyAPIView, WeeklyOffHolidayOffCreateAPIView, WeeklyOffHolidayOffRetrieveUpdateDestroyAPIView, PfEsiSetupCreateAPIView, PfEsiSetupRetrieveUpdateDestroyAPIView, CalculationsCreateAPIView, CalculationsRetrieveUpdateDestroyAPIView, EmployeeShiftsListAPIView, EmployeeShiftsUpdateAPIView, EmployeeShiftsCreateAPIView, EmployeeShiftsPermanentUpdateAPIView, EmployeeAttendanceListCreateAPIView, EmployeeAttendanceUpdateAPIView, AllEmployeeMonthyShiftsListAPIView, EmployeeGenerativeLeaveRecordListAPIView, EmployeeLeaveOpeningListAPIView, EmployeeMonthlyAttendancePresentDetailsListAPIView, EmployeeAdvancePaymentListCreateAPIView, EmployeeAdvancePaymentRetrieveUpdateDestroyAPIView, EmployeeMonthlyAttendanceDetailsListAPIView, AllEmployeeSalaryEarningListAPIView, EmployeeSalaryPreparedCreateAPIView
 from .auth.views import LoginView, RegisterView, RefreshView, PasswordResetAPIView, PasswordResetConfirmView, VerifyOTPView
 from django.contrib.auth.views import PasswordResetCompleteView
 
@@ -30,8 +30,8 @@ urlpatterns = [
     path('holiday/<int:company_id>/<int:id>', HolidayRetrieveUpdateDestroyAPIView.as_view()),
     path('earnings-head/<int:company_id>', EarningsHeadListCreateAPIView.as_view()),
     path('earnings-head/<int:company_id>/<int:id>', EarningsHeadRetrieveUpdateDestroyAPIView.as_view()),
-    path('deductions-head/<int:company_id>', DeductionsHeadListCreateAPIView.as_view()),
-    path('deductions-head/<int:company_id>/<int:id>', DeductionsHeadRetrieveUpdateDestroyAPIView.as_view()),
+    # path('deductions-head/<int:company_id>', DeductionsHeadListCreateAPIView.as_view()),
+    # path('deductions-head/<int:company_id>/<int:id>', DeductionsHeadRetrieveUpdateDestroyAPIView.as_view()),
 
     # Use URLs like this from now on, separate for GET requests and POST request and don't use query params in POST request, only use them in GET requests
     path('employee-personal-detail/<int:company_id>', EmployeePersonalDetailListCreateView.as_view()),
@@ -56,7 +56,8 @@ urlpatterns = [
     path('employee-family-nominee-detail-update/<int:company_id>/<int:employee>', EmployeeFamilyNomineeDetialRetrieveUpdateDestroyAPIView.as_view()),
     path('employee-family-nominee-detail-delete/<int:company_id>/<int:employee>/<int:id>', EmployeeFamilyNomineeDetialRetrieveUpdateDestroyAPIView.as_view()),
 
-    path('employee-pf-esi-detail', EmployeePfEsiDetailCreateAPIView.as_view()),
+    path('employee-pf-esi-detail', EmployeePfEsiDetailListCreateAPIView.as_view()),
+    path('all-employee-pf-esi-detail/<int:company_id>', EmployeePfEsiDetailListCreateAPIView.as_view()),
     path('employee-pf-esi-detail/<int:company_id>/<int:employee>', EmployeePfEsiDetailRetrieveUpdateDestroyAPIView.as_view()),
     path('weekly-off-holiday-off-create/<int:company_id>', WeeklyOffHolidayOffCreateAPIView.as_view()),
     path('weekly-off-holiday-off/<int:company_id>', WeeklyOffHolidayOffRetrieveUpdateDestroyAPIView.as_view()),
@@ -75,18 +76,19 @@ urlpatterns = [
     path('employee-attendance-update/<int:company_id>/<int:employee>', EmployeeAttendanceUpdateAPIView.as_view()),
     path('all-employee-attendance/<int:company_id>/<int:year>/<int:month>', EmployeeAttendanceListCreateAPIView.as_view()),
     path('all-employee-generative-leave-record/<int:company_id>/<int:year>', EmployeeGenerativeLeaveRecordListAPIView.as_view()),
-    path('all-employee-present-count/<int:company_id>/<int:year>', EmployeePresentCountListAPIView.as_view()),
+    path('all-employee-present-count/<int:company_id>/<int:year>', EmployeeMonthlyAttendancePresentDetailsListAPIView.as_view()),
+    path('all-employee-monthly-attendance-details/<int:company_id>/<int:year>', EmployeeMonthlyAttendanceDetailsListAPIView.as_view()),
     path('all-employee-leave-opening/<int:company_id>/<int:year>', EmployeeLeaveOpeningListAPIView.as_view()),
     path('employee-advance-payment/<int:company_id>/<int:employee_id>', EmployeeAdvancePaymentListCreateAPIView.as_view()),
     path('employee-advance-payment-update/<int:company_id>/<int:employee_id>', EmployeeAdvancePaymentRetrieveUpdateDestroyAPIView.as_view()),
     path('employee-advance-payment-delete/<int:company_id>/<int:employee_id>/<str:ids>', EmployeeAdvancePaymentRetrieveUpdateDestroyAPIView.as_view()),
+    path('all-employee-salary-earning/<int:company_id>/<int:year>', AllEmployeeSalaryEarningListAPIView.as_view()),
+    path('employee-salary-prepared', EmployeeSalaryPreparedCreateAPIView.as_view()),
+
 
 
     
     
-
-
-
 
     
 

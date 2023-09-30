@@ -1,7 +1,7 @@
 from dataclasses import field
 from rest_framework import serializers
 
-from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, DeductionsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning, EmployeeSalaryDetail, EmployeeFamilyNomineeDetial, EmployeePfEsiDetail, WeeklyOffHolidayOff, PfEsiSetup, Calculations, EmployeeShifts, EmployeeAttendance, EmployeeGenerativeLeaveRecord, EmployeeLeaveOpening, EmployeePresentCount, EmployeeAdvancePayment
+from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning, EmployeeSalaryDetail, EmployeeFamilyNomineeDetial, EmployeePfEsiDetail, WeeklyOffHolidayOff, PfEsiSetup, Calculations, EmployeeShifts, EmployeeAttendance, EmployeeGenerativeLeaveRecord, EmployeeLeaveOpening, EmployeeMonthlyAttendanceDetails, EmployeeAdvancePayment, EmployeeSalaryPrepared, EarnedAmount
 from rest_framework import serializers
 
 
@@ -110,18 +110,17 @@ class HolidaySerializer(serializers.ModelSerializer):
         read_only_fields = ('mandatory_holiday',)
 
 class EarningsHeadSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
     class Meta:
         model = EarningsHead
-        fields = ('id', 'user', 'company', 'name', 'mandatory_earning')
+        fields = ('id', 'company', 'name', 'mandatory_earning')
         read_only_fields = ('mandatory_earning',)
 
-class DeductionsHeadSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
-    class Meta:
-        model = DeductionsHead
-        fields = ('id', 'user', 'company', 'name', 'mandatory_deduction')
-        read_only_fields = ('mandatory_deduction',)
+# class DeductionsHeadSerializer(serializers.ModelSerializer):
+#     user = UserSerializer(read_only=True)
+#     class Meta:
+#         model = DeductionsHead
+#         fields = ('id', 'user', 'company', 'name', 'mandatory_deduction')
+#         read_only_fields = ('mandatory_deduction',)
 
 class EmployeePersonalDetailSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
@@ -203,8 +202,7 @@ class WeeklyOffHolidayOffSerializer(serializers.ModelSerializer):
 class PfEsiSetupSerializer(serializers.ModelSerializer):
     class Meta:
         model = PfEsiSetup
-        fields = ('company', 'ac_1_epf_employee_percentage', 'ac_1_epf_employee_limit', 'ac_1_epf_employer_percentage', 'ac_1_epf_employer_limit', 'ac_10_eps_employer_percentage', 'ac_10_eps_employer_limit', 'ac_2_employer_percentage', 'ac_21_employer_percentage', 'ac_22_employer_percentage', 'employer_pf_code', 'esi_employee_percentage', 'esi_employee_limit', 'esi_employer_percentage', 'esi_employer_limit', 'employer_esi_code',)
-
+        fields = ('company', 'ac_1_epf_employee_percentage', 'ac_1_epf_employee_limit', 'ac_1_epf_employer_percentage', 'ac_1_epf_employer_limit', 'ac_10_eps_employer_percentage', 'ac_10_eps_employer_limit', 'ac_2_employer_percentage', 'ac_21_employer_percentage', 'ac_22_employer_percentage', 'employer_pf_code', 'esi_employee_percentage', 'esi_employee_limit', 'esi_employer_percentage', 'esi_employer_limit', 'employer_esi_code', 'enable_labour_welfare_fund', 'labour_wellfare_fund_employer_code', 'labour_welfare_fund_percentage', 'labour_welfare_fund_limit')
 
 class CalculationsSerializer(serializers.ModelSerializer):
     class Meta:
@@ -233,10 +231,15 @@ class EmployeeGenerativeLeaveRecordSerializer(serializers.ModelSerializer):
         model = EmployeeGenerativeLeaveRecord
         fields = ['id', 'employee', 'company', 'leave', 'date', 'leave_count']
 
-class EmployeePresentCountSerializer(serializers.ModelSerializer):
+class EmployeeMonthlyAttendancePresentDetailsSerializer(serializers.ModelSerializer):
     class Meta:
-        model = EmployeePresentCount
+        model = EmployeeMonthlyAttendanceDetails
         fields = ['id', 'employee', 'company', 'date', 'present_count']
+
+class EmployeeMonthlyAttendanceDetailsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmployeeMonthlyAttendanceDetails
+        fields = ['id', 'employee', 'company', 'date', 'present_count', 'weekly_off_days_count', 'paid_days_count', 'holiday_days_count', 'not_paid_days_count', 'net_ot_minutes_monthly']
 
 class EmployeeLeaveOpeningSerializer(serializers.ModelSerializer):
     class Meta:
@@ -247,3 +250,21 @@ class EmployeeAdvancePaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployeeAdvancePayment
         fields = ('id', 'employee', 'company', 'principal', 'emi', 'date', 'closed', 'closed_date', 'tenure_months_left', 'repaid_amount')
+
+class EmployeeSalaryPreparedSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(read_only=True)
+    class Meta:
+        model = EmployeeSalaryPrepared
+        fields = ('id', 'employee', 'company', 'date', 'incentive_amount', 'pf_deducted', 'esi_deducted', 'vpf_deducted', 'advance_deducted', 'tds_deducted', 'labour_welfare_fund_deducted', 'others_deducted', 'paid_days_count', 'present_count', 'weekly_off_days_count', 'holiday_days_count', 'not_paid_days_count', 'net_ot_minutes_monthly', 'net_ot_amount_monthly', 'payment_mode')
+
+class EarnedAmountSerializer(serializers.ModelSerializer):
+    # id = serializers.IntegerField(read_only=True)
+    class Meta:
+        model = EarnedAmount
+        fields = (
+            'earnings_head',
+            'salary_prepared',
+            'rate',
+            'earned_amount',
+            'arear_amount',
+        )

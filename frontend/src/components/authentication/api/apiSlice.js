@@ -101,6 +101,8 @@ export const apiSlice = createApi({
 		'EmployeeAttendance',
 		'AllEmployeeProfessionalDetail',
 		'AdvancePayments',
+		'AllEmployeeSalaryEarnings',
+		'AllEmployeePfEsiDetail',
 	],
 	endpoints: (builder) => ({}),
 });

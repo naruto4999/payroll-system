@@ -89,11 +89,11 @@ const menuItems = [
 						icon: FaDollarSign,
 						path: '/home/master-entry/earnings-heads-entry',
 					},
-					{
-						title: 'Deductions',
-						icon: FaDollarSign,
-						path: '/home/master-entry/deductions-heads-entry',
-					},
+					// {
+					// 	title: 'Deductions',
+					// 	icon: FaDollarSign,
+					// 	path: '/home/master-entry/deductions-heads-entry',
+					// },
 				],
 			},
 			{
@@ -147,6 +147,11 @@ const menuItems = [
 				title: 'Advance Updation',
 				icon: FaMoneyBill1,
 				path: '/home/transaction/advance-updation',
+			},
+			{
+				title: 'Salary Preparation',
+				icon: FaMoneyBill1,
+				path: '/home/transaction/salary-preparation',
 			},
 		],
 	},

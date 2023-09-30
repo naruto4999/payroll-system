@@ -308,14 +308,14 @@ const EditAttendance = memo(
 			}
 		}, [calculateEarliestMonthYear]);
 
-		useEffect(() => {
-			if (values.year == calculateEarliestMonthYear?.earliestYear) {
-				if (values.month < calculateEarliestMonthYear.earliestMonth) {
-					setFieldValue(`month`, calculateEarliestMonthYear.earliestMonth);
-					setSelectedDate((prevValue) => ({ ...prevValue, month: calculateEarliestMonthYear.earliestMonth }));
-				}
-			}
-		}, [values.year]);
+		// useEffect(() => {
+		// 	if (values.year == calculateEarliestMonthYear?.earliestYear) {
+		// 		if (values.month < calculateEarliestMonthYear.earliestMonth) {
+		// 			setFieldValue(`month`, calculateEarliestMonthYear.earliestMonth);
+		// 			setSelectedDate((prevValue) => ({ ...prevValue, month: calculateEarliestMonthYear.earliestMonth }));
+		// 		}
+		// 	}
+		// }, [values.year]);
 
 		const getTimeParts = (timeString) => {
 			const timeParts = timeString.split(':');

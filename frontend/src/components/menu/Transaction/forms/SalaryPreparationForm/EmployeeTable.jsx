@@ -1,35 +1,14 @@
-import { flexRender } from '@tanstack/react-table';
-import { FaRegTrashAlt, FaPen, FaAngleUp, FaAngleDown, FaEye } from 'react-icons/fa';
+import React from 'react';
 import { FaCircleCheck } from 'react-icons/fa6';
-import { useRef, useEffect, useState } from 'react';
+import { FaRegTrashAlt, FaPen, FaAngleUp, FaAngleDown, FaEye } from 'react-icons/fa';
 
 const classNames = (...classes) => {
 	return classes.filter(Boolean).join(' ');
 };
-
-const EmployeeTable = ({
-	table,
-	tbodyRef,
-	handleKeyDown,
-	focusedRowRef,
-	isTableFilterInputFocused,
-	onRowClick,
-	memoizedSelectedDate,
-}) => {
-	useEffect(() => {
-		if (focusedRowRef.current && !isTableFilterInputFocused) {
-			// focusedRowRef.current.focus();
-			const rowToFocus = tbodyRef.current?.children.namedItem(focusedRowRef.current);
-
-			if (rowToFocus) {
-				rowToFocus.focus();
-			}
-		}
-	}, []);
-
+const EmployeeTable = React.memo(({ table, flexRender, tbodyRef, handleKeyDown, onRowClick, focusedRowRef }) => {
 	return (
-		<div className="py-2">
-			<div className="scrollbar mx-auto max-h-[30dvh] max-w-full overflow-y-auto rounded border border-black border-opacity-50 shadow-md lg:max-h-[30dvh]">
+		<div className=" py-2">
+			<div className="scrollbar mx-auto max-h-[80dvh] max-w-full overflow-y-auto rounded border border-black border-opacity-50 shadow-md lg:max-h-[80dvh]">
 				<table className="w-full border-collapse text-center text-xs">
 					<thead className="sticky top-0 z-20 bg-blueAccent-600 dark:bg-blueAccent-700">
 						{table.getHeaderGroups().map((headerGroup) => (
@@ -101,8 +80,8 @@ const EmployeeTable = ({
 												.namedItem(focusedRowRef.current)
 												?.getAttribute('data-row-id') &&
 											cell.id.includes('paycode') && (
-												<div className="absolute ">
-													<FaCircleCheck className="absolute scale-150 text-blueAccent-600" />
+												<div className="absolute left-2">
+													<FaCircleCheck className="scale-150 text-blueAccent-600" />
 												</div>
 											)}
 										<div className="text-xs">
@@ -119,5 +98,6 @@ const EmployeeTable = ({
 			</div>
 		</div>
 	);
-};
+});
+
 export default EmployeeTable;

@@ -12,6 +12,7 @@
     "@reduxjs/toolkit": "^1.9.2",
     "@tanstack/match-sorter-utils": "^8.8.4",
     "@tanstack/react-table": "^8.9.1",
+    "bignumber.js": "^9.1.2",
     "dayjs": "^1.11.7",
     "formik": "^2.2.9",
     "jwt-decode": "^3.1.2",

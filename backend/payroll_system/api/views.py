@@ -2,8 +2,8 @@ from django.forms import ValidationError
 from django.shortcuts import render
 from rest_framework import generics, status, mixins
 from django.db import transaction
-from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, DeductionsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer, EmployeeGenerativeLeaveRecordSerializer, EmployeeLeaveOpeningSerializer, EmployeePresentCountSerializer, EmployeeAdvancePaymentSerializer
-from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift, EmployeeSalaryEarning, EarningsHead, EmployeeShifts, EmployeeGenerativeLeaveRecord
+from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer, EmployeeGenerativeLeaveRecordSerializer, EmployeeLeaveOpeningSerializer, EmployeeMonthlyAttendancePresentDetailsSerializer, EmployeeAdvancePaymentSerializer, EmployeeMonthlyAttendanceDetailsSerializer, EmployeeSalaryPreparedSerializer, EarnedAmountSerializer
+from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift, EmployeeSalaryEarning, EarningsHead, EmployeeShifts, EmployeeGenerativeLeaveRecord, EmployeeSalaryPrepared, EarnedAmount
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
@@ -683,92 +683,92 @@ class EarningsHeadRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPI
         return Response({"detail": "Successfully deleted."}, status=status.HTTP_204_NO_CONTENT)
         
 
-class DeductionsHeadListCreateAPIView(generics.ListCreateAPIView):
-    permission_classes = [IsAuthenticated]
-    # queryset = Company.objects.all()
-    serializer_class = DeductionsHeadSerializer
-    lookup_field = 'company_id'
+# class DeductionsHeadListCreateAPIView(generics.ListCreateAPIView):
+#     permission_classes = [IsAuthenticated]
+#     # queryset = Company.objects.all()
+#     serializer_class = DeductionsHeadSerializer
+#     lookup_field = 'company_id'
 
-    def get_queryset(self, *args, **kwargs):
-        company_id = self.kwargs.get('company_id')
-        user = self.request.user
-        if user.role == "OWNER":
-            return user.deductions_head.filter(company=company_id)
-        instance = OwnerToRegular.objects.get(user=user)
-        return instance.owner.deductions_head.filter(company=company_id)
+#     def get_queryset(self, *args, **kwargs):
+#         company_id = self.kwargs.get('company_id')
+#         user = self.request.user
+#         if user.role == "OWNER":
+#             return user.deductions_head.filter(company=company_id)
+#         instance = OwnerToRegular.objects.get(user=user)
+#         return instance.owner.deductions_head.filter(company=company_id)
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = self.request.user
-        company_id = self.kwargs.get('company_id')
-        company = Company.objects.get(id=company_id)
-        name = serializer.validated_data.get('name').lower()
+#     def create(self, request, *args, **kwargs):
+#         serializer = self.get_serializer(data=request.data)
+#         serializer.is_valid(raise_exception=True)
+#         user = self.request.user
+#         company_id = self.kwargs.get('company_id')
+#         company = Company.objects.get(id=company_id)
+#         name = serializer.validated_data.get('name').lower()
         
-        # Check uniqueness
-        clashing_names = self.get_queryset().annotate(lower_name=Lower('name')).filter(lower_name=name)
-        if clashing_names.exists():
-            error_message = "Deductions Head with this name already exists."
-            return Response({"error": error_message}, status=status.HTTP_400_BAD_REQUEST)
+#         # Check uniqueness
+#         clashing_names = self.get_queryset().annotate(lower_name=Lower('name')).filter(lower_name=name)
+#         if clashing_names.exists():
+#             error_message = "Deductions Head with this name already exists."
+#             return Response({"error": error_message}, status=status.HTTP_400_BAD_REQUEST)
 
-        if user.role == "OWNER":
-            serializer.save(user=user, company=company)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        else:
-            instance = OwnerToRegular.objects.get(user=user)
-            serializer.save(user=instance.owner, company=company)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         if user.role == "OWNER":
+#             serializer.save(user=user, company=company)
+#             return Response(serializer.data, status=status.HTTP_200_OK)
+#         else:
+#             instance = OwnerToRegular.objects.get(user=user)
+#             serializer.save(user=instance.owner, company=company)
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
         
 
-class DeductionsHeadRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes= [IsAuthenticated]
-    serializer_class = DeductionsHeadSerializer
-    lookup_field = 'id'
+# class DeductionsHeadRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+#     permission_classes= [IsAuthenticated]
+#     serializer_class = DeductionsHeadSerializer
+#     lookup_field = 'id'
 
-    def get_queryset(self, *args, **kwargs):
-        company_id = self.kwargs.get('company_id')
-        user = self.request.user
-        if user.role == "OWNER":
-            return user.deductions_head.filter(company=company_id)
-        instance = OwnerToRegular.objects.get(user=user)
-        return instance.owner.deductions_head.filter(company=company_id)
+#     def get_queryset(self, *args, **kwargs):
+#         company_id = self.kwargs.get('company_id')
+#         user = self.request.user
+#         if user.role == "OWNER":
+#             return user.deductions_head.filter(company=company_id)
+#         instance = OwnerToRegular.objects.get(user=user)
+#         return instance.owner.deductions_head.filter(company=company_id)
     
-    def update(self, request, *args, **kwargs):
-        user = self.request.user
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        name = serializer.validated_data.get('name').lower()
+#     def update(self, request, *args, **kwargs):
+#         user = self.request.user
+#         instance = self.get_object()
+#         serializer = self.get_serializer(instance, data=request.data)
+#         serializer.is_valid(raise_exception=True)
+#         name = serializer.validated_data.get('name').lower()
 
-        # Cheking if mandatory Deduction
-        if instance.mandatory_deduction:
-            return Response({"detail": "Cannot edit a mandatory deduction."}, status=status.HTTP_403_FORBIDDEN)
+#         # Cheking if mandatory Deduction
+#         if instance.mandatory_deduction:
+#             return Response({"detail": "Cannot edit a mandatory deduction."}, status=status.HTTP_403_FORBIDDEN)
         
-        # Check uniqueness
-        clashing_names = self.get_queryset().annotate(lower_name=Lower('name')).filter(lower_name=name).exclude(id=instance.id)
-        print(clashing_names)
-        if clashing_names.exists():
-            print(clashing_names)
-            error_message = "Deductions Head with this name already exists."
-            return Response({"error": error_message}, status=status.HTTP_400_BAD_REQUEST)
+#         # Check uniqueness
+#         clashing_names = self.get_queryset().annotate(lower_name=Lower('name')).filter(lower_name=name).exclude(id=instance.id)
+#         print(clashing_names)
+#         if clashing_names.exists():
+#             print(clashing_names)
+#             error_message = "Deductions Head with this name already exists."
+#             return Response({"error": error_message}, status=status.HTTP_400_BAD_REQUEST)
         
-        if user.role == "OWNER":
-            serializer.save(user=self.request.user)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+#         if user.role == "OWNER":
+#             serializer.save(user=self.request.user)
+#             return Response(serializer.data, status=status.HTTP_200_OK)
         
-        else:
-            instance = OwnerToRegular.objects.get(user=user)
-            serializer.save(user=instance.owner)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+#         else:
+#             instance = OwnerToRegular.objects.get(user=user)
+#             serializer.save(user=instance.owner)
+#             return Response(serializer.data, status=status.HTTP_200_OK)
         
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if instance.mandatory_deduction:
-            print("yes")
-            return Response({"detail": "Cannot delete a mandatory deduction."}, status=status.HTTP_403_FORBIDDEN)
-        # Perform deletion
-        self.perform_destroy(instance)
-        return Response({"detail": "Successfully deleted."}, status=status.HTTP_204_NO_CONTENT)
+#     def destroy(self, request, *args, **kwargs):
+#         instance = self.get_object()
+#         if instance.mandatory_deduction:
+#             print("yes")
+#             return Response({"detail": "Cannot delete a mandatory deduction."}, status=status.HTTP_403_FORBIDDEN)
+#         # Perform deletion
+#         self.perform_destroy(instance)
+#         return Response({"detail": "Successfully deleted."}, status=status.HTTP_204_NO_CONTENT)
     
 
 class EmployeePersonalDetailListCreateView(generics.ListCreateAPIView):
@@ -1006,7 +1006,6 @@ class EmployeeSalaryEarningListCreateAPIView(generics.ListCreateAPIView):
         year = self.kwargs.get('year')
         user = self.request.user
         print(year)
-        print('yayyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy')
         if user.role == "OWNER":
             queryset = user.all_employees_earnings.filter(
                 company=company_id,
@@ -1024,16 +1023,8 @@ class EmployeeSalaryEarningListCreateAPIView(generics.ListCreateAPIView):
             )
 
         serializer = self.get_serializer(queryset, many=True)
-        # print(serializer.data)
         return Response(serializer.data)
-            # serializer = self.get_serializer(instance.first(), data=data, partial=partial)
-            # serializer.is_valid(raise_exception=True)
-            # user = self.request.user
-            # if user.role == "OWNER":
-            #     serializer.save(user=user)
-            # else:
-            #     instance = OwnerToRegular.objects.get(user=user)
-            #     serializer.save(user=instance.owner)
+           
         
 class EmployeeSalaryEarningListUpdateAPIView(generics.UpdateAPIView):
     permission_classes= [IsAuthenticated]
@@ -1383,10 +1374,20 @@ class EmployeeSalaryDetailRetrieveUpdateAPIView(generics.RetrieveUpdateAPIView):
             return Response({'overtimeRate': "Overtime Rate cannot be blank if overtime is allowed"}, status=status.HTTP_400_BAD_REQUEST)
         
 
-class EmployeePfEsiDetailCreateAPIView(generics.CreateAPIView):
+class EmployeePfEsiDetailListCreateAPIView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = EmployeePfEsiDetailSerializer
     lookup_field = 'company_id'
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        print(f"Pf Esi Detail: ")
+        user = self.request.user
+        if user.role == "OWNER":
+            print(f"Pf Esi Detail: ")
+            return user.employee_pf_esi_details.filter(company=company_id)
+        instance = OwnerToRegular.objects.get(user=user)
+        return instance.owner.employee_pf_esi_details.filter(company=company_id)
 
     def create(self, request, *args, **kwargs):
         try:
@@ -1870,16 +1871,27 @@ class EmployeeGenerativeLeaveRecordListAPIView(generics.ListAPIView):
         if user.role == "OWNER":
             return user.all_company_employees_generative_leave_record.filter(company=company_id, date__year=year)
         
-class EmployeePresentCountListAPIView(generics.ListAPIView):
+class EmployeeMonthlyAttendancePresentDetailsListAPIView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
-    serializer_class = EmployeePresentCountSerializer
+    serializer_class = EmployeeMonthlyAttendancePresentDetailsSerializer
 
     def get_queryset(self, *args, **kwargs):
         company_id = self.kwargs.get('company_id')
         year = self.kwargs.get('year')
         user = self.request.user
         if user.role == "OWNER":
-            return user.all_company_employees_present_count.filter(company=company_id, date__year=year)
+            return user.all_company_employees_monthly_attendance_details.filter(company=company_id, date__year=year)
+        
+class EmployeeMonthlyAttendanceDetailsListAPIView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = EmployeeMonthlyAttendanceDetailsSerializer
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        year = self.kwargs.get('year')
+        user = self.request.user
+        if user.role == "OWNER":
+            return user.all_company_employees_monthly_attendance_details.filter(company=company_id, date__year=year)
 
 class EmployeeLeaveOpeningListAPIView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
@@ -1973,9 +1985,73 @@ class EmployeeAdvancePaymentRetrieveUpdateDestroyAPIView(generics.RetrieveUpdate
         except Exception as e:
             print("Some Error Occurred")
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
         
 
+
+class AllEmployeeSalaryEarningListAPIView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = EmployeeSalaryEarningSerializer
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        user = self.request.user
+        if user.role != "OWNER":
+            user = OwnerToRegular.objects.get(user=user).owner
+        return user.all_employees_earnings.filter(company=company_id)
+        
+    def list(self, request, *args, **kwargs):
+        year = self.kwargs.get('year')
+        queryset = self.get_queryset().filter(from_date__year__lte=year, to_date__year__gte=year)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    
+
+class EmployeeSalaryPreparedCreateAPIView(generics.CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = EmployeeSalaryPreparedSerializer
+
+    def create(self, request, *args, **kwargs):
+        user = request.user
+        if user.role != "OWNER":
+            user = OwnerToRegular.objects.get(user=user).owner
+        # print(request.data)
+        all_earned_amounts_data = request.data.get('all_earned_amounts', [])
+        print(f"Earned Amount 0th instance: {all_earned_amounts_data[0]}")
+        serializer = self.get_serializer(data=request.data['employee_salary_prepared'])
+        serializer.is_valid(raise_exception=True)
+        employee_salary_prepared = EmployeeSalaryPrepared.objects.filter(employee=request.data['employee_salary_prepared']['employee'], date=request.data['employee_salary_prepared']['date'])
+        
+        
+        if employee_salary_prepared.exists():
+            existing_instance = employee_salary_prepared.first()
+            serializer.update(existing_instance, serializer.validated_data)
+        else:
+            serializer.save(user=user)
+        employee_salary_after_saved = EmployeeSalaryPrepared.objects.filter(employee=serializer.data['employee'], date=serializer.data['date'])
+        
+        if employee_salary_after_saved.exists():
+            employee_salary_after_saved_instance = employee_salary_after_saved.first()
+            # print(f"Id pf prepared salary :{employee_salary_after_saved_instance.id}")
+            EarnedAmount.objects.filter(salary_prepared=employee_salary_after_saved_instance.id).delete()
+
+            #Iterating through all the earned amounts and saving it
+            for earned_amount_data in all_earned_amounts_data:
+                print(earned_amount_data)
+                earned_amount_data['salary_prepared'] = employee_salary_after_saved_instance.id
+                earned_amount_data['earnings_head'] = earned_amount_data['earnings_head']['id']
+                earned_amount_serializer = EarnedAmountSerializer(data=earned_amount_data)
+                if earned_amount_serializer.is_valid():
+                    print(f"Validated Date: {earned_amount_serializer.validated_data}")
+                    earned_amount_serializer.save(user=user)
+                else:
+                    print("Not valid")
+                    print(earned_amount_serializer.errors)
+        # print(employee_salary_after_saved)
+
+        # print(f"After Saving: {serializer.data}")
+        # print(f"Validated Data: {serializer.validated_data}")
+
+        return Response({"detail": "Successful"}, status=status.HTTP_200_OK)
 
 
             
