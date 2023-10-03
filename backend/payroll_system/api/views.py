@@ -2036,21 +2036,16 @@ class EmployeeSalaryPreparedCreateAPIView(generics.CreateAPIView):
 
             #Iterating through all the earned amounts and saving it
             for earned_amount_data in all_earned_amounts_data:
-                print(earned_amount_data)
+                # print(earned_amount_data)
                 earned_amount_data['salary_prepared'] = employee_salary_after_saved_instance.id
                 earned_amount_data['earnings_head'] = earned_amount_data['earnings_head']['id']
                 earned_amount_serializer = EarnedAmountSerializer(data=earned_amount_data)
                 if earned_amount_serializer.is_valid():
-                    print(f"Validated Date: {earned_amount_serializer.validated_data}")
+                    # print(f"Validated Date: {earned_amount_serializer.validated_data}")
                     earned_amount_serializer.save(user=user)
                 else:
                     print("Not valid")
                     print(earned_amount_serializer.errors)
-        # print(employee_salary_after_saved)
-
-        # print(f"After Saving: {serializer.data}")
-        # print(f"Validated Data: {serializer.validated_data}")
-
         return Response({"detail": "Successful"}, status=status.HTTP_200_OK)
 
 

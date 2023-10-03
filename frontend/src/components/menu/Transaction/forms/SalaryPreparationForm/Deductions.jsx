@@ -61,7 +61,9 @@ const Deductions = React.memo(
 						Number(
 							item.emi <= item.principal - item.repaidAmount
 								? item.emi
-								: item.principal - item.repaidAmount || 0
+								: item.principal - item.repaidAmount > 0
+								? item.principal - item.repaidAmount
+								: 0
 						)
 					); // Use 0 as a default value if emi is undefined or falsy
 				}, 0);

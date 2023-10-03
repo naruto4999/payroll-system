@@ -194,7 +194,6 @@ const SalaryPreparationForm = () => {
 	});
 
 	const tbodyRef = useRef(null);
-
 	const focusedRowRef = useRef(null);
 	let debouncedSetUpdateEmployeeId;
 

@@ -11,6 +11,7 @@ import Deductions from './Deductions';
 import { useGetAllEmployeeSalaryDetailQuery } from '../../../../authentication/api/timeUpdationApiSlice';
 import BigNumber from 'bignumber.js';
 import NetSalary from './NetSalary';
+import { companyEntryApiSlice } from '../../../../authentication/api/companyEntryApiSlice';
 
 const classNames = (...classes) => {
 	return classes.filter(Boolean).join(' ');
@@ -193,7 +194,11 @@ const EditSalary = ({
 	}, [currentEmployeeSalaryDetails, currentEmployeeSalaryEarning, values.employeeSalaryPrepared.netOtMinutesMonthly]);
 
 	useEffect(() => {
+		console.log('entering use effect');
 		if (currentEmployeeSalaryEarning && !isSubmitting && currentEmployeeMonthlyAttendanceDetails?.length != 0) {
+			console.log('entering upper if block');
+			console.log(currentEmployeeMonthlyAttendanceDetails);
+			console.log(currentEmployeeSalaryEarning);
 			const earnedAmountArray = currentEmployeeSalaryEarning.map((item) => ({
 				earningsHead: item.earningsHead,
 				rate: item.value,
@@ -203,11 +208,16 @@ const EditSalary = ({
 				),
 				arearAmount: 0,
 			}));
+			console.log(earnedAmountArray);
 			setFieldValue(`earnedAmount`, earnedAmountArray);
 		} else if (currentEmployeeMonthlyAttendanceDetails?.length == 0 || currentEmployeeSalaryEarning?.length == 0) {
 			setFieldValue(`earnedAmount`, []);
 		}
-	}, [currentEmployeeSalaryEarning, currentEmployeeMonthlyAttendanceDetails]);
+	}, [currentEmployeeSalaryEarning, currentEmployeeMonthlyAttendanceDetails, updateEmployeeId]);
+
+	console.log(currentEmployeeSalaryEarning);
+	console.log(currentEmployeeMonthlyAttendanceDetails);
+	console.log(values);
 
 	useEffect(() => {
 		const updatedEarnedAmount = values.earnedAmount.map((item, index) => {
@@ -217,13 +227,13 @@ const EditSalary = ({
 			const daysInMonth = new Date(year, month, 0).getDate();
 			const paidDaysCount = currentEmployeeMonthlyAttendanceDetails?.[0]?.paidDaysCount || 0;
 			const arearAmount = item.arearAmount || 0;
-
 			const earnedAmount = Math.round(((rate * 100) / daysInMonth / 100) * (paidDaysCount / 2)) + arearAmount;
 
 			return { ...item, earnedAmount };
 		});
-
-		setFieldValue('earnedAmount', updatedEarnedAmount);
+		if (updatedEarnedAmount.length != 0) {
+			setFieldValue('earnedAmount', updatedEarnedAmount);
+		}
 	}, [values.earnedAmount.map((item) => item.arearAmount).join(',')]);
 
 	const optionsForYear = useMemo(() => {
