@@ -3,7 +3,7 @@ from django.shortcuts import render
 from rest_framework import generics, status, mixins
 from django.db import transaction
 from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer, EmployeeGenerativeLeaveRecordSerializer, EmployeeLeaveOpeningSerializer, EmployeeMonthlyAttendancePresentDetailsSerializer, EmployeeAdvancePaymentSerializer, EmployeeMonthlyAttendanceDetailsSerializer, EmployeeSalaryPreparedSerializer, EarnedAmountSerializer
-from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift, EmployeeSalaryEarning, EarningsHead, EmployeeShifts, EmployeeGenerativeLeaveRecord, EmployeeSalaryPrepared, EarnedAmount
+from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift, EmployeeSalaryEarning, EarningsHead, EmployeeShifts, EmployeeGenerativeLeaveRecord, EmployeeSalaryPrepared, EarnedAmount, EmployeeAdvanceEmiRepayment, EmployeeAdvancePayment
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
@@ -20,6 +20,11 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import pytz
 import calendar
+from django.db.models import Sum
+from decimal import Decimal
+import math
+
+
 
 
 
@@ -1948,7 +1953,7 @@ class EmployeeAdvancePaymentRetrieveUpdateDestroyAPIView(generics.RetrieveUpdate
     
     def update(self, request, *args, **kwargs):
         print(request.data)
-        print(request.data['employee_advance_details'])
+        # print(request.data['employee_advance_details'])
         # return Response({"detail": "Sub User deleted successfully."}, status=status.HTTP_200_OK)
 
         try:
@@ -2046,6 +2051,52 @@ class EmployeeSalaryPreparedCreateAPIView(generics.CreateAPIView):
                 else:
                     print("Not valid")
                     print(earned_amount_serializer.errors)
+
+            EmployeeAdvanceEmiRepayment.objects.filter(salary_prepared=employee_salary_after_saved_instance.id).delete()
+            employee_advances = EmployeeAdvancePayment.objects.filter(user=employee_salary_after_saved_instance.user, employee=employee_salary_after_saved_instance.employee, company=employee_salary_after_saved_instance.company, date__lt=employee_salary_after_saved_instance.date)
+            if employee_advances.exists():
+                
+                advance_to_be_paid = 0
+                for advance in employee_advances:
+                    # advance_repaid = EmployeeAdvanceEmiRepayment.objects.filter(employee_advance_payment=advance.id).aggregate(total_amount=Sum('amount'))['total_amount']
+                    if advance.emi <= (advance.principal-advance.repaid_amount):
+                        advance_to_be_paid += advance.emi
+                    elif (advance.principal-advance.repaid_amount) > 0:
+                        advance_to_be_paid += (advance.principal-advance.repaid_amount)
+
+                print(f"Advance to be paid: {advance_to_be_paid}")
+
+                # exact_advance_deducted = 0
+                if advance_to_be_paid != employee_salary_after_saved_instance.advance_deducted:
+                    discrepancy_advance_amount = Decimal(employee_salary_after_saved_instance.advance_deducted-advance_to_be_paid)
+                    advance_to_be_paid = Decimal(advance_to_be_paid)
+                    discrepency_advance_percentage = (discrepancy_advance_amount*Decimal(100))/advance_to_be_paid
+                    advance_deducted_left = employee_salary_after_saved_instance.advance_deducted
+                    for advance in employee_advances:
+                        if advance.emi <= (advance.principal-advance.repaid_amount):
+                            add_to_repaid = int(math.ceil((discrepency_advance_percentage/Decimal(100)*Decimal(advance.emi)) + Decimal(advance.emi)))
+                        else:
+                            add_to_repaid = int(math.ceil((discrepency_advance_percentage/Decimal(100)*Decimal(advance.principal-advance.repaid_amount)) + Decimal(advance.principal-advance.repaid_amount)))
+                            
+                        if add_to_repaid <= advance_deducted_left:
+                            EmployeeAdvanceEmiRepayment.objects.create(user=user, amount=add_to_repaid, employee_advance_payment_id=advance.id, salary_prepared_id=employee_salary_after_saved_instance.id)
+                            advance_deducted_left -= add_to_repaid
+                        elif advance_deducted_left > 0:
+                            EmployeeAdvanceEmiRepayment.objects.create(user=user, amount=advance_deducted_left, employee_advance_payment_id=advance.id, salary_prepared_id=employee_salary_after_saved_instance.id)
+                            advance_deducted_left -= advance_deducted_left
+
+                elif advance_to_be_paid == employee_salary_after_saved_instance.advance_deducted:
+                    add_to_repaid = 0
+                    for advance in employee_advances:
+                        if advance.emi <= (advance.principal-advance.repaid_amount):
+                            add_to_repaid = advance.emi
+                        else:
+                            add_to_repaid = advance.principal-advance.repaid_amount
+                        EmployeeAdvanceEmiRepayment.objects.create(user=user, amount=add_to_repaid, employee_advance_payment_id=advance.id, salary_prepared_id=employee_salary_after_saved_instance.id)
+
+
+
+
         return Response({"detail": "Successful"}, status=status.HTTP_200_OK)
 
 

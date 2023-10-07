@@ -35,7 +35,7 @@ import SalaryPreparationForm from './menu/Transaction/forms/SalaryPreparationFor
 // import { Provider } from "react-redux";
 import ProtectedRouteProps from './authentication/routes/ProtectedRoute';
 import ProtectedRoute from './authentication/routes/ProtectedRoute';
-import { RootState } from './authentication/store/index';
+// import { RootState } from './authentication/store/index';
 import { useSelector } from 'react-redux';
 import { useState, useEffect } from 'react';
 import SwitchToggle from './UI/ToggleSwitch';

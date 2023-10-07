@@ -12,6 +12,7 @@ from django.db.models import Q
 from dateutil.relativedelta import relativedelta
 import calendar
 import math
+from django.db.models import Sum
 
 
 
@@ -1242,12 +1243,28 @@ class EmployeeAdvancePayment(models.Model):
     closed = models.BooleanField(null=False, blank=False, default=False)
     closed_date = models.DateField(null=True, blank=True)
     tenure_months_left = models.PositiveSmallIntegerField(null=False, blank=False)
-    repaid_amount = models.PositiveIntegerField(null=False, blank=False, default=0)
+    @property
+    def repaid_amount(self):
+        # Filter the related objects
+        emi_repayments = EmployeeAdvanceEmiRepayment.objects.filter(employee_advance_payment=self.id)
+
+        # Check if there are no related objects and set total_amount to 0 in that case
+        if emi_repayments.exists():
+            total_amount = emi_repayments.aggregate(total_amount=Sum('amount')).get('total_amount', 0)
+        else:
+            total_amount = 0
+
+        return total_amount
+
+
+    # repaid_amount = models.PositiveIntegerField(null=False, blank=False, default=0)
 
     # class Meta:
     #     constraints = [
     #         models.UniqueConstraint(fields=['employee', 'year', 'company'], name='unique_advance_payment_per_employee_per_company'),
     #     ]
+
+
 
 
 class EmployeeSalaryPrepared(models.Model):
@@ -1277,6 +1294,12 @@ class EmployeeSalaryPrepared(models.Model):
             models.UniqueConstraint(fields=['date', 'employee'], name='unique_salary_for_each_month'),
         ]
 
+
+class EmployeeAdvanceEmiRepayment(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_company_employees_advance_emi_repayments")
+    amount = models.PositiveIntegerField(null=False, blank=False)
+    employee_advance_payment = models.ForeignKey(EmployeeAdvancePayment, on_delete=models.CASCADE, related_name="all_emis_of_advance")
+    salary_prepared = models.ForeignKey(EmployeeSalaryPrepared, on_delete=models.CASCADE, related_name="emis_with_salary_prepared")
 
 
 class EarnedAmount(models.Model):
@@ -1397,47 +1420,47 @@ def create_generative_leave_record(sender, instance, created, **kwargs):
         print(employee_attendance)
         # Calculations.objects.create( user=user, company=company, ot_calculation='26', el_calculation='26', notice_pay='26', service_calculation='26', gratuity_calculation='26', el_days_calculation=20,)
 
-@receiver(post_save, sender=EmployeeSalaryPrepared)
-def calculate_repaid_amount(sender, instance, created, **kwargs):
-    """
-    This function is called when an EmployeeSalaryPrepared instance is saved.
-    """
-    if created:
-        print(f"Created: {instance}")
-        print(f"Advance Paid: {instance.advance_deducted}")
-    else:
-        #employee_advances = contains all the advances that employee took
-        employee_advances = EmployeeAdvancePayment.objects.filter(user=instance.user, employee=instance.employee, company=instance.company)
-        if employee_advances.exists():
-                advance_to_be_paid = 0
-                for advance in employee_advances:
-                    if advance.emi <= (advance.principal-advance.repaid_amount):
-                        advance_to_be_paid += advance.emi
-                    elif (advance.principal-advance.repaid_amount) > 0:
-                        advance_to_be_paid += (advance.principal-advance.repaid_amount)
+# @receiver(post_save, sender=EmployeeSalaryPrepared)
+# def calculate_repaid_amount(sender, instance, created, **kwargs):
+#     """
+#     This function is called when an EmployeeSalaryPrepared instance is saved.
+#     """
+#     if created:
+#         print(f"Created: {instance}")
+#         print(f"Advance Paid: {instance.advance_deducted}")
+#     else:
+#         #employee_advances = contains all the advances that employee took
+#         employee_advances = EmployeeAdvancePayment.objects.filter(user=instance.user, employee=instance.employee, company=instance.company)
+#         if employee_advances.exists():
+#                 advance_to_be_paid = 0
+#                 for advance in employee_advances:
+#                     if advance.emi <= (advance.principal-advance.repaid_amount):
+#                         advance_to_be_paid += advance.emi
+#                     elif (advance.principal-advance.repaid_amount) > 0:
+#                         advance_to_be_paid += (advance.principal-advance.repaid_amount)
 
-                print(f"Advance to be paid: {advance_to_be_paid}")
+#                 print(f"Advance to be paid: {advance_to_be_paid}")
 
                 # if advance_to_be_paid != instance.advance_deducted:
-                discrepancy_advance_amount = Decimal(instance.advance_deducted-advance_to_be_paid)
-                advance_to_be_paid = Decimal(advance_to_be_paid)
-                discrepency_advance_percentage = (discrepancy_advance_amount*Decimal(100))/advance_to_be_paid
-                advance_deducted_left = instance.advance_deducted
-                for advance in employee_advances:
-                    if advance.emi <= (advance.principal-advance.repaid_amount):
-                        add_to_repaid = int(math.ceil((discrepency_advance_percentage/Decimal(100)*Decimal(advance.emi)) + Decimal(advance.emi)))
-                    else:
-                        add_to_repaid = int(math.ceil((discrepency_advance_percentage/Decimal(100)*Decimal(advance.principal-advance.repaid_amount)) + Decimal(advance.principal-advance.repaid_amount)))
+                # discrepancy_advance_amount = Decimal(instance.advance_deducted-advance_to_be_paid)
+                # advance_to_be_paid = Decimal(advance_to_be_paid)
+                # discrepency_advance_percentage = (discrepancy_advance_amount*Decimal(100))/advance_to_be_paid
+                # advance_deducted_left = instance.advance_deducted
+                # for advance in employee_advances:
+                #     if advance.emi <= (advance.principal-advance.repaid_amount):
+                #         add_to_repaid = int(math.ceil((discrepency_advance_percentage/Decimal(100)*Decimal(advance.emi)) + Decimal(advance.emi)))
+                #     else:
+                #         add_to_repaid = int(math.ceil((discrepency_advance_percentage/Decimal(100)*Decimal(advance.principal-advance.repaid_amount)) + Decimal(advance.principal-advance.repaid_amount)))
 
                         
-                    if add_to_repaid <= advance_deducted_left:
-                        advance.repaid_amount += add_to_repaid
-                        advance_deducted_left -= add_to_repaid
-                        advance.save()
-                    elif advance_deducted_left > 0:
-                        advance.repaid_amount += advance_deducted_left
-                        advance_deducted_left -= advance_deducted_left
-                        advance.save()
+                #     if add_to_repaid <= advance_deducted_left:
+                #         advance.repaid_amount += add_to_repaid
+                #         advance_deducted_left -= add_to_repaid
+                #         advance.save()
+                #     elif advance_deducted_left > 0:
+                #         advance.repaid_amount += advance_deducted_left
+                #         advance_deducted_left -= advance_deducted_left
+                #         advance.save()
 
                 # elif advance_to_be_paid==instance.advance_deducted:
                 #     advance_deducted_left = instance.advance_deducted
@@ -1445,6 +1468,6 @@ def calculate_repaid_amount(sender, instance, created, **kwargs):
                 #         if advance.emi <= (advance.principal-advance.repaid_amount):
 
 
-        print(f"First instance: {employee_advances[0].emi}")
-        print(f"Updated: {instance}")
-        print(f"Advance Paid: {instance.advance_deducted}")
+        # print(f"First instance: {employee_advances[0].emi}")
+        # print(f"Updated: {instance}")
+        # print(f"Advance Paid: {instance.advance_deducted}")

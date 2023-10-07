@@ -8,12 +8,24 @@ import globalCompanyReducer from "./slices/globalCompany";
 import alertSliceReducer from "./slices/alertSlice"
 
 
-const rootReducer = combineReducers({
+
+
+const appReducer = combineReducers({
     [apiSlice.reducerPath]: apiSlice.reducer,
     auth: reducer,
     globalCompany: globalCompanyReducer,
     alert: alertSliceReducer,
 });
+
+export type RootState = ReturnType<typeof appReducer>;
+const rootReducer = (state: RootState | undefined, action: any) => {
+    if (action.type === 'RESET') {
+      // Reset the entire Redux store to its initial state
+      state = undefined;
+    }
+    
+    return appReducer(state, action);
+  };
 
 const persistConfig = {
     key: "root",
@@ -37,5 +49,5 @@ const store = configureStore({
 });
 
 export const persistor = persistStore(store);
-export type RootState = ReturnType<typeof rootReducer>;
+// export type RootState = ReturnType<typeof appReducer>;
 export default store;

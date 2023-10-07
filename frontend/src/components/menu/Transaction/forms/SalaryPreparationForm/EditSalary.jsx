@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import { Field, ErrorMessage, FieldArray } from 'formik';
 import { FaCircleNotch } from 'react-icons/fa6';
 
@@ -47,7 +47,8 @@ const EditSalary = ({
 		'December',
 	];
 	const isDateWithinRange = (fromDate, toDate) => {
-		const dateSelected = new Date(Date.UTC(values.year, values.month, 1));
+		const dateSelected = new Date(Date.UTC(values.year, values.month - 1, 1));
+		// console.log('Selected Date', dateSelected);
 		const fromDateObj = new Date(fromDate);
 		const toDateObj = new Date(toDate);
 		return dateSelected >= fromDateObj && dateSelected <= toDateObj;
@@ -125,6 +126,8 @@ const EditSalary = ({
 			) ?? [];
 		return currentEmployeeSalaryEarning;
 	}, [allEmployeeSalaryEarnings, updateEmployeeId]);
+	// console.log('current employee salary earning', currentEmployeeSalaryEarning);
+	// console.log(values);
 
 	const currentEmployeeSalaryDetails = useMemo(() => {
 		const matchingItem = allEmployeeSalaryDetails?.find((item) => item.employee === updateEmployeeId);
@@ -194,11 +197,11 @@ const EditSalary = ({
 	}, [currentEmployeeSalaryDetails, currentEmployeeSalaryEarning, values.employeeSalaryPrepared.netOtMinutesMonthly]);
 
 	useEffect(() => {
-		console.log('entering use effect');
-		if (currentEmployeeSalaryEarning && !isSubmitting && currentEmployeeMonthlyAttendanceDetails?.length != 0) {
-			console.log('entering upper if block');
-			console.log(currentEmployeeMonthlyAttendanceDetails);
-			console.log(currentEmployeeSalaryEarning);
+		if (
+			currentEmployeeSalaryEarning.length != 0 &&
+			!isSubmitting &&
+			currentEmployeeMonthlyAttendanceDetails?.length != 0
+		) {
 			const earnedAmountArray = currentEmployeeSalaryEarning.map((item) => ({
 				earningsHead: item.earningsHead,
 				rate: item.value,
@@ -208,31 +211,37 @@ const EditSalary = ({
 				),
 				arearAmount: 0,
 			}));
-			console.log(earnedAmountArray);
 			setFieldValue(`earnedAmount`, earnedAmountArray);
 		} else if (currentEmployeeMonthlyAttendanceDetails?.length == 0 || currentEmployeeSalaryEarning?.length == 0) {
 			setFieldValue(`earnedAmount`, []);
 		}
-	}, [currentEmployeeSalaryEarning, currentEmployeeMonthlyAttendanceDetails, updateEmployeeId]);
+	}, [
+		currentEmployeeSalaryEarning.map((item) => item.value).join(','),
+		currentEmployeeMonthlyAttendanceDetails,
+		updateEmployeeId,
+	]);
 
-	console.log(currentEmployeeSalaryEarning);
-	console.log(currentEmployeeMonthlyAttendanceDetails);
-	console.log(values);
-
+	// This use Effect is causing problem with updation of rate
+	const prevArearAmounts = useRef(values.earnedAmount.map((item) => item.arearAmount).join(','));
+	// console.log(prevArearAmounts);
 	useEffect(() => {
-		const updatedEarnedAmount = values.earnedAmount.map((item, index) => {
-			const rate = item.rate;
-			const year = values.year;
-			const month = values.month;
-			const daysInMonth = new Date(year, month, 0).getDate();
-			const paidDaysCount = currentEmployeeMonthlyAttendanceDetails?.[0]?.paidDaysCount || 0;
-			const arearAmount = item.arearAmount || 0;
-			const earnedAmount = Math.round(((rate * 100) / daysInMonth / 100) * (paidDaysCount / 2)) + arearAmount;
+		if (prevArearAmounts.current != values.earnedAmount.map((item) => item.arearAmount).join(',')) {
+			const updatedEarnedAmount = values.earnedAmount.map((item, index) => {
+				console.log(item.rate);
+				const rate = item.rate;
+				const year = values.year;
+				const month = values.month;
+				const daysInMonth = new Date(year, month, 0).getDate();
+				const paidDaysCount = currentEmployeeMonthlyAttendanceDetails?.[0]?.paidDaysCount || 0;
+				const arearAmount = item.arearAmount || 0;
+				const earnedAmount = Math.round(((rate * 100) / daysInMonth / 100) * (paidDaysCount / 2)) + arearAmount;
 
-			return { ...item, earnedAmount };
-		});
-		if (updatedEarnedAmount.length != 0) {
-			setFieldValue('earnedAmount', updatedEarnedAmount);
+				return { ...item, earnedAmount };
+			});
+			if (updatedEarnedAmount.length != 0) {
+				setFieldValue('earnedAmount', updatedEarnedAmount);
+			}
+			prevArearAmounts.current = values.earnedAmount.map((item) => item.arearAmount).join(',');
 		}
 	}, [values.earnedAmount.map((item) => item.arearAmount).join(',')]);
 

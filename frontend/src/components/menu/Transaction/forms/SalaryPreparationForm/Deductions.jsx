@@ -56,16 +56,23 @@ const Deductions = React.memo(
 		useEffect(() => {
 			if (employeeAdvancePayments?.length != 0 && employeeAdvancePayments) {
 				const totalEmiSum = employeeAdvancePayments?.reduce((accumulator, item) => {
-					return (
-						accumulator +
-						Number(
-							item.emi <= item.principal - item.repaidAmount
-								? item.emi
-								: item.principal - item.repaidAmount > 0
-								? item.principal - item.repaidAmount
-								: 0
-						)
-					); // Use 0 as a default value if emi is undefined or falsy
+					const itemDate = new Date(item.date);
+					const dateSelected = new Date(Date.UTC(values.year, values.month - 1, 1));
+					if (itemDate.getTime() < dateSelected.getTime()) {
+						return (
+							accumulator +
+							Number(
+								item.emi <= item.principal - item.repaidAmount
+									? item.emi
+									: item.principal - item.repaidAmount > 0
+									? item.principal - item.repaidAmount
+									: 0
+							)
+						);
+					} else {
+						console.log('yes one item is smaller ');
+						return accumulator + 0;
+					} // Use 0 as a default value if emi is undefined or falsy
 				}, 0);
 				setFieldValue('employeeSalaryPrepared.advanceDeducted', totalEmiSum);
 			} else {
