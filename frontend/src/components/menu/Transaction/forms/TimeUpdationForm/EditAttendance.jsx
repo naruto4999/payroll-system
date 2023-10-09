@@ -80,7 +80,6 @@ const EditAttendance = memo(
 		const weeklyOffValues = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'no_off'];
 
 		const auth = useSelector((state) => state.auth);
-		console.log(values);
 		const absent = useMemo(() => leaveGrades.find((grade) => grade.name === 'A'), [leaveGrades]);
 		const missPunch = useMemo(() => leaveGrades.find((grade) => grade.name === 'MS'), [leaveGrades]);
 		const present = useMemo(() => leaveGrades.find((grade) => grade.name === 'P'), [leaveGrades]);
@@ -490,32 +489,43 @@ const EditAttendance = memo(
 					const manualOut = values.attendance[day]?.manualOut;
 					const shift = getShift(values.year, values.month, day);
 					const shiftBeginningTime = getTimeInDateObj(shift.beginningTime, day);
-					const shiftEndTime = getTimeInDateObj(shift.endTime, day);
+					const shiftEndTime = getTimeInDateObj(
+						shift.endTime,
+						shift.beginningTime < shift.endTime ? parseInt(day) : parseInt(day) + 1
+					);
 					const manualInObj =
 						manualIn < shift.endTime.slice(0, 5)
-							? getTimeInDateObj(manualIn, day)
+							? getTimeInDateObj(
+									manualIn,
+									shift.beginningTime < shift.endTime ? parseInt(day) : parseInt(day) + 1
+							  )
 							: getTimeInDateObj(
 									manualIn,
-									shift.beginningTime < shift.endTime ? parseInt(day) - 1 : parseInt(day) + 1
+									shift.beginningTime < shift.endTime ? parseInt(day) - 1 : parseInt(day)
 							  );
 					const manualOutObj =
 						manualOut > shift.beginningTime.slice(0, 5)
 							? getTimeInDateObj(manualOut, day)
 							: getTimeInDateObj(
 									manualOut,
-									shift.beginningTime < shift.endTime ? parseInt(day) + 1 : day
+									shift.beginningTime < shift.endTime ? parseInt(day) + 1 : parseInt(day) + 1
 							  );
 
 					if (manualInObj && manualOutObj) {
 						const effectiveStartTime = Math.max(manualInObj, shiftBeginningTime);
+						console.log('shiftBeginningTime', shiftBeginningTime);
+						console.log('shiftEnd Time', shiftEndTime);
+						console.log('Manual In: ', manualInObj, 'Manual Out ', manualOutObj);
 						const effectiveEndTime = Math.min(manualOutObj, shiftEndTime);
 						const durationMilliseconds = Math.max(effectiveEndTime - effectiveStartTime, 0);
 						const durationMinutes = Math.floor(durationMilliseconds / (1000 * 60));
 						if (durationMinutes >= parseInt(shift.fullDayMinimumMinutes)) {
 							if (lateMinValue <= shift.maxLateAllowedMin) {
+								console.log('yes in right if block', day);
 								setFieldValue(`attendance.${day}.firstHalf`, present.id);
 								setFieldValue(`attendance.${day}.secondHalf`, present.id);
 							} else if (lateMinValue > shift.maxLateAllowedMin) {
+								console.log('in a bit too late block', day);
 								setFieldValue(`attendance.${day}.firstHalf`, absent.id);
 								setFieldValue(`attendance.${day}.secondHalf`, present.id);
 							}
@@ -531,6 +541,7 @@ const EditAttendance = memo(
 								setFieldValue(`attendance.${day}.secondHalf`, present.id);
 							}
 						} else if (durationMinutes < parseInt(shift.halfDayMinimumMinutes)) {
+							console.log('bish ran home', day, '  duration: ', durationMinutes);
 							setFieldValue(`attendance.${day}.firstHalf`, absent.id);
 							setFieldValue(`attendance.${day}.secondHalf`, absent.id);
 						}
@@ -807,6 +818,7 @@ const EditAttendance = memo(
 						} else if (!hasManualIn && !hasManualOut) {
 							setFieldValue(`attendance.${day}.otMin`, '');
 							setFieldValue(`attendance.${day}.lateMin`, '');
+							// console.log('yes getting overridden', day);
 
 							if (!holidayDay && !weeklyOffDay && !values.attendance[day].manualMode) {
 								setFieldValue(`attendance.${day}.firstHalf`, absent.id);
@@ -913,16 +925,12 @@ const EditAttendance = memo(
 			const manualToDate = values.manualToDate;
 			const manualFromDateObj = new Date(Date.UTC(values.year, values.month - 1, parseInt(manualFromDate)));
 			const dojObj = new Date(currentEmployeeProfessionalDetail.dateOfJoining);
-			console.log(dojObj);
-			console.log(manualFromDateObj);
-			console.log(dojObj.getDate());
 			if (manualFromDateObj < dojObj) {
 				manualFromDate = dojObj.getDate();
 			}
 
 			const daysInMonth = new Date(values.year, values.month, 0).getDate();
 			const effectiveToDate = manualToDate < daysInMonth ? manualToDate : daysInMonth;
-			console.log(manualFromDate);
 
 			for (let day = manualFromDate; day <= effectiveToDate; day++) {
 				let skipThisDay = false;
@@ -1061,7 +1069,7 @@ const EditAttendance = memo(
 										onChange={(e) => {
 											handleChange(e);
 											setSelectedDate((prevValue) => ({ ...prevValue, month: e.target.value }));
-											console.log(`Name changed to: ${e.target.value}`);
+											// console.log(`Name changed to: ${e.target.value}`);
 										}}
 										className="my-1 mr-2 rounded-md bg-zinc-50 bg-opacity-50 p-1 dark:bg-zinc-700"
 									>
@@ -1092,7 +1100,7 @@ const EditAttendance = memo(
 										onChange={(e) => {
 											handleChange(e);
 											setSelectedDate((prevValue) => ({ ...prevValue, year: e.target.value }));
-											console.log(`Name changed to: ${e.target.value}`);
+											// console.log(`Name changed to: ${e.target.value}`);
 										}}
 										value={values.year}
 										className="my-1 rounded-md bg-zinc-50 bg-opacity-50 p-1 dark:bg-zinc-700"

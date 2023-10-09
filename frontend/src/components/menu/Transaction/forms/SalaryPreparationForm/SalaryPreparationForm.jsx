@@ -269,9 +269,13 @@ const SalaryPreparationForm = () => {
 			);
 		} catch (err) {
 			console.log(err);
+			let message = 'Error Occurred';
+			if (err.data?.detail == 'Too Much Advance Emi Repayment') {
+				message = 'Too Much Advance Emi Repayment';
+			}
 			dispatch(
 				alertActions.createAlert({
-					message: 'Error Occurred',
+					message: message,
 					type: 'Error',
 					duration: 5000,
 				})

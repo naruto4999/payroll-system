@@ -57,8 +57,8 @@ const Deductions = React.memo(
 			if (employeeAdvancePayments?.length != 0 && employeeAdvancePayments) {
 				const totalEmiSum = employeeAdvancePayments?.reduce((accumulator, item) => {
 					const itemDate = new Date(item.date);
-					const dateSelected = new Date(Date.UTC(values.year, values.month - 1, 1));
-					if (itemDate.getTime() < dateSelected.getTime()) {
+					const dateSelectedPlusOneMonth = new Date(Date.UTC(values.year, values.month, 1));
+					if (itemDate.getTime() < dateSelectedPlusOneMonth.getTime()) {
 						return (
 							accumulator +
 							Number(
