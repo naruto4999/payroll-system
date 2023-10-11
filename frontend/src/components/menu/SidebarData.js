@@ -23,6 +23,8 @@ import {
 	FaCalculator,
 	FaTableList,
 	FaBusinessTime,
+	FaNewspaper,
+	FaFilePdf,
 } from 'react-icons/fa6';
 
 const menuItems = [
@@ -152,6 +154,17 @@ const menuItems = [
 				title: 'Salary Preparation',
 				icon: FaMoneyBill1,
 				path: '/home/transaction/salary-preparation',
+			},
+		],
+	},
+	{
+		title: 'Reports',
+		icon: FaNewspaper,
+		children: [
+			{
+				title: 'Salary/Overtime Sheet',
+				icon: FaFilePdf,
+				path: '/home/reports/salary-overtime-sheet',
 			},
 		],
 	},

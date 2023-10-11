@@ -84,6 +84,8 @@ urlpatterns = [
     path('employee-advance-payment-delete/<int:company_id>/<int:employee_id>/<str:ids>', EmployeeAdvancePaymentRetrieveUpdateDestroyAPIView.as_view()),
     path('all-employee-salary-earning/<int:company_id>/<int:year>', AllEmployeeSalaryEarningListAPIView.as_view()),
     path('employee-salary-prepared', EmployeeSalaryPreparedCreateAPIView.as_view()),
+    # path('company-statistics/<int:company_id>', CompanyEmployeeStatisticsListAPIView.as_view()),
+
 
 
 

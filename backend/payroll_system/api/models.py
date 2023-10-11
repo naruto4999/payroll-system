@@ -18,7 +18,7 @@ from django.db.models import Sum
 
 
 #imports for signals
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
 # from django.db.models.signals import post_save
@@ -526,6 +526,21 @@ class EmployeeProfessionalDetail(models.Model):
         super().save(*args, **kwargs)
 
 
+# class CompanyEmployeeStatistics(models.Model):
+#     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_employees_statistics")
+#     company = models.OneToOneField(Company, on_delete=models.CASCADE, related_name="employee_statistics")
+#     earliest_employee_date_of_joining = models.DateField(null=True, blank=True)
+
+#     def update_earliest_employee_date(self):
+#         earliest_employee = EmployeeProfessionalDetail.objects.filter(company=self.company).order_by('date_of_joining').first()
+#         if earliest_employee:
+#             self.earliest_employee_date_of_joining = earliest_employee.date_of_joining
+#             self.save()
+#         else:
+#             self.earliest_employee_date_of_joining = None
+#             self.save()
+
+
 class EmployeeSalaryEarning(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_employees_earnings")
     employee = models.ForeignKey(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="earnings")
@@ -637,6 +652,7 @@ class EmployeePfEsiDetail(models.Model):
     pf_percent_ignore_employer = models.BooleanField(null=False, blank=False, default=False)
     pf_percent_ignore_employer_value = models.DecimalField(max_digits=4, decimal_places=2, validators=PERCENTAGE_VALIDATOR, null=True, blank=True)
     vpf_amount = models.PositiveIntegerField(null=False, blank=False, default=0)
+    tds_amount = models.PositiveIntegerField(null=False, blank=False, default=0)
     uan_number = models.CharField(max_length=30, null=True, blank=True)
     esi_allow = models.BooleanField(null=False, blank=False, default=False)
     esi_number = models.CharField(max_length=30, null=True, blank=True)
@@ -1339,7 +1355,8 @@ def create_default_leave_grades_for_company(sender, instance, created, **kwargs)
         LeaveGrade.objects.create(user=user,company=company, name='WO*', mandatory_leave=True, paid=False)
         LeaveGrade.objects.create(user=user,company=company, name='OD', mandatory_leave=True, paid=True)
         LeaveGrade.objects.create(user=user,company=company, name='CO', mandatory_leave=True, paid=True)
-
+        #Salary Sheet attendances WD, WO, HD, A (Non generative mandatory ones)
+        #Attendance EL, CL, SL, CO
 
 
 @receiver(post_save, sender=Company)
@@ -1419,6 +1436,19 @@ def create_generative_leave_record(sender, instance, created, **kwargs):
         user = employee_attendance.user
         print(employee_attendance)
         # Calculations.objects.create( user=user, company=company, ot_calculation='26', el_calculation='26', notice_pay='26', service_calculation='26', gratuity_calculation='26', el_days_calculation=20,)
+
+# @receiver(post_save, sender=EmployeeProfessionalDetail)
+# @receiver(post_delete, sender=EmployeeProfessionalDetail)
+
+# def update_earliest_employee_date(sender, instance, **kwargs):
+#     if instance.company:
+#         user = instance.user
+#         if user.role != "OWNER":
+#             user = OwnerToRegular.objects.get(user=user).owner
+#         company_stats, created = CompanyEmployeeStatistics.objects.get_or_create(company=instance.company, user=user)
+#     else:
+#         return
+#     company_stats.update_earliest_employee_date()
 
 # @receiver(post_save, sender=EmployeeSalaryPrepared)
 # def calculate_repaid_amount(sender, instance, created, **kwargs):

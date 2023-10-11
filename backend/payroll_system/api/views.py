@@ -2047,6 +2047,7 @@ class EmployeeSalaryPreparedCreateAPIView(generics.CreateAPIView):
                     print("Not valid")
                     print(earned_amount_serializer.errors)
 
+            #First delete all the objects of EmployeeAdvanceEmiRepayment for this salary (which was just saved) then retrieve the advances
             EmployeeAdvanceEmiRepayment.objects.filter(salary_prepared=employee_salary_after_saved_instance.id).delete()
             employee_advances = EmployeeAdvancePayment.objects.filter(user=employee_salary_after_saved_instance.user, employee=employee_salary_after_saved_instance.employee, company=employee_salary_after_saved_instance.company, date__lt=(employee_salary_after_saved_instance.date + relativedelta(months=1))).order_by('date')
             if employee_advances.exists():
@@ -2062,31 +2063,7 @@ class EmployeeSalaryPreparedCreateAPIView(generics.CreateAPIView):
                 print(f"Advance to be paid: {monthly_advance_repayment}")
                 if employee_salary_after_saved_instance.advance_deducted > max_advance_repayment_left:
                     return Response({"detail": "Too Much Advance Emi Repayment"}, status=status.HTTP_400_BAD_REQUEST)
-
-                # if monthly_advance_repayment != employee_salary_after_saved_instance.advance_deducted:
-                #     discrepancy_advance_amount = Decimal(employee_salary_after_saved_instance.advance_deducted-monthly_advance_repayment)
-                #     monthly_advance_repayment = Decimal(monthly_advance_repayment)
-                #     discrepency_advance_percentage = (discrepancy_advance_amount*Decimal(100))/monthly_advance_repayment
-                #     advance_deducted_left = employee_salary_after_saved_instance.advance_deducted
-                #     for advance in employee_advances:
-                #         if advance.emi <= (advance.principal-advance.repaid_amount):
-                #             add_to_repaid = int(math.ceil((discrepency_advance_percentage/Decimal(100)*Decimal(advance.emi)) + Decimal(advance.emi)))
-                #         else:
-                #             add_to_repaid = int(math.ceil((discrepency_advance_percentage/Decimal(100)*Decimal(advance.principal-advance.repaid_amount)) + Decimal(advance.principal-advance.repaid_amount)))
-                            
-                #         if add_to_repaid <= advance_deducted_left:
-                #             if add_to_repaid > advance.principal-advance.repaid_amount:
-                #                 add_to_repaid = advance.principal-advance.repaid_amount
-                #             EmployeeAdvanceEmiRepayment.objects.create(user=user, amount=add_to_repaid, employee_advance_payment_id=advance.id, salary_prepared_id=employee_salary_after_saved_instance.id)
-                #             advance_deducted_left -= add_to_repaid
-                #         elif advance_deducted_left > 0:
-                #             EmployeeAdvanceEmiRepayment.objects.create(user=user, amount=advance_deducted_left, employee_advance_payment_id=advance.id, salary_prepared_id=employee_salary_after_saved_instance.id)
-                #             advance_deducted_left -= advance_deducted_left
-
-                #     if advance_deducted_left != 0:
-                #         EmployeeAdvanceEmiRepayment.objects.filter(salary_prepared=employee_salary_after_saved_instance.id).delete()
-                #         return Response({"detail": "Too Much Advance Emi Repayment"}, status=status.HTTP_400_BAD_REQUEST)
-                # if monthly_advance_repayment != employee_salary_after_saved_instance.advance_deducted:
+                
                 surplus_repayment = employee_salary_after_saved_instance.advance_deducted - monthly_advance_repayment #0
                 advance_deducted_left = employee_salary_after_saved_instance.advance_deducted
                 for advance in employee_advances:
@@ -2107,23 +2084,19 @@ class EmployeeSalaryPreparedCreateAPIView(generics.CreateAPIView):
                 if surplus_repayment != 0:
                     print(f"Surplus is left: {surplus_repayment}")
 
-
-
-
-
-                # elif monthly_advance_repayment == employee_salary_after_saved_instance.advance_deducted:
-                #     add_to_repaid = 0
-                #     for advance in employee_advances:
-                #         if advance.emi <= (advance.principal-advance.repaid_amount):
-                #             add_to_repaid = advance.emi
-                #         else:
-                #             add_to_repaid = advance.principal-advance.repaid_amount
-                #         EmployeeAdvanceEmiRepayment.objects.create(user=user, amount=add_to_repaid, employee_advance_payment_id=advance.id, salary_prepared_id=employee_salary_after_saved_instance.id)
-
-
-
-
         return Response({"detail": "Successful"}, status=status.HTTP_200_OK)
+    
+# class CompanyEmployeeStatisticsListAPIView(generics.ListAPIView):
+#     permission_classes = [IsAuthenticated]
+#     serializer_class = CompanyEmployeeStatisticsSerializer
+
+#     def get_queryset(self, *args, **kwargs):
+#         company_id = self.kwargs.get('company_id')
+#         user = self.request.user
+#         if user.role == "OWNER":
+#             return user.all_employees_statistics.filter(company=company_id)
+#         instance = OwnerToRegular.objects.get(user=user)
+#         return instance.owner.all_employees_statistics.filter(company=company_id)
 
 
             

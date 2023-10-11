@@ -154,20 +154,13 @@ const AttendanceFooter = React.memo(
 				<div>
 					OT:{' '}
 					<span className="font-bold">
-						{/* {`${String(
-							Math.floor(
-								(attendanceFooterData.totalOvertime -
-									(Math.floor(attendanceFooterData.totalLate / 30) * 30 +
-										(attendanceFooterData.totalLate % 30 >= 20 ? 30 : 0))) /
-									60
-							)
-						).padStart(2, '0')}:${String(
-							(attendanceFooterData.totalOvertime -
+						{Math.max(
+							attendanceFooterData.totalOvertime -
 								(Math.floor(attendanceFooterData.totalLate / 30) * 30 +
-									(attendanceFooterData.totalLate % 30 >= 20 ? 30 : 0))) %
-								60
-						).padStart(2, '0')}`} */}
-						{`${String(
+									(attendanceFooterData.totalLate % 30 >= 20 ? 30 : 0)),
+							0
+						) / 60}
+						{/* {`${String(
 							Math.max(
 								attendanceFooterData.totalOvertime -
 									(Math.floor(attendanceFooterData.totalLate / 30) * 30 +
@@ -181,7 +174,7 @@ const AttendanceFooter = React.memo(
 										(attendanceFooterData.totalLate % 30 >= 20 ? 30 : 0)),
 								0
 							) % 60
-						).padStart(2, '0')}`}
+						).padStart(2, '0')}`} */}
 						{/* {attendanceFooterData.totalOvertime -
 							(Math.floor(attendanceFooterData.totalLate / 30) * 30 +
 								(attendanceFooterData.totalLate % 30 >= 20 ? 30 : 0))} */}

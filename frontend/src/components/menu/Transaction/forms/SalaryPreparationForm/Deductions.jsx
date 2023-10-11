@@ -90,6 +90,12 @@ const Deductions = React.memo(
 			} else {
 				setFieldValue('employeeSalaryPrepared.vpfDeducted', 0);
 			}
+			if (currentEmployeePfEsiDetails?.[0]?.tdsAmount != null) {
+				const tdsDeducted = currentEmployeePfEsiDetails?.[0]?.tdsAmount;
+				setFieldValue('employeeSalaryPrepared.tdsDeducted', tdsDeducted);
+			} else {
+				setFieldValue('employeeSalaryPrepared.tdsDeducted', 0);
+			}
 		}, [currentEmployeePfEsiDetails, updateEmployeeId]);
 
 		useEffect(() => {

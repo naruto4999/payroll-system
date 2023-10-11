@@ -219,6 +219,27 @@ const EmployeePfEsiDetail = ({
 									<ErrorMessage name="vpfAmount" />
 								</div>
 							</div>
+							<div>
+								<label
+									className="text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
+									htmlFor={'tdsAmount'}
+								>
+									TDS
+								</label>
+								<Field
+									className={classNames(
+										errors.tdsAmount && touched.tdsAmount
+											? 'border-red-500 border-opacity-100 dark:border-red-700 dark:border-opacity-75'
+											: 'border-gray-800 border-opacity-25 dark:border-slate-100 dark:border-opacity-25',
+										'custom-number-input block w-full rounded border-2  bg-zinc-50   bg-opacity-50 p-1 outline-none transition focus:border-opacity-100 dark:bg-zinc-700 dark:focus:border-opacity-75'
+									)}
+									type="number"
+									name={'tdsAmount'}
+								/>
+								<div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
+									<ErrorMessage name="tdsAmount" />
+								</div>
+							</div>
 						</div>
 
 						<div className="w-fit">
