@@ -97,6 +97,15 @@ const checkNullUndefinedValues = (obj) => {
 	return obj;
 };
 
+const replaceEmptyStringsWithNull = (obj) => {
+	for (const key in obj) {
+		if (obj.hasOwnProperty(key) && obj[key] === '') {
+			obj[key] = null;
+		}
+	}
+	return obj;
+};
+
 const EmployeeEntryForm = () => {
 	const globalCompany = useSelector((state) => state.globalCompany);
 	const dispatch = useDispatch();
@@ -838,11 +847,12 @@ const EmployeeEntryForm = () => {
 	const updatePfEsiDetailButtonClicked = async (values, formikBag) => {
 		console.log(values);
 		const differences = getObjectDifferences(singleEmployeePfEsiDetail, values);
-		console.log(differences);
+		// console.log(differences);
 		if (Object.keys(differences).length !== 0) {
+			const differencesWithNulls = replaceEmptyStringsWithNull(differences);
 			try {
 				const data = await updateEmployeePfEsiDetail({
-					...differences,
+					...differencesWithNulls,
 					employee: updateEmployeeId,
 					globalCompany: globalCompany.id,
 				}).unwrap();

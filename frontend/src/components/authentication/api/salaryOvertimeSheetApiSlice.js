@@ -10,14 +10,13 @@ export const salaryOvertimeSheetApiSlice = apiSlice.injectEndpoints({
 		// 	keepUnusedDataFor: 500,
 		// 	providesTags: ['CompanyStatistics'],
 		// }),
-		// addWeeklyOffHolidayOff: builder.mutation({
-		// 	query: (body) => ({
-		// 		url: `/api/weekly-off-holiday-off-create/${body.company}`,
-		// 		method: 'POST',
-		// 		body: body,
-		// 	}),
-		// 	invalidatesTags: ['WeeklyOffHolidayOff'],
-		// }),
+		generateSalaryOvertimeSheet: builder.mutation({
+			query: (body) => ({
+				url: `/api/generate-salary-overtime-sheet`,
+				method: 'POST',
+				body: body,
+			}),
+		}),
 		// updatedWeeklyOffHolidayOff: builder.mutation({
 		// 	query: (body) => ({
 		// 		url: `/api/weekly-off-holiday-off/${body.company}`,
@@ -29,4 +28,4 @@ export const salaryOvertimeSheetApiSlice = apiSlice.injectEndpoints({
 	}),
 });
 
-export const {} = salaryOvertimeSheetApiSlice;
+export const { useGenerateSalaryOvertimeSheetMutation } = salaryOvertimeSheetApiSlice;

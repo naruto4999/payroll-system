@@ -30,11 +30,11 @@ class CreateCompanySerializer(serializers.ModelSerializer):
 
 class CompanyEntrySerializer(serializers.ModelSerializer):
     #comp = serializers.StringRelatedField(many=False, read_only=True)
-    user = UserSerializer(read_only=True)
+    # user = UserSerializer(read_only=True)
     class Meta:
         model = CompanyDetails
         #fields = ('company', 'address', 'key_person', 'involving_industry', 'phone_no', 'email', 'pf_no', 'esi_no', 'head_office_address', 'pan_no', 'gst_no', 'registration_no', 'registration_date')
-        fields = ('user', 'company', 'address', 'key_person' ,'involving_industry', 'phone_no', 'email', 'pf_no', 'esi_no', 'head_office_address', 'pan_no', 'gst_no')
+        fields = ('company', 'address', 'key_person' ,'involving_industry', 'phone_no', 'email', 'pf_no', 'esi_no', 'head_office_address', 'pan_no', 'gst_no')
 
         def to_representation(self, instance):
             print(instance)
@@ -268,6 +268,24 @@ class EarnedAmountSerializer(serializers.ModelSerializer):
             'earned_amount',
             'arear_amount',
         )
+
+class SalaryOvertimeSheetSerializer(serializers.Serializer):
+    employee_ids = serializers.ListField(child=serializers.IntegerField())
+    filters = serializers.DictField(child=serializers.ChoiceField(
+        choices=["paycode", "attendance_card_no", "employee_name", "department", "none", "all", "bank_transfer", "cheque", "cash", "rtgs", "neft", "only_resigned", "without_resigned"]
+    ))
+    company = serializers.IntegerField()
+    month = serializers.IntegerField()
+    year = serializers.IntegerField()
+
+    # filters = serializers.DictField()
+    # sort_by = serializers.ChoiceField(choices=["paycode", "attendance_card_no", "employee_name"])
+    # group_by = serializers.ChoiceField(choices=["department", "none"])
+    # payment_mode = serializers.ChoiceField(choices=["all", "bank_transfer", "cheque", "cash", "rtgs", "neft"])
+    # resignation_filter = serializers.ChoiceField(choices=["all", "without_resigned", "only_resigned"])
+
+    class Meta:
+        fields = ['employee_ids', "filters"]
 
 # class CompanyEmployeeStatisticsSerializer(serializers.ModelSerializer):
 #     class Meta:

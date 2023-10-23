@@ -12,6 +12,7 @@ import { useGetAllEmployeeSalaryDetailQuery } from '../../../../authentication/a
 import BigNumber from 'bignumber.js';
 import NetSalary from './NetSalary';
 import { companyEntryApiSlice } from '../../../../authentication/api/companyEntryApiSlice';
+import { useGetAllEmployeePfEsiDetailsQuery } from '../../../../authentication/api/salaryPreparationApiSlice';
 
 const classNames = (...classes) => {
 	return classes.filter(Boolean).join(' ');
@@ -106,6 +107,20 @@ const EditSalary = ({
 		}
 	);
 
+	const {
+		data: allEmployeePfEsiDetails,
+		isLoading: isLoadingAllEmployeePfEsiDetails,
+		isSuccess: isAllEmployeePfEsiDetailsSuccess,
+		isFetching: isFetchingAllEmployeePfEsiDetails,
+	} = useGetAllEmployeePfEsiDetailsQuery(
+		{
+			company: globalCompany?.id,
+		},
+		{
+			skip: globalCompany === null || globalCompany === '',
+		}
+	);
+
 	const currentEmployeeMonthlyAttendanceDetails = useMemo(() => {
 		if (allEmployeeMonthlyAttendanceDetails && updateEmployeeId) {
 			const selectedEmployeeData = allEmployeeMonthlyAttendanceDetails.filter((item) => {
@@ -126,8 +141,11 @@ const EditSalary = ({
 			) ?? [];
 		return currentEmployeeSalaryEarning;
 	}, [allEmployeeSalaryEarnings, updateEmployeeId]);
-	// console.log('current employee salary earning', currentEmployeeSalaryEarning);
-	// console.log(values);
+
+	const currentEmployeePfEsiDetails = useMemo(() => {
+		const selectedEmployeeData = allEmployeePfEsiDetails?.filter((item) => item.employee === updateEmployeeId);
+		return selectedEmployeeData;
+	}, [allEmployeePfEsiDetails, updateEmployeeId]);
 
 	const currentEmployeeSalaryDetails = useMemo(() => {
 		const matchingItem = allEmployeeSalaryDetails?.find((item) => item.employee === updateEmployeeId);
@@ -262,7 +280,8 @@ const EditSalary = ({
 	if (
 		currentEmployeeMonthlyAttendanceDetails?.length == 0 ||
 		currentEmployeeSalaryEarning?.length == 0 ||
-		currentEmployeeSalaryDetails == null
+		currentEmployeeSalaryDetails == null ||
+		currentEmployeePfEsiDetails?.length == 0
 	) {
 		return (
 			<div>
@@ -309,6 +328,11 @@ const EditSalary = ({
 					{currentEmployeeMonthlyAttendanceDetails?.length == 0 && (
 						<h2 className="mx-auto text-lg dark:text-red-600">
 							This Employee has no attendance in {`${months[values.month - 1]}, ${values.year}`}
+						</h2>
+					)}
+					{currentEmployeePfEsiDetails?.length == 0 && (
+						<h2 className="mx-auto text-lg dark:text-red-600">
+							PF ESI Details haven't been added for this employee
 						</h2>
 					)}
 					{!currentEmployeeSalaryDetails && (
@@ -416,6 +440,7 @@ const EditSalary = ({
 						values={values}
 						setFieldValue={setFieldValue}
 						currentEmployeeSalaryDetails={currentEmployeeSalaryDetails}
+						currentEmployeePfEsiDetails={currentEmployeePfEsiDetails}
 					/>
 				</section>
 				<section className="mt-10 flex flex-row justify-between">

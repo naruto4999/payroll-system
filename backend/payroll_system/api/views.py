@@ -2,7 +2,7 @@ from django.forms import ValidationError
 from django.shortcuts import render
 from rest_framework import generics, status, mixins
 from django.db import transaction
-from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer, EmployeeGenerativeLeaveRecordSerializer, EmployeeLeaveOpeningSerializer, EmployeeMonthlyAttendancePresentDetailsSerializer, EmployeeAdvancePaymentSerializer, EmployeeMonthlyAttendanceDetailsSerializer, EmployeeSalaryPreparedSerializer, EarnedAmountSerializer
+from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer, EmployeeGenerativeLeaveRecordSerializer, EmployeeLeaveOpeningSerializer, EmployeeMonthlyAttendancePresentDetailsSerializer, EmployeeAdvancePaymentSerializer, EmployeeMonthlyAttendanceDetailsSerializer, EmployeeSalaryPreparedSerializer, EarnedAmountSerializer, SalaryOvertimeSheetSerializer
 from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift, EmployeeSalaryEarning, EarningsHead, EmployeeShifts, EmployeeGenerativeLeaveRecord, EmployeeSalaryPrepared, EarnedAmount, EmployeeAdvanceEmiRepayment, EmployeeAdvancePayment
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -16,13 +16,18 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from djangorestframework_camel_case.parser import CamelCaseFormParser, CamelCaseMultiPartParser
 from django.db import IntegrityError
 from django.db.models import Q
-from datetime import datetime
+from datetime import datetime, date
 from dateutil.relativedelta import relativedelta
 import pytz
 import calendar
 from django.db.models import Sum
 from decimal import Decimal
 import math
+from fpdf import FPDF
+from django.http import HttpResponse, StreamingHttpResponse
+from .reports.generate_salary_sheet import generate_salary_sheet
+
+
 
 
 
@@ -2097,6 +2102,43 @@ class EmployeeSalaryPreparedCreateAPIView(generics.CreateAPIView):
 #             return user.all_employees_statistics.filter(company=company_id)
 #         instance = OwnerToRegular.objects.get(user=user)
 #         return instance.owner.all_employees_statistics.filter(company=company_id)
+
+class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = SalaryOvertimeSheetSerializer
+
+    def create(self, request, *args, **kwargs):
+        user = request.user
+        if user.role != "OWNER":
+            user = OwnerToRegular.objects.get(user=user).owner
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+        employee_ids = validated_data["employee_ids"]
+        salary_date = date(validated_data["year"], validated_data["month"], 1)
+        print(validated_data)
+        order_by = 'employee__paycode'
+        if validated_data['filters']['sort_by'] == "attendance_card_no":
+            order_by = "employee__attendance_card_no"
+        elif validated_data['filters']['sort_by'] == "employee_name":
+            order_by = 'employee__name'
+        if validated_data['filters']['group_by'] != 'none':
+            order_by = 'employee__employee_professional_detail__department'
+            
+        employee_salaries = EmployeeSalaryPrepared.objects.filter(employee__id__in=employee_ids, date=salary_date).order_by(order_by)
+
+        print(validated_data)
+        if employee_salaries.exists():
+            response = StreamingHttpResponse(generate_salary_sheet(serializer.validated_data, employee_salaries), content_type="application/pdf")
+            response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
+            return response
+        else:
+            return Response({"detail": "No Salary Prepared for the given month"}, status=status.HTTP_404_NOT_FOUND)
+
+        
+        
+
 
 
             

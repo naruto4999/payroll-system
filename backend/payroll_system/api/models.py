@@ -185,12 +185,12 @@ class CompanyDetails(models.Model):
     address = models.TextField()
     key_person = models.CharField(max_length=64, blank=True)
     involving_industry = models.CharField(max_length=64, blank=True)
-    phone_no = models.PositiveBigIntegerField()
-    email = models.EmailField(max_length=150)
-    pf_no = models.CharField(max_length=30)
-    esi_no = models.PositiveBigIntegerField()
-    head_office_address = models.TextField()
-    pan_no = models.CharField(max_length=10, unique=True)
+    phone_no = models.PositiveBigIntegerField(null=True, blank=True)
+    email = models.EmailField(max_length=150, null=True, blank=True)
+    pf_no = models.CharField(max_length=30, null=True, blank=True)
+    esi_no = models.PositiveBigIntegerField(null=True, blank=True)
+    head_office_address = models.TextField(null=True, blank=True)
+    pan_no = models.CharField(max_length=10, unique=True, null=True, blank=True)
     gst_no = models.CharField(max_length=15, blank=True)
     
 class Deparment(models.Model):
@@ -626,6 +626,9 @@ class EmployeeSalaryDetail(models.Model):
     late_deduction = models.BooleanField(default=False, null=False, blank=False)
     bonus_allow = models.BooleanField(default=False, null=False, blank=False)
     bonus_exg = models.BooleanField(default=False, null=False, blank=False)
+
+    def get_payment_mode_display(self):
+        return dict(PAYMENT_MODE_CHOICES).get(self.payment_mode, self.payment_mode)
 
     def clean(self):
         if self.overtime_type in ['holiday_weekly_off', 'all_days'] and not self.overtime_rate:
@@ -1082,6 +1085,7 @@ class EmployeeGenerativeLeaveRecordManager(models.Manager):
         not_paid_days_count = 0
         total_ot_minutes_monthly = 0
         total_late_min = 0
+        compensation_off_days_count = 0
 
         employee_attendance_queryset = EmployeeAttendance.objects.filter(user=user, employee=employee, company=company, date__gte=from_date, date__lte=to_date)
 
@@ -1097,6 +1101,10 @@ class EmployeeGenerativeLeaveRecordManager(models.Manager):
             #Holiday Off Count
             holiday_days_count += 1 if employee_attendance.first_half.name == "HD" else 0
             holiday_days_count += 1 if employee_attendance.second_half.name == "HD" else 0
+
+            #Compensation Off Count
+            compensation_off_days_count += 1 if employee_attendance.first_half.name == "CO" else 0
+            compensation_off_days_count += 1 if employee_attendance.second_half.name == "CO" else 0
 
             #Paid Days Count
             paid_days_count += 1 if employee_attendance.first_half.paid == True else 0
@@ -1118,7 +1126,7 @@ class EmployeeGenerativeLeaveRecordManager(models.Manager):
 
         for key, value in leave_grade_dict.items():
             self.create(user=user, employee=employee, company=company, leave_id=key, date=from_date.replace(day=1), leave_count=value['leave_count'])
-        EmployeeMonthlyAttendanceDetails.objects.create(present_count=present_count, weekly_off_days_count=weekly_off_days_count, holiday_days_count=holiday_days_count, paid_days_count=paid_days_count, not_paid_days_count=not_paid_days_count, net_ot_minutes_monthly=net_ot_minutes_monthly, user=user, company=company, employee=employee, date=from_date.replace(day=1))
+        EmployeeMonthlyAttendanceDetails.objects.create(present_count=present_count, weekly_off_days_count=weekly_off_days_count, holiday_days_count=holiday_days_count, compensation_off_days_count=compensation_off_days_count, paid_days_count=paid_days_count, not_paid_days_count=not_paid_days_count, net_ot_minutes_monthly=net_ot_minutes_monthly, user=user, company=company, employee=employee, date=from_date.replace(day=1))
 
         print(f"Present Count: {present_count}")
         print(leave_grade_dict)    
@@ -1143,6 +1151,7 @@ class EmployeeGenerativeLeaveRecordManager(models.Manager):
         not_paid_days_count = 0
         total_ot_minutes_monthly = 0
         total_late_min = 0
+        compensation_off_days_count = 0
         employee_attendance_queryset = EmployeeAttendance.objects.filter(user=user, employee_id=employee_id, company_id=company_id, date__gte=from_date, date__lte=to_date)
 
         for employee_attendance in employee_attendance_queryset:
@@ -1157,6 +1166,10 @@ class EmployeeGenerativeLeaveRecordManager(models.Manager):
             #Holiday Off Count
             holiday_days_count += 1 if employee_attendance.first_half.name == "HD" else 0
             holiday_days_count += 1 if employee_attendance.second_half.name == "HD" else 0
+
+            #Compensation Off Count
+            compensation_off_days_count += 1 if employee_attendance.first_half.name == "CO" else 0
+            compensation_off_days_count += 1 if employee_attendance.second_half.name == "CO" else 0
 
             #Paid Days Count
             paid_days_count += 1 if employee_attendance.first_half.paid == True else 0
@@ -1185,9 +1198,10 @@ class EmployeeGenerativeLeaveRecordManager(models.Manager):
             present_count_record.paid_days_count = paid_days_count
             present_count_record.not_paid_days_count = not_paid_days_count
             present_count_record.net_ot_minutes_monthly = net_ot_minutes_monthly
+            present_count_record.compensation_off_days_count = compensation_off_days_count
             present_count_record.save()
         else:
-            EmployeeMonthlyAttendanceDetails.create(user=user, employee_id=employee_id, company_id=company_id, present_count=present_count, weekly_off_days_count=weekly_off_days_count, holiday_days_count=holiday_days_count, paid_days_count=paid_days_count, not_paid_days_count=not_paid_days_count, net_ot_minutes_monthly=net_ot_minutes_monthly, date=from_date.replace(day=1))
+            EmployeeMonthlyAttendanceDetails.create(user=user, employee_id=employee_id, company_id=company_id, present_count=present_count, weekly_off_days_count=weekly_off_days_count, holiday_days_count=holiday_days_count, compensation_off_days_count=compensation_off_days_count, paid_days_count=paid_days_count, not_paid_days_count=not_paid_days_count, net_ot_minutes_monthly=net_ot_minutes_monthly, date=from_date.replace(day=1))
 
         for key, value in leave_grade_dict.items():
             record = self.filter(user=user, employee_id=employee_id, company_id=company_id, leave_id=key, date=from_date.replace(day=1)).first()
@@ -1197,8 +1211,6 @@ class EmployeeGenerativeLeaveRecordManager(models.Manager):
                 record.save()
             else:
                 self.create(user=user, employee_id=employee_id, company_id=company_id, leave_id=key, date=from_date.replace(day=1), leave_count=value['leave_count'])
-
-
 
         print(f"Present Count: {present_count}")
         print(leave_grade_dict)
@@ -1230,6 +1242,7 @@ class EmployeeMonthlyAttendanceDetails(models.Model):
     holiday_days_count = models.PositiveSmallIntegerField(null=False, blank=False, default=0)
     not_paid_days_count = models.PositiveSmallIntegerField(null=False, blank=False, default=0)
     net_ot_minutes_monthly = models.PositiveIntegerField(null=False, blank=False, default=0)
+    compensation_off_days_count = models.PositiveSmallIntegerField(null=False, blank=False, default=0)
 
 
 class EmployeeLeaveOpening(models.Model):
@@ -1323,7 +1336,7 @@ class EarnedAmount(models.Model):
     earnings_head = models.ForeignKey(EarningsHead, on_delete=models.CASCADE, related_name="earning_head_earned_amount")
     salary_prepared = models.ForeignKey(EmployeeSalaryPrepared, on_delete=models.CASCADE, related_name="current_salary_earned_amounts")
     rate = models.PositiveIntegerField(null=False, blank=False, default=0)
-    earned_amount = models.PositiveIntegerField(null=False, blank=False, default=0)
+    earned_amount = models.PositiveIntegerField(null=False, blank=False, default=0) #inclusive of arrear
     arear_amount = models.PositiveIntegerField(null=False, blank=False, default=0)
 
 
@@ -1404,8 +1417,8 @@ def create_default_earning_for_company(sender, instance, created, **kwargs):
         EarningsHead.objects.create(user=user,company=company, name='Basic', mandatory_earning=True)
         EarningsHead.objects.create(user=user,company=company, name='HRA', mandatory_earning=True)
         EarningsHead.objects.create(user=user,company=company, name='Conveyance', mandatory_earning=True)
-        EarningsHead.objects.create(user=user,company=company, name='Other', mandatory_earning=True)
         EarningsHead.objects.create(user=user,company=company, name='Medical', mandatory_earning=True)
+        EarningsHead.objects.create(user=user,company=company, name='Other', mandatory_earning=True)
 
 @receiver(post_save, sender=Company)
 def create_default_holiday_off_weekly_off(sender, instance, created, **kwargs):

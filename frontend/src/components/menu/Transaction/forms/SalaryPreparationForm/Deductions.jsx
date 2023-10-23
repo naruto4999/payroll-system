@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect } from 'react';
-import { useGetAllEmployeePfEsiDetailsQuery } from '../../../../authentication/api/salaryPreparationApiSlice';
+// import { useGetAllEmployeePfEsiDetailsQuery } from '../../../../authentication/api/salaryPreparationApiSlice';
 import { useGetPfEsiSetupQuery } from '../../../../authentication/api/pfEsiSetupApiSlice';
 import { useGetEmployeeAdvancePaymentsQuery } from '../../../../authentication/api/advanceUpdationApiSlice';
 
@@ -7,7 +7,14 @@ import BigNumber from 'bignumber.js';
 import { Field, ErrorMessage, FieldArray } from 'formik';
 
 const Deductions = React.memo(
-	({ values, globalCompany, updateEmployeeId, setFieldValue, currentEmployeeSalaryDetails }) => {
+	({
+		values,
+		globalCompany,
+		updateEmployeeId,
+		setFieldValue,
+		currentEmployeeSalaryDetails,
+		currentEmployeePfEsiDetails,
+	}) => {
 		const {
 			data: { company, ...companyPfEsiSetup } = {},
 			isLoading,
@@ -19,19 +26,19 @@ const Deductions = React.memo(
 			skip: globalCompany === null || globalCompany === '',
 		});
 
-		const {
-			data: allEmployeePfEsiDetails,
-			isLoading: isLoadingAllEmployeePfEsiDetails,
-			isSuccess: isAllEmployeePfEsiDetailsSuccess,
-			isFetching: isFetchingAllEmployeePfEsiDetails,
-		} = useGetAllEmployeePfEsiDetailsQuery(
-			{
-				company: globalCompany?.id,
-			},
-			{
-				skip: globalCompany === null || globalCompany === '',
-			}
-		);
+		// const {
+		// 	data: allEmployeePfEsiDetails,
+		// 	isLoading: isLoadingAllEmployeePfEsiDetails,
+		// 	isSuccess: isAllEmployeePfEsiDetailsSuccess,
+		// 	isFetching: isFetchingAllEmployeePfEsiDetails,
+		// } = useGetAllEmployeePfEsiDetailsQuery(
+		// 	{
+		// 		company: globalCompany?.id,
+		// 	},
+		// 	{
+		// 		skip: globalCompany === null || globalCompany === '',
+		// 	}
+		// );
 
 		const {
 			data: employeeAdvancePayments,
@@ -48,10 +55,10 @@ const Deductions = React.memo(
 			}
 		);
 
-		const currentEmployeePfEsiDetails = useMemo(() => {
-			const selectedEmployeeData = allEmployeePfEsiDetails?.filter((item) => item.employee === updateEmployeeId);
-			return selectedEmployeeData;
-		}, [allEmployeePfEsiDetails, updateEmployeeId]);
+		// const currentEmployeePfEsiDetails = useMemo(() => {
+		// 	const selectedEmployeeData = allEmployeePfEsiDetails?.filter((item) => item.employee === updateEmployeeId);
+		// 	return selectedEmployeeData;
+		// }, [allEmployeePfEsiDetails, updateEmployeeId]);
 
 		useEffect(() => {
 			if (employeeAdvancePayments?.length != 0 && employeeAdvancePayments) {
@@ -98,6 +105,8 @@ const Deductions = React.memo(
 			}
 		}, [currentEmployeePfEsiDetails, updateEmployeeId]);
 
+		console.log(currentEmployeePfEsiDetails?.[0]);
+
 		useEffect(() => {
 			let timeoutId;
 
@@ -120,9 +129,16 @@ const Deductions = React.memo(
 						);
 						setFieldValue('employeeSalaryPrepared.pfDeducted', pfDeducted);
 					} else if (currentEmployeePfEsiDetails?.[0]?.pfLimitIgnoreEmployee == true) {
+						let pfDeducted = 0;
 						const basicEarned = new BigNumber(basicEarnedItem.earnedAmount);
-						const pfDeducted = Math.round(pfPercentage.dividedBy(100).multipliedBy(basicEarned).toNumber());
-						isChanged = true;
+						if (currentEmployeePfEsiDetails?.[0]?.pfLimitIgnoreEmployeeValue == null) {
+							pfDeducted = Math.round(pfPercentage.dividedBy(100).multipliedBy(basicEarned).toNumber());
+						} else {
+							const pfLimit = new BigNumber(currentEmployeePfEsiDetails?.[0]?.pfLimitIgnoreEmployeeValue);
+							const minimumValue = BigNumber.minimum(basicEarned, pfLimit);
+							pfDeducted = Math.round(pfPercentage.dividedBy(100).multipliedBy(minimumValue).toNumber());
+						}
+						// isChanged = true;
 						setFieldValue('employeeSalaryPrepared.pfDeducted', pfDeducted);
 					}
 				} else {

@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 // import { useGetCompanyStatisticsQuery } from '../../../authentication/api/salaryOvertimeSheetApiSlice';
-import { useSelector } from 'react-redux';
 import { useGetEmployeePersonalDetailsQuery } from '../../../authentication/api/employeeEntryApiSlice';
+import { useGenerateSalaryOvertimeSheetMutation } from '../../../authentication/api/salaryOvertimeSheetApiSlice';
+import { authActions } from '../../../authentication/store/slices/auth';
 import {
 	// column,
 	createColumnHelper,
@@ -16,9 +17,18 @@ import {
 } from '@tanstack/react-table';
 import EmployeeTable from './EmployeeTable';
 import { FaCheck, FaWindowMinimize } from 'react-icons/fa';
+import MonthYearSelector from './MonthYearSelector';
+import FilterOptions from './FilterOptions';
+import { Formik } from 'formik';
+import { useDispatch, useSelector } from 'react-redux';
+import { alertActions } from '../../../authentication/store/slices/alertSlice';
+import { useOutletContext } from 'react-router-dom';
 
 const SalaryOvertimeSheet = () => {
 	const globalCompany = useSelector((state) => state.globalCompany);
+	const auth = useSelector((state) => state.auth);
+	const dispatch = useDispatch();
+	const [showLoadingBar, setShowLoadingBar] = useOutletContext();
 
 	const {
 		data: employeePersonalDetails,
@@ -26,6 +36,15 @@ const SalaryOvertimeSheet = () => {
 		isSuccess: isSuccessEmployeePersonalDetails,
 	} = useGetEmployeePersonalDetailsQuery(globalCompany);
 	console.log(employeePersonalDetails);
+
+	const [
+		generateSalaryOvertimeSheet,
+		{
+			isLoading: isGeneratingSalaryOvertimeSheet,
+			// isError: errorRegisteringRegular,
+			isSuccess: isGenerateSalaryOvertimeSheetSuccess,
+		},
+	] = useGenerateSalaryOvertimeSheetMutation();
 
 	const IndeterminateCheckbox = React.forwardRef(({ indeterminate, ...rest }, ref) => {
 		const defaultRef = React.useRef();
@@ -140,6 +159,142 @@ const SalaryOvertimeSheet = () => {
 		return filteredData;
 	}, [employeePersonalDetails, selectedDate]);
 
+	const generateButtonClicked = async (values, formikBag) => {
+		const toSend = {
+			...values,
+			employee_ids: table.getSelectedRowModel().flatRows.map((row) => row.id),
+			company: globalCompany.id,
+			month: parseInt(selectedDate.month),
+			year: selectedDate.year,
+		};
+		console.log(toSend);
+
+		// using fetch
+		const requestOptions = {
+			method: 'POST',
+			headers: {
+				Authorization: `Bearer ${auth.token}`,
+				'Content-Type': 'application/json', // Set the Content-Type based on your request payload
+				// Add any other headers as needed
+			},
+			body: JSON.stringify(toSend),
+		};
+
+		const generateSalarySheet = async () => {
+			try {
+				const response = await fetch(
+					'http://127.0.0.1:8000/api/generate-salary-overtime-sheet',
+					requestOptions
+				);
+
+				if (response.status === 401) {
+					console.log('Received a 401 status, attempting to refresh the token...');
+
+					const refreshResponse = await fetch('http://127.0.0.1:8000/api/auth/refresh/', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify({ refresh: auth.refreshToken }),
+					});
+
+					if (refreshResponse.status === 200) {
+						const refreshData = await refreshResponse.json();
+
+						if (refreshData.access && refreshData.refresh) {
+							dispatch(
+								authActions.setAuthTokens({
+									token: refreshData.access,
+									refreshToken: refreshData.refresh,
+								})
+							);
+
+							const refreshedResponse = await fetch(
+								'http://127.0.0.1:8000/api/generate-salary-overtime-sheet',
+								{
+									...requestOptions,
+									headers: {
+										Authorization: `Bearer ${refreshData.access}`,
+										'Content-Type': 'application/json',
+									},
+								}
+							);
+
+							if (refreshedResponse.status === 200) {
+								dispatch(
+									alertActions.createAlert({
+										message: 'Generated',
+										type: 'Success',
+										duration: 8000,
+									})
+								);
+								const pdfData = await refreshedResponse.arrayBuffer();
+								const pdfBlob = new Blob([pdfData], { type: 'application/pdf' });
+								const pdfUrl = URL.createObjectURL(pdfBlob);
+								window.open(pdfUrl, '_blank');
+							} else if (refreshedResponse.status === 404) {
+								dispatch(
+									alertActions.createAlert({
+										message: 'No Salary Prepared for the given month',
+										type: 'Error',
+										duration: 5000,
+									})
+								);
+							}
+						}
+					} else {
+						console.log('Error refreshing token');
+						// Handle the refresh token failure
+						dispatch(
+							alertActions.createAlert({
+								message: 'Error Occurred',
+								type: 'Error',
+								duration: 5000,
+							})
+						);
+						dispatch(authActions.logout());
+					}
+				} else if (!response.ok) {
+					console.error('Request failed with status: ', response.status);
+					if (response.status == 404) {
+						dispatch(
+							alertActions.createAlert({
+								message: 'No Salary Prepared for the given month',
+								type: 'Error',
+								duration: 5000,
+							})
+						);
+					}
+					// throw new Error('Request failed');
+				} else {
+					dispatch(
+						alertActions.createAlert({
+							message: 'Generated',
+							type: 'Success',
+							duration: 8000,
+						})
+					);
+					const pdfData = await response.arrayBuffer();
+					const pdfBlob = new Blob([pdfData], { type: 'application/pdf' });
+					const pdfUrl = URL.createObjectURL(pdfBlob);
+					window.open(pdfUrl, '_blank');
+				}
+			} catch (error) {
+				console.error('Fetch error: ', error);
+				dispatch(
+					alertActions.createAlert({
+						message: 'Error Occurred',
+						type: 'Error',
+						duration: 5000,
+					})
+				);
+			}
+		};
+
+		// Call the generateSalarySheet function to initiate the request
+		generateSalarySheet();
+	};
+
 	const earliestMonthAndYear = useMemo(() => {
 		let earliestDate = Infinity; // Initialize earliestDate to a very large value
 		let earliestMonth = '';
@@ -175,11 +330,22 @@ const SalaryOvertimeSheet = () => {
 		enableSortingRemoval: false,
 	});
 	useEffect(() => {
-		table.toggleAllRowsSelected();
+		if (table.getIsAllRowsSelected() == false) {
+			table.toggleAllRowsSelected();
+		}
 	}, [data]);
 
-	const selectedRows = table.getSelectedRowModel().flatRows;
-	console.log(selectedRows);
+	// const selectedRows = table.getSelectedRowModel().flatRows;
+	// console.log(selectedRows);
+
+	const generateInitialValues = () => {
+		const initialValues = {
+			filters: { groupBy: 'none', sortBy: 'paycode', paymentMode: 'all', resignationFilter: 'all' },
+			reportType: 'salary_sheet',
+		};
+		return initialValues;
+	};
+	const initialValues = useMemo(() => generateInitialValues(), []);
 
 	if (globalCompany.id == null) {
 		return (
@@ -193,11 +359,28 @@ const SalaryOvertimeSheet = () => {
 		return <div></div>;
 	} else {
 		return (
-			<div className="flex w-full flex-row gap-8">
-				<div className="mt-4 ml-4 w-2/5">
-					<EmployeeTable table={table} flexRender={flexRender} />
+			<section className="mt-4">
+				<div className="ml-4">
+					<MonthYearSelector
+						earliestMonthAndYear={earliestMonthAndYear}
+						setSelectedDate={setSelectedDate}
+						selectedDate={selectedDate}
+					/>
 				</div>
-			</div>
+				<div className="flex w-full flex-row gap-8">
+					<div className="ml-4 flex w-2/5 flex-col">
+						<EmployeeTable table={table} flexRender={flexRender} />
+					</div>
+					<div className="mt-4">
+						<Formik
+							initialValues={initialValues}
+							validationSchema={''}
+							onSubmit={generateButtonClicked}
+							component={(props) => <FilterOptions {...props} />}
+						/>
+					</div>
+				</div>
+			</section>
 		);
 	}
 };
