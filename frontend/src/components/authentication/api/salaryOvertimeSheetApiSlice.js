@@ -2,14 +2,14 @@ import { apiSlice } from './apiSlice';
 
 export const salaryOvertimeSheetApiSlice = apiSlice.injectEndpoints({
 	endpoints: (builder) => ({
-		// getCompanyStatistics: builder.query({
-		// 	query: (globalCompany) => ({
-		// 		url: `/api/company-statistics/${globalCompany}`,
-		// 		method: 'GET',
-		// 	}),
-		// 	keepUnusedDataFor: 500,
-		// 	providesTags: ['CompanyStatistics'],
-		// }),
+		getPreparedSalaries: builder.query({
+			query: (body) => ({
+				url: `/api/prepared-salaries/${body.company}/${body.year}/${body.month}`,
+				method: 'GET',
+			}),
+			keepUnusedDataFor: 500,
+			providesTags: ['PreparedSalaries'],
+		}),
 		generateSalaryOvertimeSheet: builder.mutation({
 			query: (body) => ({
 				url: `/api/generate-salary-overtime-sheet`,
@@ -28,4 +28,4 @@ export const salaryOvertimeSheetApiSlice = apiSlice.injectEndpoints({
 	}),
 });
 
-export const { useGenerateSalaryOvertimeSheetMutation } = salaryOvertimeSheetApiSlice;
+export const { useGenerateSalaryOvertimeSheetMutation, useGetPreparedSalariesQuery } = salaryOvertimeSheetApiSlice;

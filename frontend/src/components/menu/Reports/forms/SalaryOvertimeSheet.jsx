@@ -1,7 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
 // import { useGetCompanyStatisticsQuery } from '../../../authentication/api/salaryOvertimeSheetApiSlice';
 import { useGetEmployeePersonalDetailsQuery } from '../../../authentication/api/employeeEntryApiSlice';
-import { useGenerateSalaryOvertimeSheetMutation } from '../../../authentication/api/salaryOvertimeSheetApiSlice';
+import {
+	useGenerateSalaryOvertimeSheetMutation,
+	useGetPreparedSalariesQuery,
+} from '../../../authentication/api/salaryOvertimeSheetApiSlice';
 import { authActions } from '../../../authentication/store/slices/auth';
 import {
 	// column,
@@ -30,11 +33,23 @@ const SalaryOvertimeSheet = () => {
 	const dispatch = useDispatch();
 	const [showLoadingBar, setShowLoadingBar] = useOutletContext();
 
+	const [selectedDate, setSelectedDate] = useState({
+		year: new Date().getFullYear(),
+		month: new Date().getMonth() + 1,
+	});
+
 	const {
 		data: employeePersonalDetails,
 		isLoading: isLoadingEmployeePersonalDetails,
 		isSuccess: isSuccessEmployeePersonalDetails,
 	} = useGetEmployeePersonalDetailsQuery(globalCompany);
+
+	const {
+		data: employeePreparedSalaries,
+		isLoading: isLoadingEmployeePreparedSalaries,
+		isSuccess: isSuccessEmployeePreparedSalaries,
+	} = useGetPreparedSalariesQuery({ company: globalCompany.id, month: selectedDate.month, year: selectedDate.year });
+	console.log(employeePreparedSalaries);
 	console.log(employeePersonalDetails);
 
 	const [
@@ -134,10 +149,6 @@ const SalaryOvertimeSheet = () => {
 		}),
 	];
 
-	const [selectedDate, setSelectedDate] = useState({
-		year: new Date().getFullYear(),
-		month: new Date().getMonth() + 1,
-	});
 	const data = useMemo(() => {
 		if (!employeePersonalDetails) return [];
 
@@ -152,12 +163,15 @@ const SalaryOvertimeSheet = () => {
 					return false;
 				}
 			}
-			const newDateOfJoining = new Date(Date.UTC(year, month - 1, 1));
-			return newDateOfJoining <= comparisonDate;
+			const dateOfJoiningOfEmployee = new Date(Date.UTC(year, month - 1, 1));
+			// Check if employee.id exists in the array
+			const idExists = employeePreparedSalaries?.some((obj) => obj.employee === employee.id);
+
+			return dateOfJoiningOfEmployee <= comparisonDate && idExists;
 		});
 
 		return filteredData;
-	}, [employeePersonalDetails, selectedDate]);
+	}, [employeePersonalDetails, selectedDate, employeePreparedSalaries]);
 
 	const generateButtonClicked = async (values, formikBag) => {
 		const toSend = {

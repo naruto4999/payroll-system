@@ -2091,6 +2091,27 @@ class EmployeeSalaryPreparedCreateAPIView(generics.CreateAPIView):
 
         return Response({"detail": "Successful"}, status=status.HTTP_200_OK)
     
+class EmployeeSalaryPreparedListAPIView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = EmployeeSalaryPreparedSerializer
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        user = self.request.user
+        if user.role != "OWNER":
+            # user = OwnerToRegular.objects.get(user=user).owner
+            return Response({"detail": "User is regular"}, status=status.HTTP_404_NOT_FOUND)
+        return user.all_company_employees_salaries_prepared.filter(company=company_id)
+        
+    def list(self, request, *args, **kwargs):
+        month = self.kwargs.get('month')
+        year = self.kwargs.get('year')
+        date_obj = date(year, month, 1)
+        queryset = self.get_queryset().filter(date=date_obj)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    
 # class CompanyEmployeeStatisticsListAPIView(generics.ListAPIView):
 #     permission_classes = [IsAuthenticated]
 #     serializer_class = CompanyEmployeeStatisticsSerializer
@@ -2135,6 +2156,7 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
             return response
         else:
             return Response({"detail": "No Salary Prepared for the given month"}, status=status.HTTP_404_NOT_FOUND)
+
 
         
         
