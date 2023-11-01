@@ -36,11 +36,7 @@ export const EmployeePersonalDetailSchema = yup.object().shape({
 		.nullable(), // Allows the field to be null (optional),
 
 	// 1st column
-	paycode: yup
-		.string()
-		.required('Required')
-		.matches(/^\d+$/, 'Paycode must contain only numbers')
-		.max(7, 'Paycode must have a maximum of 7 digits'),
+	paycode: yup.string().required('Required').max(7, 'Paycode must have a maximum of 32 characters'),
 	attendanceCardNo: yup
 		.string()
 		.required('Required')

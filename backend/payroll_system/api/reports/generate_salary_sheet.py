@@ -136,7 +136,7 @@ def generate_salary_sheet(request_data, prepared_salaries):
 
 
     group_by_filter_heading_height = 6
-    print(rows_per_page)
+
 
     if request_data['filters']['group_by'] != 'none':
         print(f"Y: {salary_sheet_pdf.get_y()} In goupby cell height {(salary_sheet_pdf.h-header_height-8-((rows_per_page//1)*group_by_filter_heading_height))/((default_number_of_cells_in_row*(rows_per_page//1))+(rows_per_page//1))}")
@@ -146,11 +146,6 @@ def generate_salary_sheet(request_data, prepared_salaries):
         print(default_cell_height)
     group_by_filter_total_height = default_cell_height
 
-
-
-
-    # rows_per_page=4
-    print(rows_per_page)
 
     company_pf_esi_setup = PfEsiSetup.objects.get(company=request_data['company'])
     grand_total_deductions = {
@@ -507,11 +502,12 @@ def generate_salary_sheet(request_data, prepared_salaries):
 
                 if ((index+1) % (rows_per_page//1)) == 0:
                     if request_data['filters']['group_by'] == 'department':
-                        if index<(len(prepared_salaries)-1):
-                                next_employee_professional_details = EmployeeProfessionalDetail.objects.get(employee=prepared_salaries[index+1].employee.id)
-                                next_employee_department = next_employee_professional_details.department
+                        if index<(len(prepared_salaries)):
+                                next_employee_department = None
+                                if index<(len(prepared_salaries)-1):
+                                    next_employee_professional_details = EmployeeProfessionalDetail.objects.get(employee=prepared_salaries[index+1].employee.id)
+                                    next_employee_department = next_employee_professional_details.department
                                 if (not next_employee_department or (employee_professional_details.department and employee_professional_details.department.name != next_employee_department.name)) and employee_professional_details.department:
-                                    print(f"This employee department: {employee_professional_details.department.name}")
                                     salary_sheet_pdf.set_xy(x=initial_cursor_position_before_row["x"], y=salary_sheet_pdf.get_y()+((default_number_of_cells_in_row-1)*default_cell_height))
 
                                     #Printing Department Totals
@@ -526,7 +522,6 @@ def generate_salary_sheet(request_data, prepared_salaries):
                                     salary_sheet_pdf.cell(width_of_columns['net_payable'], group_by_filter_total_height, f"{department_grand_total[employee_professional_details.department.name]['net_payable_total']}", align="R", ln = 0, border=0)
                                     salary_sheet_pdf.set_font('Arial', '', 8)
 
-                                    print(department_grand_total[employee_professional_details.department.name]['salary_wage_rate_total'])
 
                     salary_sheet_pdf.add_page()
                     initial_cursor_position_before_row["y"] = header_height
@@ -537,11 +532,12 @@ def generate_salary_sheet(request_data, prepared_salaries):
 
                     salary_sheet_pdf.set_xy(x=initial_cursor_position_before_row["x"], y=initial_cursor_position_before_row["y"])
                     if request_data['filters']['group_by'] == 'department':
-                        if index<(len(prepared_salaries)-1):
-                                next_employee_professional_details = EmployeeProfessionalDetail.objects.get(employee=prepared_salaries[index+1].employee.id)
-                                next_employee_department = next_employee_professional_details.department
+                        if index<(len(prepared_salaries)):
+                                next_employee_department = None
+                                if index<(len(prepared_salaries)-1):
+                                    next_employee_professional_details = EmployeeProfessionalDetail.objects.get(employee=prepared_salaries[index+1].employee.id)
+                                    next_employee_department = next_employee_professional_details.department
                                 if (not next_employee_department or (employee_professional_details.department and employee_professional_details.department.name != next_employee_department.name)) and employee_professional_details.department:
-                                    print(f"This employee department: {employee_professional_details.department.name}")
                                     #Printing Department Totals
                                     salary_sheet_pdf.set_font('Arial', 'B', 8)
                                     salary_sheet_pdf.cell(width_of_columns["paycode"]+width_of_columns["employee_name"]+width_of_columns['attendance_detail'], group_by_filter_total_height, f"{employee_department_list[-1]} Total", align="L", ln = 0, border=0)
@@ -555,7 +551,6 @@ def generate_salary_sheet(request_data, prepared_salaries):
                                     salary_sheet_pdf.set_font('Arial', '', 8)
 
 
-                                    print(department_grand_total[employee_professional_details.department.name]['salary_wage_rate_total'])
                                     salary_sheet_pdf.set_xy(x=initial_cursor_position_before_row["x"], y=initial_cursor_position_before_row["y"]+group_by_filter_total_height)
                                     initial_cursor_position_before_row["y"] = initial_cursor_position_before_row["y"]+group_by_filter_total_height
 

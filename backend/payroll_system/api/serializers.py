@@ -149,7 +149,7 @@ class EmployeePersonalDetailSerializer(serializers.ModelSerializer):
 class EmployeeListSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
-    paycode = serializers.IntegerField(read_only=True)
+    paycode = serializers.CharField(read_only=True)
     attendance_card_no = serializers.IntegerField(read_only=True)
     date_of_joining = serializers.DateField(source='employee_professional_detail.date_of_joining', read_only=True)
     designation = serializers.CharField(source='employee_professional_detail.designation', read_only=True)
