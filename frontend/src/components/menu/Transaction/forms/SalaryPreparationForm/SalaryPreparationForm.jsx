@@ -295,46 +295,54 @@ const SalaryPreparationForm = () => {
 		return <div></div>;
 	} else {
 		return (
-			<div className="flex w-full flex-row gap-8">
-				<div className="mt-4 ml-4 w-2/5">
-					<TableFilterInput
-						globalFilter={globalFilter}
-						setGlobalFilter={setGlobalFilter}
-						// isTableFilterInputFocused={isTableFilterInputFocused}
-						// setIsTableFilterInputFocused={setIsTableFilterInputFocused}
-					/>
-					<EmployeeTable
-						table={table}
-						flexRender={flexRender}
-						tbodyRef={tbodyRef}
-						handleKeyDown={handleKeyDown}
-						onRowClick={onRowClick}
-						focusedRowRef={focusedRowRef}
-					/>
-				</div>
-				{updateEmployeeId == null ? (
-					<div className="mx-auto mt-10 text-xl font-bold dark:text-red-700">
-						Please Select an Employee to prepare the Salary
+			<section className="mx-5 mt-2">
+				<div className="flex flex-row flex-wrap place-content-between">
+					<div className="mr-4">
+						<h1 className="text-3xl font-medium">Salary Preperation</h1>
+						<p className="my-2 text-sm">Prepare employees salaries here</p>
 					</div>
-				) : (
-					<div className="mt-4">
-						<Formik
-							initialValues={initialValues}
-							validationSchema={''}
-							onSubmit={updateButtonClicked}
-							component={(props) => (
-								<EditSalary
-									{...props}
-									updateEmployeeId={updateEmployeeId}
-									globalCompany={globalCompany}
-									earliestMonthAndYear={earliestMonthAndYear}
-									setSelectedDate={setSelectedDate}
-								/>
-							)}
+				</div>
+				<div className="flex w-full flex-row gap-8">
+					<div className="mt-4 ml-4 w-2/5">
+						<TableFilterInput
+							globalFilter={globalFilter}
+							setGlobalFilter={setGlobalFilter}
+							// isTableFilterInputFocused={isTableFilterInputFocused}
+							// setIsTableFilterInputFocused={setIsTableFilterInputFocused}
+						/>
+						<EmployeeTable
+							table={table}
+							flexRender={flexRender}
+							tbodyRef={tbodyRef}
+							handleKeyDown={handleKeyDown}
+							onRowClick={onRowClick}
+							focusedRowRef={focusedRowRef}
 						/>
 					</div>
-				)}
-			</div>
+					{updateEmployeeId == null ? (
+						<div className="mx-auto mt-10 text-xl font-bold dark:text-red-700">
+							Please Select an Employee to prepare the Salary
+						</div>
+					) : (
+						<div className="mt-4">
+							<Formik
+								initialValues={initialValues}
+								validationSchema={''}
+								onSubmit={updateButtonClicked}
+								component={(props) => (
+									<EditSalary
+										{...props}
+										updateEmployeeId={updateEmployeeId}
+										globalCompany={globalCompany}
+										earliestMonthAndYear={earliestMonthAndYear}
+										setSelectedDate={setSelectedDate}
+									/>
+								)}
+							/>
+						</div>
+					)}
+				</div>
+			</section>
 		);
 	}
 };

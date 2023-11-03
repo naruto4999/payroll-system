@@ -2,14 +2,14 @@ import { apiSlice } from './apiSlice';
 
 export const timeUpdationApiSlice = apiSlice.injectEndpoints({
 	endpoints: (builder) => ({
-		getEmployeeAttendanceBetweenDates: builder.query({
-			query: (body) => ({
-				url: `/api/employee-attendance/${body.company}/${body.employee}/${body.fromDate}/${body.toDate}`,
-				method: 'GET',
-			}),
-			keepUnusedDataFor: 1,
-			providesTags: ['EmployeeAttendance'],
-		}),
+		// getEmployeeAttendanceBetweenDates: builder.query({
+		// 	query: (body) => ({
+		// 		url: `/api/employee-attendance/${body.company}/${body.employee}/${body.fromDate}/${body.toDate}`,
+		// 		method: 'GET',
+		// 	}),
+		// 	keepUnusedDataFor: 1,
+		// 	providesTags: ['EmployeeAttendance'],
+		// }),
 		getCurrentMonthAllEmployeeAttendance: builder.query({
 			query: (body) => ({
 				url: `/api/all-employee-attendance/${body.company}/${body.year}/${body.month}`,
@@ -72,7 +72,12 @@ export const timeUpdationApiSlice = apiSlice.injectEndpoints({
 				method: 'POST',
 				body: body,
 			}),
-			invalidatesTags: ['EmployeeAttendance', 'AllEmployeePresentCount', 'AllEmployeeGenerativeLeaveRecord'],
+			invalidatesTags: [
+				'EmployeeAttendance',
+				'AllEmployeePresentCount',
+				'AllEmployeeGenerativeLeaveRecord',
+				'AllEmployeeMonthlyAttendanceDetails',
+			],
 		}),
 		updateEmployeeAttendance: builder.mutation({
 			query: (body) => ({
@@ -80,7 +85,12 @@ export const timeUpdationApiSlice = apiSlice.injectEndpoints({
 				method: 'PUT',
 				body: body,
 			}),
-			invalidatesTags: ['EmployeeAttendance', 'AllEmployeePresentCount', 'AllEmployeeGenerativeLeaveRecord'],
+			invalidatesTags: [
+				'EmployeeAttendance',
+				'AllEmployeePresentCount',
+				'AllEmployeeGenerativeLeaveRecord',
+				'AllEmployeeMonthlyAttendanceDetails',
+			],
 		}),
 		// deleteShift: builder.mutation({
 		// 	query: (shift) => ({
@@ -94,7 +104,7 @@ export const timeUpdationApiSlice = apiSlice.injectEndpoints({
 
 export const {
 	useAddEmployeeAttendanceMutation,
-	useGetEmployeeAttendanceBetweenDatesQuery,
+	// useGetEmployeeAttendanceBetweenDatesQuery,
 	useUpdateEmployeeAttendanceMutation,
 	useGetCurrentMonthAllEmployeeAttendanceQuery,
 	useGetCurrentMonthAllEmployeeShiftsQuery,

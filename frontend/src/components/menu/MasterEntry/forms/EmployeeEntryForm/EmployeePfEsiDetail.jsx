@@ -36,21 +36,10 @@ const EmployeePfEsiDetail = ({
 		if (values.pfLimitIgnoreEmployee === false) {
 			setFieldValue('pfLimitIgnoreEmployeeValue', '');
 		}
-		if (values.pfPercentIgnoreEmployee === false) {
-			setFieldValue('pfPercentIgnoreEmployeeValue', '');
-		}
 		if (values.pfLimitIgnoreEmployer === false) {
 			setFieldValue('pfLimitIgnoreEmployerValue', '');
 		}
-		if (values.pfPercentIgnoreEmployer === false) {
-			setFieldValue('pfPercentIgnoreEmployerValue', '');
-		}
-	}, [
-		values.pfLimitIgnoreEmployee,
-		values.pfPercentIgnoreEmployee,
-		values.pfLimitIgnoreEmployer,
-		values.pfPercentIgnoreEmployer,
-	]);
+	}, [values.pfLimitIgnoreEmployee, values.pfLimitIgnoreEmployer]);
 
 	if (!addedEmployeeId && !isEditing) {
 		return (
@@ -123,32 +112,6 @@ const EmployeePfEsiDetail = ({
 
 							<div>
 								<label className="mt-2 block text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70">
-									PF % Ignore Employee:
-									<Field
-										type="checkbox"
-										name="pfPercentIgnoreEmployee"
-										className="mx-4 h-4 w-4 translate-y-0.5 rounded accent-teal-600"
-									/>
-								</label>
-								<Field
-									className={classNames(
-										errors.pfPercentIgnoreEmployeeValue && touched.pfPercentIgnoreEmployeeValue
-											? 'border-red-500 border-opacity-100 dark:border-red-700 dark:border-opacity-75'
-											: 'border-gray-800 border-opacity-25 dark:border-slate-100 dark:border-opacity-25',
-										'custom-number-input block w-full rounded  border-2   bg-zinc-50 bg-opacity-50 p-1 outline-none transition focus:border-opacity-100 dark:bg-zinc-700 dark:focus:border-opacity-75'
-									)}
-									type="number"
-									maxLength={5}
-									name={'pfPercentIgnoreEmployeeValue'}
-									disabled={!values.pfPercentIgnoreEmployee}
-								/>
-								<div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
-									<ErrorMessage name="pfPercentIgnoreEmployeeValue" />
-								</div>
-							</div>
-
-							<div>
-								<label className="mt-2 block text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70">
 									PF Limit Ignore Employer:
 									<Field
 										type="checkbox"
@@ -169,32 +132,6 @@ const EmployeePfEsiDetail = ({
 								/>
 								<div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
 									<ErrorMessage name="pfLimitIgnoreEmployerValue" />
-								</div>
-							</div>
-
-							<div>
-								<label className="mt-2 block text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70">
-									PF % Ignore Employer:
-									<Field
-										type="checkbox"
-										name="pfPercentIgnoreEmployer"
-										className="mx-4 h-4 w-4 translate-y-0.5 rounded accent-teal-600"
-									/>
-								</label>
-								<Field
-									className={classNames(
-										errors.pfPercentIgnoreEmployerValue && touched.pfPercentIgnoreEmployerValue
-											? 'border-red-500 border-opacity-100 dark:border-red-700 dark:border-opacity-75'
-											: 'border-gray-800 border-opacity-25 dark:border-slate-100 dark:border-opacity-25',
-										'custom-number-input block w-full rounded  border-2   bg-zinc-50 bg-opacity-50 p-1 outline-none transition focus:border-opacity-100 dark:bg-zinc-700 dark:focus:border-opacity-75'
-									)}
-									type="number"
-									maxLength={5}
-									name={'pfPercentIgnoreEmployerValue'}
-									disabled={!values.pfPercentIgnoreEmployer}
-								/>
-								<div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
-									<ErrorMessage name="pfPercentIgnoreEmployerValue" />
 								</div>
 							</div>
 

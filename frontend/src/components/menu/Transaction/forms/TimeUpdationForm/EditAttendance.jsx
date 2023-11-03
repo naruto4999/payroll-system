@@ -7,7 +7,6 @@ import { useGetCurrentMonthAllEmployeeShiftsQuery } from '../../../../authentica
 import AttendanceMonthDays from './AttendanceMonthDays';
 import AttendanceHeader from './AttendanceHeader';
 import { useSelector } from 'react-redux';
-// import { useGetEmployeeAttendanceBetweenDatesQuery } from '../../../../authentication/api/timeUpdationApiSlice';
 import { useGetWeeklyOffHolidayOffQuery } from '../../../../authentication/api/weeklyOffHolidayOffApiSlice';
 import { useGetSingleEmployeeSalaryDetailQuery } from '../../../../authentication/api/employeeEntryApiSlice';
 import EmployeeTable from './EmployeeTable';

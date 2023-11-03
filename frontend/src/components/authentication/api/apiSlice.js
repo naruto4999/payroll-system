@@ -104,6 +104,7 @@ export const apiSlice = createApi({
 		'AllEmployeeSalaryEarnings',
 		'AllEmployeePfEsiDetail',
 		'PreparedSalaries',
+		'AllEmployeeMonthlyAttendanceDetails',
 	],
 	endpoints: (builder) => ({}),
 });

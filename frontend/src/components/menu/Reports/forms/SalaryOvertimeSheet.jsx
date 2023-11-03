@@ -374,6 +374,12 @@ const SalaryOvertimeSheet = () => {
 	} else {
 		return (
 			<section className="mt-4">
+				<div className="ml-4 flex flex-row flex-wrap place-content-between">
+					<div className="mr-4">
+						<h1 className="text-3xl font-medium">Salary Overtime Sheet</h1>
+						<p className="my-2 text-sm">Create Salary and Overtime Sheets here</p>
+					</div>
+				</div>
 				<div className="ml-4">
 					<MonthYearSelector
 						earliestMonthAndYear={earliestMonthAndYear}

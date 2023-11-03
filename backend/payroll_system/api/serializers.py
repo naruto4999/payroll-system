@@ -187,7 +187,7 @@ class EmployeeSalaryDetailSerializer(serializers.ModelSerializer):
 class EmployeePfEsiDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployeePfEsiDetail
-        fields = ['company', 'employee', 'pf_allow', 'pf_number', 'pf_limit_ignore_employee', 'pf_limit_ignore_employee_value', 'pf_limit_ignore_employer', 'pf_limit_ignore_employer_value', 'pf_percent_ignore_employee', 'pf_percent_ignore_employee_value', 'pf_percent_ignore_employer', 'pf_percent_ignore_employer_value', 'uan_number', 'esi_allow', 'esi_number', 'esi_dispensary', 'esi_on_ot', 'vpf_amount', 'tds_amount']
+        fields = ['company', 'employee', 'pf_allow', 'pf_number', 'pf_limit_ignore_employee', 'pf_limit_ignore_employee_value', 'pf_limit_ignore_employer', 'pf_limit_ignore_employer_value', 'uan_number', 'esi_allow', 'esi_number', 'esi_dispensary', 'esi_on_ot', 'vpf_amount', 'tds_amount']
 
 class EmployeeFamilyNomineeDetialSerializer(serializers.ModelSerializer):
     class Meta:

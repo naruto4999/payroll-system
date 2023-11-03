@@ -35,7 +35,7 @@ export const salaryPreparationApiSlice = apiSlice.injectEndpoints({
 				method: 'POST',
 				body: body,
 			}),
-			invalidatesTags: ['AdvancePayments'],
+			invalidatesTags: ['AdvancePayments', 'PreparedSalaries'],
 		}),
 		// updateEmployeeAdvancePayments: builder.mutation({
 		// 	query: (body) => ({

@@ -19,7 +19,6 @@ import { useGetEmployeePersonalDetailsQuery } from '../../../../authentication/a
 import {
 	useAddEmployeeAttendanceMutation,
 	useUpdateEmployeeAttendanceMutation,
-	useGetCurrentMonthAllEmployeeAttendanceQuery,
 } from '../../../../authentication/api/timeUpdationApiSlice';
 
 import { useOutletContext } from 'react-router-dom';
@@ -377,8 +376,8 @@ const TimeUpdationForm = () => {
 				<section className="mx-2 mt-2">
 					<div className="flex flex-row flex-wrap place-content-between">
 						<div className="mr-4">
-							<h1 className="text-3xl font-medium">Employee Shifts</h1>
-							<p className="my-2 text-sm">Edit and manage employees shifts here</p>
+							<h1 className="text-3xl font-medium">Time Updation</h1>
+							<p className="my-2 text-sm">Manage Employees attendances here</p>
 						</div>
 					</div>
 					<div className="ml-14 max-w-full">
