@@ -98,9 +98,13 @@ class LoginView(generics.CreateAPIView, MyTokenObtainPairView):
         serializer = self.get_serializer(data=request.data)
 
         try:
+            print("In try statement")
             serializer.is_valid(raise_exception=True)
+            
         except TokenError as e:
+            print("In except statement")
             raise InvalidToken(e.args[0])
+        print('yes im running')
 
         return Response(serializer.validated_data, status=status.HTTP_200_OK)
 

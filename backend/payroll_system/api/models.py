@@ -182,16 +182,16 @@ class Company(models.Model):
 class CompanyDetails(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_companies_details")
     company = models.OneToOneField(Company, on_delete=models.CASCADE, related_name="company_details", primary_key=True)
-    address = models.TextField()
-    key_person = models.CharField(max_length=64, blank=True)
-    involving_industry = models.CharField(max_length=64, blank=True)
+    address = models.TextField(null=True, blank=True)
+    key_person = models.CharField(max_length=64, blank=True, null=True)
+    involving_industry = models.CharField(max_length=64, blank=True, null=True)
     phone_no = models.PositiveBigIntegerField(null=True, blank=True)
     email = models.EmailField(max_length=150, null=True, blank=True)
     pf_no = models.CharField(max_length=30, null=True, blank=True)
     esi_no = models.PositiveBigIntegerField(null=True, blank=True)
     head_office_address = models.TextField(null=True, blank=True)
     pan_no = models.CharField(max_length=10, unique=True, null=True, blank=True)
-    gst_no = models.CharField(max_length=15, blank=True)
+    gst_no = models.CharField(max_length=15, blank=True, null=True)
     
 class Deparment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="departments")
