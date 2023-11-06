@@ -1,0 +1,17 @@
+asgiref==3.6.0
+cffi==1.15.1
+Django==4.1.5
+django-cors-headers==3.13.0
+django-dotenv==1.4.2
+djangorestframework==3.14.0
+djangorestframework-camel-case==1.4.2
+djangorestframework-simplejwt==5.2.2
+fpdf==1.7.2
+Pillow==9.5.0
+psycopg2-binary==2.9.6
+pycparser==2.21
+PyJWT==2.6.0
+python-dateutil==2.8.2
+pytz==2022.7.1
+six==1.16.0
+sqlparse==0.4.3
