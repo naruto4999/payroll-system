@@ -155,14 +155,26 @@ WSGI_APPLICATION = 'payroll_system.wsgi.application'
 #     }
 # }
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': os.environ.get('DB_ENGINE'),
+#         'NAME': os.environ.get('DB_NAME'),
+#         'USER': os.environ.get('DB_USER'),
+#         'PASSWORD': os.environ.get('DB_PASSWORD'),  # Set this to the actual password
+#         'HOST': os.environ.get('DB_HOST'),  # or the appropriate host
+#         'PORT': int(os.environ.get('DB_PORT')),      # default PostgreSQL port
+#     }
+# }
+
+#Using the docker
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME'),
-        'USER': os.environ.get('DB_USER'),
-        'PASSWORD': os.environ.get('DB_PASSWORD'),  # Set this to the actual password
-        'HOST': os.environ.get('DB_HOST'),  # or the appropriate host
-        'PORT': int(os.environ.get('DB_PORT')),      # default PostgreSQL port
+        'NAME': os.environ.get('POSTGRES_DB'),
+        'USER': os.environ.get('POSTGRES_USER'),
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
+        'HOST': 'db',  # Use the service name defined in your Docker Compose file
+        'PORT': '5432',
     }
 }
 
