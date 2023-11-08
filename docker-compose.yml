@@ -1,0 +1,35 @@
+version: "3.9"
+
+services:
+    db:
+        image: postgres:latest
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: pepe@4999
+            POSTGRES_DB: payrolldb
+    django:
+        restart: unless-stopped
+        build: ./backend
+        environment:
+            DJANGO_SECRET_KEY: ${SECRET_KEY}
+            DJANGO_CORS_ORIGINS: ${DJANGO_CORS_ORIGINS}
+            DJANGO_DEBUG: ${DEBUG}
+            DJANGO_LOGGING: ${DJANGO_LOGGING}
+            DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
+            STATIC_ACCESS_KEY_ID: ${STATIC_ACCESS_KEY_ID}
+            STATIC_SECRET_KEY: ${STATIC_SECRET_KEY}
+            STATIC_BUCKET_NAME: ${STATIC_BUCKET_NAME}
+            STATIC_ENDPOINT_URL: ${STATIC_ENDPOINT_URL}
+            DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE}
+        ports:
+            - 8000:8000
+    nginx:
+        build: ./frontend
+        restart: unless-stopped
+        ports:
+            - 80:80
+            - 443:443
+        depends_on:
+            - django
+        volumes:
+            - ./frontend/default.conf:/etc/nginx/conf.d/default.conf:ro

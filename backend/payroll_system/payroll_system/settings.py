@@ -42,15 +42,8 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_CREDENTIALS = True
 # CORS_ALLOW_ALL_ORIGINS = True
 
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:4173',
-    'https://08b3-43-247-41-64.ngrok-free.app',
-    'https://9f3a-43-247-41-64.ngrok-free.app',
-    'http://localhost:5173',
-    'http://localhost:4173',
-    'http://127.0.0.1:8000',
-    'http://localhost:8000',
-]
+CORS_ALLOWED_ORIGINS = []
+CORS_ALLOWED_ORIGINS += os.getenv("CORS_ALLOWED_ORIGINS").split(' ') 
 
 # CORS_ALLOWED_ORIGIN_REGEXES = [
 #     r".*",

@@ -4,6 +4,9 @@
 #node modules
 frontend/node_modules
 
+#Frontend .env file
+frontend/.env
+
 #python virtual env
 backend/env
 
