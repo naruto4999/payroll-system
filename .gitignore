@@ -18,6 +18,7 @@ backend/payroll_system/api/migrations/__pycache__
 backend/payroll_system/api/auth/__pycache__
 backend/payroll_system/.env
 backend/payroll_system/db.sqlite3
+backend/payroll_system/mediafiles/*
 
 # dist folder(production bundle)
 frontend/dist

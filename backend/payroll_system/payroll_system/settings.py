@@ -29,9 +29,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = str(os.environ.get('DEBUG')) == '1'
 
-ALLOWED_HOSTS = []
-if not DEBUG:
-    ALLOWED_HOSTS += os.getenv("ALLOWED_HOSTS").split(' ') 
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS").split(' ')
 
 CORS_ALLOW_CREDENTIALS = True
 
@@ -39,11 +37,11 @@ CORS_ALLOW_CREDENTIALS = True
 #     'Access-Control-Allow-Origin',
 # )
 1
-CORS_ALLOW_CREDENTIALS = True
 # CORS_ALLOW_ALL_ORIGINS = True
 
-CORS_ALLOWED_ORIGINS = []
-CORS_ALLOWED_ORIGINS += os.getenv("CORS_ALLOWED_ORIGINS").split(' ') 
+if DEBUG:
+    CORS_ALLOWED_ORIGINS = []
+    CORS_ALLOWED_ORIGINS += os.environ.get("CORS_ALLOWED_ORIGINS").split(' ') 
 
 # CORS_ALLOWED_ORIGIN_REGEXES = [
 #     r".*",
@@ -140,36 +138,29 @@ WSGI_APPLICATION = 'payroll_system.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
-# Sqlite (old one)
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': os.environ.get('DB_ENGINE'),
-#         'NAME': os.environ.get('DB_NAME'),
-#         'USER': os.environ.get('DB_USER'),
-#         'PASSWORD': os.environ.get('DB_PASSWORD'),  # Set this to the actual password
-#         'HOST': os.environ.get('DB_HOST'),  # or the appropriate host
-#         'PORT': int(os.environ.get('DB_PORT')),      # default PostgreSQL port
-#     }
-# }
-
-#Using the docker
+#Local postgres
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('POSTGRES_DB'),
-        'USER': os.environ.get('POSTGRES_USER'),
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
-        'HOST': 'db',  # Use the service name defined in your Docker Compose file
-        'PORT': '5432',
+        'ENGINE': os.environ.get('DB_ENGINE'),
+        'NAME': os.environ.get('DB_NAME'),
+        'USER': os.environ.get('DB_USER'),
+        'PASSWORD': os.environ.get('DB_PASSWORD'),  # Set this to the actual password
+        'HOST': os.environ.get('DB_HOST'),  # or the appropriate host
+        'PORT': int(os.environ.get('DB_PORT')),      # default PostgreSQL port
     }
 }
+
+#Using the docker
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': os.environ.get('POSTGRES_DB'),
+#         'USER': os.environ.get('POSTGRES_USER'),
+#         'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
+#         'HOST': 'db',  # Use the service name defined in your Docker Compose file
+#         'PORT': '5432',
+#     }
+# }
 
 
 
@@ -279,6 +270,26 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_LIFETIME': timedelta(seconds=30),
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': './django.log',
+        },
+    },
+    'root': {
+        'handlers': ['console', 'file'],
+        'level': 'DEBUG',
+    },
+}
+
 
 # CORS_ALLOW_ALL_ORIGINS = True
 #SMTP Configuration

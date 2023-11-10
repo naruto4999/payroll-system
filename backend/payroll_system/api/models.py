@@ -13,6 +13,8 @@ from dateutil.relativedelta import relativedelta
 import calendar
 import math
 from django.db.models import Sum
+from django.core.files.storage import FileSystemStorage
+
 
 
 
@@ -318,9 +320,16 @@ class DeductionsHead(models.Model):
     
 
 # Employee related models
+class OverwriteStorage(FileSystemStorage):
+    def get_available_name(self, name, max_length=None):
+        # If a file with the same name exists, replace it
+        if self.exists(name):
+            self.delete(name)
+        return name
+    
 def employee_photo_handler(instance, filename):
     fpath = pathlib.Path(filename)
-    new_image_name = f"{instance.user.username}/{instance.user.id}_{instance.company.id}_{instance.id}{fpath.suffix}"
+    new_image_name = f"{instance.user.username}/{instance.user.id}_{instance.company.id}_{instance.paycode}{fpath.suffix}"
     return new_image_name
 
 #Employee personal details
@@ -409,7 +418,7 @@ class EmployeePersonalDetail(models.Model):
     name = models.CharField(max_length=100, null=False, blank=False)
     paycode = models.CharField(max_length=32, null=False, blank=False)
     attendance_card_no = models.PositiveSmallIntegerField(null=False, blank=False)
-    photo = models.ImageField(upload_to=employee_photo_handler ,null=True, blank=True)
+    photo = models.ImageField(upload_to=employee_photo_handler ,null=True, blank=True, storage=OverwriteStorage())
     father_or_husband_name = models.CharField(max_length=100, null=True, blank=True)
     mother_name = models.CharField(max_length=100, null=True, blank=True)
     wife_name = models.CharField(max_length=100, null=True, blank=True)

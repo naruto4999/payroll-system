@@ -4,7 +4,7 @@ import { useDispatch } from 'react-redux';
 import { alertActions } from '../store/slices/alertSlice';
 
 const baseQuery = fetchBaseQuery({
-	baseUrl: 'http://127.0.0.1:8000/',
+	baseUrl: `${import.meta.env.VITE_BACKEND_URL}`,
 	prepareHeaders: (headers, { getState }) => {
 		const token = getState().auth.token;
 		if (token) {

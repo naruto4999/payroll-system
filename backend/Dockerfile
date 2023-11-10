@@ -9,10 +9,17 @@ RUN pip install --upgrade pip
 # Add new user so we don't run pip as root
 RUN adduser --disabled-login worker
 USER worker
-WORKDIR /home/worker/app/backend
+
+WORKDIR /payroll-system/backend
+
+#Copy everything over
 COPY --chown=worker:worker . .
+
 ENV PATH="/home/worker/.local/bin:${PATH}"
-WORKDIR /home/worker/app/backend/payroll_system
+WORKDIR /payroll-system/backend/payroll_system
+
 RUN pip install -r requirements.txt
+RUN pip install gunicorn==21.2.0
 EXPOSE 8000
-CMD ["gunicorn", "--bind", ":8000", "--workers", "4", "django_backend.wsgi:application"]
+EXPOSE 587
+CMD ["gunicorn", "--bind", ":8000", "--workers", "4", "payroll_system.wsgi:application"]

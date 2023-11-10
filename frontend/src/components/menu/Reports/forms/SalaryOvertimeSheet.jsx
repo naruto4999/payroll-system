@@ -197,14 +197,14 @@ const SalaryOvertimeSheet = () => {
 		const generateSalarySheet = async () => {
 			try {
 				const response = await fetch(
-					'http://127.0.0.1:8000/api/generate-salary-overtime-sheet',
+					`${import.meta.env.VITE_BACKEND_URL}api/generate-salary-overtime-sheet`,
 					requestOptions
 				);
 
 				if (response.status === 401) {
 					console.log('Received a 401 status, attempting to refresh the token...');
 
-					const refreshResponse = await fetch('http://127.0.0.1:8000/api/auth/refresh/', {
+					const refreshResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/auth/refresh/`, {
 						method: 'POST',
 						headers: {
 							'Content-Type': 'application/json',
@@ -224,7 +224,7 @@ const SalaryOvertimeSheet = () => {
 							);
 
 							const refreshedResponse = await fetch(
-								'http://127.0.0.1:8000/api/generate-salary-overtime-sheet',
+								`${import.meta.env.VITE_BACKEND_URL}api/generate-salary-overtime-sheet`,
 								{
 									...requestOptions,
 									headers: {
