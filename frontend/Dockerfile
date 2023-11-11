@@ -30,3 +30,4 @@ COPY --from=builder /payroll-system/frontend/dist /usr/share/nginx/html
 
 # Expose port 80 for Nginx
 EXPOSE 80
+
