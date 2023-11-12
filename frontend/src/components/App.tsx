@@ -44,6 +44,7 @@ import Alert from './UI/Alert';
 
 function App() {
 	document.documentElement.classList.add('scrollbar');
+	document.documentElement.classList.add('dark');
 	// const [theme, setTheme] = useState("");
 
 	// useEffect(() => {

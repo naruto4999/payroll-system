@@ -72,9 +72,9 @@ docker-compose run --rm --entrypoint "\
     $email_arg \
     $domain_args \
     --rsa-key-size $rsa_key_size \
-    --agree-tos \
-    --force-renewal" certbot
+    --agree-tos" certbot
 echo
+# I removes this "--force-renewal"
 
 echo "### Reloading nginx ..."
 docker-compose exec frontend nginx -s reload
