@@ -20,7 +20,7 @@ const LoginForm = () => {
 	console.log(auth);
 	useEffect(() => {
 		if (auth.account != null) {
-			navigate('/home');
+			navigate('/home/select-company');
 		}
 	}, []);
 
