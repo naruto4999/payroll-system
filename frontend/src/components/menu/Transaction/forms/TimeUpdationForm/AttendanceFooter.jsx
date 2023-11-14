@@ -4,6 +4,7 @@ import {
 	useGetAllEmployeePresentCountQuery,
 	useGetAllEmployeeGenerativeLeaveRecordQuery,
 } from '../../../../authentication/api/timeUpdationApiSlice';
+import { useGetSingleEmployeeSalaryDetailQuery } from '../../../../authentication/api/employeeEntryApiSlice';
 
 const classNames = (...classes) => {
 	return classes.filter(Boolean).join(' ');
@@ -21,6 +22,8 @@ const AttendanceFooter = React.memo(
 		weeklyOff,
 		holidayOff,
 		leaveGrades,
+		updateEmployeeId,
+		globalCompany,
 	}) => {
 		const [attendanceFooterData, setAttendanceFooterData] = useState({
 			workingDays: 0,
@@ -32,14 +35,26 @@ const AttendanceFooter = React.memo(
 			totalOvertime: 0,
 			totalLate: 0,
 		});
-		console.log(leaveGrades);
+		const {
+			data: employeeSalaryDetails,
+			isLoading: isLoadingEmployeeSalaryDetails,
+			isSuccess: isEmployeeSalaryDetailsSuccess,
+			isFetching: isFetchingEmployeeSalaryDetails,
+		} = useGetSingleEmployeeSalaryDetailQuery(
+			{
+				company: globalCompany?.id,
+				id: updateEmployeeId,
+			},
+			{
+				skip: globalCompany === null || globalCompany === '' || updateEmployeeId == null,
+			}
+		);
+		console.log(employeeSalaryDetails);
 
 		const filteredLeaveGradesWithGenerateFrequency = useMemo(
 			() => (leaveGrades ? leaveGrades.filter((grade) => grade.generateFrequency !== null) : []),
 			[leaveGrades]
 		);
-
-		console.log(filteredLeaveGradesWithGenerateFrequency);
 
 		const calculateAttendanceFooter = useCallback(() => {
 			const initialData = {
@@ -127,9 +142,6 @@ const AttendanceFooter = React.memo(
 			setAttendanceFooterData(calculateAttendanceFooter());
 		}, [attendance]);
 
-		console.log(attendanceFooterData.absent);
-		console.log(attendanceFooterData);
-
 		return (
 			<div className="flex flex-row justify-between gap-2 pt-2 text-sm">
 				<div>
@@ -156,8 +168,10 @@ const AttendanceFooter = React.memo(
 					<span className="font-bold">
 						{Math.max(
 							attendanceFooterData.totalOvertime -
-								(Math.floor(attendanceFooterData.totalLate / 30) * 30 +
-									(attendanceFooterData.totalLate % 30 >= 20 ? 30 : 0)),
+								(employeeSalaryDetails?.lateDeduction == false
+									? 0
+									: Math.floor(attendanceFooterData.totalLate / 30) * 30 +
+									  (attendanceFooterData.totalLate % 30 >= 20 ? 30 : 0)),
 							0
 						) / 60}
 						{/* {`${String(

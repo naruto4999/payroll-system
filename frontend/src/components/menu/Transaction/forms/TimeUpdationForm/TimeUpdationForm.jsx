@@ -140,8 +140,6 @@ const TimeUpdationForm = () => {
 		toSend.employee_attendance = employee_attendance;
 		toSend.employee = updateEmployeeId;
 		toSend.company = globalCompany.id;
-		console.log(values);
-		console.log(toSend);
 
 		try {
 			if (employee_attendance[0].hasOwnProperty('id')) {
@@ -260,7 +258,6 @@ const TimeUpdationForm = () => {
 			if (employee.resignationDate) {
 				const [resignYear, resignMonth] = employee.resignationDate.split('-').map(Number);
 				const resignDate = new Date(Date.UTC(resignYear, resignMonth, 0));
-				console.log(resignDate);
 				if (resignDate < comparisonDate) {
 					return false;
 				}
@@ -270,8 +267,6 @@ const TimeUpdationForm = () => {
 			const newDateOfJoining = new Date(Date.UTC(year, month - 1, 1));
 
 			// Compare the new date with "2023-08-01"
-			// console.log(newDateOfJoining);
-			// console.log(comparisonDate);
 
 			// Include the object if the new date is less than the comparison date
 			return newDateOfJoining <= comparisonDate;
@@ -336,7 +331,6 @@ const TimeUpdationForm = () => {
 						setUpdateEmployeeId(previousRow?.getAttribute('data-row-id'));
 					}, 300);
 				}
-				// focusedRowRef.current = currentRow.previousElementSibling;
 				break;
 			case 'ArrowDown':
 				// currentRow?.nextElementSibling?.focus();
@@ -353,7 +347,6 @@ const TimeUpdationForm = () => {
 					}, 300);
 				}
 
-				// focusedRowRef.current = currentRow.nextElementSibling;
 				break;
 			default:
 				break;

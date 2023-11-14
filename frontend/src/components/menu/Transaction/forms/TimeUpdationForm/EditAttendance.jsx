@@ -166,7 +166,6 @@ const EditAttendance = memo(
 				}
 			}
 		}, [allEmployeeProfessionalDetail]);
-		// console.log(values.year, values.month);
 
 		const {
 			data: allEmployeeShifts,
@@ -264,7 +263,6 @@ const EditAttendance = memo(
 
 		const getShift = useCallback(
 			(year, month, day) => {
-				// console.log(employeeShifts);
 				const targetDate = new Date(Date.UTC(year, month - 1, day));
 				const foundShift = categorizedAllEmployeeShifts?.[updateEmployeeId]?.find((shiftObj) => {
 					const fromDate = new Date(shiftObj.fromDate);
@@ -362,7 +360,6 @@ const EditAttendance = memo(
 					// else if manualIn > shift end time (withoud date object one) and manualIn < "00:00"
 					else if (manualIn != '' && manualIn > shift.endTime.slice(0, 5)) {
 						manualInObj = getTimeInDateObj(manualIn, parseInt(day) - 1);
-						// console.log('in lower if');
 					}
 					// If manualOut > shift end time (without date object one) and manualOut < "00:00":
 					if (manualOut != '' && manualOut > shift.endTime.slice(0, 5)) {
@@ -378,7 +375,6 @@ const EditAttendance = memo(
 						}
 					}
 					if (manualOutObj != undefined) {
-						// console.log('existsssss in else manual out');
 						const timeDifferenceInMilliseconds = manualOutObj - shiftEndTime;
 						const timeDifferenceInMinutes = timeDifferenceInMilliseconds / (1000 * 60);
 						if (timeDifferenceInMinutes > parseInt(shift.otBeginAfter)) {
@@ -408,7 +404,6 @@ const EditAttendance = memo(
 						manualOutObj = getTimeInDateObj(manualOut, parseInt(day) + 1);
 					}
 					if (manualInObj !== undefined) {
-						// console.log('existsssss in else');
 						const timeDifferenceInMilliseconds = shiftBeginningTime - manualInObj;
 						const timeDifferenceInMinutes = timeDifferenceInMilliseconds / (1000 * 60);
 						if (timeDifferenceInMinutes > parseInt(shift.otBeginAfter)) {
@@ -416,7 +411,6 @@ const EditAttendance = memo(
 						}
 					}
 					if (manualOutObj !== undefined) {
-						// console.log('existsssss in else manual out');
 						const timeDifferenceInMilliseconds = manualOutObj - shiftEndTime;
 						const timeDifferenceInMinutes = timeDifferenceInMilliseconds / (1000 * 60);
 						if (timeDifferenceInMinutes > parseInt(shift.otBeginAfter)) {
@@ -442,7 +436,6 @@ const EditAttendance = memo(
 						shiftBeginningTime.getTime() + parseInt(shift.lateGrace) * 60 * 1000
 					);
 					const shiftEndTime = getTimeInDateObj(shift.endTime, day);
-					// console.log(shiftBeginningTime);
 					manualInObj = getTimeInDateObj(manualIn, day);
 					if (manualInObj > shiftBeginningTimeWithGrace) {
 						const timeDifferenceInMilliseconds = manualInObj - shiftBeginningTime;
@@ -452,7 +445,6 @@ const EditAttendance = memo(
 				}
 
 				if (shift.beginningTime > shift.endTime) {
-					// console.log('yessssssssssssssssssssss');
 					const shiftBeginningTime = getTimeInDateObj(shift.beginningTime, day);
 					const shiftBeginningTimeWithGrace = new Date(
 						shiftBeginningTime.getTime() + parseInt(shift.lateGrace) * 60 * 1000
@@ -512,19 +504,14 @@ const EditAttendance = memo(
 
 					if (manualInObj && manualOutObj) {
 						const effectiveStartTime = Math.max(manualInObj, shiftBeginningTime);
-						console.log('shiftBeginningTime', shiftBeginningTime);
-						console.log('shiftEnd Time', shiftEndTime);
-						console.log('Manual In: ', manualInObj, 'Manual Out ', manualOutObj);
 						const effectiveEndTime = Math.min(manualOutObj, shiftEndTime);
 						const durationMilliseconds = Math.max(effectiveEndTime - effectiveStartTime, 0);
 						const durationMinutes = Math.floor(durationMilliseconds / (1000 * 60));
 						if (durationMinutes >= parseInt(shift.fullDayMinimumMinutes)) {
 							if (lateMinValue <= shift.maxLateAllowedMin) {
-								console.log('yes in right if block', day);
 								setFieldValue(`attendance.${day}.firstHalf`, present.id);
 								setFieldValue(`attendance.${day}.secondHalf`, present.id);
 							} else if (lateMinValue > shift.maxLateAllowedMin) {
-								console.log('in a bit too late block', day);
 								setFieldValue(`attendance.${day}.firstHalf`, absent.id);
 								setFieldValue(`attendance.${day}.secondHalf`, present.id);
 							}
@@ -540,7 +527,6 @@ const EditAttendance = memo(
 								setFieldValue(`attendance.${day}.secondHalf`, present.id);
 							}
 						} else if (durationMinutes < parseInt(shift.halfDayMinimumMinutes)) {
-							console.log('bish ran home', day, '  duration: ', durationMinutes);
 							setFieldValue(`attendance.${day}.firstHalf`, absent.id);
 							setFieldValue(`attendance.${day}.secondHalf`, absent.id);
 						}
@@ -552,7 +538,6 @@ const EditAttendance = memo(
 
 		// const calculateExtraOffDate = () => {
 		// 	const choice = currentEmployeeProfessionalDetail.extraOff;
-		// 	console.log(choice);
 		// 	// Define the weekdays and their corresponding day numbers (0 = Sunday, 1 = Monday, etc.)
 		// 	const weekdays = {
 		// 		sun: 0,
@@ -580,7 +565,6 @@ const EditAttendance = memo(
 		// 		parseInt(values.month) - 1,
 		// 		firstOccurrenceDate.getDate() + (occurrence - 1) * 7
 		// 	);
-		// 	// console.log(selectedOccurrenceDate);
 		// 	return selectedOccurrenceDate;
 		// };
 		const memoizedExtraOffDate = useMemo(() => {
@@ -667,7 +651,6 @@ const EditAttendance = memo(
 					// let extraOff = null;
 					// if (currentEmployeeProfessionalDetail.extraOff != 'no_off') {
 					// 	extraOff = calculateExtraOffDate().getDate();
-					// 	console.log(extraOff);
 					// }
 					for (const day in values.attendance) {
 						let weeklyOffDay = false;
@@ -690,7 +673,6 @@ const EditAttendance = memo(
 								}
 							}
 							if (memoizedExtraOffDate && parseInt(day) == memoizedExtraOffDate.getDate()) {
-								console.log('yesh offfff');
 								weeklyOffDay = true;
 								if (calculateFirstHalfSecondHalfForWeeklyAndHolidayOff(day, 'extraOff')) {
 									setFieldValue(`attendance.${day}.firstHalf`, weeklyOff.id);
@@ -817,7 +799,6 @@ const EditAttendance = memo(
 						} else if (!hasManualIn && !hasManualOut) {
 							setFieldValue(`attendance.${day}.otMin`, '');
 							setFieldValue(`attendance.${day}.lateMin`, '');
-							// console.log('yes getting overridden', day);
 
 							if (!holidayDay && !weeklyOffDay && !values.attendance[day].manualMode) {
 								setFieldValue(`attendance.${day}.firstHalf`, absent.id);
@@ -1049,6 +1030,8 @@ const EditAttendance = memo(
 										weeklyOff={weeklyOff}
 										leaveGrades={leaveGrades}
 										isSubmitting={isSubmitting}
+										updateEmployeeId={updateEmployeeId}
+										globalCompany={globalCompany}
 									/>
 								)}
 							</section>
@@ -1068,7 +1051,6 @@ const EditAttendance = memo(
 										onChange={(e) => {
 											handleChange(e);
 											setSelectedDate((prevValue) => ({ ...prevValue, month: e.target.value }));
-											// console.log(`Name changed to: ${e.target.value}`);
 										}}
 										className="my-1 mr-2 rounded-md bg-zinc-50 bg-opacity-50 p-1 dark:bg-zinc-700"
 									>
@@ -1099,7 +1081,6 @@ const EditAttendance = memo(
 										onChange={(e) => {
 											handleChange(e);
 											setSelectedDate((prevValue) => ({ ...prevValue, year: e.target.value }));
-											// console.log(`Name changed to: ${e.target.value}`);
 										}}
 										value={values.year}
 										className="my-1 rounded-md bg-zinc-50 bg-opacity-50 p-1 dark:bg-zinc-700"
