@@ -13,6 +13,7 @@ import BigNumber from 'bignumber.js';
 import NetSalary from './NetSalary';
 import { companyEntryApiSlice } from '../../../../authentication/api/companyEntryApiSlice';
 import { useGetAllEmployeePfEsiDetailsQuery } from '../../../../authentication/api/salaryPreparationApiSlice';
+import { useGetCalculationsQuery } from '../../../../authentication/api/calculationsApiSlice';
 
 const classNames = (...classes) => {
 	return classes.filter(Boolean).join(' ');
@@ -62,6 +63,14 @@ const EditSalary = ({
 		isError: isEarningsHeadsError,
 		error: earningsHeadsError,
 	} = useGetEarningsHeadsQuery(globalCompany);
+
+	const {
+		data: companyCalculations,
+		isLoading: isLoadingCompanyCalculations,
+		isSuccess: isCompanyCalculationsSuccess,
+		isError: isCompanyCalculationsError,
+	} = useGetCalculationsQuery(globalCompany.id);
+	console.log(companyCalculations);
 
 	const {
 		data: allEmployeeMonthlyAttendanceDetails,
@@ -198,9 +207,15 @@ const EditSalary = ({
 					}, 0)
 				);
 				const overtimeRateMultiplier = new BigNumber(currentEmployeeSalaryDetails?.overtimeRate == 'D' ? 2 : 1);
+				let overtimeDivisor = new BigNumber(26);
+				if (companyCalculations?.otCalculation == 'month_days') {
+					overtimeDivisor = new BigNumber(new Date(values.year, values.month, 0).getDate());
+				} else {
+					overtimeDivisor = new BigNumber(companyCalculations?.otCalculation);
+				}
 
 				const netOtAmountMonthly = totalSalaryRate
-					.dividedBy(new BigNumber(new Date(values.year, values.month, 0).getDate()))
+					.dividedBy(overtimeDivisor)
 					.dividedBy(new BigNumber(8))
 					.multipliedBy(netOtHrsMonthly)
 					.multipliedBy(overtimeRateMultiplier);
