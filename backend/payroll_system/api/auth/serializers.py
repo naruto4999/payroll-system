@@ -153,8 +153,8 @@ class PasswordResetSerializer(serializers.Serializer):
 
 #serialiser for confirming password using django template
 # class PasswordResetConfirmSerializer(serializers.Serializer):
-#     new_password1 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
-#     new_password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
+#     new_password_1 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
+#     new_password_2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
 #     uid = serializers.CharField()
 #     token = serializers.CharField()
 
@@ -165,7 +165,7 @@ class PasswordResetSerializer(serializers.Serializer):
 #         return attrs
 
 #     def create(self, validated_data):
-#         self.context['user'].set_password(validated_data['new_password1'])
+#         self.context['user'].set_password(validated_data['new_password_1'])
 #         self.context['user'].save()
 #         return self.context['user']
 
@@ -182,8 +182,8 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
     """
     token = serializers.CharField()
     uid = serializers.CharField()
-    new_password1 = serializers.CharField(style={'input_type': 'password'})
-    new_password2 = serializers.CharField(style={'input_type': 'password'})
+    new_password_1 = serializers.CharField(style={'input_type': 'password'})
+    new_password_2 = serializers.CharField(style={'input_type': 'password'})
 
     def validate(self, attrs):
         """
@@ -201,7 +201,7 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
             raise serializers.ValidationError('Invalid reset link')
 
         # Check that the two password entries match
-        if attrs['new_password1'] != attrs['new_password2']:
+        if attrs['new_password_1'] != attrs['new_password_2']:
             raise serializers.ValidationError({'detail': "The two password fields didn't match."})
 
         attrs['user'] = user
@@ -211,7 +211,7 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         """
         Set the new password for the user.
         """
-        password = self.validated_data['new_password1']
+        password = self.validated_data['new_password_1']
         user = self.validated_data['user']
         user.set_password(password)
         user.save()
@@ -224,8 +224,8 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 #     """
 #     token = serializers.CharField()
 #     uidb64 = serializers.CharField()
-#     new_password1 = serializers.CharField()
-#     new_password2 = serializers.CharField()
+#     new_password_1 = serializers.CharField()
+#     new_password_2 = serializers.CharField()
 
 #     def validate(self, attrs):
 #         # Decode the uidb64 to uid
@@ -246,12 +246,12 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 #             raise serializers.ValidationError('Invalid token.')
 
 #         # Check that the new passwords match
-#         if attrs['new_password1'] != attrs['new_password2']:
+#         if attrs['new_password_1'] != attrs['new_password_2']:
 #             raise serializers.ValidationError('New passwords do not match.')
 
 #         # Set the user object and the new password in validated data
 #         attrs['user'] = user
-#         attrs['new_password'] = attrs['new_password1']
+#         attrs['new_password'] = attrs['new_password_1']
 #         return attrs
 
 # class EmployeeRegisterSerializer(UserSerializer):

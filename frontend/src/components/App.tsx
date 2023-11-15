@@ -29,7 +29,8 @@ import EmployeeShiiftsEntryForm from './menu/Transaction/forms/EmployeeShiftsEnt
 import TimeUpdationForm from './menu/Transaction/forms/TimeUpdationForm/TimeUpdationForm';
 import AdvanceUpdationForm from './menu/Transaction/forms/AdvanceUpdationForm/AdvanceUpdationForm';
 import SalaryPreparationForm from './menu/Transaction/forms/SalaryPreparationForm/SalaryPreparationForm';
-import SalaryOvertimeSheet from './menu/Reports/forms/SalaryOvertimeSheet';
+import SalaryOvertimeSheet from './menu/Reports/forms/SalaryOvertimeSheet/SalaryOvertimeSheet';
+import AttendanceReports from './menu/Reports/forms/AttendanceReports/AttendanceReports';
 
 // import store, { persistor } from "./authentication/store/index"
 // import { PersistGate } from "redux-persist/integration/react";
@@ -114,6 +115,7 @@ function App() {
 					</Route>
 					<Route path="reports">
 						<Route path="salary-overtime-sheet" element={<SalaryOvertimeSheet />} />
+						<Route path="attendance-reports" element={<AttendanceReports />} />
 					</Route>
 
 					{/* <Route path="bank-entry" element={<BankEntryForm />} />

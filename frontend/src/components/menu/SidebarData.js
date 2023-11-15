@@ -166,6 +166,11 @@ const menuItems = [
 				icon: FaFilePdf,
 				path: '/home/reports/salary-overtime-sheet',
 			},
+			{
+				title: 'Attendance',
+				icon: FaFilePdf,
+				path: '/home/reports/attendance-reports',
+			},
 		],
 	},
 

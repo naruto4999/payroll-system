@@ -1,11 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-// import { useGetCompanyStatisticsQuery } from '../../../authentication/api/salaryOvertimeSheetApiSlice';
-import { useGetEmployeePersonalDetailsQuery } from '../../../authentication/api/employeeEntryApiSlice';
-import {
-	useGenerateSalaryOvertimeSheetMutation,
-	useGetPreparedSalariesQuery,
-} from '../../../authentication/api/salaryOvertimeSheetApiSlice';
-import { authActions } from '../../../authentication/store/slices/auth';
+import { useGetEmployeePersonalDetailsQuery } from '../../../../authentication/api/employeeEntryApiSlice';
 import {
 	// column,
 	createColumnHelper,
@@ -18,48 +12,31 @@ import {
 	// filterFn,
 	// filterFns,
 } from '@tanstack/react-table';
-import EmployeeTable from './EmployeeTable';
-import { FaCheck, FaWindowMinimize } from 'react-icons/fa';
-import MonthYearSelector from './MonthYearSelector';
-import FilterOptions from './FilterOptions';
 import { Formik } from 'formik';
 import { useDispatch, useSelector } from 'react-redux';
-import { alertActions } from '../../../authentication/store/slices/alertSlice';
+import { alertActions } from '../../../../authentication/store/slices/alertSlice';
 import { useOutletContext } from 'react-router-dom';
+import EmployeeTable from '../EmployeeTable';
+import MonthYearSelector from '../MonthYearSelector';
+import { FaCheck, FaWindowMinimize } from 'react-icons/fa';
+import FilterOptions from './FilterOptions';
+import { authActions } from '../../../../authentication/store/slices/auth';
 
-const SalaryOvertimeSheet = () => {
-	const globalCompany = useSelector((state) => state.globalCompany);
+const AttendanceReports = () => {
 	const auth = useSelector((state) => state.auth);
+	const globalCompany = useSelector((state) => state.globalCompany);
 	const dispatch = useDispatch();
-	const [showLoadingBar, setShowLoadingBar] = useOutletContext();
-
-	const [selectedDate, setSelectedDate] = useState({
-		year: new Date().getFullYear(),
-		month: new Date().getMonth() + 1,
-	});
 
 	const {
 		data: employeePersonalDetails,
 		isLoading: isLoadingEmployeePersonalDetails,
 		isSuccess: isSuccessEmployeePersonalDetails,
 	} = useGetEmployeePersonalDetailsQuery(globalCompany);
-
-	const {
-		data: employeePreparedSalaries,
-		isLoading: isLoadingEmployeePreparedSalaries,
-		isSuccess: isSuccessEmployeePreparedSalaries,
-	} = useGetPreparedSalariesQuery({ company: globalCompany.id, month: selectedDate.month, year: selectedDate.year });
-	console.log(employeePreparedSalaries);
-	console.log(employeePersonalDetails);
-
-	const [
-		generateSalaryOvertimeSheet,
-		{
-			isLoading: isGeneratingSalaryOvertimeSheet,
-			// isError: errorRegisteringRegular,
-			isSuccess: isGenerateSalaryOvertimeSheetSuccess,
-		},
-	] = useGenerateSalaryOvertimeSheetMutation();
+	// console.log(employeePersonalDetails);
+	const [selectedDate, setSelectedDate] = useState({
+		year: new Date().getFullYear(),
+		month: new Date().getMonth() + 1,
+	});
 
 	const IndeterminateCheckbox = React.forwardRef(({ indeterminate, ...rest }, ref) => {
 		const defaultRef = React.useRef();
@@ -82,8 +59,6 @@ const SalaryOvertimeSheet = () => {
 				) : (
 					<FaCheck className="absolute left-[3px] bottom-[3px] text-teal-600 peer-[&:not(:checked)]:hidden dark:text-teal-500" />
 				)}
-				{/* {console.log(rest)} */}
-				{/* {console.log(indeterminate)} */}
 			</label>
 		);
 	});
@@ -165,17 +140,79 @@ const SalaryOvertimeSheet = () => {
 			}
 			const dateOfJoiningOfEmployee = new Date(Date.UTC(year, month - 1, 1));
 			// Check if employee.id exists in the array
-			const idExists = employeePreparedSalaries?.some((obj) => obj.employee === employee.id);
 
-			return dateOfJoiningOfEmployee <= comparisonDate && idExists;
+			return dateOfJoiningOfEmployee <= comparisonDate;
 		});
 
 		return filteredData;
-	}, [employeePersonalDetails, selectedDate, employeePreparedSalaries]);
+	}, [employeePersonalDetails, selectedDate]);
+
+	const earliestMonthAndYear = useMemo(() => {
+		let earliestDate = Infinity; // Initialize earliestDate to a very large value
+		let earliestMonth = '';
+		let earliestYear = '';
+		if (employeePersonalDetails) {
+			for (const employee of employeePersonalDetails) {
+				const dateOfJoining = new Date(employee.dateOfJoining);
+
+				if (dateOfJoining < earliestDate) {
+					earliestDate = dateOfJoining;
+					earliestMonth = dateOfJoining.getMonth() + 1;
+					earliestYear = dateOfJoining.getFullYear();
+				}
+			}
+		}
+		return {
+			earliestMonth: earliestMonth,
+			earliestYear: earliestYear,
+		};
+	}, [employeePersonalDetails]);
+
+	const table = useReactTable({
+		data,
+		columns,
+		initialState: {
+			sorting: [{ id: 'name', desc: false }],
+			columnVisibility: { dateOfJoining: true, resignationDate: false },
+			// rowSelection: { 6: true, 9: true },
+		},
+		getCoreRowModel: getCoreRowModel(),
+		getSortedRowModel: getSortedRowModel(),
+		getRowId: (originalRow) => originalRow.id,
+		enableSortingRemoval: false,
+	});
+
+	useEffect(() => {
+		if (table.getIsAllRowsSelected() == false) {
+			table.toggleAllRowsSelected();
+		}
+	}, [data]);
+
+	const generateInitialValues = () => {
+		const initialValues = {
+			filters: {
+				groupBy: 'none',
+				sortBy: 'paycode',
+				resignationFilter: 'all',
+				monthFromDate: 1,
+				monthToDate: new Date(selectedDate.year, selectedDate.month, 0).getDate(),
+			},
+			reportType: 'salary_sheet',
+		};
+		return initialValues;
+	};
+	const initialValues = useMemo(() => generateInitialValues(), []);
+	// console.log(initialValues);
 
 	const generateButtonClicked = async (values, formikBag) => {
+		// console.log(values);
 		const toSend = {
 			...values,
+			filters: {
+				...values.filters,
+				monthFromDate: parseInt(values.filters.monthFromDate),
+				monthToDate: parseInt(values.filters.monthToDate),
+			},
 			employee_ids: table.getSelectedRowModel().flatRows.map((row) => row.id),
 			company: globalCompany.id,
 			month: parseInt(selectedDate.month),
@@ -197,7 +234,7 @@ const SalaryOvertimeSheet = () => {
 		const generateSalarySheet = async () => {
 			try {
 				const response = await fetch(
-					`${import.meta.env.VITE_BACKEND_URL}api/generate-salary-overtime-sheet`,
+					`${import.meta.env.VITE_BACKEND_URL}api/generate-attendance-reports`,
 					requestOptions
 				);
 
@@ -224,7 +261,7 @@ const SalaryOvertimeSheet = () => {
 							);
 
 							const refreshedResponse = await fetch(
-								`${import.meta.env.VITE_BACKEND_URL}api/generate-salary-overtime-sheet`,
+								`${import.meta.env.VITE_BACKEND_URL}api/generate-attendance-reports`,
 								{
 									...requestOptions,
 									headers: {
@@ -309,58 +346,6 @@ const SalaryOvertimeSheet = () => {
 		generateSalarySheet();
 	};
 
-	const earliestMonthAndYear = useMemo(() => {
-		let earliestDate = Infinity; // Initialize earliestDate to a very large value
-		let earliestMonth = '';
-		let earliestYear = '';
-		if (employeePersonalDetails) {
-			for (const employee of employeePersonalDetails) {
-				const dateOfJoining = new Date(employee.dateOfJoining);
-
-				if (dateOfJoining < earliestDate) {
-					earliestDate = dateOfJoining;
-					earliestMonth = dateOfJoining.getMonth() + 1;
-					earliestYear = dateOfJoining.getFullYear();
-				}
-			}
-		}
-		return {
-			earliestMonth: earliestMonth,
-			earliestYear: earliestYear,
-		};
-	}, [employeePersonalDetails]);
-
-	const table = useReactTable({
-		data,
-		columns,
-		initialState: {
-			sorting: [{ id: 'name', desc: false }],
-			columnVisibility: { dateOfJoining: true, resignationDate: false },
-			// rowSelection: { 6: true, 9: true },
-		},
-		getCoreRowModel: getCoreRowModel(),
-		getSortedRowModel: getSortedRowModel(),
-		getRowId: (originalRow) => originalRow.id,
-		enableSortingRemoval: false,
-	});
-	useEffect(() => {
-		if (table.getIsAllRowsSelected() == false) {
-			table.toggleAllRowsSelected();
-		}
-	}, [data]);
-
-	// const selectedRows = table.getSelectedRowModel().flatRows;
-	// console.log(selectedRows);
-
-	const generateInitialValues = () => {
-		const initialValues = {
-			filters: { groupBy: 'none', sortBy: 'paycode', paymentMode: 'all', resignationFilter: 'all' },
-			reportType: 'salary_sheet',
-		};
-		return initialValues;
-	};
-	const initialValues = useMemo(() => generateInitialValues(), []);
-
 	if (globalCompany.id == null) {
 		return (
 			<section className="flex flex-col items-center">
@@ -376,8 +361,8 @@ const SalaryOvertimeSheet = () => {
 			<section className="mt-4">
 				<div className="ml-4 flex flex-row flex-wrap place-content-between">
 					<div className="mr-4">
-						<h1 className="text-3xl font-medium">Salary Overtime Sheet</h1>
-						<p className="my-2 text-sm">Create Salary and Overtime Sheets here</p>
+						<h1 className="text-3xl font-medium">Attendance Reports</h1>
+						<p className="my-2 text-sm">Generate Reports related to attendance of the employees here</p>
 					</div>
 				</div>
 				<div className="ml-4">
@@ -396,7 +381,7 @@ const SalaryOvertimeSheet = () => {
 							initialValues={initialValues}
 							validationSchema={''}
 							onSubmit={generateButtonClicked}
-							component={(props) => <FilterOptions {...props} />}
+							component={(props) => <FilterOptions {...props} selectedDate={selectedDate} />}
 						/>
 					</div>
 				</div>
@@ -405,4 +390,4 @@ const SalaryOvertimeSheet = () => {
 	}
 };
 
-export default SalaryOvertimeSheet;
+export default AttendanceReports;

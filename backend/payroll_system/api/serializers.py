@@ -287,6 +287,17 @@ class SalaryOvertimeSheetSerializer(serializers.Serializer):
     class Meta:
         fields = ['employee_ids', "filters"]
 
+class AttendanceReportsSerializer(serializers.Serializer):
+    employee_ids = serializers.ListField(child=serializers.IntegerField())
+    filters = serializers.DictField(child=serializers.ChoiceField(
+        choices=["paycode", "attendance_card_no", "employee_name", "department", "none", "all", "bank_transfer", "cheque", "cash", "rtgs", "neft", "only_resigned", "without_resigned",serializers.IntegerField()]
+    ))
+    company = serializers.IntegerField()
+    month = serializers.IntegerField()
+    year = serializers.IntegerField()
+    class Meta:
+        fields = ['employee_ids', "filters"]
+
 # class CompanyEmployeeStatisticsSerializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = CompanyEmployeeStatistics
