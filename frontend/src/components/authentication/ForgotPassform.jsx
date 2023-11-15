@@ -71,7 +71,11 @@ const ForgotPassform = () => {
 	return (
 		<main className="mx-auto h-screen max-w-md ">
 			<section className="sticky top-0 z-10 p-2">
-				<img src="../../../public/logo_dark.png" alt="LOGO" className="mx-auto h-16 w-auto object-center" />
+				<img
+					src={`${import.meta.env.VITE_PUBLIC_URL}logo_dark.png`}
+					alt="LOGO"
+					className="mx-auto h-16 w-auto object-center"
+				/>
 			</section>
 
 			<section id="forgot-password" className="flex h-[calc(100vh-80px)] flex-col md:justify-center">
