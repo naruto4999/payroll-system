@@ -269,6 +269,8 @@ class EarnedAmountSerializer(serializers.ModelSerializer):
             'arear_amount',
         )
 
+
+
 class SalaryOvertimeSheetSerializer(serializers.Serializer):
     employee_ids = serializers.ListField(child=serializers.IntegerField())
     filters = serializers.DictField(child=serializers.ChoiceField(
@@ -287,11 +289,17 @@ class SalaryOvertimeSheetSerializer(serializers.Serializer):
     class Meta:
         fields = ['employee_ids', "filters"]
 
+
+class FiltersAttendanceReportsSerializer(serializers.Serializer):
+    group_by = serializers.ChoiceField(choices=["none", "department"])
+    month_from_date = serializers.IntegerField()
+    month_to_date = serializers.IntegerField()
+    resignation_filter = serializers.ChoiceField(choices=["all", "without_resigned", "only_resigned"])
+    sort_by = serializers.ChoiceField(choices=["paycode", "attendance_card_no", "employee_name"])
+
 class AttendanceReportsSerializer(serializers.Serializer):
     employee_ids = serializers.ListField(child=serializers.IntegerField())
-    filters = serializers.DictField(child=serializers.ChoiceField(
-        choices=["paycode", "attendance_card_no", "employee_name", "department", "none", "all", "bank_transfer", "cheque", "cash", "rtgs", "neft", "only_resigned", "without_resigned",serializers.IntegerField()]
-    ))
+    filters = FiltersAttendanceReportsSerializer()
     company = serializers.IntegerField()
     month = serializers.IntegerField()
     year = serializers.IntegerField()

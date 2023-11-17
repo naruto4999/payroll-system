@@ -20,7 +20,7 @@ width_of_columns = {
         "signature": 22
     }
 
-default_cell_height = 5
+# default_cell_height = 5
 default_number_of_cells_in_row = 8
 header_height = 0
 max_name_earning_head_name_length = 5
@@ -107,6 +107,8 @@ class FPDF(FPDF):
 def generate_salary_sheet(request_data, prepared_salaries):
     global default_cell_height
     global default_number_of_cells_in_row
+    default_cell_height = 5
+
 
     earnings_grand_total_dict = {}
     generative_leaves = LeaveGrade.objects.filter(company_id=request_data['company'], generate_frequency__isnull=False)

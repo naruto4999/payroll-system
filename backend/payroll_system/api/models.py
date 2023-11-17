@@ -501,15 +501,15 @@ class EmployeeProfessionalDetail(models.Model):
         ('sun3', 'Third Sunday'),
         ('sun4', 'Fourth Sunday'),
     ]
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="employee_professional_details")
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="employee_professional_details")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_companys_employee_professional_details")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="all_employee_professional_details")
     employee = models.OneToOneField(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="employee_professional_detail", primary_key=True)
     date_of_joining = models.DateField(null=False, blank=False)
     date_of_confirm = models.DateField(null=False, blank=False)
-    department = models.ForeignKey(Deparment, on_delete=models.CASCADE, related_name="employee_professional_detail", null=True, blank=True)
-    designation = models.ForeignKey(Designation, on_delete=models.CASCADE, related_name="employee_professional_detail", null=True, blank=True)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="employee_professional_detail", null=True, blank=True)
-    salary_grade = models.ForeignKey(SalaryGrade, on_delete=models.CASCADE, related_name="employee_professional_detail", null=True, blank=True)
+    department = models.ForeignKey(Deparment, on_delete=models.CASCADE, related_name="same_department_employees", null=True, blank=True)
+    designation = models.ForeignKey(Designation, on_delete=models.CASCADE, related_name="same_designation_employees", null=True, blank=True)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="same_category_employees", null=True, blank=True)
+    salary_grade = models.ForeignKey(SalaryGrade, on_delete=models.CASCADE, related_name="same_salary_grade_employees", null=True, blank=True)
     # shift = models.ForeignKey(Shift, on_delete=models.CASCADE, related_name="employee_professional_detail", null=True, blank=True)
     weekly_off = models.CharField(max_length=6, choices=WEEKDAY_CHOICES, null=False, blank=False, default='sun')    
     extra_off = models.CharField(max_length=10, choices=EXTRA_OFF_CHOICES, default='no_off', null=False, blank=False)
@@ -1241,8 +1241,8 @@ class EmployeeGenerativeLeaveRecord(models.Model):
 
 class EmployeeMonthlyAttendanceDetails(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_company_employees_monthly_attendance_details")
-    employee = models.ForeignKey(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="present_count")
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="all_employees_present_count")
+    employee = models.ForeignKey(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="monthly_attendance_details")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="all_employees_monthly_attendance_details")
     present_count = models.PositiveSmallIntegerField(null=False, blank=False, default=0)
     date = models.DateField(null=False, blank=False) #day of date is always 1
     # working_days = models.PositiveSmallIntegerField(null=False, blank=False, default=0) Same as present count

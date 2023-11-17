@@ -26,6 +26,7 @@ const AttendanceReports = () => {
 	const auth = useSelector((state) => state.auth);
 	const globalCompany = useSelector((state) => state.globalCompany);
 	const dispatch = useDispatch();
+	const [showLoadingBar, setShowLoadingBar] = useOutletContext();
 
 	const {
 		data: employeePersonalDetails,
@@ -205,6 +206,7 @@ const AttendanceReports = () => {
 	// console.log(initialValues);
 
 	const generateButtonClicked = async (values, formikBag) => {
+		setShowLoadingBar(true);
 		// console.log(values);
 		const toSend = {
 			...values,
@@ -340,6 +342,7 @@ const AttendanceReports = () => {
 					})
 				);
 			}
+			setShowLoadingBar(false);
 		};
 
 		// Call the generateSalarySheet function to initiate the request
