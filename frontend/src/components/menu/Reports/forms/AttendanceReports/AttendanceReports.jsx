@@ -195,10 +195,10 @@ const AttendanceReports = () => {
 				groupBy: 'none',
 				sortBy: 'paycode',
 				resignationFilter: 'all',
-				monthFromDate: 1,
-				monthToDate: new Date(selectedDate.year, selectedDate.month, 0).getDate(),
+				monthFromDate: null,
+				monthToDate: null,
 			},
-			reportType: 'salary_sheet',
+			reportType: 'attendance_register',
 		};
 		return initialValues;
 	};

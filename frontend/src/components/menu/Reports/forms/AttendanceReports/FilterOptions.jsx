@@ -7,10 +7,10 @@ const classNames = (...classes) => {
 };
 const FilterOptions = ({ handleChange, values, isValid, handleSubmit, isSubmitting, selectedDate, setFieldValue }) => {
 	// console.log(values);
-	useEffect(() => {
-		setFieldValue('filters.monthFromDate', 1);
-		setFieldValue('filters.monthToDate', new Date(selectedDate.year, selectedDate.month, 0).getDate());
-	}, [selectedDate.month]);
+	// useEffect(() => {
+	// 	setFieldValue('filters.monthFromDate', 1);
+	// 	setFieldValue('filters.monthToDate', new Date(selectedDate.year, selectedDate.month, 0).getDate());
+	// }, [selectedDate.month]);
 
 	return (
 		<div className="flex flex-col gap-2">
@@ -30,7 +30,7 @@ const FilterOptions = ({ handleChange, values, isValid, handleSubmit, isSubmitti
 					<option value="attendance_register">Attendance Register</option>
 				</Field>
 			</div>
-			<div>
+			{/* <div>
 				<label
 					htmlFor="monthFromDate"
 					className="mr-4 text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
@@ -55,7 +55,7 @@ const FilterOptions = ({ handleChange, values, isValid, handleSubmit, isSubmitti
 					name="filters.monthToDate"
 					id="monthToDate"
 				/>
-			</div>
+			</div> */}
 			<div>
 				<label
 					htmlFor="sortBy"

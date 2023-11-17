@@ -2145,7 +2145,7 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
         validated_data = serializer.validated_data
         employee_ids = validated_data["employee_ids"]
         salary_date = date(validated_data["year"], validated_data["month"], 1)
-        print(validated_data)
+        # print(validated_data)
         order_by = 'employee__paycode'
         if validated_data['filters']['sort_by'] == "attendance_card_no":
             order_by = "employee__attendance_card_no"
@@ -2173,60 +2173,44 @@ class AttendanceReportsCreateAPIView(generics.CreateAPIView):
         if user.role != "OWNER":
             user = OwnerToRegular.objects.get(user=user).owner
         serializer = self.get_serializer(data=request.data)
-        try:
-            serializer.is_valid(raise_exception=True)
-        # Continue processing if valid
-        except serializers.ValidationError as e:
-            errors = e.detail
-            print(errors)
-    # Handle validation errors
-        
+        serializer.is_valid(raise_exception=True)        
         validated_data = serializer.validated_data
-        print(validated_data)
         employee_ids = validated_data["employee_ids"]
-        # Create Q objects for date range and resignation filter
-        date_range_query = Q(date__range=[f"{validated_data['year']}-{validated_data['month']}-{validated_data['filters']['month_from_date']}", f"{validated_data['year']}-{validated_data['month']}-{validated_data['filters']['month_to_date']}"])
-        # resignation_filter_query = Q()  # You might need to adjust this based on your logic
 
-        order_by = ('employee__paycode',)
-        if validated_data['filters']['sort_by'] == "attendance_card_no":
-            order_by = ("employee__attendance_card_no",'date')
-        elif validated_data['filters']['sort_by'] == "employee_name":
-            order_by = ('employee__name','employee__paycode', 'date')
-        
-        if validated_data['filters']['group_by'] != 'none':
-            order_by = ('employee__employee_professional_detail__department',)+order_by
-        print(*order_by)
+        if validated_data['report_type'] == 'attendance_register':
+            date_range_query = Q(date__year=validated_data['year'], date__month=validated_data['month'])
+            # resignation_filter_query = Q()  # You might need to adjust this based on your logic
 
-        attendance_objects = EmployeeAttendance.objects.filter(
-            Q(employee__id__in=employee_ids) &
-            Q(company_id=validated_data['company']) &
-            date_range_query
-            # resignation_filter_query
-        ).order_by(*order_by)
-        print(len(attendance_objects))
-        # print(attendance_objects)
-
-        # Group by employee using itertools.groupby
-        grouped_attendance = groupby(attendance_objects, key=attrgetter('employee_id'))
-        # print(grouped_attendance)
-
-        # Convert the result to a dictionary where keys are employee_ids and values are lists of attendance objects
-        attendance_dict = {key: list(group) for key, group in grouped_attendance}
-        # print(attendance_dict)
-
-        # salary_date = date(validated_data["year"], validated_data["month"], 1)
-        # print(validated_data)
+            order_by = ('employee__paycode', 'date')
+            if validated_data['filters']['sort_by'] == "attendance_card_no":
+                order_by = ("employee__attendance_card_no",'date')
+            elif validated_data['filters']['sort_by'] == "employee_name":
+                order_by = ('employee__name','employee__paycode', 'date')
             
-        # employee_salaries = EmployeeSalaryPrepared.objects.filter(employee__id__in=employee_ids, date=salary_date).order_by(order_by)
+            if validated_data['filters']['group_by'] != 'none':
+                order_by = ('employee__employee_professional_detail__department',)+order_by
+            print(*order_by)
 
-        # print(validated_data)
-        if attendance_objects.exists():
-            response = StreamingHttpResponse(generate_attendance_register(serializer.validated_data, attendance_dict), content_type="application/pdf")
-            response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
-            return response
-        else:
-            return Response({"detail": "No Salary Prepared for the given month"}, status=status.HTTP_404_NOT_FOUND)
+            attendance_objects = EmployeeAttendance.objects.filter(
+                Q(employee__id__in=employee_ids) &
+                Q(company_id=validated_data['company']) &
+                date_range_query
+                # resignation_filter_query
+            ).order_by(*order_by)
+            print(len(attendance_objects))
+
+            # Group by employee using itertools.groupby
+            grouped_attendance = groupby(attendance_objects, key=attrgetter('employee_id'))
+
+            # Convert the result to a dictionary where keys are employee_ids and values are lists of attendance objects
+            attendance_dict = {key: list(group) for key, group in grouped_attendance}
+                
+            if attendance_objects.exists():
+                response = StreamingHttpResponse(generate_attendance_register(serializer.validated_data, attendance_dict), content_type="application/pdf")
+                response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
+                return response
+            else:
+                return Response({"detail": "No Attendances Found for the given month"}, status=status.HTTP_404_NOT_FOUND)
         return Response({"detail": "Yo"}, status=status.HTTP_200_OK)
 
         

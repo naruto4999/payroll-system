@@ -292,8 +292,8 @@ class SalaryOvertimeSheetSerializer(serializers.Serializer):
 
 class FiltersAttendanceReportsSerializer(serializers.Serializer):
     group_by = serializers.ChoiceField(choices=["none", "department"])
-    month_from_date = serializers.IntegerField()
-    month_to_date = serializers.IntegerField()
+    month_from_date = serializers.IntegerField(allow_null=True)
+    month_to_date = serializers.IntegerField(allow_null=True)
     resignation_filter = serializers.ChoiceField(choices=["all", "without_resigned", "only_resigned"])
     sort_by = serializers.ChoiceField(choices=["paycode", "attendance_card_no", "employee_name"])
 
@@ -303,6 +303,7 @@ class AttendanceReportsSerializer(serializers.Serializer):
     company = serializers.IntegerField()
     month = serializers.IntegerField()
     year = serializers.IntegerField()
+    report_type = serializers.CharField()
     class Meta:
         fields = ['employee_ids', "filters"]
 
