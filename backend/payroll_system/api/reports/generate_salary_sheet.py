@@ -276,14 +276,9 @@ def generate_salary_sheet(request_data, prepared_salaries):
             
             if column_name == "attendance_detail":
                 salary_sheet_pdf.rect(salary_sheet_pdf.get_x(), salary_sheet_pdf.get_y(), w=width_of_columns["attendance_detail"], h=default_cell_height*default_number_of_cells_in_row)
-                # leaves = LeaveGrade.objects.filter(company_id=request_data['company'], generate_frequency__isnull=False)
-                # number_of_generative_leaves = len(leaves)
                 employee_generative_leaves = EmployeeGenerativeLeaveRecord.objects.filter(employee=salary.employee.id, date=salary.date).order_by('leave__name')
-                generative_leaves = [{"name": "EL", "amount":4}, {"name":"CL", "amount":2}, {"name":"SL", "amount":1}] #Get actual data from db and replace this
-
-                #default_number_of_cells_in_row = max(len(generative_leaves)+3, 8) #do this before even starting to draw the row of the slaray of employee
-                
-                generative_leave_text = "\n".join(f"{leave.leave.name} : {leave.leave_count}" for leave in employee_generative_leaves)
+                # generative_leaves = [{"name": "EL", "amount":4}, {"name":"CL", "amount":2}, {"name":"SL", "amount":1}] #Get actual data from db and replace this                
+                generative_leave_text = "\n".join(f"{leave.leave.name} : {int(leave.leave_count/2) if leave.leave_count/2%1==0 else leave.leave_count/2}" for leave in employee_generative_leaves)
                 salary_sheet_pdf.multi_cell(w=column_width/2, h=default_cell_height, txt=generative_leave_text, align='L', border=0)
 
                 #Draw another multicell for non generative leaves which are permament in every company
