@@ -2,7 +2,7 @@ from fpdf import FPDF
 from ..models import CompanyDetails, EmployeeGenerativeLeaveRecord, LeaveGrade
 from datetime import date, timedelta, datetime
 from dateutil.relativedelta import relativedelta
-
+import calendar
 
 width_of_columns = {
         "serial_number": 4,
@@ -12,9 +12,6 @@ width_of_columns = {
     }
 
 max_days_in_month = 31
-# max_name_earning_head_name_length = 5
-
-
 
 class FPDF(FPDF):
         def __init__(self, my_date, company_name, company_address, default_cell_height, *args, **kwargs):
@@ -157,9 +154,15 @@ def generate_attendance_register(request_data, attendance_dict):
         attendance_register.set_xy(x=initial_coordinates_after_header['x']+width_of_columns['serial_number'], y=y_tracker)
         
         x_tracker = initial_coordinates_after_header['x']+width_of_columns['serial_number']
-        # for attendance in employee_attendances:
+
+        #Populating the front of the list with None elements untill it becomes equal to the number of days in current month
+        num_days = calendar.monthrange(request_data['year'], request_data['month'])[1]
+        num_none_elements = max(0, num_days - len(employee_attendances))
+        employee_attendances = [None] * num_none_elements + employee_attendances
         for index in range(31):
-            if index<len(employee_attendances):
+            # print(date(request_data['year'], request_data['month'], index+1).day)
+            # print((employee_attendances[index].date).day)
+            if index<len(employee_attendances) and employee_attendances[index] is not None:
                 attendance = employee_attendances[index]
                 in_time_str = ''
                 out_time_str = ''
