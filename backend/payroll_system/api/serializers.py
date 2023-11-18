@@ -145,6 +145,13 @@ class EmployeePersonalDetailSerializer(serializers.ModelSerializer):
                   'permanent_address', 'permanent_district', 'permanent_state_or_union_territory', 'permanent_pincode',
                   'isActive', 'created_at']
         
+    #Just return the absolute path of the photo without the domain so that domain can be added on client side
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        if instance.photo:
+            representation['photo'] = instance.photo.url
+        return representation
+
 
 class EmployeeListSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)

@@ -579,7 +579,7 @@ const EmployeeEntryForm = () => {
 
 	const updatePersonalDetailButtonClicked = async (values, formikBag) => {
 		// console.log(formikBag);
-		console.log(values);
+		// console.log(values);
 		console.log(singleEmployeePersonalDetail);
 		const differences = getObjectDifferences(singleEmployeePersonalDetail, values);
 		console.log(differences);

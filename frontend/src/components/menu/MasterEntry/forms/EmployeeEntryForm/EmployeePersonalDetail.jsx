@@ -64,7 +64,11 @@ const EmployeePersonalDetail = ({
 						) : (
 							<img
 								id="previewImage"
-								src={typeof values.photo == 'string' ? values.photo : URL.createObjectURL(values.photo)}
+								src={
+									typeof values.photo == 'string'
+										? `${import.meta.env.VITE_MEDIA_URL}${values.photo}`
+										: URL.createObjectURL(values.photo)
+								}
 								alt="Preview"
 								className="mx-auto h-24 w-24 rounded-full object-contain"
 							/>

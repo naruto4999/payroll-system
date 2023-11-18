@@ -12,6 +12,7 @@ services:
             - ./data/certbot/conf:/etc/letsencrypt
             - ./data/certbot/www:/var/www/certbot
             - ./data/dhparam:/etc/ssl/certs
+            - media_volume:/mediafiles
         depends_on:
             - backend
 
@@ -35,6 +36,8 @@ services:
             - DB_HOST=database
         depends_on:
             - database
+        volumes:
+            - media_volume:/payroll-system/backend/payroll_system/mediafiles
 
     database:
         image: postgres:latest # Replace with the actual image name or tag
@@ -46,3 +49,4 @@ services:
 
 volumes:
     db_volume:
+    media_volume:
