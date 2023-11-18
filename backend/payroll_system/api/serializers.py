@@ -178,7 +178,7 @@ class EmployeeSalaryEarningSerializer(serializers.ModelSerializer):
     earnings_head = EarningsHeadSerializer()
     class Meta:
         model = EmployeeSalaryEarning
-        fields = ['employee', 'company', 'earnings_head', 'value', 'from_date', 'to_date']
+        fields = ['employee', 'company', 'earnings_head', 'value', 'month_', 'to_date']
 
 class EmployeeSalaryEarningUpdateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -313,6 +313,13 @@ class AttendanceReportsSerializer(serializers.Serializer):
     report_type = serializers.CharField()
     class Meta:
         fields = ['employee_ids', "filters"]
+
+class EmployeeAttendanceBulkAutofillSerializer(serializers.Serializer):
+    month_from_date = serializers.IntegerField()
+    month_to_date = serializers.IntegerField()
+    company = serializers.IntegerField()
+    month = serializers.IntegerField()
+    year = serializers.IntegerField()
 
 # class CompanyEmployeeStatisticsSerializer(serializers.ModelSerializer):
 #     class Meta:

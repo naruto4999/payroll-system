@@ -25,3 +25,10 @@ export const TimeUpdationSchema = yup.object().shape({
 			return value <= manualToDate && value <= daysInSelectedMonth;
 		}),
 });
+
+export const ConfirmationModalSchema = yup.object().shape({
+	userInput: yup
+		.string()
+		.matches(/^Confirm$/, 'Must be equal to "Confirm"')
+		.required('Required'),
+});

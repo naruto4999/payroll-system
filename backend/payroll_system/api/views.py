@@ -4,7 +4,7 @@ from rest_framework import generics, status, mixins
 from django.db import transaction
 from rest_framework import serializers
 
-from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer, EmployeeGenerativeLeaveRecordSerializer, EmployeeLeaveOpeningSerializer, EmployeeMonthlyAttendancePresentDetailsSerializer, EmployeeAdvancePaymentSerializer, EmployeeMonthlyAttendanceDetailsSerializer, EmployeeSalaryPreparedSerializer, EarnedAmountSerializer, SalaryOvertimeSheetSerializer, AttendanceReportsSerializer
+from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer, EmployeeGenerativeLeaveRecordSerializer, EmployeeLeaveOpeningSerializer, EmployeeMonthlyAttendancePresentDetailsSerializer, EmployeeAdvancePaymentSerializer, EmployeeMonthlyAttendanceDetailsSerializer, EmployeeSalaryPreparedSerializer, EarnedAmountSerializer, SalaryOvertimeSheetSerializer, AttendanceReportsSerializer, EmployeeAttendanceBulkAutofillSerializer
 from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift, EmployeeSalaryEarning, EarningsHead, EmployeeShifts, EmployeeGenerativeLeaveRecord, EmployeeSalaryPrepared, EarnedAmount, EmployeeAdvanceEmiRepayment, EmployeeAdvancePayment, EmployeeAttendance
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -1679,9 +1679,12 @@ class AllEmployeeMonthyShiftsListAPIView(generics.ListAPIView):
         # # return Response(status.HTTP_200_OK)
 
         year = self.kwargs.get('year')
+        print(year)
         month = self.kwargs.get('month')
         start_date = datetime(year, month, 1).date()
-        end_date = datetime(year, month+1, 1).date() - relativedelta(days=1)
+        print(f'Star Date: {start_date}')
+        end_date = (start_date + relativedelta(months=1)) - relativedelta(days=1)
+        print(end_date)
         print(len(self.get_queryset()))
 
         queryset = self.get_queryset().filter(
@@ -1689,8 +1692,8 @@ class AllEmployeeMonthyShiftsListAPIView(generics.ListAPIView):
             to_date__gte=start_date,    # Shifts that end in the specified year or later
         )
         serializer = self.get_serializer(queryset, many=True)
-        print(serializer.data)
-        print(len(serializer.data))
+        # print(serializer.data)
+        # print(len(serializer.data))
         return Response(serializer.data)
         # return Response(status.HTTP_200_OK)
     
@@ -1825,12 +1828,6 @@ class EmployeeAttendanceListCreateAPIView(generics.ListCreateAPIView):
         from_date = datetime(year, month, 1).date() - relativedelta(days=6)
         last_day = calendar.monthrange(year, month)[1]
         to_date = datetime(year, month, last_day).date()
-
-
-        # print(type(from_date))
-        # print(from_date)
-        # print(to_date)
-        # print(month)
         queryset = self.get_queryset().filter(date__range=[from_date, to_date])
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
@@ -1875,6 +1872,24 @@ class EmployeeAttendanceUpdateAPIView(generics.UpdateAPIView):
         except Exception as e:
             print("Some Error Occured")
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class EmployeeAttendanceBulkAutoFillView(APIView):
+    def post(self, request, *args, **kwargs):
+        user = self.request.user
+        serializer = EmployeeAttendanceBulkAutofillSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        print(serializer.validated_data)
+        validated_data = serializer.validated_data
+
+        from_date = date(validated_data['year'], validated_data['month'], validated_data['month_from_date'])
+        to_date = date(validated_data['year'], validated_data['month'], validated_data['month_to_date'])
+
+        # try:
+        EmployeeAttendance.objects.bulk_autofill(from_date=from_date, to_date=to_date, company_id=validated_data['company'], user=user)
+        return Response({"message": "Bulk autofill successful"}, status=status.HTTP_200_OK)
+        # except Exception as e:
+        #     return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        # return Response({"message": "Bulk autofill successful"}, status=status.HTTP_200_OK)
         
 
 class EmployeeGenerativeLeaveRecordListAPIView(generics.ListAPIView):

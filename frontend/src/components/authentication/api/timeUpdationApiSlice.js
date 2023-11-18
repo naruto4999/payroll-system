@@ -79,6 +79,19 @@ export const timeUpdationApiSlice = apiSlice.injectEndpoints({
 				'AllEmployeeMonthlyAttendanceDetails',
 			],
 		}),
+		bulkAutoFillAttendanceAdd: builder.mutation({
+			query: (body) => ({
+				url: `/api/employee-attendance-bulk-autofill`,
+				method: 'POST',
+				body: body,
+			}),
+			invalidatesTags: [
+				'EmployeeAttendance',
+				'AllEmployeePresentCount',
+				'AllEmployeeGenerativeLeaveRecord',
+				'AllEmployeeMonthlyAttendanceDetails',
+			],
+		}),
 		updateEmployeeAttendance: builder.mutation({
 			query: (body) => ({
 				url: `/api/employee-attendance-update/${body.company}/${body.employee}`,
@@ -113,4 +126,5 @@ export const {
 	useGetAllEmployeeGenerativeLeaveRecordQuery,
 	useGetAllEmployeeLeaveOpeningQuery,
 	useGetAllEmployeePresentCountQuery,
+	useBulkAutoFillAttendanceAddMutation,
 } = timeUpdationApiSlice;

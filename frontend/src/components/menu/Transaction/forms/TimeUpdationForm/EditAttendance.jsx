@@ -6,7 +6,7 @@ import { Field, ErrorMessage, Form } from 'formik';
 import { useGetCurrentMonthAllEmployeeShiftsQuery } from '../../../../authentication/api/timeUpdationApiSlice';
 import AttendanceMonthDays from './AttendanceMonthDays';
 import AttendanceHeader from './AttendanceHeader';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { useGetWeeklyOffHolidayOffQuery } from '../../../../authentication/api/weeklyOffHolidayOffApiSlice';
 import { useGetSingleEmployeeSalaryDetailQuery } from '../../../../authentication/api/employeeEntryApiSlice';
 import EmployeeTable from './EmployeeTable';
@@ -18,6 +18,14 @@ import {
 import TableFilterInput from './TableFilterInput';
 import GenerativeLeaveTable from './GenerativeLeaveTable';
 import AttendanceFooter from './AttendanceFooter';
+import ConfirmationModal from '../../../../UI/ConfirmationModal';
+import ReactModal from 'react-modal';
+import { Formik } from 'formik';
+import { ConfirmationModalSchema } from './TimeUpdationSchema';
+import { useBulkAutoFillAttendanceAddMutation } from '../../../../authentication/api/timeUpdationApiSlice';
+import { alertActions } from '../../../../authentication/store/slices/alertSlice';
+
+ReactModal.setAppElement('#root');
 
 // After for the Beginnning is covered by late grace
 const AUTO_SHIFT_BEGINNING_BUFFER_BEFORE = 10;
@@ -62,6 +70,7 @@ const EditAttendance = memo(
 		onRowClick,
 		setSelectedDate,
 	}) => {
+		const dispatch = useDispatch();
 		const months = [
 			'January',
 			'February',
@@ -77,7 +86,7 @@ const EditAttendance = memo(
 			'December',
 		];
 		const weeklyOffValues = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'no_off'];
-
+		const [showConfirmModal, setShowConfirmModal] = useState(false);
 		const auth = useSelector((state) => state.auth);
 		const absent = useMemo(() => leaveGrades.find((grade) => grade.name === 'A'), [leaveGrades]);
 		const missPunch = useMemo(() => leaveGrades.find((grade) => grade.name === 'MS'), [leaveGrades]);
@@ -89,6 +98,15 @@ const EditAttendance = memo(
 		const compensationOff = useMemo(() => leaveGrades.find((grade) => grade.name === 'CO'), [leaveGrades]);
 		const onDuty = useMemo(() => leaveGrades.find((grade) => grade.name === 'OD'), [leaveGrades]);
 		const isTableFilterInput = useRef(false);
+
+		const [
+			bulkAutoFillAttendanceAdd,
+			{
+				isLoading: isBulkAutoFillingAttendance,
+				// isError: errorRegisteringRegular,
+				isSuccess: isBulkAutoFillAttendanceSuccess,
+			},
+		] = useBulkAutoFillAttendanceAddMutation();
 
 		const {
 			data: allEmployeeAttendance,
@@ -228,6 +246,8 @@ const EditAttendance = memo(
 		);
 
 		const giveWeeklyOffHolidayOff = (year, month, day, minDays, auto = false) => {
+			// Multiply by 2 because present count is twice as much since first half and second hlaf is counted separately
+			minDays = minDays * 2;
 			if (employeeAttendance == undefined || employeeAttendance.length == 0) {
 				return false;
 			}
@@ -243,7 +263,16 @@ const EditAttendance = memo(
 				if (attendanceDate >= sixDaysAgo && attendanceDate <= currentDate) {
 					// Check if employee was present in firstHalf or secondHalf
 					// Fix this
-					if (employeeAttendance[i].firstHalf || employeeAttendance[i].secondHalf) {
+					if (
+						parseInt(employeeAttendance[i].firstHalf) === present.id ||
+						parseInt(employeeAttendance[i].firstHalf) === onDuty.id
+					) {
+						presentCount++;
+					}
+					if (
+						parseInt(employeeAttendance[i].secondHalf) === present.id ||
+						parseInt(employeeAttendance[i].secondHalf) === onDuty.id
+					) {
 						presentCount++;
 					}
 				}
@@ -607,6 +636,7 @@ const EditAttendance = memo(
 		}, [values.month, values.year, currentEmployeeProfessionalDetail]);
 
 		const calculateFirstHalfSecondHalfForWeeklyAndHolidayOff = (day, type) => {
+			// if (type=='weeklyoff')
 			let presentCount = 0;
 			for (let i = 1; i <= 6; i++) {
 				const previousDate = new Date(Date.UTC(values.year, values.month - 1, parseInt(day) - i));
@@ -617,28 +647,50 @@ const EditAttendance = memo(
 				if (previousDate.getMonth() === values.month - 1) {
 					const previousDay = previousDate.getDate();
 					const attendance = values.attendance[previousDay];
-					if (attendance.firstHalf === present.id || attendance.secondHalf === present.id) {
+					console.log(
+						previousDay,
+						' First Half: ',
+						attendance.firstHalf,
+						' Second Half: ',
+						attendance.secondHalf
+					);
+					// console.log(attendance.firstHalf);
+					if (parseInt(attendance.firstHalf) === present.id || parseInt(attendance.firstHalf) === onDuty.id) {
+						presentCount += 1;
+						// console.log()
+					}
+					if (
+						parseInt(attendance.secondHalf) === present.id ||
+						parseInt(attendance.secondHalf) === onDuty.id
+					) {
 						presentCount += 1;
 					}
 				} else if (previousDate.getMonth() === values.month - 2) {
 					for (const entry of employeeAttendance) {
 						const entryDate = new Date(entry.date);
+						// console.log(entry.firstHalf);
 						if (previousDate.getTime() === entryDate.getTime()) {
-							if (entry.firstHalf === present.id || entry.secondHalf === present.id) {
+							if (parseInt(entry.firstHalf) === present.id || parseInt(entry.firstHalf) === onDuty.id) {
+								presentCount += 1;
+							}
+							if (parseInt(entry.secondHalf) === present.id || parseInt(entry.secondHalf) === onDuty.id) {
 								presentCount += 1;
 							}
 						}
 					}
 				}
-
+				// console.log('Present Count: ', presentCount);
+				// Since present count would be twice considering we are counting the first and the second half, we can multiply the min days by 2 as well to compensate
 				if (
-					(type === 'weeklyOff' && presentCount >= parseInt(weeklyOffHolidayOff.minDaysForWeeklyOff)) ||
-					(type === 'holidayOff' && presentCount >= parseInt(weeklyOffHolidayOff.minDaysForHolidayOff)) ||
-					(type === 'extraOff' && presentCount >= parseInt(weeklyOffHolidayOff.minDaysForWeeklyOff))
+					(type === 'weeklyOff' && presentCount >= parseInt(weeklyOffHolidayOff.minDaysForWeeklyOff * 2)) ||
+					(type === 'holidayOff' && presentCount >= parseInt(weeklyOffHolidayOff.minDaysForHolidayOff * 2)) ||
+					(type === 'extraOff' && presentCount >= parseInt(weeklyOffHolidayOff.minDaysForWeeklyOff * 2))
 				) {
+					console.log('yesssss chuttiiiiiii');
 					return true;
 				}
 			}
+			console.log(presentCount);
 
 			return false;
 		};
@@ -961,6 +1013,38 @@ const EditAttendance = memo(
 			}
 		}, [values.manualToDate, values.manualFromDate, currentEmployeeProfessionalDetail]);
 
+		const bulkAutoFillAttendance = async (formikBag) => {
+			console.log(values.manualFromDate);
+			console.log(values.manualToDate);
+			let toSend = {
+				monthFromDate: values.manualFromDate,
+				monthToDate: values.manualToDate,
+				company: globalCompany.id,
+				month: values.month,
+				year: values.year,
+			};
+			try {
+				const data = await bulkAutoFillAttendanceAdd(toSend).unwrap();
+				dispatch(
+					alertActions.createAlert({
+						message: 'Saved',
+						type: 'Success',
+						duration: 3000,
+					})
+				);
+			} catch (err) {
+				console.log(err);
+				dispatch(
+					alertActions.createAlert({
+						message: 'Error Occurred',
+						type: 'Error',
+						duration: 5000,
+					})
+				);
+			}
+			setShowConfirmModal(false);
+		};
+
 		const clearAttendance = useCallback(() => {
 			const manualFromDate = values.manualFromDate;
 			const manualToDate = values.manualToDate;
@@ -1164,6 +1248,15 @@ const EditAttendance = memo(
 									</button>
 									<button
 										type="button"
+										className="h-8 w-36 rounded bg-blueAccent-400 p-1 text-base font-medium hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:hover:bg-blueAccent-600"
+										onClick={() => {
+											setShowConfirmModal(true);
+										}}
+									>
+										Bulk Auto
+									</button>
+									<button
+										type="button"
 										className="h-8 w-20 rounded bg-slate-600 bg-opacity-30 p-1 text-base font-medium hover:bg-opacity-60 dark:bg-slate-400 dark:bg-opacity-30 dark:hover:bg-opacity-60"
 										onClick={clearAttendance}
 									>
@@ -1230,6 +1323,24 @@ const EditAttendance = memo(
 								</div>
 							</section>
 						</form>
+
+						<ReactModal
+							className="items-left fixed inset-0 mx-2 my-auto flex h-fit flex-col gap-4 rounded bg-zinc-300 p-4 shadow-xl dark:bg-zinc-800 sm:mx-auto sm:max-w-lg"
+							isOpen={showConfirmModal}
+							onRequestClose={() => setShowConfirmModal(false)}
+							style={{
+								overlay: {
+									backgroundColor: 'rgba(0, 0, 0, 0.75)',
+								},
+							}}
+						>
+							<Formik
+								initialValues={{ userInput: '' }}
+								validationSchema={ConfirmationModalSchema}
+								onSubmit={bulkAutoFillAttendance}
+								component={(props) => <ConfirmationModal {...props} />}
+							/>
+						</ReactModal>
 					</div>
 				</>
 			);

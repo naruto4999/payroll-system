@@ -1,84 +1,77 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect } from 'react';
 
 const classNames = (...classes) => {
-    return classes.filter(Boolean).join(" ");
+	return classes.filter(Boolean).join(' ');
 };
 
 const EditCompany = ({
-    handleSubmit,
-    handleChange,
-    handleBlur,
-    values,
-    errors,
-    editCompanyPopoverHandler,
-    isValid,
+	handleSubmit,
+	handleChange,
+	handleBlur,
+	values,
+	errors,
+	editCompanyPopoverHandler,
+	isValid,
 }) => {
-    console.log(errors);
-    const inputRef = useRef(null);
-    useEffect(() => {
-        inputRef.current.focus();
-    }, []);
-    return (
-        <div className="text-gray-900 dark:text-slate-100">
-            <h1 className="font-medium text-2xl mb-2">Edit Company</h1>
+	console.log(errors);
+	console.log(values);
+	const inputRef = useRef(null);
+	useEffect(() => {
+		inputRef.current.focus();
+	}, []);
+	return (
+		<div className="text-gray-900 dark:text-slate-100">
+			<h1 className="mb-2 text-2xl font-medium">Edit Company</h1>
 
-            <form
-                action=""
-                className="flex flex-col gap-2 justify-center"
-                onSubmit={handleSubmit}
-            >
-                <label
-                    htmlFor="comapny-name"
-                    className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
-                >
-                    Company Name
-                </label>
-                <div className="relative">
-                    <input
-                        className={classNames(
-                            isValid
-                                ? "border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25"
-                                : "border-red-500 dark:border-red-700 border-opacity-100 dark:border-opacity-75",
-                            "rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700  border-2   p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
-                        )}
-                        type="text"
-                        id="updatedCompany"
-                        name="updatedCompany"
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        ref={inputRef}
-                    />
-                    {isValid ? (
-                        ""
-                    ) : (
-                        <p className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">
-                            {errors.updatedCompany}
-                        </p>
-                    )}
-                </div>
-            </form>
-            <section className="flex flex-row gap-4 mt-4 mb-2">
-                <button
-                    className={classNames(
-                        isValid
-                            ? "dark:hover:bg-teal-600  hover:bg-teal-600"
-                            : "opacity-40",
-                        "dark:bg-teal-700 rounded w-20 p-2 text-base font-medium bg-teal-500"
-                    )}
-                    onClick={handleSubmit}
-                    type="submit"
-                    disabled={!isValid}
-                >
-                    Update
-                </button>
-                <button
-                    className="bg-zinc-400 hover:bg-zinc-500 dark:bg-zinc-600 rounded w-20 p-2 text-base font-medium dark:hover:bg-zinc-700"
-                    onClick={() => editCompanyPopoverHandler({ id: "" })}
-                >
-                    Cancel
-                </button>
-            </section>
-        </div>
-    );
+			<form action="" className="flex flex-col justify-center gap-2" onSubmit={handleSubmit}>
+				<label
+					htmlFor="comapny-name"
+					className="text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
+				>
+					Company Name
+				</label>
+				<div className="relative">
+					<input
+						className={classNames(
+							isValid
+								? 'border-gray-800 border-opacity-25 dark:border-slate-100 dark:border-opacity-25'
+								: 'border-red-500 border-opacity-100 dark:border-red-700 dark:border-opacity-75',
+							'w-full rounded border-2 bg-zinc-50  bg-opacity-50   p-1 outline-none transition focus:border-opacity-100 dark:bg-zinc-700 dark:focus:border-opacity-75'
+						)}
+						type="text"
+						id="updatedCompany"
+						name="updatedCompany"
+						onChange={handleChange}
+						onBlur={handleBlur}
+						ref={inputRef}
+					/>
+					{isValid ? (
+						''
+					) : (
+						<p className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">{errors.updatedCompany}</p>
+					)}
+				</div>
+			</form>
+			<section className="mt-4 mb-2 flex flex-row gap-4">
+				<button
+					className={classNames(
+						isValid ? 'hover:bg-teal-600  dark:hover:bg-teal-600' : 'opacity-40',
+						'w-20 rounded bg-teal-500 p-2 text-base font-medium dark:bg-teal-700'
+					)}
+					onClick={handleSubmit}
+					type="submit"
+					disabled={!isValid}
+				>
+					Update
+				</button>
+				<button
+					className="w-20 rounded bg-zinc-400 p-2 text-base font-medium hover:bg-zinc-500 dark:bg-zinc-600 dark:hover:bg-zinc-700"
+					onClick={() => editCompanyPopoverHandler({ id: '' })}
+				>
+					Cancel
+				</button>
+			</section>
+		</div>
+	);
 };
 export default EditCompany;

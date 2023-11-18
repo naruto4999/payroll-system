@@ -14,6 +14,8 @@ import calendar
 import math
 from django.db.models import Sum
 from django.core.files.storage import FileSystemStorage
+from .managers import EmployeeAttendanceManager, ActiveEmployeeManager
+
 
 
 
@@ -515,6 +517,8 @@ class EmployeeProfessionalDetail(models.Model):
     extra_off = models.CharField(max_length=10, choices=EXTRA_OFF_CHOICES, default='no_off', null=False, blank=False)
     resigned = models.BooleanField(default=False, null=False, blank=False)
     resignation_date = models.DateField(null=True, blank=True, default=None)
+    objects = ActiveEmployeeManager()
+
 
 
     def save(self, *args, **kwargs):
@@ -1055,6 +1059,8 @@ class EmployeeAttendance(models.Model):
     late_min = models.PositiveSmallIntegerField(null=True, blank=True)
     pay_multiplier = LimitedFloatField()
     manual_mode = models.BooleanField(default=False)
+
+    objects = EmployeeAttendanceManager()
 
     class Meta:
         constraints = [
