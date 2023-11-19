@@ -178,7 +178,7 @@ class EmployeeSalaryEarningSerializer(serializers.ModelSerializer):
     earnings_head = EarningsHeadSerializer()
     class Meta:
         model = EmployeeSalaryEarning
-        fields = ['employee', 'company', 'earnings_head', 'value', 'month_', 'to_date']
+        fields = ['employee', 'company', 'earnings_head', 'value', 'from_date', 'to_date']
 
 class EmployeeSalaryEarningUpdateSerializer(serializers.ModelSerializer):
     class Meta:

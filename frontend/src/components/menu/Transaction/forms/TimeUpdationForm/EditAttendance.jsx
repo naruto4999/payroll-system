@@ -98,6 +98,9 @@ const EditAttendance = memo(
 		const compensationOff = useMemo(() => leaveGrades.find((grade) => grade.name === 'CO'), [leaveGrades]);
 		const onDuty = useMemo(() => leaveGrades.find((grade) => grade.name === 'OD'), [leaveGrades]);
 		const isTableFilterInput = useRef(false);
+		const paidIds = useMemo(() => {
+			return leaveGrades.filter((grade) => grade.paid).map((grade) => grade.id);
+		}, [leaveGrades]);
 
 		const [
 			bulkAutoFillAttendanceAdd,
@@ -263,16 +266,10 @@ const EditAttendance = memo(
 				if (attendanceDate >= sixDaysAgo && attendanceDate <= currentDate) {
 					// Check if employee was present in firstHalf or secondHalf
 					// Fix this
-					if (
-						parseInt(employeeAttendance[i].firstHalf) === present.id ||
-						parseInt(employeeAttendance[i].firstHalf) === onDuty.id
-					) {
+					if (paidIds.includes(parseInt(employeeAttendance[i].firstHalf))) {
 						presentCount++;
 					}
-					if (
-						parseInt(employeeAttendance[i].secondHalf) === present.id ||
-						parseInt(employeeAttendance[i].secondHalf) === onDuty.id
-					) {
+					if (paidIds.includes(parseInt(employeeAttendance[i].secondHalf))) {
 						presentCount++;
 					}
 				}
@@ -449,7 +446,7 @@ const EditAttendance = memo(
 				}
 				return overtime;
 			},
-			[values.attendance]
+			[values.attendance, categorizedAllEmployeeShifts, allEmployeeShifts]
 		);
 
 		const calculateLateHrs = useCallback(
@@ -498,7 +495,7 @@ const EditAttendance = memo(
 
 				return lateHrs;
 			},
-			[[values.attendance]]
+			[[values.attendance, categorizedAllEmployeeShifts, allEmployeeShifts]]
 		);
 
 		const calculateAttendance = useCallback(
@@ -647,50 +644,34 @@ const EditAttendance = memo(
 				if (previousDate.getMonth() === values.month - 1) {
 					const previousDay = previousDate.getDate();
 					const attendance = values.attendance[previousDay];
-					console.log(
-						previousDay,
-						' First Half: ',
-						attendance.firstHalf,
-						' Second Half: ',
-						attendance.secondHalf
-					);
-					// console.log(attendance.firstHalf);
-					if (parseInt(attendance.firstHalf) === present.id || parseInt(attendance.firstHalf) === onDuty.id) {
+					if (paidIds.includes(parseInt(attendance.firstHalf))) {
 						presentCount += 1;
-						// console.log()
 					}
-					if (
-						parseInt(attendance.secondHalf) === present.id ||
-						parseInt(attendance.secondHalf) === onDuty.id
-					) {
+					if (paidIds.includes(parseInt(attendance.secondHalf))) {
 						presentCount += 1;
 					}
 				} else if (previousDate.getMonth() === values.month - 2) {
 					for (const entry of employeeAttendance) {
 						const entryDate = new Date(entry.date);
-						// console.log(entry.firstHalf);
 						if (previousDate.getTime() === entryDate.getTime()) {
-							if (parseInt(entry.firstHalf) === present.id || parseInt(entry.firstHalf) === onDuty.id) {
+							if (paidIds.includes(parseInt(entry.firstHalf))) {
 								presentCount += 1;
 							}
-							if (parseInt(entry.secondHalf) === present.id || parseInt(entry.secondHalf) === onDuty.id) {
+							if (paidIds.includes(parseInt(entry.secondHalf))) {
 								presentCount += 1;
 							}
 						}
 					}
 				}
-				// console.log('Present Count: ', presentCount);
 				// Since present count would be twice considering we are counting the first and the second half, we can multiply the min days by 2 as well to compensate
 				if (
 					(type === 'weeklyOff' && presentCount >= parseInt(weeklyOffHolidayOff.minDaysForWeeklyOff * 2)) ||
 					(type === 'holidayOff' && presentCount >= parseInt(weeklyOffHolidayOff.minDaysForHolidayOff * 2)) ||
 					(type === 'extraOff' && presentCount >= parseInt(weeklyOffHolidayOff.minDaysForWeeklyOff * 2))
 				) {
-					console.log('yesssss chuttiiiiiii');
 					return true;
 				}
 			}
-			console.log(presentCount);
 
 			return false;
 		};
@@ -1024,10 +1005,14 @@ const EditAttendance = memo(
 				year: values.year,
 			};
 			try {
+				const startTime = performance.now();
 				const data = await bulkAutoFillAttendanceAdd(toSend).unwrap();
+				const endTime = performance.now(); // Record the end time
+				const responseTime = endTime - startTime;
+				const responseTimeInSeconds = (responseTime / 1000).toFixed(2);
 				dispatch(
 					alertActions.createAlert({
-						message: 'Saved',
+						message: `Saved, Time Taken: ${responseTimeInSeconds} seconds`,
 						type: 'Success',
 						duration: 3000,
 					})
@@ -1059,7 +1044,7 @@ const EditAttendance = memo(
 			}
 		}, [values.manualToDate, values.manualFromDate]);
 
-		if (isLoadingAllEmployeeSalaryDetail || isLoadingAllEmployeeProfessionalDetail) {
+		if (isLoadingAllEmployeeSalaryDetail || isLoadingAllEmployeeProfessionalDetail || isFetchingAllEmployeeShifts) {
 			return <></>;
 		} else {
 			return (

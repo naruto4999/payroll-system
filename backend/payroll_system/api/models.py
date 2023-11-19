@@ -1059,10 +1059,16 @@ class EmployeeAttendance(models.Model):
     late_min = models.PositiveSmallIntegerField(null=True, blank=True)
     pay_multiplier = LimitedFloatField()
     manual_mode = models.BooleanField(default=False)
-
     objects = EmployeeAttendanceManager()
 
     class Meta:
+        indexes = [
+            models.Index(fields=['employee']),
+            models.Index(fields=['date']),
+            models.Index(fields=['company_id']),
+            models.Index(fields=['user']),
+
+        ]
         constraints = [
             models.UniqueConstraint(fields=['employee', 'date', 'company'], name='unique_employee_attendance_date_wise'),
         ]
@@ -1131,7 +1137,7 @@ class EmployeeGenerativeLeaveRecordManager(models.Manager):
 
             total_ot_minutes_monthly += employee_attendance.ot_min if employee_attendance.ot_min != None else 0
             total_late_min += employee_attendance.late_min if employee_attendance.late_min != None else 0
-            print(f"Total OT: {total_ot_minutes_monthly} Total Late: {total_late_min}")
+            # print(f"Total OT: {total_ot_minutes_monthly} Total Late: {total_late_min}")
 
             for leave_id in (employee_attendance.first_half.id, employee_attendance.second_half.id):
                 if leave_id in leave_grade_dict:
@@ -1143,8 +1149,6 @@ class EmployeeGenerativeLeaveRecordManager(models.Manager):
             self.create(user=user, employee=employee, company=company, leave_id=key, date=from_date.replace(day=1), leave_count=value['leave_count'])
         EmployeeMonthlyAttendanceDetails.objects.create(present_count=present_count, weekly_off_days_count=weekly_off_days_count, holiday_days_count=holiday_days_count, compensation_off_days_count=compensation_off_days_count, paid_days_count=paid_days_count, not_paid_days_count=not_paid_days_count, net_ot_minutes_monthly=net_ot_minutes_monthly, user=user, company=company, employee=employee, date=from_date.replace(day=1))
 
-        print(f"Present Count: {present_count}")
-        print(leave_grade_dict)    
 
     def update_monthly_record(self, total_expected_instances, user, year, month, employee_id, company_id):
         leave_grades_queryset = LeaveGrade.objects.filter(user=user, company_id=company_id, paid=True, generate_frequency__isnull=False)
@@ -1227,8 +1231,6 @@ class EmployeeGenerativeLeaveRecordManager(models.Manager):
             else:
                 self.create(user=user, employee_id=employee_id, company_id=company_id, leave_id=key, date=from_date.replace(day=1), leave_count=value['leave_count'])
 
-        print(f"Present Count: {present_count}")
-        print(leave_grade_dict)
 
 class EmployeeGenerativeLeaveRecord(models.Model):
     objects = EmployeeGenerativeLeaveRecordManager()
@@ -1241,6 +1243,11 @@ class EmployeeGenerativeLeaveRecord(models.Model):
 
 
     class Meta:
+        indexes = [
+            models.Index(fields=['employee']),
+            models.Index(fields=['date']),
+            models.Index(fields=['company_id']),
+        ]
         constraints = [
             models.UniqueConstraint(fields=['employee', 'date', 'company', 'leave'], name='unique_date_per_employee_per_company'),
         ]
@@ -1258,6 +1265,13 @@ class EmployeeMonthlyAttendanceDetails(models.Model):
     not_paid_days_count = models.PositiveSmallIntegerField(null=False, blank=False, default=0)
     net_ot_minutes_monthly = models.PositiveIntegerField(null=False, blank=False, default=0)
     compensation_off_days_count = models.PositiveSmallIntegerField(null=False, blank=False, default=0)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['employee']),
+            models.Index(fields=['date']),
+            models.Index(fields=['company_id']),
+        ]
 
 
 class EmployeeLeaveOpening(models.Model):

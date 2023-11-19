@@ -1880,7 +1880,9 @@ class EmployeeAttendanceBulkAutoFillView(APIView):
         serializer.is_valid(raise_exception=True)
         print(serializer.validated_data)
         validated_data = serializer.validated_data
-
+        num_days_in_month = calendar.monthrange(validated_data['year'], validated_data['month'])[1]
+        if validated_data['month_to_date']>num_days_in_month:
+            validated_data['month_to_date'] = num_days_in_month
         from_date = date(validated_data['year'], validated_data['month'], validated_data['month_from_date'])
         to_date = date(validated_data['year'], validated_data['month'], validated_data['month_to_date'])
 
