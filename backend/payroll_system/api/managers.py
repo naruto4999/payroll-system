@@ -65,6 +65,7 @@ class EmployeeAttendanceManager(models.Manager):
         AUTO_SHIFT_ENDING_BUFFER_AFTER = 10
 
         WeeklyOffHolidayOff = apps.get_model('api', 'WeeklyOffHolidayOff')
+        EmployeeAttendance = apps.get_model('api', 'EmployeeAttendance')
         EmployeeSalaryDetail = apps.get_model('api', 'EmployeeSalaryDetail')
         EmployeeGenerativeLeaveRecord = apps.get_model('api', 'EmployeeGenerativeLeaveRecord')
         EmployeeMonthlyAttendanceDetails = apps.get_model('api', 'EmployeeMonthlyAttendanceDetails')
@@ -92,7 +93,7 @@ class EmployeeAttendanceManager(models.Manager):
                 if not employee_salary_detail.exists():
                     continue
                 # print(self.paid_days_count_for_past_six_days(user=user, company_id=company_id, attendance_date=from_date, employee=current_employee.employee))
-                start_time_before_while = time.time()
+                # start_time_before_while = time.time()
 
                 montly_attendance_record_to_delete = EmployeeMonthlyAttendanceDetails.objects.filter(
                         employee=current_employee.employee,
@@ -111,20 +112,17 @@ class EmployeeAttendanceManager(models.Manager):
                         # print(f"Deleting attendance for {current_employee.employee}'s on {current_date}")
                         generative_leave_record_to_delete.delete()
                 current_date = from_date
-                end_time_before_while = time.time()
+                # end_time_before_while = time.time()
 
-                start_time_while = time.time()
+                # start_time_while = time.time()
 
                 #Deleting the existing attendances between the from_date and to_date inclusive
                 attendance_to_delete = self.filter(
-                    employee=current_employee.employee,
-                    date__range=(from_date, to_date),
-                    company_id=company_id,
+                    Q(employee=current_employee.employee) &
+                    Q(date__range=(from_date, to_date)) &
+                    Q(company_id=company_id)
                 )
-                    
-                if attendance_to_delete.exists():
-                    # print(f"Deleting attendance for {current_employee.employee}'s on {current_date}")
-                    attendance_to_delete.delete()
+                attendance_to_delete.delete()
 
                 #Optimizing shifts retrieval
                 shift_found = False
@@ -138,6 +136,7 @@ class EmployeeAttendanceManager(models.Manager):
                     found_shift_late_grace = employee_shift_on_particular_date.shift.late_grace
                     shift_found = True
 
+                attendance_records = []
                 total_expected_instances = 0
                 while current_date <= to_date:
                     
@@ -146,7 +145,7 @@ class EmployeeAttendanceManager(models.Manager):
                             weekly_off_to_give = weekly_off_skip
                             if self.paid_days_count_for_past_six_days(user=user, company_id=company_id, attendance_date=current_date, employee=current_employee.employee) >= (weekly_off_holiday_off.min_days_for_weekly_off * 2):
                                 weekly_off_to_give = weekly_off
-                            self.create(user=user, company_id=company_id, employee=current_employee.employee, first_half=weekly_off_to_give, second_half=weekly_off_to_give, manual_in=None, manual_out=None, machine_in=None, machine_out=None, date=current_date, ot_min=None, late_min=None, pay_multiplier=1.0)
+                            attendance_records.append(EmployeeAttendance(user=user, company_id=company_id, employee=current_employee.employee, first_half=weekly_off_to_give, second_half=weekly_off_to_give, manual_in=None, manual_out=None, machine_in=None, machine_out=None, date=current_date, ot_min=None, late_min=None, pay_multiplier=1.0))
                             total_expected_instances +=1
 
                         #If Current date is a holdiday
@@ -154,7 +153,7 @@ class EmployeeAttendanceManager(models.Manager):
                             holiday_off_to_give = holiday_off_skip
                             if self.paid_days_count_for_past_six_days(user=user, company_id=company_id, attendance_date=current_date, employee=current_employee.employee) >= (weekly_off_holiday_off.min_days_for_holiday_off * 2):
                                 holiday_off_to_give = holiday_off
-                            self.create(user=user, company_id=company_id, employee=current_employee.employee, first_half=holiday_off_to_give, second_half=holiday_off_to_give, manual_in=None, manual_out=None, machine_in=None, machine_out=None, date=current_date, ot_min=None, late_min=None, pay_multiplier=1.0)
+                            attendance_records.append(EmployeeAttendance(user=user, company_id=company_id, employee=current_employee.employee, first_half=holiday_off_to_give, second_half=holiday_off_to_give, manual_in=None, manual_out=None, machine_in=None, machine_out=None, date=current_date, ot_min=None, late_min=None, pay_multiplier=1.0))
                             total_expected_instances +=1
 
                         #It's not weekly off nor holiday off
@@ -172,18 +171,20 @@ class EmployeeAttendanceManager(models.Manager):
                                     shift_found = True
 
                             # employee_shift_on_particular_date = EmployeeShifts.objects.filter(company_id=company_id, user=user, employee=current_employee.employee, from_date__lte=current_date, to_date__gte=current_date).first()
-                            self.create(user=user, company_id=company_id, employee=current_employee.employee, first_half=present_leave, second_half=present_leave, manual_in=self.generate_random_time(reference_time=found_shift_beginning_time, start_buffer=AUTO_SHIFT_BEGINNING_BUFFER_BEFORE, end_buffer=found_shift_late_grace), manual_out=self.generate_random_time(reference_time=found_shift_end_time, start_buffer=AUTO_SHIFT_ENDING_BUFFER_BEFORE, end_buffer=AUTO_SHIFT_ENDING_BUFFER_AFTER), machine_in=None, machine_out=None, date=current_date, ot_min=None, late_min=None, pay_multiplier=1.0)
+                            attendance_records.append(EmployeeAttendance(user=user, company_id=company_id, employee=current_employee.employee, first_half=present_leave, second_half=present_leave, manual_in=self.generate_random_time(reference_time=found_shift_beginning_time, start_buffer=AUTO_SHIFT_BEGINNING_BUFFER_BEFORE, end_buffer=found_shift_late_grace), manual_out=self.generate_random_time(reference_time=found_shift_end_time, start_buffer=AUTO_SHIFT_ENDING_BUFFER_BEFORE, end_buffer=AUTO_SHIFT_ENDING_BUFFER_AFTER), machine_in=None, machine_out=None, date=current_date, ot_min=None, late_min=None, pay_multiplier=1.0))
                             total_expected_instances +=1
                     current_date += relativedelta(days=1)
-                end_time_while = time.time()
-                print(f"Time taken by the while loop: {end_time_while - start_time_while} seconds")
-                print(f"Time taken before while loop: {end_time_before_while - start_time_before_while} seconds")
+
+                EmployeeAttendance.objects.bulk_create(attendance_records)
+                # end_time_while = time.time()
+                # print(f"Time taken by the while loop: {end_time_while - start_time_while} seconds")
+                # print(f"Time taken before while loop: {end_time_before_while - start_time_before_while} seconds")
 
 
-                start_time = time.time()
+                # start_time = time.time()
                 EmployeeGenerativeLeaveRecord.objects.generate_monthly_record(total_expected_instances=total_expected_instances, user=user, year=from_date.year, month=from_date.month, employee=current_employee.employee, company=current_employee.company)
-                end_time = time.time()
-                print(f"Time taken for generate_monthly_record: {end_time - start_time} seconds")
+                # end_time = time.time()
+                # print(f"Time taken for generate_monthly_record: {end_time - start_time} seconds")
 
 
 
