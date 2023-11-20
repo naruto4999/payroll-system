@@ -307,7 +307,7 @@ const AttendanceReports = () => {
 						);
 						dispatch(authActions.logout());
 					}
-				} else if (!response.ok) {
+				} else if (!response.status == 200) {
 					console.error('Request failed with status: ', response.status);
 					if (response.status == 404) {
 						dispatch(
@@ -319,7 +319,10 @@ const AttendanceReports = () => {
 						);
 					}
 					// throw new Error('Request failed');
-				} else {
+				} else if (response.status == 200) {
+					const pdfData = await response.arrayBuffer();
+					const pdfBlob = new Blob([pdfData], { type: 'application/pdf' });
+					const pdfUrl = URL.createObjectURL(pdfBlob);
 					dispatch(
 						alertActions.createAlert({
 							message: 'Generated',
@@ -327,9 +330,6 @@ const AttendanceReports = () => {
 							duration: 8000,
 						})
 					);
-					const pdfData = await response.arrayBuffer();
-					const pdfBlob = new Blob([pdfData], { type: 'application/pdf' });
-					const pdfUrl = URL.createObjectURL(pdfBlob);
 					window.open(pdfUrl, '_blank');
 				}
 			} catch (error) {

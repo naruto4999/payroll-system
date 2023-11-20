@@ -3,6 +3,7 @@ import { useRef, useEffect } from 'react';
 const classNames = (...classes) => {
 	return classes.filter(Boolean).join(' ');
 };
+import { FaCircleNotch } from 'react-icons/fa6';
 
 const ConfirmationModal = ({
 	// deleteCompanyChangeHandler,
@@ -14,7 +15,11 @@ const ConfirmationModal = ({
 	values,
 	isValid,
 	errors,
+	isSubmitting,
 }) => {
+	// if (isSubmitting == undefined) {
+	// 	let isSubmitting = false;
+	// }
 	console.log(errors);
 	const inputRef = useRef(null);
 	useEffect(() => {
@@ -50,13 +55,17 @@ const ConfirmationModal = ({
 				<section className="mt-4 mb-2 flex flex-row gap-4">
 					<button
 						className={classNames(
-							isValid ? 'hover:bg-teal-600  dark:hover:bg-teal-600' : 'opacity-40',
-							'w-20 rounded bg-teal-500 p-2 text-base font-medium dark:bg-teal-700'
+							isValid && !isSubmitting ? 'hover:bg-teal-600  dark:hover:bg-teal-600' : 'opacity-40',
+							'w-24 rounded bg-teal-500 p-2 text-base font-medium dark:bg-teal-700'
 						)}
 						onClick={handleSubmit}
 						type="submit"
+						disabled={isSubmitting}
 					>
 						Confirm
+						<FaCircleNotch
+							className={classNames(isSubmitting ? '' : 'hidden', 'mx-2 inline animate-spin text-white')}
+						/>
 					</button>
 					<button
 						className="w-20 rounded bg-zinc-400 p-2 text-base font-medium hover:bg-zinc-500 dark:bg-zinc-600 dark:hover:bg-zinc-700"

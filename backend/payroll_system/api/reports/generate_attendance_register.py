@@ -64,6 +64,7 @@ class FPDF(FPDF):
 
 # Create instance of FPDF class
 def generate_attendance_register(request_data, attendance_dict):
+    print('starting to create the attendance register')
     attendance_dict_list = list(attendance_dict.items())
     generative_leaves = LeaveGrade.objects.filter(company_id=request_data['company'], generate_frequency__isnull=False)
     default_cell_height = 3

@@ -2221,14 +2221,18 @@ class AttendanceReportsCreateAPIView(generics.CreateAPIView):
 
             # Convert the result to a dictionary where keys are employee_ids and values are lists of attendance objects
             attendance_dict = {key: list(group) for key, group in grouped_attendance}
+
+            print('')
                 
             if attendance_objects.exists():
+                print('inside the if')
                 response = StreamingHttpResponse(generate_attendance_register(serializer.validated_data, attendance_dict), content_type="application/pdf")
                 response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
+                print('returnining the report now ')
                 return response
             else:
                 return Response({"detail": "No Attendances Found for the given month"}, status=status.HTTP_404_NOT_FOUND)
-        return Response({"detail": "Yo"}, status=status.HTTP_200_OK)
+        # return Response({"detail": "Yo"}, status=status.HTTP_200_OK)
 
         
         

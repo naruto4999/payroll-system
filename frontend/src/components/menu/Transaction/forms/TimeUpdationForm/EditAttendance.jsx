@@ -24,6 +24,7 @@ import { Formik } from 'formik';
 import { ConfirmationModalSchema } from './TimeUpdationSchema';
 import { useBulkAutoFillAttendanceAddMutation } from '../../../../authentication/api/timeUpdationApiSlice';
 import { alertActions } from '../../../../authentication/store/slices/alertSlice';
+import { useOutletContext } from 'react-router-dom';
 
 ReactModal.setAppElement('#root');
 
@@ -71,6 +72,7 @@ const EditAttendance = memo(
 		setSelectedDate,
 	}) => {
 		const dispatch = useDispatch();
+		const [showLoadingBar, setShowLoadingBar] = useOutletContext();
 		const months = [
 			'January',
 			'February',
@@ -1005,6 +1007,7 @@ const EditAttendance = memo(
 				year: values.year,
 			};
 			try {
+				// setShowLoadingBar(true);
 				const startTime = performance.now();
 				const data = await bulkAutoFillAttendanceAdd(toSend).unwrap();
 				const endTime = performance.now(); // Record the end time
@@ -1017,7 +1020,9 @@ const EditAttendance = memo(
 						duration: 3000,
 					})
 				);
+				// setShowLoadingBar(false);
 			} catch (err) {
+				// setShowLoadingBar(false);
 				console.log(err);
 				dispatch(
 					alertActions.createAlert({
@@ -1043,6 +1048,11 @@ const EditAttendance = memo(
 				setFieldValue(`attendance.${day}.manualOut`, '');
 			}
 		}, [values.manualToDate, values.manualFromDate]);
+
+		useEffect(() => {
+			// Add more for adding, editing and deleting later on
+			setShowLoadingBar(isLoadingAllEmployeeAttendance || isLoadingAllEmployeeProfessionalDetail);
+		}, [isLoadingAllEmployeeAttendance, isLoadingAllEmployeeProfessionalDetail]);
 
 		if (isLoadingAllEmployeeSalaryDetail || isLoadingAllEmployeeProfessionalDetail || isFetchingAllEmployeeShifts) {
 			return <></>;
@@ -1233,13 +1243,26 @@ const EditAttendance = memo(
 									</button>
 									<button
 										type="button"
-										className="h-8 w-36 rounded bg-blueAccent-400 p-1 text-base font-medium hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:hover:bg-blueAccent-600"
+										className="h-8 w-32 rounded bg-blueAccent-400 p-1 text-base font-medium hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:hover:bg-blueAccent-600"
 										onClick={() => {
 											setShowConfirmModal(true);
 										}}
 									>
 										Bulk Auto
+										<FaCircleNotch
+											className={classNames(
+												isBulkAutoFillingAttendance ? '' : 'hidden',
+												'mx-2 inline animate-spin text-white'
+											)}
+										/>
 									</button>
+									{/* <div
+										className={
+											'z-50 mx-auto flex h-fit w-fit items-center rounded bg-indigo-600 p-2 font-medium'
+										}
+									>
+										<FaCircleNotch className="mr-1 animate-spin text-white" />
+									</div> */}
 									<button
 										type="button"
 										className="h-8 w-20 rounded bg-slate-600 bg-opacity-30 p-1 text-base font-medium hover:bg-opacity-60 dark:bg-slate-400 dark:bg-opacity-30 dark:hover:bg-opacity-60"
@@ -1323,7 +1346,9 @@ const EditAttendance = memo(
 								initialValues={{ userInput: '' }}
 								validationSchema={ConfirmationModalSchema}
 								onSubmit={bulkAutoFillAttendance}
-								component={(props) => <ConfirmationModal {...props} />}
+								component={(props) => (
+									<ConfirmationModal {...props} isLoading={isBulkAutoFillingAttendance} />
+								)}
 							/>
 						</ReactModal>
 					</div>

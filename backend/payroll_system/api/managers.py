@@ -142,6 +142,9 @@ class EmployeeAttendanceManager(models.Manager):
                     
                     if current_date >= current_employee.date_of_joining and (current_employee.resigned == False or current_date<=current_employee.resignation_date):
                         if current_date.strftime('%a').lower() == current_employee.weekly_off or (self.weekday_occurrence_in_month(date=current_date) == current_employee.extra_off):
+                            #If it's weekly off bulk create the employees of the list so that when "paid_days_count_for_past_six_days" called it uses the updated Attendances
+                            EmployeeAttendance.objects.bulk_create(attendance_records)
+                            attendance_records.clear()
                             weekly_off_to_give = weekly_off_skip
                             if self.paid_days_count_for_past_six_days(user=user, company_id=company_id, attendance_date=current_date, employee=current_employee.employee) >= (weekly_off_holiday_off.min_days_for_weekly_off * 2):
                                 weekly_off_to_give = weekly_off
@@ -150,6 +153,9 @@ class EmployeeAttendanceManager(models.Manager):
 
                         #If Current date is a holdiday
                         elif holiday_queryset.filter(date=current_date).exists():
+                            #If it's weekly off bulk create the employees of the list so that when "paid_days_count_for_past_six_days" called it uses the updated Attendances
+                            EmployeeAttendance.objects.bulk_create(attendance_records)
+                            attendance_records.clear()
                             holiday_off_to_give = holiday_off_skip
                             if self.paid_days_count_for_past_six_days(user=user, company_id=company_id, attendance_date=current_date, employee=current_employee.employee) >= (weekly_off_holiday_off.min_days_for_holiday_off * 2):
                                 holiday_off_to_give = holiday_off
@@ -174,7 +180,7 @@ class EmployeeAttendanceManager(models.Manager):
                             attendance_records.append(EmployeeAttendance(user=user, company_id=company_id, employee=current_employee.employee, first_half=present_leave, second_half=present_leave, manual_in=self.generate_random_time(reference_time=found_shift_beginning_time, start_buffer=AUTO_SHIFT_BEGINNING_BUFFER_BEFORE, end_buffer=found_shift_late_grace), manual_out=self.generate_random_time(reference_time=found_shift_end_time, start_buffer=AUTO_SHIFT_ENDING_BUFFER_BEFORE, end_buffer=AUTO_SHIFT_ENDING_BUFFER_AFTER), machine_in=None, machine_out=None, date=current_date, ot_min=None, late_min=None, pay_multiplier=1.0))
                             total_expected_instances +=1
                     current_date += relativedelta(days=1)
-
+                
                 EmployeeAttendance.objects.bulk_create(attendance_records)
                 # end_time_while = time.time()
                 # print(f"Time taken by the while loop: {end_time_while - start_time_while} seconds")
