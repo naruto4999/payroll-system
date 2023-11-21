@@ -262,7 +262,7 @@ class EmployeeSalaryPreparedSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
     class Meta:
         model = EmployeeSalaryPrepared
-        fields = ('id', 'employee', 'company', 'date', 'incentive_amount', 'pf_deducted', 'esi_deducted', 'vpf_deducted', 'advance_deducted', 'tds_deducted', 'labour_welfare_fund_deducted', 'others_deducted', 'paid_days_count', 'present_count', 'weekly_off_days_count', 'holiday_days_count', 'not_paid_days_count', 'net_ot_minutes_monthly', 'net_ot_amount_monthly', 'payment_mode')
+        fields = ('id', 'employee', 'company', 'date', 'incentive_amount', 'pf_deducted', 'esi_deducted', 'vpf_deducted', 'advance_deducted', 'tds_deducted', 'labour_welfare_fund_deducted', 'others_deducted', 'net_ot_minutes_monthly', 'net_ot_amount_monthly', 'payment_mode')
 
 class EarnedAmountSerializer(serializers.ModelSerializer):
     # id = serializers.IntegerField(read_only=True)

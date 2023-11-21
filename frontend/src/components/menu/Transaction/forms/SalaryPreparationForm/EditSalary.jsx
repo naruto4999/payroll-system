@@ -164,31 +164,10 @@ const EditSalary = ({
 	useEffect(() => {
 		if (currentEmployeeMonthlyAttendanceDetails?.length != 0 && updateEmployeeId) {
 			setFieldValue(
-				'employeeSalaryPrepared.paidDaysCount',
-				currentEmployeeMonthlyAttendanceDetails?.[0]?.paidDaysCount
-			);
-			setFieldValue(
-				'employeeSalaryPrepared.presentCount',
-				currentEmployeeMonthlyAttendanceDetails?.[0]?.presentCount
-			);
-			setFieldValue(
-				'employeeSalaryPrepared.weeklyOffDaysCount',
-				currentEmployeeMonthlyAttendanceDetails?.[0]?.weeklyOffDaysCount
-			);
-			setFieldValue(
-				'employeeSalaryPrepared.holidayDaysCount',
-				currentEmployeeMonthlyAttendanceDetails?.[0]?.holidayDaysCount
-			);
-			setFieldValue(
-				'employeeSalaryPrepared.notPaidDaysCount',
-				currentEmployeeMonthlyAttendanceDetails?.[0]?.notPaidDaysCount
-			);
-			setFieldValue(
 				'employeeSalaryPrepared.netOtMinutesMonthly',
 				currentEmployeeMonthlyAttendanceDetails?.[0]?.netOtMinutesMonthly
 			);
 		} else if (currentEmployeeMonthlyAttendanceDetails?.length == 0) {
-			setFieldValue('employeeSalaryPrepared.paidDaysCount', 0);
 			setFieldValue('employeeSalaryPrepared.netOtMinutesMonthly', 0);
 		}
 	}, [currentEmployeeMonthlyAttendanceDetails]);
@@ -463,7 +442,7 @@ const EditSalary = ({
 						<div>
 							<h5 className="inline dark:text-slate-300">Paid Days: </h5>
 							<span className=" m-1 font-bold dark:text-green-600">
-								{values.employeeSalaryPrepared.paidDaysCount / 2}
+								{currentEmployeeMonthlyAttendanceDetails?.[0]?.paidDaysCount / 2 || 0}
 							</span>
 						</div>
 						<div>
