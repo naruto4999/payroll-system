@@ -37,6 +37,14 @@ export const salaryPreparationApiSlice = apiSlice.injectEndpoints({
 			}),
 			invalidatesTags: ['AdvancePayments', 'PreparedSalaries'],
 		}),
+		employeeBulkSalaryPrepared: builder.mutation({
+			query: (body) => ({
+				url: `/api/employee-bulk-salary-prepared`,
+				method: 'POST',
+				body: body,
+			}),
+			invalidatesTags: ['AdvancePayments', 'PreparedSalaries'],
+		}),
 		// updateEmployeeAdvancePayments: builder.mutation({
 		// 	query: (body) => ({
 		// 		url: `/api/employee-advance-payment-update/${body.company}/${body.employee}`,
@@ -62,4 +70,5 @@ export const {
 	useGetAllEmployeeSalaryEarningsQuery,
 	useGetAllEmployeePfEsiDetailsQuery,
 	useAddEmployeeSalaryPreparedMutation,
+	useEmployeeBulkSalaryPreparedMutation,
 } = salaryPreparationApiSlice;

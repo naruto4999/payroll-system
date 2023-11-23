@@ -1,10 +1,11 @@
-import React, { useMemo, useEffect, useRef } from 'react';
-import { Field, ErrorMessage, FieldArray } from 'formik';
+import React, { useMemo, useEffect, useRef, useState } from 'react';
+import { Field, ErrorMessage, FieldArray, Formik } from 'formik';
 import { FaCircleNotch } from 'react-icons/fa6';
 
 import {
 	useGetAllEmployeeMonthlyAttendanceDetailsQuery,
 	useGetAllEmployeeSalaryEarningsQuery,
+	useEmployeeBulkSalaryPreparedMutation,
 } from '../../../../authentication/api/salaryPreparationApiSlice';
 import { useGetEarningsHeadsQuery } from '../../../../authentication/api/earningsHeadEntryApiSlice';
 import Deductions from './Deductions';
@@ -14,6 +15,13 @@ import NetSalary from './NetSalary';
 import { companyEntryApiSlice } from '../../../../authentication/api/companyEntryApiSlice';
 import { useGetAllEmployeePfEsiDetailsQuery } from '../../../../authentication/api/salaryPreparationApiSlice';
 import { useGetCalculationsQuery } from '../../../../authentication/api/calculationsApiSlice';
+import ReactModal from 'react-modal';
+import ConfirmationModal from '../../../../UI/ConfirmationModal';
+import { ConfirmationModalSchema } from './SalaryPreperationSchema';
+import { useDispatch } from 'react-redux';
+import { alertActions } from '../../../../authentication/store/slices/alertSlice';
+
+ReactModal.setAppElement('#root');
 
 const classNames = (...classes) => {
 	return classes.filter(Boolean).join(' ');
@@ -48,6 +56,8 @@ const EditSalary = ({
 		'November',
 		'December',
 	];
+	const dispatch = useDispatch();
+
 	const isDateWithinRange = (fromDate, toDate) => {
 		const dateSelected = new Date(Date.UTC(values.year, values.month - 1, 1));
 		// console.log('Selected Date', dateSelected);
@@ -55,6 +65,7 @@ const EditSalary = ({
 		const toDateObj = new Date(toDate);
 		return dateSelected >= fromDateObj && dateSelected <= toDateObj;
 	};
+	const [showConfirmModal, setShowConfirmModal] = useState(false);
 
 	const {
 		data: earningsHeads,
@@ -63,6 +74,15 @@ const EditSalary = ({
 		isError: isEarningsHeadsError,
 		error: earningsHeadsError,
 	} = useGetEarningsHeadsQuery(globalCompany);
+
+	const [
+		employeeBulkSalaryPrepared,
+		{
+			isLoading: isBulkPreparingEmployeeSalaries,
+			// isError: errorRegisteringRegular,
+			isSuccess: isEmployeeBulkSalaryPrepareddSuccess,
+		},
+	] = useEmployeeBulkSalaryPreparedMutation();
 
 	const {
 		data: companyCalculations,
@@ -235,7 +255,8 @@ const EditSalary = ({
 
 	// This use Effect is causing problem with updation of rate
 	const prevArearAmounts = useRef(values.earnedAmount.map((item) => item.arearAmount).join(','));
-	// console.log(prevArearAmounts);
+
+	// Recalculate earned if arrear is added
 	useEffect(() => {
 		if (prevArearAmounts.current != values.earnedAmount.map((item) => item.arearAmount).join(',')) {
 			const updatedEarnedAmount = values.earnedAmount.map((item, index) => {
@@ -270,6 +291,40 @@ const EditSalary = ({
 			return options;
 		}
 	}, [earliestMonthAndYear]);
+
+	const bulkPrepareSalaries = async (formikBag) => {
+		console.log(values.year);
+		console.log(values.month);
+		let toSend = {
+			company: globalCompany.id,
+			month: values.month,
+			year: values.year,
+		};
+		try {
+			// setShowLoadingBar(true);
+			const startTime = performance.now();
+			const data = await employeeBulkSalaryPrepared(toSend).unwrap();
+			const endTime = performance.now(); // Record the end time
+			const responseTime = endTime - startTime;
+			const responseTimeInSeconds = (responseTime / 1000).toFixed(2);
+			dispatch(
+				alertActions.createAlert({
+					message: `Saved, Time Taken: ${responseTimeInSeconds} seconds`,
+					type: 'Success',
+					duration: 3000,
+				})
+			);
+		} catch (err) {
+			console.log(err);
+			dispatch(
+				alertActions.createAlert({
+					message: 'Error Occurred',
+					type: 'Error',
+					duration: 5000,
+				})
+			);
+		}
+	};
 
 	if (
 		currentEmployeeMonthlyAttendanceDetails?.length == 0 ||
@@ -518,8 +573,45 @@ const EditSalary = ({
 								<FaCircleNotch className="my-auto ml-2 inline animate-spin text-xl text-amber-700 dark:text-amber-600 " />
 							)}
 						</button>
+						<button
+							className="h-10 w-fit rounded  bg-blueAccent-400 p-2 px-4 text-base font-medium hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:hover:bg-blueAccent-600"
+							type="submit"
+							// disabled={!isValid}
+							onClick={() => {
+								setShowConfirmModal(true);
+							}}
+						>
+							Bulk Prepare Salaries
+							{isSubmitting && (
+								<FaCircleNotch className="my-auto ml-2 inline animate-spin text-xl text-amber-700 dark:text-amber-600 " />
+							)}
+						</button>
 					</div>
 				</section>
+				<ReactModal
+					className="items-left fixed inset-0 mx-2 my-auto flex h-fit flex-col gap-4 rounded bg-zinc-300 p-4 shadow-xl dark:bg-zinc-800 sm:mx-auto sm:max-w-lg"
+					isOpen={showConfirmModal}
+					onRequestClose={() => setShowConfirmModal(false || isBulkPreparingEmployeeSalaries)}
+					style={{
+						overlay: {
+							backgroundColor: 'rgba(0, 0, 0, 0.75)',
+						},
+					}}
+				>
+					<Formik
+						initialValues={{ userInput: '' }}
+						validationSchema={ConfirmationModalSchema}
+						onSubmit={bulkPrepareSalaries}
+						component={(props) => (
+							<ConfirmationModal
+								{...props}
+								displayHeading={'Bulk Prepare Salaries'}
+								isBulkPreparingEmployeeSalaries={isBulkPreparingEmployeeSalaries}
+								setShowConfirmModal={setShowConfirmModal}
+							/>
+						)}
+					/>
+				</ReactModal>
 			</div>
 		);
 	}

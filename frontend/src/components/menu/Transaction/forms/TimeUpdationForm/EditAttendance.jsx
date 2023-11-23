@@ -1335,7 +1335,7 @@ const EditAttendance = memo(
 						<ReactModal
 							className="items-left fixed inset-0 mx-2 my-auto flex h-fit flex-col gap-4 rounded bg-zinc-300 p-4 shadow-xl dark:bg-zinc-800 sm:mx-auto sm:max-w-lg"
 							isOpen={showConfirmModal}
-							onRequestClose={() => setShowConfirmModal(false)}
+							onRequestClose={() => setShowConfirmModal(false || isBulkAutoFillingAttendance)}
 							style={{
 								overlay: {
 									backgroundColor: 'rgba(0, 0, 0, 0.75)',
@@ -1347,7 +1347,11 @@ const EditAttendance = memo(
 								validationSchema={ConfirmationModalSchema}
 								onSubmit={bulkAutoFillAttendance}
 								component={(props) => (
-									<ConfirmationModal {...props} isLoading={isBulkAutoFillingAttendance} />
+									<ConfirmationModal
+										{...props}
+										displayHeading={'Bulk Update Attendance'}
+										setShowConfirmModal={setShowConfirmModal}
+									/>
 								)}
 							/>
 						</ReactModal>

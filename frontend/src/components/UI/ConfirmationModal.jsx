@@ -16,10 +16,9 @@ const ConfirmationModal = ({
 	isValid,
 	errors,
 	isSubmitting,
+	displayHeading,
+	setShowConfirmModal,
 }) => {
-	// if (isSubmitting == undefined) {
-	// 	let isSubmitting = false;
-	// }
 	console.log(errors);
 	const inputRef = useRef(null);
 	useEffect(() => {
@@ -27,14 +26,14 @@ const ConfirmationModal = ({
 	}, []);
 	return (
 		<div className="text-gray-900 dark:text-slate-100">
-			<h1 className="mb-2 text-2xl font-medium">Bulk Update Attendance</h1>
+			<h1 className="mb-2 text-2xl font-medium">{`${displayHeading}`}</h1>
 
 			<form action="" className="flex flex-col justify-center gap-2">
 				<label
 					htmlFor="userInput"
 					className="text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
 				>
-					Please type "confirm" to Bulk Update Attendances
+					{`Please type "confirm" to ${displayHeading}`}
 				</label>
 				<div className="relative">
 					<input
@@ -70,10 +69,9 @@ const ConfirmationModal = ({
 					<button
 						className="w-20 rounded bg-zinc-400 p-2 text-base font-medium hover:bg-zinc-500 dark:bg-zinc-600 dark:hover:bg-zinc-700"
 						type="button"
-						// onClick={() => {
-						// 	setConfirmDelete({ id: '', phrase: '' });
-						// 	setDeleteCompanyPopover(false);
-						// }}
+						onClick={() => {
+							setShowConfirmModal(false || isSubmitting);
+						}}
 					>
 						Cancel
 					</button>

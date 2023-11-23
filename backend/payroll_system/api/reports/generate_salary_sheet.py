@@ -685,11 +685,6 @@ def generate_salary_sheet(request_data, prepared_salaries):
 
 
 
-
-
-
-
-
     
 
 

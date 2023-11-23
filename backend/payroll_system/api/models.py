@@ -14,7 +14,7 @@ import calendar
 import math
 from django.db.models import Sum
 from django.core.files.storage import FileSystemStorage
-from .managers import EmployeeAttendanceManager, ActiveEmployeeManager
+from .managers import EmployeeAttendanceManager, ActiveEmployeeManager, EmployeeSalaryPreparedManager
 
 
 
@@ -1341,6 +1341,7 @@ class EmployeeSalaryPrepared(models.Model):
     net_ot_minutes_monthly = models.PositiveSmallIntegerField(null=False, blank=False, default=0)
     net_ot_amount_monthly = models.PositiveIntegerField(null=False, blank=False, default=0)
     payment_mode = models.CharField(max_length=20, choices=PAYMENT_MODE_CHOICES, null=False, blank=False, default='bank_transfer')
+    objects = EmployeeSalaryPreparedManager()
 
     class Meta:
         constraints = [

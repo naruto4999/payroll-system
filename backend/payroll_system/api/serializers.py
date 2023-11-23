@@ -321,6 +321,11 @@ class EmployeeAttendanceBulkAutofillSerializer(serializers.Serializer):
     month = serializers.IntegerField()
     year = serializers.IntegerField()
 
+class BulkPrepareSalariesSerializer(serializers.Serializer):
+    company = serializers.IntegerField()
+    month = serializers.IntegerField()
+    year = serializers.IntegerField()
+
 # class CompanyEmployeeStatisticsSerializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = CompanyEmployeeStatistics
