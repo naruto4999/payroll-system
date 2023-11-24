@@ -39,14 +39,14 @@ class FPDF(FPDF):
         def header(self):
             # Set Font for Company and add Company name
             self.set_font('Arial', 'B', 15)
-            self.cell(0, 8, self.company_name, align="L", ln = 1, border=0)
+            self.cell(0, 8, self.company_name, align="L", new_x="LMARGIN", new_y='NEXT', border=0)
 
             # Set Font for Address and add Address
             self.set_font('Arial', 'B', 9)
-            self.cell(0, 4, self.company_address, align="L",  ln = 1, border=0)
+            self.cell(0, 4, self.company_address, align="L",  new_x="LMARGIN", new_y='NEXT', border=0)
 
             # Set Font for Month and Year and add Month and Year
-            self.cell(0, 6, self.my_date.strftime("Salary for the month of %B, %Y"), align="L", ln = 1, border=0)
+            self.cell(0, 6, self.my_date.strftime("Salary for the month of %B, %Y"), align="L", new_x="LMARGIN", new_y='NEXT', border=0)
 
             position_before_drawing_box_for_paycode = {"x": self.get_x(), "y": self.get_y()}
 
@@ -189,7 +189,7 @@ def generate_salary_sheet(request_data, prepared_salaries):
                 employee_department_list.append(employee_department.name)
                 if index == 0:
                     salary_sheet_pdf.set_font('Arial', 'BU', 10)
-                    salary_sheet_pdf.cell(0, group_by_filter_heading_height, employee_department.name, align="L", ln = 1, border=0)
+                    salary_sheet_pdf.cell(0, group_by_filter_heading_height, employee_department.name, align="L", new_x="LMARGIN", new_y='NEXT', border=0)
                     salary_sheet_pdf.set_font('Arial', 'B', 8)
                     department_totals = {
                         'salary_wage_rate_total': 0,
@@ -205,8 +205,8 @@ def generate_salary_sheet(request_data, prepared_salaries):
                 elif (index>0 and employee_department.name != employee_department_list[index-1]):
                     #Print Total of previous department
                     salary_sheet_pdf.set_font('Arial', 'BU', 10)
-                    # salary_sheet_pdf.cell(0, group_by_filter_total_height, f"{employee_department_list[index-1]} END", align="L", ln = 1, border=0)
-                    salary_sheet_pdf.cell(0, group_by_filter_heading_height, employee_department.name, align="L", ln = 1, border=0)
+                    # salary_sheet_pdf.cell(0, group_by_filter_total_height, f"{employee_department_list[index-1]} END", align="L", new_x="LMARGIN", new_y='NEXT', border=0)
+                    salary_sheet_pdf.cell(0, group_by_filter_heading_height, employee_department.name, align="L", new_x="LMARGIN", new_y='NEXT', border=0)
                     salary_sheet_pdf.set_font('Arial', 'B', 8)
                     department_totals = {
                         'salary_wage_rate_total': 0,
@@ -509,14 +509,14 @@ def generate_salary_sheet(request_data, prepared_salaries):
 
                                     #Printing Department Totals
                                     salary_sheet_pdf.set_font('Arial', 'B', 8)
-                                    salary_sheet_pdf.cell(width_of_columns["paycode"]+width_of_columns["employee_name"]+width_of_columns['attendance_detail'], group_by_filter_total_height, f"{employee_department_list[-1]} Total", align="L", ln = 0, border=0)
-                                    salary_sheet_pdf.cell(width_of_columns['salary_wage_rate'], group_by_filter_total_height, f"{department_grand_total[employee_professional_details.department.name]['salary_wage_rate_total']}", align="R", ln = 0, border=0)
-                                    salary_sheet_pdf.cell(width_of_columns['earnings'], group_by_filter_total_height, f"{department_grand_total[employee_professional_details.department.name]['earnings_total']}", align="R", ln = 0, border=0)
-                                    salary_sheet_pdf.cell(width_of_columns['arrears'], group_by_filter_total_height, f"{department_grand_total[employee_professional_details.department.name]['arrears_total']}", align="R", ln = 0, border=0)
-                                    salary_sheet_pdf.cell(width_of_columns['ot_incentive'], group_by_filter_total_height, f"{department_grand_total[employee_professional_details.department.name]['ot_incentive_total']}", align="R", ln = 0, border=0)
-                                    salary_sheet_pdf.cell(width_of_columns['total_earnings'], group_by_filter_total_height, f"{department_grand_total[employee_professional_details.department.name]['total_earnings_total']}", align="R", ln = 0, border=0)
-                                    salary_sheet_pdf.cell(width_of_columns['deductions'], group_by_filter_total_height, f"{department_grand_total[employee_professional_details.department.name]['deductions_total']}", align="R", ln = 0, border=0)
-                                    salary_sheet_pdf.cell(width_of_columns['net_payable'], group_by_filter_total_height, f"{department_grand_total[employee_professional_details.department.name]['net_payable_total']}", align="R", ln = 0, border=0)
+                                    salary_sheet_pdf.cell(width_of_columns["paycode"]+width_of_columns["employee_name"]+width_of_columns['attendance_detail'], group_by_filter_total_height, f"{employee_department_list[-1]} Total", align="L", border=0)
+                                    salary_sheet_pdf.cell(width_of_columns['salary_wage_rate'], group_by_filter_total_height, f"{department_grand_total[employee_professional_details.department.name]['salary_wage_rate_total']}", align="R", border=0)
+                                    salary_sheet_pdf.cell(width_of_columns['earnings'], group_by_filter_total_height, f"{department_grand_total[employee_professional_details.department.name]['earnings_total']}", align="R", border=0)
+                                    salary_sheet_pdf.cell(width_of_columns['arrears'], group_by_filter_total_height, f"{department_grand_total[employee_professional_details.department.name]['arrears_total']}", align="R", border=0)
+                                    salary_sheet_pdf.cell(width_of_columns['ot_incentive'], group_by_filter_total_height, f"{department_grand_total[employee_professional_details.department.name]['ot_incentive_total']}", align="R", border=0)
+                                    salary_sheet_pdf.cell(width_of_columns['total_earnings'], group_by_filter_total_height, f"{department_grand_total[employee_professional_details.department.name]['total_earnings_total']}", align="R", border=0)
+                                    salary_sheet_pdf.cell(width_of_columns['deductions'], group_by_filter_total_height, f"{department_grand_total[employee_professional_details.department.name]['deductions_total']}", align="R", border=0)
+                                    salary_sheet_pdf.cell(width_of_columns['net_payable'], group_by_filter_total_height, f"{department_grand_total[employee_professional_details.department.name]['net_payable_total']}", align="R", border=0)
                                     salary_sheet_pdf.set_font('Arial', '', 8)
 
 
@@ -537,14 +537,14 @@ def generate_salary_sheet(request_data, prepared_salaries):
                                 if (not next_employee_department or (employee_professional_details.department and employee_professional_details.department.name != next_employee_department.name)) and employee_professional_details.department:
                                     #Printing Department Totals
                                     salary_sheet_pdf.set_font('Arial', 'B', 8)
-                                    salary_sheet_pdf.cell(width_of_columns["paycode"]+width_of_columns["employee_name"]+width_of_columns['attendance_detail'], group_by_filter_total_height, f"{employee_department_list[-1]} Total", align="L", ln = 0, border=0)
-                                    salary_sheet_pdf.cell(width_of_columns['salary_wage_rate'], group_by_filter_total_height, f"{department_grand_total[employee_professional_details.department.name]['salary_wage_rate_total']}", align="R", ln = 0, border=0)
-                                    salary_sheet_pdf.cell(width_of_columns['earnings'], group_by_filter_total_height, f"{department_grand_total[employee_professional_details.department.name]['earnings_total']}", align="R", ln = 0, border=0)
-                                    salary_sheet_pdf.cell(width_of_columns['arrears'], group_by_filter_total_height, f"{department_grand_total[employee_professional_details.department.name]['arrears_total']}", align="R", ln = 0, border=0)
-                                    salary_sheet_pdf.cell(width_of_columns['ot_incentive'], group_by_filter_total_height, f"{department_grand_total[employee_professional_details.department.name]['ot_incentive_total']}", align="R", ln = 0, border=0)
-                                    salary_sheet_pdf.cell(width_of_columns['total_earnings'], group_by_filter_total_height, f"{department_grand_total[employee_professional_details.department.name]['total_earnings_total']}", align="R", ln = 0, border=0)
-                                    salary_sheet_pdf.cell(width_of_columns['deductions'], group_by_filter_total_height, f"{department_grand_total[employee_professional_details.department.name]['deductions_total']}", align="R", ln = 0, border=0)
-                                    salary_sheet_pdf.cell(width_of_columns['net_payable'], group_by_filter_total_height, f"{department_grand_total[employee_professional_details.department.name]['net_payable_total']}", align="R", ln = 0, border=0)
+                                    salary_sheet_pdf.cell(width_of_columns["paycode"]+width_of_columns["employee_name"]+width_of_columns['attendance_detail'], group_by_filter_total_height, f"{employee_department_list[-1]} Total", align="L", border=0)
+                                    salary_sheet_pdf.cell(width_of_columns['salary_wage_rate'], group_by_filter_total_height, f"{department_grand_total[employee_professional_details.department.name]['salary_wage_rate_total']}", align="R", border=0)
+                                    salary_sheet_pdf.cell(width_of_columns['earnings'], group_by_filter_total_height, f"{department_grand_total[employee_professional_details.department.name]['earnings_total']}", align="R", border=0)
+                                    salary_sheet_pdf.cell(width_of_columns['arrears'], group_by_filter_total_height, f"{department_grand_total[employee_professional_details.department.name]['arrears_total']}", align="R", border=0)
+                                    salary_sheet_pdf.cell(width_of_columns['ot_incentive'], group_by_filter_total_height, f"{department_grand_total[employee_professional_details.department.name]['ot_incentive_total']}", align="R", border=0)
+                                    salary_sheet_pdf.cell(width_of_columns['total_earnings'], group_by_filter_total_height, f"{department_grand_total[employee_professional_details.department.name]['total_earnings_total']}", align="R", border=0)
+                                    salary_sheet_pdf.cell(width_of_columns['deductions'], group_by_filter_total_height, f"{department_grand_total[employee_professional_details.department.name]['deductions_total']}", align="R", border=0)
+                                    salary_sheet_pdf.cell(width_of_columns['net_payable'], group_by_filter_total_height, f"{department_grand_total[employee_professional_details.department.name]['net_payable_total']}", align="R", border=0)
                                     salary_sheet_pdf.set_font('Arial', '', 8)
 
 
@@ -592,7 +592,7 @@ def generate_salary_sheet(request_data, prepared_salaries):
     salary_sheet_pdf.rect(salary_sheet_pdf.get_x(), salary_sheet_pdf.get_y(), w=width_of_columns["employee_name"]+width_of_columns["attendance_detail"], h=grand_total_number_of_cells*default_cell_height)
     salary_sheet_pdf.set_line_width(0.3)
     salary_sheet_pdf.set_font('Arial', 'B', 8)
-    salary_sheet_pdf.cell(w=width_of_columns["employee_name"]+width_of_columns["attendance_detail"], h=default_cell_height, txt="EPF ESIC Summary", align='C', border=0, ln=2)
+    salary_sheet_pdf.cell(w=width_of_columns["employee_name"]+width_of_columns["attendance_detail"], h=default_cell_height, txt="EPF ESIC Summary", align='C', border=0, new_x="LEFT", new_y="NEXT")
     salary_sheet_pdf.set_font('Arial', '', 8)
     salary_sheet_pdf.multi_cell(w=(width_of_columns["employee_name"]+width_of_columns["attendance_detail"])/2, h=default_cell_height, txt="PF Employees No.\nPF Wages\nESI Employees No.\nESI Wages", align='L', border=0)
     salary_sheet_pdf.set_xy(x=cursor_position_after_all_rows["x"]+width_of_columns["paycode"]+(width_of_columns["employee_name"]+width_of_columns["attendance_detail"])/2, y=cursor_position_after_all_rows["y"]+default_cell_height*2)
@@ -693,6 +693,6 @@ def generate_salary_sheet(request_data, prepared_salaries):
     # salary_sheet_pdf.cell(40, 10, 'Hello World!', border=1)
 
     # salary_sheet_pdf.output("salary_sheet.pdf")
-    buffer = salary_sheet_pdf.output(dest='S').encode('latin1')
+    buffer = bytes(salary_sheet_pdf.output())
     yield buffer
         

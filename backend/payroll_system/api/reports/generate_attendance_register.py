@@ -23,25 +23,25 @@ class FPDF(FPDF):
 
         def header(self):
             # Set Font for Company and add Company name
-            self.set_font('Arial', 'B', 15)
-            self.cell(0, 8, self.company_name, align="L", ln = 1, border=0)
+            self.set_font('Helvetica', 'B', 15)
+            self.cell(0, 8, self.company_name, align="L", new_x="LMARGIN", new_y='NEXT', border=0)
 
             # Set Font for Address and add Address
-            self.set_font('Arial', 'B', 9)
-            self.cell(0, 4, self.company_address, align="L",  ln = 1, border=0)
+            self.set_font('Helvetica', 'B', 9)
+            self.cell(0, 4, self.company_address, align="L",  new_x="LMARGIN", new_y='NEXT', border=0)
 
             # Set Font for Month and Year and add Month and Year
-            self.cell(0, 6, self.my_date.strftime("Attendance Register for the month of %B, %Y"), align="L", ln = 1, border=0)
+            self.cell(0, 6, self.my_date.strftime("Attendance Register for the month of %B, %Y"), align="L", new_x="LMARGIN", new_y='NEXT', border=0)
 
             #Drawing the instructoins on the top
-            self.set_font('Arial', '', 8)
-            self.cell(0, 5, '1.In Time    2.Out Time    3.Total Working Hours    4.Late Hours    5.O.T Hours    6.Attendance Status', align="L",  ln = 1, border=0)
+            self.set_font('Helvetica', '', 8)
+            self.cell(0, 5, '1.In Time    2.Out Time    3.Total Working Hours    4.Late Hours    5.O.T Hours    6.Attendance Status', align="L",  new_x="LMARGIN", new_y='NEXT', border=0)
 
             # Drawing the column header for the Serial Number Column
             position_before_drawing_header_columns = {"x": self.get_x(), "y": self.get_y()}
             self.set_line_width(0.3)
-            self.set_font('Arial', 'B', 6)
-            self.cell(width_of_columns['serial_number'], self.default_cell_height, '', align="L", ln = 0, border=0)
+            self.set_font('Helvetica', 'B', 6)
+            self.cell(width_of_columns['serial_number'], self.default_cell_height, '', align="L", new_x="RIGHT", border=0)
 
             #Drawing the column header for all the date columns
             x_tracker = self.get_x()
@@ -56,7 +56,7 @@ class FPDF(FPDF):
             self.multi_cell(w=width_of_columns['attendance_total'], h=self.default_cell_height, txt=f'Atd\nTotal', align="C", border=1)
             x_tracker+= width_of_columns['attendance_total']
             self.set_xy(x=x_tracker, y=position_before_drawing_header_columns['y'])
-            self.multi_cell(w=width_of_columns['hrs_total'], h=self.default_cell_height, txt=f'Hrs\nTotal', align="C", border=1)
+            self.multi_cell(w=width_of_columns['hrs_total'], h=self.default_cell_height, txt=f'Hrs\nTotal', align="C", border=1, new_x="LMARGIN", new_y='NEXT')
             # self.set_xy(x=position_before_drawing_header_columns['x'], y=position_before_drawing_header_columns['y'])
 
 
@@ -115,14 +115,14 @@ def generate_attendance_register(request_data, attendance_dict):
             if employee_department is not None:
                 if employee_index==0 or employee_department != attendance_dict_list[employee_index-1][1][0].employee.employee_professional_detail.department:
                     print('yoooo')
-                    attendance_register.set_font('Arial', 'BU', 10)
-                    attendance_register.cell(0, group_by_department_cell_height, employee_department.name, ln=1, align='L', border=0)
+                    attendance_register.set_font('Helvetica', 'BU', 10)
+                    attendance_register.cell(0, group_by_department_cell_height, employee_department.name, new_x="LMARGIN", new_y='NEXT', align='L', border=0)
                     y_tracker += group_by_department_cell_height
 
 
 
         #Print Employee Intro Details
-        attendance_register.set_font('Arial', 'B', 7)
+        attendance_register.set_font('Helvetica', 'B', 7)
         attendance_register.set_line_width(0.3)
         employee_personal_details = employee_attendances[0].employee
         employee_professional_details = employee_attendances[0].employee.employee_professional_detail
@@ -137,22 +137,22 @@ def generate_attendance_register(request_data, attendance_dict):
         employee_generative_leaves = EmployeeGenerativeLeaveRecord.objects.filter(employee=employee, date=date(request_data['year'], request_data['month'], 1)).order_by('leave__name')
         generative_leave_text = "\n".join(f"{leave.leave.name} : {int(leave.leave_count/2) if leave.leave_count/2%1==0 else leave.leave_count/2}" for leave in employee_generative_leaves)
         
-        attendance_register.cell(employee_intro_width['serial_number'], employee_intro_cell_height, f'SN : {employee_index+1}', align="L",  ln = 0, border=0)
-        attendance_register.cell(employee_intro_width['paycode'], employee_intro_cell_height, f'Paycode : {employee_personal_details.paycode}', align="L",  ln = 0, border=0)
-        attendance_register.cell(employee_intro_width['acn'], employee_intro_cell_height, f'ACN : {employee_personal_details.attendance_card_no}', align="L",  ln = 0, border=0)
-        attendance_register.cell(employee_intro_width['name'], employee_intro_cell_height, f'Name : {employee_personal_details.name}', align="L",  ln = 0, border=0)
-        attendance_register.cell(employee_intro_width['designation'], employee_intro_cell_height, f'Desig : {employee_professional_details.designation if employee_professional_details.designation is not None else ""}', align="L",  ln = 0, border=0)
+        attendance_register.cell(w=employee_intro_width['serial_number'], h=employee_intro_cell_height, text=f'SN : {employee_index+1}', align="L",  new_x="RIGHT", border=0)
+        attendance_register.cell(employee_intro_width['paycode'], employee_intro_cell_height, f'Paycode : {employee_personal_details.paycode}', align="L",  new_x="RIGHT", border=0)
+        attendance_register.cell(employee_intro_width['acn'], employee_intro_cell_height, f'ACN : {employee_personal_details.attendance_card_no}', align="L",  new_x="RIGHT", border=0)
+        attendance_register.cell(employee_intro_width['name'], employee_intro_cell_height, f'Name : {employee_personal_details.name}', align="L",  new_x="RIGHT", border=0)
+        attendance_register.cell(employee_intro_width['designation'], employee_intro_cell_height, f'Desig : {employee_professional_details.designation if employee_professional_details.designation is not None else ""}', align="L",  new_x="RIGHT", border=0)
         #Add one for shift too if required
-        attendance_register.cell(employee_intro_width['paid_work_days'], employee_intro_cell_height, f'Paid / Work Days : {paid_days_count} / {present_count}', align="L",  ln = 1, border=0)
+        attendance_register.cell(employee_intro_width['paid_work_days'], employee_intro_cell_height, f'Paid / Work Days : {paid_days_count} / {present_count}', align="L",  new_x="LMARGIN", new_y='NEXT', border=0)
         y_tracker += employee_intro_cell_height
         
-        attendance_register.set_font('Arial', '', 6)
+        attendance_register.set_font('Helvetica', '', 6)
         attendance_register.set_line_width(0.2)
 
         #Drawing serial numbers
         attendance_register.rect(x=attendance_register.get_x(),y=attendance_register.get_y(), w=width_of_columns['serial_number'], h=default_cell_height*default_number_of_cells_in_row)
-        attendance_register.multi_cell(w=width_of_columns['serial_number'], h=default_cell_height, txt=f'1\n2\n3\n4\n5\n6', align="C", border=0)
-        attendance_register.set_xy(x=initial_coordinates_after_header['x']+width_of_columns['serial_number'], y=y_tracker)
+        attendance_register.multi_cell(w=width_of_columns['serial_number'], h=default_cell_height, txt=f'1\n2\n3\n4\n5\n6', align="C", border=0, new_x="RIGHT", new_y='TOP')
+        # attendance_register.set_xy(x=initial_coordinates_after_header['x']+width_of_columns['serial_number'], y=y_tracker)
         
         x_tracker = initial_coordinates_after_header['x']+width_of_columns['serial_number']
 
@@ -212,10 +212,10 @@ def generate_attendance_register(request_data, attendance_dict):
                 attendance_register.multi_cell(w=width_of_columns['date'], h=default_cell_height, txt=f'{in_time_str}\n{out_time_str}\n{total_working}\n{late_hrs}\n{ot_hrs}', align="C", border=0)
 
                 #Printing just the attendance status in smaller font
-                attendance_register.set_font('Arial', '', 4.5)
+                attendance_register.set_font('Helvetica', '', 4.5)
                 attendance_register.set_xy(x=x_tracker, y=y_tracker+(default_cell_height*5))
-                attendance_register.cell(width_of_columns['date'], default_cell_height, attendance_status, ln=1, align='C', border=0)
-                attendance_register.set_font('Arial', '', 6)
+                attendance_register.cell(width_of_columns['date'], default_cell_height, attendance_status, new_x="LMARGIN", new_y='NEXT', align='C', border=0)
+                attendance_register.set_font('Helvetica', '', 6)
 
                 x_tracker += width_of_columns['date']
                 attendance_register.set_xy(x=x_tracker, y=y_tracker)
@@ -258,5 +258,5 @@ def generate_attendance_register(request_data, attendance_dict):
             
 
     # Save the pdf with name .pdf
-    buffer = attendance_register.output(dest='S').encode('latin1')
+    buffer = bytes(attendance_register.output())
     yield buffer
