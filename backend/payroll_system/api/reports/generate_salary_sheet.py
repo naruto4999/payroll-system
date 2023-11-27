@@ -118,7 +118,7 @@ def generate_salary_sheet(request_data, prepared_salaries):
 
     default_number_of_cells_in_row = max(len(generative_leaves)+2, 8, len(earnings_head)+1)
     company_details = CompanyDetails.objects.filter(company=generative_leaves[0].company.id)
-    salary_sheet_pdf = FPDF(my_date=date(request_data['year'], request_data['month'], 1),company_name=generative_leaves[0].company.name,company_address=company_details.first().address, orientation="L", unit="mm", format="A4")
+    salary_sheet_pdf = FPDF(my_date=date(request_data['year'], request_data['month'], 1),company_name=generative_leaves[0].company.name,company_address=company_details.first().address if company_details.exists() else '', orientation="L", unit="mm", format="A4")
     salary_sheet_pdf.set_margins(left=6, top=4, right=6)
 
     salary_sheet_pdf.set_font('Arial', '', 8)

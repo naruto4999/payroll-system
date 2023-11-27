@@ -778,7 +778,7 @@ class WeeklyOffHolidayOff(models.Model):
         return f"{self.user.username} ({self.company.name}) - Weekly Off: {self.min_days_for_weekly_off} days, Holiday Off: {self.min_days_for_holiday_off} days"
     
 class PfEsiSetup(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="pf_esi_setup_details")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_companies_pf_esi_setup_details")
     company = models.OneToOneField(Company, on_delete=models.CASCADE, related_name="pf_esi_setup_details", primary_key=True)
     ac_1_epf_employee_percentage = models.DecimalField(max_digits=5, decimal_places=2, validators=PERCENTAGE_VALIDATOR, null=False, blank=False, default=12)
     ac_1_epf_employee_limit = models.PositiveIntegerField(null=False, blank=False, default=15000)

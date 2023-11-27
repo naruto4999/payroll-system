@@ -269,6 +269,7 @@ const SalaryOvertimeSheet = () => {
 					}
 				} else if (!response.ok) {
 					console.error('Request failed with status: ', response.status);
+					console.log(response);
 					if (response.status == 404) {
 						dispatch(
 							alertActions.createAlert({
