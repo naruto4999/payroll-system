@@ -29,6 +29,7 @@ from fpdf import FPDF
 from django.http import HttpResponse, StreamingHttpResponse
 from .reports.generate_salary_sheet import generate_salary_sheet
 from .reports.generate_attendance_register import generate_attendance_register
+from .reports.generate_payslip import generate_payslip
 from itertools import groupby
 from operator import attrgetter
 
@@ -2182,26 +2183,44 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         validated_data = serializer.validated_data
-        employee_ids = validated_data["employee_ids"]
-        salary_date = date(validated_data["year"], validated_data["month"], 1)
-        # print(validated_data)
-        order_by = 'employee__paycode'
-        if validated_data['filters']['sort_by'] == "attendance_card_no":
-            order_by = "employee__attendance_card_no"
-        elif validated_data['filters']['sort_by'] == "employee_name":
-            order_by = 'employee__name'
-        if validated_data['filters']['group_by'] != 'none':
-            order_by = 'employee__employee_professional_detail__department'
-            
-        employee_salaries = EmployeeSalaryPrepared.objects.filter(employee__id__in=employee_ids, date=salary_date).order_by(order_by)
-
         print(validated_data)
-        if employee_salaries.exists():
-            response = StreamingHttpResponse(generate_salary_sheet(serializer.validated_data, employee_salaries), content_type="application/pdf")
+        employee_ids = validated_data["employee_ids"]
+
+        if validated_data['report_type'] == 'salary_sheet':
+            salary_date = date(validated_data["year"], validated_data["month"], 1)
+            # print(validated_data)
+            order_by = 'employee__paycode'
+            if validated_data['filters']['sort_by'] == "attendance_card_no":
+                order_by = "employee__attendance_card_no"
+            elif validated_data['filters']['sort_by'] == "employee_name":
+                order_by = 'employee__name'
+            if validated_data['filters']['group_by'] != 'none':
+                order_by = 'employee__employee_professional_detail__department'
+                
+            employee_salaries = EmployeeSalaryPrepared.objects.filter(employee__id__in=employee_ids, date=salary_date).order_by(order_by)
+
+            print(validated_data)
+            if employee_salaries.exists():
+                response = StreamingHttpResponse(generate_salary_sheet(serializer.validated_data, employee_salaries), content_type="application/pdf")
+                response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
+                return response
+            else:
+                return Response({"detail": "No Salary Prepared for the given month"}, status=status.HTTP_404_NOT_FOUND)
+
+        if validated_data['report_type'] == 'payslip':
+            payslip_date = date(validated_data["year"], validated_data["month"], 1)
+            order_by = 'employee__paycode'
+            if validated_data['filters']['sort_by'] == "attendance_card_no":
+                order_by = "employee__attendance_card_no"
+            elif validated_data['filters']['sort_by'] == "employee_name":
+                order_by = 'employee__name'
+            employee_salaries = EmployeeSalaryPrepared.objects.filter(employee__id__in=employee_ids, date=payslip_date).order_by(order_by)
+
+            response = StreamingHttpResponse(generate_payslip(serializer.validated_data, employee_salaries), content_type="application/pdf")
             response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
             return response
-        else:
-            return Response({"detail": "No Salary Prepared for the given month"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"message": "Payslip successful"}, status=status.HTTP_200_OK)
+
 
 class AttendanceReportsCreateAPIView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]

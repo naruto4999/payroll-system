@@ -12,6 +12,42 @@ const FilterOptions = ({ handleChange, values, isValid, handleSubmit, isSubmitti
 		<div className="flex flex-col gap-2">
 			<div>
 				<label
+					htmlFor="reportType"
+					className="mr-4 text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
+				>
+					Report Type :
+				</label>
+				<Field
+					as="select"
+					id="reportType"
+					className="my-1 rounded-md bg-zinc-50 bg-opacity-50 p-1 dark:bg-zinc-700"
+					name="reportType"
+				>
+					<option value="salary_sheet">Salary Sheet</option>
+					<option value="payslip">Payslip</option>
+				</Field>
+			</div>
+			{values.reportType == 'payslip' && (
+				<div>
+					<label
+						htmlFor="filters.language"
+						className="mr-4 text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
+					>
+						Language :
+					</label>
+					<Field
+						as="select"
+						id="filters.language"
+						className="my-1 rounded-md bg-zinc-50 bg-opacity-50 p-1 dark:bg-zinc-700"
+						name="filters.language"
+					>
+						<option value="english">English</option>
+						<option value="hindi">Hindi</option>
+					</Field>
+				</div>
+			)}
+			<div>
+				<label
 					htmlFor="sortBy"
 					className="mr-4 text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
 				>
@@ -82,22 +118,6 @@ const FilterOptions = ({ handleChange, values, isValid, handleSubmit, isSubmitti
 					<option value="all">All</option>
 					<option value="without_resigned">Without Resigned Employees</option>
 					<option value="only_resigned">Only Resigned Employees</option>
-				</Field>
-			</div>
-			<div>
-				<label
-					htmlFor="reportType"
-					className="mr-4 text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
-				>
-					Report Type :
-				</label>
-				<Field
-					as="select"
-					id="reportType"
-					className="my-1 rounded-md bg-zinc-50 bg-opacity-50 p-1 dark:bg-zinc-700"
-					name="reportType"
-				>
-					<option value="salary_sheet">Salary Sheet</option>
 				</Field>
 			</div>
 			<section>

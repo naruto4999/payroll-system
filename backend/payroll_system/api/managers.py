@@ -235,11 +235,13 @@ class EmployeeSalaryPreparedManager(models.Manager):
                 total_earned_amount = 0
                 earned_amount_dict = {}
                 for salary_earning in employee_salary_earnings_for_each_head:
-                    current_earning_earned_amount = (salary_earning.value/days_in_month)*(employee_monthly_attendance_detail.first().paid_days_count/2)
-                    rounded_earning = math.ceil(current_earning_earned_amount) if current_earning_earned_amount >= 0.5 else math.floor(current_earning_earned_amount)
+                    current_earning_earned_amount = (Decimal(salary_earning.value)*(Decimal(employee_monthly_attendance_detail.first().paid_days_count)/Decimal(2)))//Decimal(days_in_month)
+                    # rounded_earning = math.ceil(current_earning_earned_amount) if current_earning_earned_amount >= 0.5 else math.floor(current_earning_earned_amount)
+                    rounded_earning = current_earning_earned_amount.quantize(Decimal('1.'), rounding=ROUND_HALF_UP)
                     total_earned_amount += rounded_earning
                     total_salary_rate += salary_earning.value
-                    # print(salary_earning)
+                    if current_employee.employee.attendance_card_no ==1:
+                        print(f'{salary_earning.earnings_head.name}: {rounded_earning}, actual: {current_earning_earned_amount}')
                     earned_amount_dict[salary_earning.earnings_head.id] = {
                         'rate' : salary_earning.value,
                         'earned_amount' : rounded_earning,

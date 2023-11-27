@@ -172,6 +172,7 @@ const SalaryOvertimeSheet = () => {
 	}, [employeePersonalDetails, selectedDate, employeePreparedSalaries]);
 
 	const generateButtonClicked = async (values, formikBag) => {
+		setShowLoadingBar(true);
 		const toSend = {
 			...values,
 			employee_ids: table.getSelectedRowModel().flatRows.map((row) => row.id),
@@ -278,7 +279,10 @@ const SalaryOvertimeSheet = () => {
 						);
 					}
 					// throw new Error('Request failed');
-				} else {
+				} else if (response.status == 200) {
+					const pdfData = await response.arrayBuffer();
+					const pdfBlob = new Blob([pdfData], { type: 'application/pdf' });
+					const pdfUrl = URL.createObjectURL(pdfBlob);
 					dispatch(
 						alertActions.createAlert({
 							message: 'Generated',
@@ -286,9 +290,6 @@ const SalaryOvertimeSheet = () => {
 							duration: 8000,
 						})
 					);
-					const pdfData = await response.arrayBuffer();
-					const pdfBlob = new Blob([pdfData], { type: 'application/pdf' });
-					const pdfUrl = URL.createObjectURL(pdfBlob);
 					window.open(pdfUrl, '_blank');
 				}
 			} catch (error) {
@@ -301,6 +302,7 @@ const SalaryOvertimeSheet = () => {
 					})
 				);
 			}
+			setShowLoadingBar(false);
 		};
 
 		// Call the generateSalarySheet function to initiate the request
@@ -352,7 +354,13 @@ const SalaryOvertimeSheet = () => {
 
 	const generateInitialValues = () => {
 		const initialValues = {
-			filters: { groupBy: 'none', sortBy: 'paycode', paymentMode: 'all', resignationFilter: 'all' },
+			filters: {
+				groupBy: 'none',
+				sortBy: 'paycode',
+				paymentMode: 'all',
+				resignationFilter: 'all',
+				language: 'english',
+			},
 			reportType: 'salary_sheet',
 		};
 		return initialValues;

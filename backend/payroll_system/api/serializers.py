@@ -276,16 +276,20 @@ class EarnedAmountSerializer(serializers.ModelSerializer):
             'arear_amount',
         )
 
-
+class FiltersSalaryOvertimeSheet(serializers.Serializer):
+    group_by = serializers.ChoiceField(choices=["none", "department"])
+    resignation_filter = serializers.ChoiceField(choices=["all", "without_resigned", "only_resigned"])
+    sort_by = serializers.ChoiceField(choices=["paycode", "attendance_card_no", "employee_name"])
+    language = serializers.ChoiceField(choices=["hindi", "english"])
 
 class SalaryOvertimeSheetSerializer(serializers.Serializer):
     employee_ids = serializers.ListField(child=serializers.IntegerField())
-    filters = serializers.DictField(child=serializers.ChoiceField(
-        choices=["paycode", "attendance_card_no", "employee_name", "department", "none", "all", "bank_transfer", "cheque", "cash", "rtgs", "neft", "only_resigned", "without_resigned"]
-    ))
+    filters = FiltersSalaryOvertimeSheet()
     company = serializers.IntegerField()
     month = serializers.IntegerField()
     year = serializers.IntegerField()
+    report_type = serializers.ChoiceField(choices=["salary_sheet", "payslip"])
+
 
     # filters = serializers.DictField()
     # sort_by = serializers.ChoiceField(choices=["paycode", "attendance_card_no", "employee_name"])
