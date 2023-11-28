@@ -269,16 +269,19 @@ const SalaryOvertimeSheet = () => {
 					}
 				} else if (!response.ok) {
 					console.error('Request failed with status: ', response.status);
-					console.log(response);
-					if (response.status == 404) {
-						dispatch(
-							alertActions.createAlert({
-								message: 'No Salary Prepared for the given month',
-								type: 'Error',
-								duration: 5000,
-							})
-						);
-					}
+					response.json().then((data) => {
+						console.log('Error:', data.detail);
+						if (response.status == 404) {
+							dispatch(
+								alertActions.createAlert({
+									message: data.detail,
+									type: 'Error',
+									duration: 5000,
+								})
+							);
+						}
+					});
+
 					// throw new Error('Request failed');
 				} else if (response.status == 200) {
 					const pdfData = await response.arrayBuffer();

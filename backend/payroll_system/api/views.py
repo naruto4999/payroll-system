@@ -2216,13 +2216,16 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
             elif validated_data['filters']['sort_by'] == "employee_name":
                 order_by = 'employee__name'
             employee_salaries = EmployeeSalaryPrepared.objects.filter(employee__id__in=employee_ids, date=payslip_date).order_by(order_by)
+            
+            if employee_salaries.exists():
+                response = StreamingHttpResponse(generate_payslip(serializer.validated_data, employee_salaries), content_type="application/pdf")
+                response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
+                return response
+            else:
+                return Response({"detail": "No Salary Prepared for the given month"}, status=status.HTTP_404_NOT_FOUND)
 
-            response = StreamingHttpResponse(generate_payslip(serializer.validated_data, employee_salaries), content_type="application/pdf")
-            response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
-            return response
         
         if validated_data['report_type'] == 'overtime_sheet':
-            print('in if')
             overtime_sheet_date = date(validated_data["year"], validated_data["month"], 1)
             order_by = 'employee__paycode'
             if validated_data['filters']['sort_by'] == "attendance_card_no":
@@ -2230,10 +2233,14 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
             elif validated_data['filters']['sort_by'] == "employee_name":
                 order_by = 'employee__name'
             employee_salaries = EmployeeSalaryPrepared.objects.filter(employee__id__in=employee_ids, date=overtime_sheet_date, net_ot_amount_monthly__gt=0).order_by(order_by)
-            print(len(employee_salaries))
-            response = StreamingHttpResponse(generate_overtime_sheet(serializer.validated_data, employee_salaries), content_type="application/pdf")
-            response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
-            return response
+
+            if employee_salaries.exists():
+                response = StreamingHttpResponse(generate_overtime_sheet(serializer.validated_data, employee_salaries), content_type="application/pdf")
+                response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
+                return response
+            else:
+                return Response({"detail": "No Overtime For Any Employee in the given month"}, status=status.HTTP_404_NOT_FOUND)
+
         # return Response({"message": "Payslip successful"}, status=status.HTTP_200_OK)
         print('idk')
 
