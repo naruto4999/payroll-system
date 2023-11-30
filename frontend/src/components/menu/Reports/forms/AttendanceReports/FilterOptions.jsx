@@ -28,8 +28,25 @@ const FilterOptions = ({ handleChange, values, isValid, handleSubmit, isSubmitti
 					name="reportType"
 				>
 					<option value="attendance_register">Attendance Register</option>
+					<option value="present_report">Present Report</option>
 				</Field>
 			</div>
+			{values.reportType == 'present_report' && (
+				<div>
+					<label
+						htmlFor="filters.date"
+						className="mr-4 text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
+					>
+						Date :
+					</label>
+					<Field
+						className="custom-number-input w-14 rounded border-2 border-gray-800 border-opacity-25 bg-zinc-200  bg-opacity-50   p-1 outline-none transition focus:border-opacity-100 dark:border-slate-100 dark:border-opacity-25 dark:bg-zinc-800 dark:focus:border-opacity-75"
+						type="number"
+						name="filters.date"
+						id="filters.date"
+					/>
+				</div>
+			)}
 			{/* <div>
 				<label
 					htmlFor="monthFromDate"

@@ -134,7 +134,7 @@ def generate_attendance_register(request_data, attendance_dict):
         weekly_off_days_count = int(employee_monthly_details.weekly_off_days_count/2) if employee_monthly_details.weekly_off_days_count/2%1==0 else employee_monthly_details.weekly_off_days_count/2
         holiday_days_count = int(employee_monthly_details.holiday_days_count/2) if employee_monthly_details.holiday_days_count/2%1==0 else employee_monthly_details.holiday_days_count/2
 
-        employee_generative_leaves = EmployeeGenerativeLeaveRecord.objects.filter(employee=employee, date=date(request_data['year'], request_data['month'], 1)).order_by('leave__name')
+        employee_generative_leaves = EmployeeGenerativeLeaveRecord.objects.filter(employee=employee_personal_details, date=date(request_data['year'], request_data['month'], 1)).order_by('leave__name')
         generative_leave_text = "\n".join(f"{leave.leave.name} : {int(leave.leave_count/2) if leave.leave_count/2%1==0 else leave.leave_count/2}" for leave in employee_generative_leaves)
         
         attendance_register.cell(w=employee_intro_width['serial_number'], h=employee_intro_cell_height, text=f'SN : {employee_index+1}', align="L",  new_x="RIGHT", border=0)

@@ -81,7 +81,7 @@ def generate_payslip(request_data, employee_salaries):
         payslip.cell(w=None, h=intro_cell_height, text=f'Father/Husband{" /" if language=="hindi" else ""}', border=0)
         if language=='hindi':
             payslip.cell(w=None, h=intro_cell_height, text='पिता/पति')
-        payslip.cell(w=None, h=intro_cell_height, text=f': {salary.employee.father_or_husband_name}', new_x="LMARGIN", new_y="NEXT", border=0)
+        payslip.cell(w=None, h=intro_cell_height, text=f': {salary.employee.father_or_husband_name or ""}', new_x="LMARGIN", new_y="NEXT", border=0)
         payslip.multi_cell(w=width_of_columns['top_left'], h=intro_cell_height, text=f"Desig{' / पद' if language=='hindi' else ''}: {salary.employee.employee_professional_detail.designation.name if salary.employee.employee_professional_detail.designation else ''}",new_x="LMARGIN", new_y="NEXT", border=0)
         #Department
         payslip.cell(w=None, h=intro_cell_height, text=f'Department{" /" if language=="hindi" else ""}', border=0)
@@ -116,9 +116,9 @@ def generate_payslip(request_data, employee_salaries):
         # payslip.rect(x=payslip.get_x(), y=payslip.get_y(), w=width_of_columns["top_right"], h=intro_cell_height*6)
         payslip.cell(w=width_of_columns['top_right'], h=intro_cell_height, text=f'ACN{" / कार्ड न०" if language=="hindi" else ""}: {salary.employee.attendance_card_no}', new_x="LEFT", new_y="NEXT", border=0)
         payslip.cell(w=width_of_columns['top_right'], h=intro_cell_height, text=f'Bank A/C No.{" / बैंक खाता सं०" if language=="hindi" else ""}: {salary.employee.employee_salary_detail.account_number}', new_x="LEFT", new_y="NEXT", border=0)
-        payslip.cell(w=width_of_columns['top_right'], h=intro_cell_height, text=f'PF No.{" / ई.पी.एफ" if language=="hindi" else ""}: {salary.employee.employee_pf_esi_detail.pf_number}', new_x="LEFT", new_y="NEXT", border=0)
-        payslip.cell(w=width_of_columns['top_right'], h=intro_cell_height, text=f'UAN No.{" / यू.ए.एन" if language=="hindi" else ""}: {salary.employee.employee_pf_esi_detail.uan_number}', new_x="LEFT", new_y="NEXT", border=0)
-        payslip.cell(w=width_of_columns['top_right'], h=intro_cell_height, text=f'ESI No.{" / ई.एस.आई" if language=="hindi" else ""}: {salary.employee.employee_pf_esi_detail.esi_number}', new_x="LEFT", new_y="NEXT", border=0)
+        payslip.cell(w=width_of_columns['top_right'], h=intro_cell_height, text=f'PF No.{" / ई.पी.एफ" if language=="hindi" else ""}: {salary.employee.employee_pf_esi_detail.pf_number or ""}', new_x="LEFT", new_y="NEXT", border=0)
+        payslip.cell(w=width_of_columns['top_right'], h=intro_cell_height, text=f'UAN No.{" / यू.ए.एन" if language=="hindi" else ""}: {salary.employee.employee_pf_esi_detail.uan_number or ""}', new_x="LEFT", new_y="NEXT", border=0)
+        payslip.cell(w=width_of_columns['top_right'], h=intro_cell_height, text=f'ESI No.{" / ई.एस.आई" if language=="hindi" else ""}: {salary.employee.employee_pf_esi_detail.esi_number or ""}', new_x="LEFT", new_y="NEXT", border=0)
 
         """
         Drawing the Main Salary Slip Table

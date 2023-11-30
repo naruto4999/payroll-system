@@ -253,7 +253,7 @@ def generate_salary_sheet(request_data, prepared_salaries):
             if column_name == "employee_name":
                 salary_sheet_pdf.rect(salary_sheet_pdf.get_x(), salary_sheet_pdf.get_y(), w=column_width, h=default_cell_height*default_number_of_cells_in_row)
                 employee_name = salary.employee.name #Get actual employee name from db and replace this
-                employee_father_husband_name = salary.employee.father_or_husband_name #If exists then get from db and replace this else in null set as empty string
+                employee_father_husband_name = salary.employee.father_or_husband_name or "" #If exists then get from db and replace this else in null set as empty string
                 designation = employee_professional_details.designation.name if employee_professional_details.designation and hasattr(employee_professional_details.designation, 'name') else ""
                 department = employee_professional_details.department.name if employee_professional_details.department and hasattr(employee_professional_details.department, 'name') else ""
                 pf_number = employee_pf_esi_details.pf_number or ""

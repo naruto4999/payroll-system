@@ -197,6 +197,7 @@ const AttendanceReports = () => {
 				resignationFilter: 'all',
 				monthFromDate: null,
 				monthToDate: null,
+				date: '',
 			},
 			reportType: 'attendance_register',
 		};
@@ -214,6 +215,7 @@ const AttendanceReports = () => {
 				...values.filters,
 				monthFromDate: parseInt(values.filters.monthFromDate),
 				monthToDate: parseInt(values.filters.monthToDate),
+				date: values.filters.date === '' ? null : values.filters.date,
 			},
 			employee_ids: table.getSelectedRowModel().flatRows.map((row) => row.id),
 			company: globalCompany.id,
@@ -307,17 +309,18 @@ const AttendanceReports = () => {
 						);
 						dispatch(authActions.logout());
 					}
-				} else if (!response.status == 200) {
+				} else if (response.status != 200) {
 					console.error('Request failed with status: ', response.status);
-					if (response.status == 404) {
+					response.json().then((data) => {
+						console.log('Error:', data.detail);
 						dispatch(
 							alertActions.createAlert({
-								message: 'No Salary Prepared for the given month',
+								message: data.detail,
 								type: 'Error',
 								duration: 5000,
 							})
 						);
-					}
+					});
 					// throw new Error('Request failed');
 				} else if (response.status == 200) {
 					const pdfData = await response.arrayBuffer();

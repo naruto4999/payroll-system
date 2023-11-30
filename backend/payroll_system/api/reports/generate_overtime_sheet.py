@@ -31,7 +31,7 @@ class FPDF(FPDF):
         self.cell(w=0, h=8, text='Page %s' % self.page_no(), border=0, align='R', new_x='LMARGIN', new_y="NEXT")
         self.set_font('Helvetica', 'B', 9)
         self.cell(w=None, h=4, text=self.company_address, align="L",  new_x="LMARGIN", new_y='NEXT', border=0)
-        self.cell(w=None, h=6, text=self.my_date.strftime("Salary for the month of %B, %Y"), align="L", new_x="LMARGIN", new_y='NEXT', border=0)
+        self.cell(w=None, h=6, text=self.my_date.strftime("OT Sheet for the month of %B, %Y"), align="L", new_x="LMARGIN", new_y='NEXT', border=0)
 
         #Printing the column headers
         self.set_font('Helvetica', 'B', 8)
@@ -58,7 +58,7 @@ def generate_overtime_sheet(request_data, employee_salaries):
     bottom_margin = 8
 
     company_details = CompanyDetails.objects.filter(company_id=request_data['company'])
-    overtime_sheet = FPDF(my_date=date(request_data['year'], request_data['month'], 1),company_name=employee_salaries.first().company.name,company_address=company_details.first().address if company_details.exists() else '', orientation="P", unit="mm", format="A4")
+    overtime_sheet = FPDF(my_date=date(request_data['year'], request_data['month'], 1),company_name=employee_salaries[0].company.name,company_address=company_details[0].address if company_details.exists() else '', orientation="P", unit="mm", format="A4")
 
     #Page settings
     overtime_sheet.set_margins(left=left_margin, top=6, right=right_margin)

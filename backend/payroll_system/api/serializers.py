@@ -307,6 +307,7 @@ class FiltersAttendanceReportsSerializer(serializers.Serializer):
     month_to_date = serializers.IntegerField(allow_null=True)
     resignation_filter = serializers.ChoiceField(choices=["all", "without_resigned", "only_resigned"])
     sort_by = serializers.ChoiceField(choices=["paycode", "attendance_card_no", "employee_name"])
+    date = serializers.IntegerField(allow_null=True)
 
 class AttendanceReportsSerializer(serializers.Serializer):
     employee_ids = serializers.ListField(child=serializers.IntegerField())
@@ -314,7 +315,7 @@ class AttendanceReportsSerializer(serializers.Serializer):
     company = serializers.IntegerField()
     month = serializers.IntegerField()
     year = serializers.IntegerField()
-    report_type = serializers.CharField()
+    report_type = serializers.ChoiceField(choices=["present_report", "attendance_register"])
     class Meta:
         fields = ['employee_ids', "filters"]
 

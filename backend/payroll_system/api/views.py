@@ -31,8 +31,16 @@ from .reports.generate_salary_sheet import generate_salary_sheet
 from .reports.generate_attendance_register import generate_attendance_register
 from .reports.generate_payslip import generate_payslip
 from .reports.generate_overtime_sheet import generate_overtime_sheet
+from .reports.generate_present_report import generate_present_report
 from itertools import groupby
 from operator import attrgetter
+import re
+import time
+
+
+from django.db.models import F, Value, CharField, Func
+# from django.db.models.functions import Func
+# from django.db.models import F, Func
 
 
 
@@ -43,6 +51,10 @@ from operator import attrgetter
 
 
 # Create your views here.
+
+class NaturalOrdering(Func):
+    function = 'CAST'
+    template = '%(function)s(%(expressions)s AS CHAR)'
 
 class CompanyListCreateAPIView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
@@ -2189,19 +2201,22 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
 
         if validated_data['report_type'] == 'salary_sheet':
             salary_date = date(validated_data["year"], validated_data["month"], 1)
-            # print(validated_data)
-            order_by = 'employee__paycode'
+            order_by = None
             if validated_data['filters']['sort_by'] == "attendance_card_no":
-                order_by = "employee__attendance_card_no"
+                order_by = ("employee__attendance_card_no",)
             elif validated_data['filters']['sort_by'] == "employee_name":
-                order_by = 'employee__name'
+                order_by = ('employee__name',)
             if validated_data['filters']['group_by'] != 'none':
-                order_by = 'employee__employee_professional_detail__department'
-                
-            employee_salaries = EmployeeSalaryPrepared.objects.filter(employee__id__in=employee_ids, date=salary_date).order_by(order_by)
+                order_by = ('employee__employee_professional_detail__department',)
+            employee_salaries = EmployeeSalaryPrepared.objects.filter(employee__id__in=employee_ids, date=salary_date)
 
-            print(validated_data)
-            if employee_salaries.exists():
+            #Use python regular expression to orderby if the order by is using paycode because it is alpha numeric
+            if validated_data['filters']['sort_by'] == "paycode":
+                employee_salaries = sorted(employee_salaries, key=lambda x: (re.sub(r'[^A-Za-z]', '', x.employee.paycode), int(re.sub(r'[^0-9]', '', x.employee.paycode))))
+            else:
+                employee_salaries = employee_salaries.order_by(*order_by)
+
+            if len(employee_salaries) != 0:
                 response = StreamingHttpResponse(generate_salary_sheet(serializer.validated_data, employee_salaries), content_type="application/pdf")
                 response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
                 return response
@@ -2210,14 +2225,20 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
 
         if validated_data['report_type'] == 'payslip':
             payslip_date = date(validated_data["year"], validated_data["month"], 1)
-            order_by = 'employee__paycode'
+            order_by = None
             if validated_data['filters']['sort_by'] == "attendance_card_no":
-                order_by = "employee__attendance_card_no"
+                order_by = ("employee__attendance_card_no",)
             elif validated_data['filters']['sort_by'] == "employee_name":
-                order_by = 'employee__name'
-            employee_salaries = EmployeeSalaryPrepared.objects.filter(employee__id__in=employee_ids, date=payslip_date).order_by(order_by)
-            
-            if employee_salaries.exists():
+                order_by = ('employee__name',)
+            employee_salaries = EmployeeSalaryPrepared.objects.filter(employee__id__in=employee_ids, date=payslip_date)
+
+            #Use python regular expression to orderby if the order by is using paycode because it is alpha numeric
+            if validated_data['filters']['sort_by'] == "paycode":
+                employee_salaries = sorted(employee_salaries, key=lambda x: (re.sub(r'[^A-Za-z]', '', x.employee.paycode), int(re.sub(r'[^0-9]', '', x.employee.paycode))))
+            else:
+                employee_salaries = employee_salaries.order_by(*order_by)
+
+            if len(employee_salaries) != 0:
                 response = StreamingHttpResponse(generate_payslip(serializer.validated_data, employee_salaries), content_type="application/pdf")
                 response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
                 return response
@@ -2227,19 +2248,25 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
         
         if validated_data['report_type'] == 'overtime_sheet':
             overtime_sheet_date = date(validated_data["year"], validated_data["month"], 1)
-            order_by = 'employee__paycode'
+            order_by = None
             if validated_data['filters']['sort_by'] == "attendance_card_no":
-                order_by = "employee__attendance_card_no"
+                order_by = ("employee__attendance_card_no",)
             elif validated_data['filters']['sort_by'] == "employee_name":
-                order_by = 'employee__name'
-            employee_salaries = EmployeeSalaryPrepared.objects.filter(employee__id__in=employee_ids, date=overtime_sheet_date, net_ot_amount_monthly__gt=0).order_by(order_by)
+                order_by = ('employee__name',)
+            employee_salaries = EmployeeSalaryPrepared.objects.filter(employee__id__in=employee_ids, date=overtime_sheet_date, net_ot_amount_monthly__gt=0)
 
-            if employee_salaries.exists():
+            #Use python regular expression to orderby if the order by is using paycode because it is alpha numeric
+            if validated_data['filters']['sort_by'] == "paycode":
+                employee_salaries = sorted(employee_salaries, key=lambda x: (re.sub(r'[^A-Za-z]', '', x.employee.paycode), int(re.sub(r'[^0-9]', '', x.employee.paycode))))
+            else:
+                employee_salaries = employee_salaries.order_by(*order_by)
+
+            if len(employee_salaries) != 0:
                 response = StreamingHttpResponse(generate_overtime_sheet(serializer.validated_data, employee_salaries), content_type="application/pdf")
                 response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
                 return response
             else:
-                return Response({"detail": "No Overtime For Any Employee in the given month"}, status=status.HTTP_404_NOT_FOUND)
+                return Response({"detail": "No Overtime for any Employee in the given month"}, status=status.HTTP_404_NOT_FOUND)
 
         # return Response({"message": "Payslip successful"}, status=status.HTTP_200_OK)
         print('idk')
@@ -2262,15 +2289,14 @@ class AttendanceReportsCreateAPIView(generics.CreateAPIView):
             date_range_query = Q(date__year=validated_data['year'], date__month=validated_data['month'])
             # resignation_filter_query = Q()  # You might need to adjust this based on your logic
 
-            order_by = ('employee__paycode', 'date')
+            order_by = ('date',)
             if validated_data['filters']['sort_by'] == "attendance_card_no":
-                order_by = ("employee__attendance_card_no",'date')
+                order_by = ("employee__attendance_card_no", 'date')
             elif validated_data['filters']['sort_by'] == "employee_name":
-                order_by = ('employee__name','employee__paycode', 'date')
-            
-            if validated_data['filters']['group_by'] != 'none':
-                order_by = ('employee__employee_professional_detail__department',)+order_by
-            print(*order_by)
+                order_by = ('employee__name', 'date')
+            if validated_data['filters']['group_by'] != 'none' and validated_data['filters']['sort_by'] != "paycode":
+                    order_by = ('employee__employee_professional_detail__department',) + order_by
+
 
             attendance_objects = EmployeeAttendance.objects.filter(
                 Q(employee__id__in=employee_ids) &
@@ -2278,24 +2304,74 @@ class AttendanceReportsCreateAPIView(generics.CreateAPIView):
                 date_range_query
                 # resignation_filter_query
             ).order_by(*order_by)
-            print(len(attendance_objects))
 
-            # Group by employee using itertools.groupby
-            grouped_attendance = groupby(attendance_objects, key=attrgetter('employee_id'))
 
-            # Convert the result to a dictionary where keys are employee_ids and values are lists of attendance objects
-            attendance_dict = {key: list(group) for key, group in grouped_attendance}
+            attendance_dict = {}
+            for attendance in attendance_objects:
+                key = attendance.employee.id
+                if key not in attendance_dict:
+                    attendance_dict[key] = []
+                attendance_dict[key].append(attendance)
 
-            print('')
-                
+
+            if validated_data['filters']['sort_by'] == "paycode":
+                sorted_keys = sorted(
+                    attendance_dict.items(),
+                    key=lambda x: (
+                        getattr(x[1][0].employee.employee_professional_detail.department, 'name', '') if validated_data['filters']['group_by'] != 'none' else '',
+                        re.sub(r'[^A-Za-z]', '', x[1][0].employee.paycode),  # Sort by paycode within the department
+                        int(re.sub(r'[^0-9]', '', x[1][0].employee.paycode))  # Secondary sorting by numeric part of paycode
+                    )
+                )
+                ordered_attendance_dict = dict(sorted_keys)
+                attendance_dict = ordered_attendance_dict
+
             if attendance_objects.exists():
-                print('inside the if')
                 response = StreamingHttpResponse(generate_attendance_register(serializer.validated_data, attendance_dict), content_type="application/pdf")
                 response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
                 print('returnining the report now ')
                 return response
             else:
                 return Response({"detail": "No Attendances Found for the given month"}, status=status.HTTP_404_NOT_FOUND)
+            
+        if validated_data['report_type'] == 'present_report':
+            num_days_in_month = calendar.monthrange(validated_data['year'], validated_data['month'])[1]
+            if validated_data['filters']['date']> num_days_in_month:
+                return Response({"detail": "Invalid Date"}, status=status.HTTP_400_BAD_REQUEST)
+
+            order_by = None
+            if validated_data['filters']['sort_by'] == "attendance_card_no":
+                order_by = ("employee__attendance_card_no",)
+            elif validated_data['filters']['sort_by'] == "employee_name":
+                order_by = ('employee__name',)
+
+            present_employees_attendances = EmployeeAttendance.objects.filter(
+                (Q(manual_in__isnull=False) |
+                Q(manual_out__isnull=False) |
+                Q(machine_in__isnull=False) |
+                Q(machine_out__isnull=False)),
+                date=date(validated_data['year'], validated_data['month'], validated_data['filters']['date']),
+                company_id=validated_data['company'],
+                user=user
+            )
+            print(len(present_employees_attendances))
+
+            #Use python regular expression to orderby if the order by is using paycode because it is alpha numeric
+            if validated_data['filters']['sort_by'] == "paycode":
+                present_employees_attendances = sorted(present_employees_attendances, key=lambda x: (re.sub(r'[^A-Za-z]', '', x.employee.paycode), int(re.sub(r'[^0-9]', '', x.employee.paycode))))
+            else:
+                present_employees_attendances = present_employees_attendances.order_by(*order_by)
+
+            if len(present_employees_attendances) !=0:
+                print('inside the if')
+                response = StreamingHttpResponse(generate_present_report(serializer.validated_data, present_employees_attendances), content_type="application/pdf")
+                response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
+                print('returnining the report now ')
+                return response
+            else:
+                return Response({"detail": "No Employee Present on this date"}, status=status.HTTP_404_NOT_FOUND)
+            
+
         # return Response({"detail": "Yo"}, status=status.HTTP_200_OK)
 
         
