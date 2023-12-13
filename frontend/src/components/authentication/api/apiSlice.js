@@ -13,7 +13,7 @@ const baseQuery = fetchBaseQuery({
 			//     console.log("hahahahahahahahhahah")
 			//     headers.set("content-type", "application/json");
 			//   }
-			// headers.set("content-Type", "multipart/form-data")
+			// headers.set('content-Type', 'multipart/form-data');
 			headers.set('ngrok-skip-browser-warning', '69420');
 			// 'Content-Type': 'application/json',
 		}
@@ -25,9 +25,7 @@ const baseQuery = fetchBaseQuery({
 const baseQueryWithReauth = async (args, api, extraOptions) => {
 	// const dispatch = useDispatch();
 	let result = await baseQuery(args, api, extraOptions);
-	console.log(args);
-
-	console.log(result);
+	// console.log(result);
 	// if(result?.error?.status === 200) {
 	//     dispatch(
 	//         alertActions.createAlert({

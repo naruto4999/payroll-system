@@ -49,8 +49,6 @@ const AttendanceFooter = React.memo(
 				skip: globalCompany === null || globalCompany === '' || updateEmployeeId == null,
 			}
 		);
-		console.log(employeeSalaryDetails);
-
 		const filteredLeaveGradesWithGenerateFrequency = useMemo(
 			() => (leaveGrades ? leaveGrades.filter((grade) => grade.generateFrequency !== null) : []),
 			[leaveGrades]

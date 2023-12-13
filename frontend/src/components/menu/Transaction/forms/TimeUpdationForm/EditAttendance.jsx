@@ -22,7 +22,10 @@ import ConfirmationModal from '../../../../UI/ConfirmationModal';
 import ReactModal from 'react-modal';
 import { Formik } from 'formik';
 import { ConfirmationModalSchema } from './TimeUpdationSchema';
-import { useBulkAutoFillAttendanceAddMutation } from '../../../../authentication/api/timeUpdationApiSlice';
+import {
+	useBulkAutoFillAttendanceAddMutation,
+	useMachineAttendanceAddMutation,
+} from '../../../../authentication/api/timeUpdationApiSlice';
 import { alertActions } from '../../../../authentication/store/slices/alertSlice';
 import { useOutletContext } from 'react-router-dom';
 
@@ -112,6 +115,15 @@ const EditAttendance = memo(
 				isSuccess: isBulkAutoFillAttendanceSuccess,
 			},
 		] = useBulkAutoFillAttendanceAddMutation();
+
+		const [
+			machineAttendanceAdd,
+			{
+				isLoading: isAddingMachineAttendance,
+				// isError: errorRegisteringRegular,
+				isSuccess: isAddMachineAttendanceSuccess,
+			},
+		] = useMachineAttendanceAddMutation();
 
 		const {
 			data: allEmployeeAttendance,
@@ -249,6 +261,8 @@ const EditAttendance = memo(
 			() => categorizedAllEmployeeAttendance?.[updateEmployeeId] || [],
 			[categorizedAllEmployeeAttendance]
 		);
+		// console.log(employeeAttendance);
+		console.log(values.attendance);
 
 		const giveWeeklyOffHolidayOff = (year, month, day, minDays, auto = false) => {
 			// Multiply by 2 because present count is twice as much since first half and second hlaf is counted separately
@@ -504,8 +518,17 @@ const EditAttendance = memo(
 			(day, lateMinValue) => {
 				const manualMode = values.attendance[day]?.manualMode;
 				if (!manualMode) {
-					const manualIn = values.attendance[day]?.manualIn;
-					const manualOut = values.attendance[day]?.manualOut;
+					// const manualIn = values.attendance[day]?.manualIn;
+					const manualIn =
+						values.attendance[day]?.machineIn != ''
+							? values.attendance[day]?.machineIn
+							: values.attendance[day]?.manualIn;
+					// console.log(values.attendance[day]?.machineIn);
+					// const manualOut = values.attendance[day]?.manualOut;
+					const manualOut =
+						values.attendance[day]?.machineOut != ''
+							? values.attendance[day]?.machineOut
+							: values.attendance[day]?.manualOut;
 					const shift = getShift(values.year, values.month, day);
 					const shiftBeginningTime = getTimeInDateObj(shift.beginningTime, day);
 					const shiftEndTime = getTimeInDateObj(
@@ -996,9 +1019,46 @@ const EditAttendance = memo(
 			}
 		}, [values.manualToDate, values.manualFromDate, currentEmployeeProfessionalDetail]);
 
+		const machineAttendance = async (formikBag) => {
+			const fileInput = document.getElementById('machineAttendanceUpload'); // Replace with the actual ID of your file input element
+			const file = fileInput.files[0];
+			const formData = new FormData();
+			// for (const key in values) {
+			// 	if (values.hasOwnProperty(key)) {
+			// 		formData.append(key, values[key]);
+			// 	}
+			// }
+			formData.append('mdbDatabase', file);
+			formData.append('employee', updateEmployeeId);
+			formData.append('company', globalCompany.id);
+			formData.append('monthFromDate', values.manualFromDate);
+			formData.append('monthToDate', values.manualToDate);
+			formData.append('month', values.month);
+			formData.append('year', values.year);
+			formData.append('allEmployeesMachineAttendance', values.allEmployeesMachineAttendance);
+			try {
+				const data = await machineAttendanceAdd({ formData: formData }).unwrap();
+				dispatch(
+					alertActions.createAlert({
+						message: `Saved`,
+						type: 'Success',
+						duration: 3000,
+					})
+				);
+			} catch (err) {
+				// setShowLoadingBar(false);
+				console.log(err);
+				dispatch(
+					alertActions.createAlert({
+						message: 'Error Occurred',
+						type: 'Error',
+						duration: 5000,
+					})
+				);
+			}
+		};
+
 		const bulkAutoFillAttendance = async (formikBag) => {
-			console.log(values.manualFromDate);
-			console.log(values.manualToDate);
 			let toSend = {
 				monthFromDate: values.manualFromDate,
 				monthToDate: values.manualToDate,
@@ -1256,6 +1316,7 @@ const EditAttendance = memo(
 											)}
 										/>
 									</button>
+
 									{/* <div
 										className={
 											'z-50 mx-auto flex h-fit w-fit items-center rounded bg-indigo-600 p-2 font-medium'
@@ -1269,6 +1330,30 @@ const EditAttendance = memo(
 										onClick={clearAttendance}
 									>
 										Clear
+									</button>
+								</div>
+								<Field
+									type="file"
+									name="machineAttendanceUpload"
+									id="machineAttendanceUpload"
+									value={undefined}
+									className="block w-full cursor-pointer rounded border border-gray-300 bg-gray-50 text-sm file:border-0 file:bg-zinc-600 file:py-1 file:px-4 file:text-sm file:font-semibold file:text-white hover:file:cursor-pointer hover:file:bg-zinc-700 focus:outline-none dark:border-gray-600 dark:bg-zinc-900 dark:placeholder-gray-400"
+								/>
+								<div className="flex w-full flex-row justify-around gap-4">
+									<label className="my-auto block text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70">
+										All employees:
+										<Field
+											type="checkbox"
+											name="allEmployeesMachineAttendance"
+											className="ml-2.5 h-4 w-4 translate-y-0.5 rounded accent-teal-600"
+										/>
+									</label>
+									<button
+										type="button"
+										className="h-8 w-56 rounded bg-blueAccent-400 p-1 text-base font-medium hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:hover:bg-blueAccent-600"
+										onClick={machineAttendance}
+									>
+										Machine Attendance
 									</button>
 								</div>
 

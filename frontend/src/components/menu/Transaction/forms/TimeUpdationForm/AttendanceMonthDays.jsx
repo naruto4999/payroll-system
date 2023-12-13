@@ -20,7 +20,6 @@ const AttendanceMonthDays = memo(
 		secondHalf,
 		absent,
 	}) => {
-		// console.log(shift);
 		const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 		const date = new Date(Date.UTC(year, month - 1, day));
 		const weekdayIndex = date.getDay();

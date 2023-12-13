@@ -1052,14 +1052,29 @@ class EmployeeAttendance(models.Model):
     machine_out = models.TimeField(null=True, blank=True)
     manual_in = models.TimeField(null=True, blank=True)
     manual_out = models.TimeField(null=True, blank=True)
-    first_half = models.ForeignKey(LeaveGrade, on_delete=models.SET_NULL, null=True, blank=True, related_name="employees_first_half_attendances_with_same_leave")
-    second_half = models.ForeignKey(LeaveGrade, on_delete=models.SET_NULL, null=True, blank=True, related_name="employees_second_half_attendances_with_same_leave")
+    first_half = models.ForeignKey(LeaveGrade, on_delete=models.CASCADE, null=False, blank=False, related_name="employees_first_half_attendances_with_same_leave")
+    second_half = models.ForeignKey(LeaveGrade, on_delete=models.CASCADE, null=False, blank=False, related_name="employees_second_half_attendances_with_same_leave")
     date = models.DateField(null=False, blank=False)
     ot_min = models.PositiveSmallIntegerField(null=True, blank=True)
     late_min = models.PositiveSmallIntegerField(null=True, blank=True)
     pay_multiplier = LimitedFloatField()
     manual_mode = models.BooleanField(default=False)
     objects = EmployeeAttendanceManager()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Set default value for 'first_half' based on the specified conditions
+        if not self.first_half:
+            try:
+                self.first_half = LeaveGrade.objects.get(user=self.user, company=self.company, name='A')
+            except LeaveGrade.DoesNotExist:
+                pass
+        if not self.second_half:
+            try:
+                self.second_half = LeaveGrade.objects.get(user=self.user, company=self.company, name='A')
+            except LeaveGrade.DoesNotExist:
+                pass
 
     class Meta:
         indexes = [

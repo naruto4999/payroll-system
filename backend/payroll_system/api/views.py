@@ -4,7 +4,7 @@ from rest_framework import generics, status, mixins
 from django.db import transaction
 from rest_framework import serializers
 
-from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer, EmployeeGenerativeLeaveRecordSerializer, EmployeeLeaveOpeningSerializer, EmployeeMonthlyAttendancePresentDetailsSerializer, EmployeeAdvancePaymentSerializer, EmployeeMonthlyAttendanceDetailsSerializer, EmployeeSalaryPreparedSerializer, EarnedAmountSerializer, SalaryOvertimeSheetSerializer, AttendanceReportsSerializer, EmployeeAttendanceBulkAutofillSerializer, BulkPrepareSalariesSerializer
+from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer, EmployeeGenerativeLeaveRecordSerializer, EmployeeLeaveOpeningSerializer, EmployeeMonthlyAttendancePresentDetailsSerializer, EmployeeAdvancePaymentSerializer, EmployeeMonthlyAttendanceDetailsSerializer, EmployeeSalaryPreparedSerializer, EarnedAmountSerializer, SalaryOvertimeSheetSerializer, AttendanceReportsSerializer, EmployeeAttendanceBulkAutofillSerializer, BulkPrepareSalariesSerializer, MachineAttendanceSerializer
 from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift, EmployeeSalaryEarning, EarningsHead, EmployeeShifts, EmployeeGenerativeLeaveRecord, EmployeeSalaryPrepared, EarnedAmount, EmployeeAdvanceEmiRepayment, EmployeeAdvancePayment, EmployeeAttendance
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -2374,6 +2374,44 @@ class AttendanceReportsCreateAPIView(generics.CreateAPIView):
 
         # return Response({"detail": "Yo"}, status=status.HTTP_200_OK)
 
+# class EmployeePersonalDetailListCreateView(generics.ListCreateAPIView):
+#     permission_classes = [IsAuthenticated]
+#     serializer_class = EmployeePersonalDetailSerializer
+#     lookup_field = 'company_id'
+#     parser_classes = [CamelCaseMultiPartParser, CamelCaseFormParser]
+
+class MachineAttendanceAPIView(APIView):
+    # parser_classes = (MultiPartParser, FormParser)
+    parser_classes = [CamelCaseMultiPartParser, CamelCaseFormParser]
+
+    def post(self, request, *args, **kwargs):
+        user = self.request.user
+        print(request.data)
+        serializer = MachineAttendanceSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        # print(serializer.validated_data)
+        validated_data = serializer.validated_data
+        print(validated_data)
+        num_days_in_month = calendar.monthrange(validated_data['year'], validated_data['month'])[1]
+        if validated_data['month_to_date']>num_days_in_month:
+            validated_data['month_to_date'] = num_days_in_month
+        from_date = datetime(validated_data['year'], validated_data['month'], validated_data['month_from_date'])
+        to_date = datetime(validated_data['year'], validated_data['month'], validated_data['month_to_date'])
+
+        operation_result, message = EmployeeAttendance.objects.machine_attendance(from_date=from_date, to_date=to_date, company_id=validated_data['company'], user=user, all_employees_machine_attendance=validated_data['all_employees_machine_attendance'], mdb_database=validated_data['mdb_database'], employee=validated_data['employee'])
+
+
+
+        # num_days_in_month = calendar.monthrange(validated_data['year'], validated_data['month'])[1]
+        # if validated_data['month_to_date']>num_days_in_month:
+        #     validated_data['month_to_date'] = num_days_in_month
+        # from_date = date(validated_data['year'], validated_data['month'], validated_data['month_from_date'])
+        # to_date = date(validated_data['year'], validated_data['month'], validated_data['month_to_date'])
+
+        # # try:
+        # operation_result, message = EmployeeSalaryPrepared.objects.bulk_prepare_salaries(month=validated_data['month'], year=validated_data['year'], company_id=validated_data['company'], user=user)
+        # print(f"Operation result: {operation_result}, Message: {message}")
+        return Response({"message": "Bulk Prepare Salaries successful"}, status=status.HTTP_200_OK)
         
         
 

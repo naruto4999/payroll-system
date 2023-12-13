@@ -331,6 +331,19 @@ class BulkPrepareSalariesSerializer(serializers.Serializer):
     month = serializers.IntegerField()
     year = serializers.IntegerField()
 
+class MachineAttendanceSerializer(serializers.Serializer):
+    user = UserSerializer(read_only=True)
+    # creator_id = serializers.ReadOnlyField(source='creator.id')
+    mdb_database = serializers.FileField(required=True)
+    employee = serializers.IntegerField()
+    company = serializers.IntegerField()
+    all_employees_machine_attendance = serializers.BooleanField()
+    month_from_date = serializers.IntegerField()
+    month_to_date = serializers.IntegerField()
+    month = serializers.IntegerField()
+    year = serializers.IntegerField()
+
+
 # class CompanyEmployeeStatisticsSerializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = CompanyEmployeeStatistics
