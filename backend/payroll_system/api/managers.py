@@ -201,6 +201,7 @@ class EmployeeAttendanceManager(models.Manager):
     def machine_attendance(self, from_date, to_date, company_id, user, all_employees_machine_attendance, mdb_database, employee):
         EmployeeProfessionalDetail = apps.get_model('api', 'EmployeeProfessionalDetail')
         WeeklyOffHolidayOff = apps.get_model('api', 'WeeklyOffHolidayOff')
+        EmployeeGenerativeLeaveRecord = apps.get_model('api', 'EmployeeGenerativeLeaveRecord')
         EmployeeShifts = apps.get_model('api', 'EmployeeShifts')
         # Read the content of the TemporaryUploadedFile
         mdb_content = mdb_database.read()
@@ -247,6 +248,7 @@ class EmployeeAttendanceManager(models.Manager):
                 employee_rows = filtered_rows[filtered_rows['USERID'] == current_employee.employee.attendance_card_no]
                 employee_rows_asc_time = employee_rows.sort_values(by='CHECKTIME', ascending=True)
                 employee_rows_desc_time = employee_rows.sort_values(by='CHECKTIME', ascending=False)
+                print(employee_rows_desc_time)
 
                 current_date = from_date
                 while current_date <= to_date:
@@ -266,8 +268,8 @@ class EmployeeAttendanceManager(models.Manager):
                     #Minimum in and Maximum Out times, also change the 3 hrs used here later on by some settings so that the user can modify this option
                     minimum_in_time = shift_beginning_time - relativedelta(hours=3) #inclusive meaning the intime can in equal to this
                     maximum_out_time = minimum_in_time + relativedelta(days=1) #Exclusive meaning the outtime should be less than this
-                    possible_punch_in_times = employee_rows_asc_time[employee_rows_asc_time['CHECKTIME'] >= minimum_in_time]
-                    possible_punch_out_times = employee_rows_desc_time[employee_rows_desc_time['CHECKTIME'] < maximum_out_time]
+                    possible_punch_in_times = employee_rows_asc_time[(employee_rows_asc_time['CHECKTIME'] >= minimum_in_time) & (employee_rows_asc_time['CHECKTIME'] < maximum_out_time)]
+                    possible_punch_out_times = employee_rows_desc_time[(employee_rows_desc_time['CHECKTIME'] < maximum_out_time) & (employee_rows_desc_time['CHECKTIME'] > minimum_in_time)]
                     
                     punch_in_row = pd.DataFrame(columns=possible_punch_in_times.columns)
                     punch_out_row = pd.DataFrame(columns=possible_punch_in_times.columns)
@@ -279,6 +281,8 @@ class EmployeeAttendanceManager(models.Manager):
 
                     punch_in_time = None
                     punch_out_time = None
+                    machine_punch_in = None
+                    machine_punch_out = None
                     #Checking for punch in time
                     if existing_attendance.exists() and existing_attendance.first().manual_in is not None:
                         if employee_shift_on_particular_date.shift.beginning_time < employee_shift_on_particular_date.shift.end_time:
@@ -291,9 +295,11 @@ class EmployeeAttendanceManager(models.Manager):
                                 punch_in_time = datetime.combine(current_date.date(), existing_attendance.first().manual_in) + relativedelta(days=1)
                             else:
                                 punch_in_time = datetime.combine(current_date.date(), existing_attendance.first().manual_in)
+                    
                     #Punch in from machine
                     elif not punch_in_row.empty and 'CHECKTIME' in punch_in_row:
                         punch_in_time = datetime.combine(punch_in_row['CHECKTIME'].date(), punch_in_row['CHECKTIME'].time().replace(second=0))
+                        machine_punch_in = punch_in_time
                         
 
                     #Checking for punch out time
@@ -310,7 +316,11 @@ class EmployeeAttendanceManager(models.Manager):
                                 punch_out_time = datetime.combine(current_date.date(), existing_attendance.first().manual_out)
                     #Punch out from machine
                     elif not punch_out_row.empty and 'CHECKTIME' in punch_out_row:
-                        punch_out_time = datetime.combine(punch_out_row['CHECKTIME'].date() ,punch_out_row['CHECKTIME'].time().replace(second=0))
+                        if not punch_out_row.empty and not punch_in_row.empty and punch_out_row['CHECKTIME'] == punch_in_row['CHECKTIME']:
+                            punch_out_time = None
+                        else:
+                            punch_out_time = datetime.combine(punch_out_row['CHECKTIME'].date() ,punch_out_row['CHECKTIME'].time().replace(second=0))
+                            machine_punch_out = punch_out_time
 
 
                     #Calculating OT
@@ -344,10 +354,7 @@ class EmployeeAttendanceManager(models.Manager):
                             if punch_in_time > (shift_beginning_time + relativedelta(minutes=employee_shift_on_particular_date.shift.late_grace)) and punch_in_time < (shift_beginning_time + relativedelta(minutes=employee_shift_on_particular_date.shift.max_late_allowed_min)):
                                 late_minutes += (punch_in_time - shift_beginning_time)
                                 # print(f'In Time: {punch_in_row["CHECKTIME"]} Late: {late_minutes}')
-                    late_minutes_integer = int(late_minutes.total_seconds() / 60)
-                    # if late_minutes_integer == 0:
-                    #     late_minutes_integer = None
-                    #Set to None while saving
+                    late_minutes_integer = int(late_minutes.total_seconds() / 60) #Set to None while saving if late minutes are 0
 
                     print(f'OT Integer Minutes: {overtime_minutes_integer} Late Minutes: {late_minutes_integer}')
 
@@ -394,8 +401,8 @@ class EmployeeAttendanceManager(models.Manager):
 
                     print(f"Frist Half: {first_half} Second Half: {second_half}")
                     defaults = {
-                    "machine_in": punch_in_row['CHECKTIME'].time().replace(second=0) if not punch_in_row.empty else None,
-                    "machine_out": punch_out_row['CHECKTIME'].time().replace(second=0) if not punch_out_row.empty else None,
+                    "machine_in": machine_punch_in,
+                    "machine_out": machine_punch_out,
                     "manual_in": existing_attendance.first().manual_in if existing_attendance.exists() else None,
                     "manual_out": existing_attendance.first().manual_out if existing_attendance.exists() else None,
                     }
@@ -410,8 +417,8 @@ class EmployeeAttendanceManager(models.Manager):
                         "company_id": company_id,
                         "date": current_date,
                         "employee": current_employee.employee,
-                        "machine_in": punch_in_row['CHECKTIME'].time().replace(second=0) if not punch_in_row.empty else None,
-                        "machine_out": punch_out_row['CHECKTIME'].time().replace(second=0) if not punch_out_row.empty else None,
+                        "machine_in": machine_punch_in,
+                        "machine_out": machine_punch_out,
                         "manual_in": None,
                         "manual_out": None,
                         "first_half": first_half,
@@ -430,12 +437,11 @@ class EmployeeAttendanceManager(models.Manager):
                         )
                     print(f"Created: {created} Object: {attendance_object.id}")
 
-
-
                     current_date += timedelta(days=1)
-                # print(employee_rows)
 
-            # print(filtered_rows)
+                #Generating Monthly Attendace recordes
+                EmployeeGenerativeLeaveRecord.objects.generate_monthly_record(total_expected_instances=total_expected_instances, user=user, year=from_date.year, month=from_date.month, employee=current_employee.employee, company=current_employee.company)
+
 
         finally:
             # Clean up: Delete the temporary file

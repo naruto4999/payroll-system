@@ -1235,7 +1235,7 @@ class EmployeeGenerativeLeaveRecordManager(models.Manager):
             present_count_record.compensation_off_days_count = compensation_off_days_count
             present_count_record.save()
         else:
-            EmployeeMonthlyAttendanceDetails.create(user=user, employee_id=employee_id, company_id=company_id, present_count=present_count, weekly_off_days_count=weekly_off_days_count, holiday_days_count=holiday_days_count, compensation_off_days_count=compensation_off_days_count, paid_days_count=paid_days_count, not_paid_days_count=not_paid_days_count, net_ot_minutes_monthly=net_ot_minutes_monthly, date=from_date.replace(day=1))
+            EmployeeMonthlyAttendanceDetails.objects.create(user=user, employee_id=employee_id, company_id=company_id, present_count=present_count, weekly_off_days_count=weekly_off_days_count, holiday_days_count=holiday_days_count, compensation_off_days_count=compensation_off_days_count, paid_days_count=paid_days_count, not_paid_days_count=not_paid_days_count, net_ot_minutes_monthly=net_ot_minutes_monthly, date=from_date.replace(day=1))
 
         for key, value in leave_grade_dict.items():
             record = self.filter(user=user, employee_id=employee_id, company_id=company_id, leave_id=key, date=from_date.replace(day=1)).first()
