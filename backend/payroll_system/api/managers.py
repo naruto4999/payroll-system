@@ -246,11 +246,17 @@ class EmployeeAttendanceManager(models.Manager):
             
             start_time_before_while = time.time()
             for current_employee in active_employees:
+                #Current Employee Salary Detail
+                current_employee_salary_detail = None
+                try:
+                    current_employee_salary_detail = current_employee.employee.employee_salary_detail
+                except:
+                    continue
                 #Filter the Dataframe rows corresponding to the current employee
                 employee_rows = filtered_rows[filtered_rows['USERID'] == current_employee.employee.attendance_card_no]
                 employee_rows_asc_time = employee_rows.sort_values(by='CHECKTIME', ascending=True)
                 employee_rows_desc_time = employee_rows.sort_values(by='CHECKTIME', ascending=False)
-                # print(employee_rows_desc_time)
+                print(employee_rows_desc_time)
                 #Getting Shift Before the start of the loop
                 employee_shift_on_particular_date=None
                 employee_shift_on_particular_date_queryset = EmployeeShifts.objects.filter(company_id=company_id, user=user, employee=current_employee.employee, from_date__lte=from_date, to_date__gte=from_date)
@@ -262,12 +268,19 @@ class EmployeeAttendanceManager(models.Manager):
                 attendance_records = []
                 update_attendance_records = []
                 current_date = from_date
+
+                # Fetch all existing attendance records within the date range for current employee
+                date_range = [from_date + timedelta(days=i) for i in range((to_date - from_date).days + 1)]
+                attendance_by_date = self.filter(user=user, company_id=company_id, employee=current_employee.employee, date__in=date_range).distinct("date").in_bulk(field_name='date')
+                # print(attendance_by_date)
+
                 while current_date <= to_date:
                     #Get current attendance if any
                     skip_calculating_attendances = False
-                    existing_attendance = self.filter(user=user, company_id=company_id, date=current_date, employee=current_employee.employee)
-                    if existing_attendance.exists():
-                        if existing_attendance.first().manual_in != None and existing_attendance.first().manual_out != None:
+                    # existing_attendance = self.filter(user=user, company_id=company_id, date=current_date, employee=current_employee.employee)
+                    existing_attendance = attendance_by_date.get(current_date.date(), None)
+                    if existing_attendance != None:
+                        if existing_attendance.manual_in != None and existing_attendance.manual_out != None:
                             skip_calculating_attendances = True
                     # print(current_date.strftime("%Y-%m-%d"))  # or do something with the date
                     #Get the shift of the current employee
@@ -281,8 +294,9 @@ class EmployeeAttendanceManager(models.Manager):
 
                     # employee_shift_on_particular_date = EmployeeShifts.objects.get(company_id=company_id, user=user, employee=current_employee.employee, from_date__lte=current_date, to_date__gte=current_date)
                     
-                    #Shift Beginnning time with current date
+                    #Shift Beginnning time and End Time with current date
                     shift_beginning_time = datetime.combine(current_date.date(), employee_shift_on_particular_date.shift.beginning_time)
+                    shift_end_time = datetime.combine(current_date.date() if employee_shift_on_particular_date.shift.end_time > employee_shift_on_particular_date.shift.beginning_time else current_date.date()+relativedelta(days=1), employee_shift_on_particular_date.shift.end_time)
 
                     #Minimum in and Maximum Out times, also change the 3 hrs used here later on by some settings so that the user can modify this option
                     minimum_in_time = shift_beginning_time - relativedelta(hours=3) #inclusive meaning the intime can in equal to this
@@ -303,57 +317,60 @@ class EmployeeAttendanceManager(models.Manager):
                     machine_punch_in = None
                     machine_punch_out = None
                     #Checking for punch in time
-                    if existing_attendance.exists() and existing_attendance.first().manual_in is not None:
+                    if existing_attendance != None and existing_attendance.manual_in is not None:
                         if employee_shift_on_particular_date.shift.beginning_time < employee_shift_on_particular_date.shift.end_time:
-                            if existing_attendance.first().manual_in < employee_shift_on_particular_date.shift.end_time:
-                                punch_in_time = datetime.combine(current_date.date(), existing_attendance.first().manual_in)
-                            elif existing_attendance.first().manual_in > employee_shift_on_particular_date.shift.end_time:
-                                punch_in_time = datetime.combine(current_date.date(), existing_attendance.first().manual_in) - relativedelta(days=1)
+                            if existing_attendance.manual_in < employee_shift_on_particular_date.shift.end_time:
+                                punch_in_time = datetime.combine(current_date.date(), existing_attendance.manual_in)
+                            elif existing_attendance.manual_in > employee_shift_on_particular_date.shift.end_time:
+                                punch_in_time = datetime.combine(current_date.date(), existing_attendance.manual_in) - relativedelta(days=1)
                         if employee_shift_on_particular_date.shift.beginning_time > employee_shift_on_particular_date.shift.end_time:
-                            if existing_attendance.first().manual_in < employee_shift_on_particular_date.shift.end_time:
-                                punch_in_time = datetime.combine(current_date.date(), existing_attendance.first().manual_in) + relativedelta(days=1)
+                            if existing_attendance.manual_in < employee_shift_on_particular_date.shift.end_time:
+                                punch_in_time = datetime.combine(current_date.date(), existing_attendance.manual_in) + relativedelta(days=1)
                             else:
-                                punch_in_time = datetime.combine(current_date.date(), existing_attendance.first().manual_in)
+                                punch_in_time = datetime.combine(current_date.date(), existing_attendance.manual_in)
                     
                     #Punch in from machine
                     elif not punch_in_row.empty and 'CHECKTIME' in punch_in_row:
                         punch_in_time = datetime.combine(punch_in_row['CHECKTIME'].date(), punch_in_row['CHECKTIME'].time().replace(second=0))
+                        if punch_in_time > shift_end_time-relativedelta(minutes=employee_shift_on_particular_date.shift.half_day_minimum_minutes):
+                            punch_in_time=None
                     
                     if not punch_in_row.empty and 'CHECKTIME' in punch_in_row:
                         machine_punch_in = datetime.combine(punch_in_row['CHECKTIME'].date(), punch_in_row['CHECKTIME'].time().replace(second=0))
+                        if machine_punch_in > shift_end_time-relativedelta(minutes=employee_shift_on_particular_date.shift.half_day_minimum_minutes):
+                            machine_punch_in=None
                         
 
                     #Checking for punch out time
-                    if existing_attendance.exists() and existing_attendance.first().manual_out is not None:
+                    if existing_attendance != None and existing_attendance.manual_out is not None:
                         if employee_shift_on_particular_date.shift.beginning_time < employee_shift_on_particular_date.shift.end_time:
-                            if existing_attendance.first().manual_out > employee_shift_on_particular_date.shift.beginning_time:
-                                punch_out_time = datetime.combine(current_date.date(), existing_attendance.first().manual_out)
-                            elif existing_attendance.first().manual_out < employee_shift_on_particular_date.shift.beginning_time:
-                                punch_out_time = datetime.combine(current_date.date(), existing_attendance.first().manual_out) + relativedelta(days=1)
+                            if existing_attendance.manual_out > employee_shift_on_particular_date.shift.beginning_time:
+                                punch_out_time = datetime.combine(current_date.date(), existing_attendance.manual_out)
+                            elif existing_attendance.manual_out < employee_shift_on_particular_date.shift.beginning_time:
+                                punch_out_time = datetime.combine(current_date.date(), existing_attendance.manual_out) + relativedelta(days=1)
                         else:
-                            if existing_attendance.first().manual_out < employee_shift_on_particular_date.shift.beginning_time:
-                                punch_out_time = datetime.combine(current_date.date(), existing_attendance.first().manual_out) + relativedelta(days=1)
+                            if existing_attendance.manual_out < employee_shift_on_particular_date.shift.beginning_time:
+                                punch_out_time = datetime.combine(current_date.date(), existing_attendance.manual_out) + relativedelta(days=1)
                             else:
-                                punch_out_time = datetime.combine(current_date.date(), existing_attendance.first().manual_out)
+                                punch_out_time = datetime.combine(current_date.date(), existing_attendance.manual_out)
+                    
                     #Punch out from machine
                     elif not punch_out_row.empty and 'CHECKTIME' in punch_out_row:
                         if not punch_out_row.empty and not punch_in_row.empty:
-                            if punch_out_row['CHECKTIME'] == punch_in_row['CHECKTIME']:
+                            punch_out_time = datetime.combine(punch_out_row['CHECKTIME'].date() ,punch_out_row['CHECKTIME'].time().replace(second=0))
+                            if punch_out_time == punch_in_time:
                                 punch_out_time = None
-                            else:
-                                punch_out_time = datetime.combine(punch_out_row['CHECKTIME'].date() ,punch_out_row['CHECKTIME'].time().replace(second=0))
                     
                     if not punch_out_row.empty and 'CHECKTIME' in punch_out_row:
                         if not punch_out_row.empty and not punch_in_row.empty:
-                            if punch_out_row['CHECKTIME'] == punch_in_row['CHECKTIME']:
+                            machine_punch_out = datetime.combine(punch_out_row['CHECKTIME'].date() ,punch_out_row['CHECKTIME'].time().replace(second=0))
+                            if machine_punch_out == machine_punch_in:
                                 machine_punch_out = None
-                            else:
-                                machine_punch_out = datetime.combine(punch_out_row['CHECKTIME'].date() ,punch_out_row['CHECKTIME'].time().replace(second=0))
 
                     #Calculating OT
                     # print(f'Punch in time : {punch_in_time} Punch out time : {punch_out_time}')
                     overtime_minutes = timedelta(minutes=0)
-                    if current_employee.employee.employee_salary_detail.overtime_type != 'no_overtime':
+                    if current_employee_salary_detail.overtime_type != 'no_overtime':
                         if not skip_calculating_attendances and (punch_in_time is not None and punch_out_time is not None):
                             if current_date.strftime('%a').lower() == current_employee.weekly_off or (weekday_occurrence_in_month(date=current_date) == current_employee.extra_off) or holiday_queryset.filter(date=current_date).exists():
                                 print('Chhutti')
@@ -361,7 +378,7 @@ class EmployeeAttendanceManager(models.Manager):
                                 # print(minutes_worked)
                                 if minutes_worked > timedelta(minutes=employee_shift_on_particular_date.shift.ot_begin_after):
                                     overtime_minutes += minutes_worked
-                            elif current_employee.employee.employee_salary_detail.overtime_type == 'all_days':
+                            elif current_employee_salary_detail.overtime_type == 'all_days':
                                 arrived_early_minutes = shift_beginning_time - punch_in_time
                                 if arrived_early_minutes > timedelta(minutes=employee_shift_on_particular_date.shift.ot_begin_after):
                                     overtime_minutes += arrived_early_minutes
@@ -376,9 +393,13 @@ class EmployeeAttendanceManager(models.Manager):
 
                     #Calculating Late
                     late_minutes = timedelta(minutes=0)
+                    # print(f"skip attendance?: {skip_calculating_attendances}")
                     if current_date.strftime('%a').lower() != current_employee.weekly_off and (weekday_occurrence_in_month(date=current_date) != current_employee.extra_off) and (not holiday_queryset.filter(date=current_date).exists()) and not skip_calculating_attendances:
-                        if punch_in_time is not None:
-                            if punch_in_time > (shift_beginning_time + relativedelta(minutes=employee_shift_on_particular_date.shift.late_grace)) and punch_in_time < (shift_beginning_time + relativedelta(minutes=employee_shift_on_particular_date.shift.max_late_allowed_min)):
+                        print(f'Date: {current_date} Yes Late')
+                        print(f'Punch in time: {punch_in_time}')
+                        if punch_in_time != None:
+                            print('Yes Not None')
+                            if punch_in_time > (shift_beginning_time + relativedelta(minutes=employee_shift_on_particular_date.shift.late_grace)):
                                 late_minutes += (punch_in_time - shift_beginning_time)
                                 # print(f'In Time: {punch_in_row["CHECKTIME"]} Late: {late_minutes}')
                     late_minutes_integer = int(late_minutes.total_seconds() / 60) #Set to None while saving if late minutes are 0
@@ -438,13 +459,13 @@ class EmployeeAttendanceManager(models.Manager):
                             elif punch_in_time is not None or punch_out_time is not None:
                                 first_half = miss_punch
                                 second_half = miss_punch
-
+                    print(f'date: {current_date} Late Minutes Integer: {late_minutes_integer} Late Min: {late_minutes}')
                     # print(f"Frist Half: {first_half} Second Half: {second_half}")
                     # defaults = {
                     # "machine_in": machine_punch_in,
                     # "machine_out": machine_punch_out,
-                    # "manual_in": existing_attendance.first().manual_in if existing_attendance.exists() else None,
-                    # "manual_out": existing_attendance.first().manual_out if existing_attendance.exists() else None,
+                    # "manual_in": existing_attendance.manual_in if existing_attendance != None else None,
+                    # "manual_out": existing_attendance.manual_out if existing_attendance != None else None,
                     # }
                     # if not skip_calculating_attendances:
                     #     defaults['first_half'] = first_half
@@ -452,12 +473,12 @@ class EmployeeAttendanceManager(models.Manager):
                     #     defaults['ot_min'] = overtime_minutes_integer
                     #     defaults['late_min'] = late_minutes_integer if late_minutes_integer!=0 else None
 
-                    if existing_attendance.exists():
-                        existing_attendance_obj = existing_attendance.first()
+                    if existing_attendance != None:
+                        existing_attendance_obj = existing_attendance
                         existing_attendance_obj.machine_in = machine_punch_in
                         existing_attendance_obj.machine_out = machine_punch_out
-                        existing_attendance_obj.manual_in = existing_attendance_obj.manual_in if existing_attendance.exists() else None
-                        existing_attendance_obj.manual_out = existing_attendance_obj.manual_out if existing_attendance.exists() else None
+                        existing_attendance_obj.manual_in = existing_attendance_obj.manual_in if existing_attendance != None else None
+                        existing_attendance_obj.manual_out = existing_attendance_obj.manual_out if existing_attendance != None else None
                         if not skip_calculating_attendances:
                             pay_multiplier = 0
                             if first_half.paid and second_half.paid:
@@ -467,7 +488,7 @@ class EmployeeAttendanceManager(models.Manager):
                             existing_attendance_obj.first_half = first_half
                             existing_attendance_obj.second_half = second_half
                             existing_attendance_obj.ot_min = overtime_minutes_integer
-                            existing_attendance_obj.late_min = late_minutes_integer if late_minutes_integer!=0 else None
+                            existing_attendance_obj.late_min = late_minutes_integer if late_minutes_integer!=0 and late_minutes_integer<=employee_shift_on_particular_date.shift.max_late_allowed_min else None
                             existing_attendance_obj.pay_multiplier = pay_multiplier
                         update_attendance_records.append(existing_attendance_obj)
 
@@ -497,14 +518,15 @@ class EmployeeAttendanceManager(models.Manager):
                     #     create_defaults = create_defaults_for_attendance,
                     #     )
                     # print(f"Created: {created} Object: {attendance_object.id}")
+                    # print(f'Update Records: {update_attendance_records}')
 
-                    if not existing_attendance.exists():
+                    if existing_attendance == None:
                         pay_multiplier = 0
                         if first_half.paid and second_half.paid:
                             pay_multiplier = 1
                         elif first_half.paid or second_half.paid:
                             pay_multiplier = 0.5
-                        attendance_records.append(EmployeeAttendance(user=user, company_id=company_id, date=current_date, employee=current_employee.employee, machine_in=machine_punch_in, machine_out=machine_punch_out, manual_in=None, manual_out=None, first_half=first_half, second_half=second_half, ot_min=overtime_minutes_integer, late_min=late_minutes_integer if late_minutes_integer!=0 else None, pay_multiplier=pay_multiplier))
+                        attendance_records.append(EmployeeAttendance(user=user, company_id=company_id, date=current_date, employee=current_employee.employee, machine_in=machine_punch_in, machine_out=machine_punch_out, manual_in=None, manual_out=None, first_half=first_half, second_half=second_half, ot_min=overtime_minutes_integer, late_min=late_minutes_integer if late_minutes_integer!=0 and late_minutes_integer<=employee_shift_on_particular_date.shift.max_late_allowed_min else None, pay_multiplier=pay_multiplier))
                     current_date += timedelta(days=1)
                 
                 if len(attendance_records) != 0:

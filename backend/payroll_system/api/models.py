@@ -1085,7 +1085,7 @@ class EmployeeAttendance(models.Model):
 
         ]
         constraints = [
-            models.UniqueConstraint(fields=['employee', 'date', 'company'], name='unique_employee_attendance_date_wise'),
+            models.UniqueConstraint(fields=['employee', 'date'], name='unique_employee_attendance_date_wise'),
         ]
 
     def save(self, *args, **kwargs):
