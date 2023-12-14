@@ -61,7 +61,10 @@ const Sidebar = () => {
 	return (
 		<>
 			<div className={classNames(showSidebar == false ? '' : 'hidden', 'relative z-40 cursor-pointer px-4')}>
-				<FaBars className="fixed mt-2 h-6" onClick={sidebarHandler} />
+				<FaBars
+					className="fixed mt-2 -translate-x-2 p-1 text-3xl hover:rounded hover:border hover:text-teal-600"
+					onClick={sidebarHandler}
+				/>
 				<div className="fixed right-4 z-20 mt-2 flex flex-row items-center gap-2 text-xs dark:text-slate-100 dark:text-opacity-70 sm:text-base">
 					Dark
 					<SwitchToggle theme={theme} switch={themeSwitch} />
