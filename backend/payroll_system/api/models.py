@@ -1101,82 +1101,21 @@ class EmployeeAttendance(models.Model):
     
 
 class EmployeeGenerativeLeaveRecordManager(models.Manager):
-    def generate_monthly_record(self, total_expected_instances, user, year, month, employee, company):
-        leave_grades_queryset = LeaveGrade.objects.filter(user=user, company=company, paid=True, generate_frequency__isnull=False)
-        leave_grade_dict = {leave_grade.id: {'leave_count': 0, 'name': leave_grade.name} for leave_grade in leave_grades_queryset}
-        employee_professional_detail = EmployeeProfessionalDetail.objects.get(user=user, employee=employee, company=company)
-
-        if year > employee_professional_detail.date_of_joining.year or (month > employee_professional_detail.date_of_joining.month and year == employee_professional_detail.date_of_joining.year):
-            from_date = datetime(year, month, 1).date()
-            to_date = datetime(year, month, total_expected_instances).date()
-        elif month == employee_professional_detail.date_of_joining.month and year == employee_professional_detail.date_of_joining.year:
-            day = employee_professional_detail.date_of_joining.day
-            from_date = datetime(year, month, day).date()
-            to_date = datetime(year, month, day + total_expected_instances - 1).date()
-
-        present_count = 0
-        weekly_off_days_count = 0
-        holiday_days_count = 0
-        paid_days_count = 0
-        not_paid_days_count = 0
-        total_ot_minutes_monthly = 0
-        total_late_min = 0
-        compensation_off_days_count = 0
-
-        employee_attendance_queryset = EmployeeAttendance.objects.filter(user=user, employee=employee, company=company, date__gte=from_date, date__lte=to_date)
-
-        for employee_attendance in employee_attendance_queryset:
-            # Present Count
-            present_count += 1 if employee_attendance.first_half.name == "P" else 0
-            present_count += 1 if employee_attendance.second_half.name == "P" else 0
-
-            # Weekly Off Count
-            weekly_off_days_count += 1 if employee_attendance.first_half.name == "WO" else 0
-            weekly_off_days_count += 1 if employee_attendance.second_half.name == "WO" else 0
-
-            #Holiday Off Count
-            holiday_days_count += 1 if employee_attendance.first_half.name == "HD" else 0
-            holiday_days_count += 1 if employee_attendance.second_half.name == "HD" else 0
-
-            #Compensation Off Count
-            compensation_off_days_count += 1 if employee_attendance.first_half.name == "CO" else 0
-            compensation_off_days_count += 1 if employee_attendance.second_half.name == "CO" else 0
-
-            #Paid Days Count
-            paid_days_count += 1 if employee_attendance.first_half.paid == True else 0
-            paid_days_count += 1 if employee_attendance.second_half.paid == True else 0
-
-            #Not Paid Days Count
-            not_paid_days_count += 1 if employee_attendance.first_half.paid == False else 0
-            not_paid_days_count += 1 if employee_attendance.second_half.paid == False else 0
-
-            total_ot_minutes_monthly += employee_attendance.ot_min if employee_attendance.ot_min != None else 0
-            total_late_min += employee_attendance.late_min if employee_attendance.late_min != None else 0
-            # print(f"Total OT: {total_ot_minutes_monthly} Total Late: {total_late_min}")
-
-            for leave_id in (employee_attendance.first_half.id, employee_attendance.second_half.id):
-                if leave_id in leave_grade_dict:
-                    leave_grade_dict[leave_id]['leave_count'] += 1
-
-        net_ot_minutes_monthly = max(total_ot_minutes_monthly - ((total_late_min // 30) * 30 + (30 if total_late_min % 30 >= 20 else 0)), 0)
-
-        for key, value in leave_grade_dict.items():
-            self.create(user=user, employee=employee, company=company, leave_id=key, date=from_date.replace(day=1), leave_count=value['leave_count'])
-        EmployeeMonthlyAttendanceDetails.objects.create(present_count=present_count, weekly_off_days_count=weekly_off_days_count, holiday_days_count=holiday_days_count, compensation_off_days_count=compensation_off_days_count, paid_days_count=paid_days_count, not_paid_days_count=not_paid_days_count, net_ot_minutes_monthly=net_ot_minutes_monthly, user=user, company=company, employee=employee, date=from_date.replace(day=1))
-
-
-    def update_monthly_record(self, total_expected_instances, user, year, month, employee_id, company_id):
+    def generate_update_monthly_record(self, user, year, month, employee_id, company_id):
         leave_grades_queryset = LeaveGrade.objects.filter(user=user, company_id=company_id, paid=True, generate_frequency__isnull=False)
         leave_grade_dict = {leave_grade.id: {'leave_count': 0, 'name': leave_grade.name} for leave_grade in leave_grades_queryset}
         employee_professional_detail = EmployeeProfessionalDetail.objects.get(user=user, employee_id=employee_id, company_id=company_id)
 
         if year > employee_professional_detail.date_of_joining.year or (month > employee_professional_detail.date_of_joining.month and year == employee_professional_detail.date_of_joining.year):
             from_date = datetime(year, month, 1).date()
-            to_date = datetime(year, month, total_expected_instances).date()
+            last_day = calendar.monthrange(year, month)[1]
+            to_date = datetime(year, month, last_day).date()
         elif month == employee_professional_detail.date_of_joining.month and year == employee_professional_detail.date_of_joining.year:
             day = employee_professional_detail.date_of_joining.day
             from_date = datetime(year, month, day).date()
-            to_date = datetime(year, month, day + total_expected_instances - 1).date()
+            # to_date = datetime(year, month, day + total_expected_instances - 1).date()
+            last_day = calendar.monthrange(year, month)[1]
+            to_date = datetime(year, month, last_day).date()
 
         present_count = 0
         weekly_off_days_count = 0
@@ -1186,6 +1125,7 @@ class EmployeeGenerativeLeaveRecordManager(models.Manager):
         total_ot_minutes_monthly = 0
         total_late_min = 0
         compensation_off_days_count = 0
+
         employee_attendance_queryset = EmployeeAttendance.objects.filter(user=user, employee_id=employee_id, company_id=company_id, date__gte=from_date, date__lte=to_date)
 
         for employee_attendance in employee_attendance_queryset:
@@ -1215,6 +1155,7 @@ class EmployeeGenerativeLeaveRecordManager(models.Manager):
 
             total_ot_minutes_monthly += employee_attendance.ot_min if employee_attendance.ot_min != None else 0
             total_late_min += employee_attendance.late_min if employee_attendance.late_min != None else 0
+            # print(f"Total OT: {total_ot_minutes_monthly} Total Late: {total_late_min}")
 
             for leave_id in (employee_attendance.first_half.id, employee_attendance.second_half.id):
                 if leave_id in leave_grade_dict:
@@ -1223,28 +1164,48 @@ class EmployeeGenerativeLeaveRecordManager(models.Manager):
         net_ot_minutes_monthly = max(total_ot_minutes_monthly - ((total_late_min // 30) * 30 + (30 if total_late_min % 30 >= 20 else 0)), 0)
 
 
-        # Update existing records without using F() expressions
-        present_count_record = EmployeeMonthlyAttendanceDetails.objects.filter(user=user, employee_id=employee_id, company_id=company_id, date=from_date.replace(day=1)).first()
-        if present_count_record:
-            present_count_record.present_count = present_count
-            present_count_record.weekly_off_days_count = weekly_off_days_count
-            present_count_record.holiday_days_count = holiday_days_count
-            present_count_record.paid_days_count = paid_days_count
-            present_count_record.not_paid_days_count = not_paid_days_count
-            present_count_record.net_ot_minutes_monthly = net_ot_minutes_monthly
-            present_count_record.compensation_off_days_count = compensation_off_days_count
-            present_count_record.save()
-        else:
-            EmployeeMonthlyAttendanceDetails.objects.create(user=user, employee_id=employee_id, company_id=company_id, present_count=present_count, weekly_off_days_count=weekly_off_days_count, holiday_days_count=holiday_days_count, compensation_off_days_count=compensation_off_days_count, paid_days_count=paid_days_count, not_paid_days_count=not_paid_days_count, net_ot_minutes_monthly=net_ot_minutes_monthly, date=from_date.replace(day=1))
+        # For updating existing instance
+        defaults = {
+        "present_count": present_count,
+        "weekly_off_days_count": weekly_off_days_count,
+        "holiday_days_count": holiday_days_count,
+        "paid_days_count": paid_days_count,
+        "not_paid_days_count": not_paid_days_count,
+        "net_ot_minutes_monthly": net_ot_minutes_monthly,
+        "compensation_off_days_count": compensation_off_days_count,
+        }
+
+        #For creating new instance
+        create_defaults = {
+        "user": user, 
+        "company_id": company_id, 
+        "employee_id": employee_id, 
+        "date": from_date.replace(day=1),
+        "present_count": present_count,
+        "weekly_off_days_count": weekly_off_days_count,
+        "holiday_days_count": holiday_days_count,
+        "paid_days_count": paid_days_count,
+        "not_paid_days_count": not_paid_days_count,
+        "net_ot_minutes_monthly": net_ot_minutes_monthly,
+        "compensation_off_days_count": compensation_off_days_count,
+        }
+        # present_count_record = EmployeeMonthlyAttendanceDetails.objects.filter(user=user, employee_id=employee_id, company_id=company_id, date=from_date.replace(day=1)).first()
+
+        EmployeeMonthlyAttendanceDetails.objects.update_or_create(user=user, company_id=company_id, employee_id=employee_id, date=from_date.replace(day=1), defaults=defaults, create_defaults=create_defaults)
 
         for key, value in leave_grade_dict.items():
-            record = self.filter(user=user, employee_id=employee_id, company_id=company_id, leave_id=key, date=from_date.replace(day=1)).first()
-            if record:
-                # record.present_count = present_count
-                record.leave_count = value['leave_count']
-                record.save()
-            else:
-                self.create(user=user, employee_id=employee_id, company_id=company_id, leave_id=key, date=from_date.replace(day=1), leave_count=value['leave_count'])
+            defaults_generative_leave = {
+                "leave_count": value['leave_count']
+            }
+            create_defaults_generative_leave = {
+                "user": user,
+                "employee_id": employee_id,
+                "company_id": company_id,
+                "leave_id": key,
+                "date": from_date.replace(day=1),
+                "leave_count": value['leave_count']
+            }
+            self.update_or_create(user=user, employee_id=employee_id, company_id=company_id, leave_id=key, date=from_date.replace(day=1), defaults=defaults_generative_leave, create_defaults=create_defaults_generative_leave)
 
 
 class EmployeeGenerativeLeaveRecord(models.Model):

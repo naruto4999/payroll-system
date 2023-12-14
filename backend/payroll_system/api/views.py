@@ -1825,7 +1825,7 @@ class EmployeeAttendanceListCreateAPIView(generics.ListCreateAPIView):
 
             if user.role == "OWNER":
                 serializer.save(user=user)
-                EmployeeGenerativeLeaveRecord.objects.generate_monthly_record(total_expected_instances=total_expected_instances, user=user, year=date_for_one_instance.year, month=date_for_one_instance.month, employee=employee, company=company)
+                EmployeeGenerativeLeaveRecord.objects.generate_update_monthly_record(user=user, year=date_for_one_instance.year, month=date_for_one_instance.month, employee_id=employee.id, company_id=company.id)
                 return Response(serializer.data, status=status.HTTP_200_OK)
                 # return Response({"msg": "try"}, status=status.HTTP_200_OK)
             # else:
@@ -1880,7 +1880,7 @@ class EmployeeAttendanceUpdateAPIView(generics.UpdateAPIView):
                     serializer.save(user=user)
 
             if user.role == "OWNER":
-                EmployeeGenerativeLeaveRecord.objects.update_monthly_record(total_expected_instances=total_expected_instances, user=user, year=date_for_one_instance.year, month=date_for_one_instance.month, employee_id=employee_id, company_id=company_id)
+                EmployeeGenerativeLeaveRecord.objects.generate_update_monthly_record(user=user, year=date_for_one_instance.year, month=date_for_one_instance.month, employee_id=employee_id, company_id=company_id)
 
             return Response({"detail": "Successful"}, status=status.HTTP_200_OK)
         except Exception as e:

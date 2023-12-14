@@ -1010,6 +1010,9 @@ const EditAttendance = memo(
 						duration: 3000,
 					})
 				);
+				if (values.allEmployeesMachineAttendance == true) {
+					setShowConfirmModalMachineAttendance(false);
+				}
 			} catch (err) {
 				// setShowLoadingBar(false);
 				console.log(err);
@@ -1407,7 +1410,7 @@ const EditAttendance = memo(
 							className="items-left fixed inset-0 mx-2 my-auto flex h-fit flex-col gap-4 rounded bg-zinc-300 p-4 shadow-xl dark:bg-zinc-800 sm:mx-auto sm:max-w-lg"
 							isOpen={showConfirmModalMachineAttendance}
 							onRequestClose={() =>
-								setShowConfirmModalMachineAttendance(false || isBulkAutoFillingAttendance)
+								setShowConfirmModalMachineAttendance(false || isAddingMachineAttendance)
 							}
 							style={{
 								overlay: {
@@ -1423,7 +1426,7 @@ const EditAttendance = memo(
 									<ConfirmationModal
 										{...props}
 										displayHeading={'Bulk Update Machine Attendance'}
-										setShowConfirmModalMachineAttendance={setShowConfirmModalMachineAttendance}
+										setShowConfirmModal={setShowConfirmModalMachineAttendance}
 									/>
 								)}
 							/>
