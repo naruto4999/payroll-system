@@ -327,9 +327,39 @@ const EmployeeEntryForm = () => {
 			designation: '',
 			category: '',
 			salaryGrade: '',
-			// shift: '',
 			weeklyOff: 'sun',
 			extraOff: 'no_off',
+			// Previous Experience Row 1
+			firstPreviousExperienceCompanyName: '',
+			firstPreviousExperienceFromDate: '',
+			firstPreviousExperienceToDate: '',
+			firstPreviousExperienceDesignation: '',
+			firstPreviousExperienceReasonForLeaving: '',
+			firstPreviousExperienceSalary: '',
+			// Previous Experience Row 2
+			secondPreviousExperienceCompanyName: '',
+			secondPreviousExperienceFromDate: null,
+			secondPreviousExperienceToDate: null,
+			secondPreviousExperienceDesignation: '',
+			secondPreviousExperienceReasonForLeaving: '',
+			secondPreviousExperienceSalary: null,
+			// Previous Experience Row 3
+			thirdPreviousExperienceCompanyName: '',
+			thirdPreviousExperienceFromDate: null,
+			thirdPreviousExperienceToDate: null,
+			thirdPreviousExperienceDesignation: '',
+			thirdPreviousExperienceReasonForLeaving: '',
+			thirdPreviousExperienceSalary: null,
+			// References Row 1
+			firstReferenceName: '',
+			firstReferenceAddress: '',
+			firstReferenceRelation: '',
+			firstReferencePhone: '',
+			// References Row 2
+			secondReferenceName: '',
+			secondReferenceAddress: '',
+			secondReferenceRelation: '',
+			secondReferencePhone: '',
 		},
 		employeeShift: {
 			shift: '',
@@ -1219,7 +1249,6 @@ const EmployeeEntryForm = () => {
 										}`}
 										key={row.id}
 									>
-										{console.log(row.original.resignationDate)}
 										{row.getVisibleCells().map((cell) => (
 											<td className="px-4 py-4 font-normal" key={cell.id}>
 												<div className="text-sm">
@@ -1286,6 +1315,7 @@ const EmployeeEntryForm = () => {
 										gender: '',
 										maritalStatus: '',
 										bloodGroup: '',
+										nationality: 'Indian',
 
 										// 3rd column
 										panNumber: '',

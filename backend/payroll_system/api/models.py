@@ -3,7 +3,7 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 from django.conf import settings
 from django.utils import timezone
 from django.core.exceptions import ValidationError
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import pathlib
 from django.utils import timezone
 from django.core.validators import MinValueValidator, MaxValueValidator
@@ -437,6 +437,7 @@ class EmployeePersonalDetail(models.Model):
     marital_status = models.CharField(max_length=1, choices=MARITAL_STATUS_CHOICES, null=True, blank=True)
     blood_group = models.CharField(max_length=3, choices=BLOOD_GROUP_CHOICES, null=True, blank=True)
     religion = models.CharField(max_length=50, null=True, blank=True)
+    nationality = models.CharField(max_length=50, null=False, blank=False, default='Indian')
     education_qualification = models.CharField(max_length=2, choices=EDUCATION_CHOICES, null=True, blank=True)
     technical_qualification = models.CharField(max_length=50, null=True, blank=True)
     local_address = models.CharField(max_length=256, null=True, blank=True)
@@ -517,6 +518,40 @@ class EmployeeProfessionalDetail(models.Model):
     extra_off = models.CharField(max_length=10, choices=EXTRA_OFF_CHOICES, default='no_off', null=False, blank=False)
     resigned = models.BooleanField(default=False, null=False, blank=False)
     resignation_date = models.DateField(null=True, blank=True, default=None)
+    ##Previous Experience
+    #Row 1
+    first_previous_experience_company_name = models.CharField(max_length=64, null=True, blank=True)
+    first_previous_experience_from_date = models.DateField(null=True, blank=True)
+    first_previous_experience_to_date = models.DateField(null=True, blank=True)
+    first_previous_experience_designation = models.CharField(max_length=64, null=True, blank=True)
+    first_previous_experience_reason_for_leaving = models.CharField(max_length=64, null=True, blank=True)
+    first_previous_experience_salary = models.IntegerField(null=True, blank=True)
+    #Row 2
+    second_previous_experience_company_name = models.CharField(max_length=64, null=True, blank=True)
+    second_previous_experience_from_date = models.DateField(null=True, blank=True)
+    second_previous_experience_to_date = models.DateField(null=True, blank=True)
+    second_previous_experience_designation = models.CharField(max_length=64, null=True, blank=True)
+    second_previous_experience_reason_for_leaving = models.CharField(max_length=64, null=True, blank=True)
+    second_previous_experience_salary = models.IntegerField(null=True, blank=True)
+    #Row 3
+    third_previous_experience_company_name = models.CharField(max_length=64, null=True, blank=True)
+    third_previous_experience_from_date = models.DateField(null=True, blank=True)
+    third_previous_experience_to_date = models.DateField(null=True, blank=True)
+    third_previous_experience_designation = models.CharField(max_length=64, null=True, blank=True)
+    third_previous_experience_reason_for_leaving = models.CharField(max_length=64, null=True, blank=True)
+    third_previous_experience_salary = models.IntegerField(null=True, blank=True)
+    ##References
+    #Row 1
+    first_reference_name = models.CharField(max_length=64, null=True, blank=True)
+    first_reference_address = models.CharField(max_length=128, null=True, blank=True)
+    first_reference_relation = models.CharField(max_length=64, null=True, blank=True)
+    first_reference_phone = models.CharField(max_length=10, null=True, blank=True)
+    #Row 2
+    second_reference_name = models.CharField(max_length=64, null=True, blank=True)
+    second_reference_address = models.CharField(max_length=128, null=True, blank=True)
+    second_reference_relation = models.CharField(max_length=64, null=True, blank=True)
+    second_reference_phone = models.CharField(max_length=10, null=True, blank=True)
+    #Custom Manager
     objects = ActiveEmployeeManager()
 
 
@@ -739,6 +774,15 @@ class EmployeeFamilyNomineeDetial(models.Model):
     fa_nominee_share = models.DecimalField(max_digits=5, decimal_places=2, validators=PERCENTAGE_VALIDATOR, null=True, blank=True)
     is_gratuity_nominee = models.BooleanField(null=False, blank=False, default=False)
     gratuity_nominee_share = models.DecimalField(max_digits=5, decimal_places=2, validators=PERCENTAGE_VALIDATOR, null=True, blank=True)
+
+    def calculate_age(self):
+        if self.dob:
+            today = date.today()
+            birth_date = self.dob
+            age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+            return age
+        else:
+            return None
 
     def save(self, *args, **kwargs):
         if not hasattr(self.employee, 'employee_pf_esi_detail'):

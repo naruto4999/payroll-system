@@ -82,6 +82,8 @@ const EmployeeProfessionalDetail = ({
 	// 		skip: !isEditing,
 	// 	}
 	// );
+	const previousExperienceRows = ['first', 'second', 'third'];
+	const references = ['first', 'second'];
 
 	useEffect(() => {
 		if (values.employeeProfessionalDetail.dateOfJoining !== '') {
@@ -331,9 +333,139 @@ const EmployeeProfessionalDetail = ({
 							</Field>
 						</div>
 					</section>
+					{console.log(values)}
 					{errorMessage && errorMessage.error && (
 						<p className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">{errorMessage.error}</p>
 					)}
+					<section className="w-[1000px]">
+						<p className="block text-base font-semibold text-black text-opacity-100 dark:text-white dark:text-opacity-70">
+							Previous Experiences
+						</p>
+						<table className="w-full border-collapse text-center text-xs">
+							<thead className="sticky top-0 z-20 bg-blueAccent-600 dark:bg-blueAccent-700 dark:bg-opacity-40">
+								<tr>
+									<th className="w-8 px-1 py-2 font-medium">S/N</th>
+									<th className="px-1 py-2 font-medium">Company Name</th>
+									<th className="px-1 py-2 font-medium">Designation</th>
+									<th className="px-1 py-2 font-medium">From Date</th>
+									<th className="px-1 py-2 font-medium">To Date</th>
+									<th className="px-1 py-2 font-medium">Salary</th>
+									<th className="px-1 py-2 font-medium">Reason For Leaving</th>
+								</tr>
+							</thead>
+							<tbody>
+								{/* Row 1 */}
+								{previousExperienceRows.map((serial, index) => (
+									<tr
+										key={index}
+										className="hover:bg-zinc-200 dark:hover:bg-zinc-900 dark:focus:bg-teal-800 dark:focus:bg-opacity-50"
+									>
+										<td className="relative w-8 border border-slate-400 border-opacity-60 p-0 font-normal ">
+											{index + 1}
+										</td>
+										<td className="relative border border-slate-400 border-opacity-60 p-0 font-normal ">
+											<Field
+												className="custom-number-input h-8 w-full bg-zinc-50 bg-transparent p-1 outline-none transition focus:border-opacity-100  dark:focus:border-opacity-75"
+												type="text"
+												name={`employeeProfessionalDetail.${serial}PreviousExperienceCompanyName`}
+											/>
+										</td>
+										<td className="relative border border-slate-400 border-opacity-60 p-0 font-normal ">
+											<Field
+												className="custom-number-input h-8 w-full bg-zinc-50 bg-transparent p-1 outline-none transition focus:border-opacity-100  dark:focus:border-opacity-75"
+												type="text"
+												name={`employeeProfessionalDetail.${serial}PreviousExperienceDesignation`}
+											/>
+										</td>
+										<td className="relative border border-slate-400 border-opacity-60 p-0 font-normal ">
+											<Field
+												className="custom-number-input h-8 w-full bg-zinc-50 bg-transparent p-1 outline-none transition focus:border-opacity-100  dark:focus:border-opacity-75"
+												type="date"
+												name={`employeeProfessionalDetail.${serial}PreviousExperienceFromDate`}
+											/>
+										</td>
+										<td className="relative border border-slate-400 border-opacity-60 p-0 font-normal ">
+											<Field
+												className="custom-number-input h-8 w-full bg-zinc-50 bg-transparent p-1 outline-none transition focus:border-opacity-100  dark:focus:border-opacity-75"
+												type="date"
+												name={`employeeProfessionalDetail.${serial}PreviousExperienceToDate`}
+											/>
+										</td>
+										<td className="relative w-20 border border-slate-400 border-opacity-60 p-0 font-normal">
+											<Field
+												className="custom-number-input h-8 w-full bg-zinc-50 bg-transparent p-1 outline-none transition focus:border-opacity-100  dark:focus:border-opacity-75"
+												type="number"
+												name={`employeeProfessionalDetail.${serial}PreviousExperienceSalary`}
+											/>
+										</td>
+										<td className="relative border border-slate-400 border-opacity-60 p-0 font-normal ">
+											<Field
+												className="custom-number-input h-8 w-full bg-zinc-50 bg-transparent p-1 outline-none transition focus:border-opacity-100  dark:focus:border-opacity-75"
+												type="text"
+												name={`employeeProfessionalDetail.${serial}PreviousExperienceReasonForLeaving`}
+											/>
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+
+						<p className="block text-base font-semibold text-black text-opacity-100 dark:text-white dark:text-opacity-70">
+							References
+						</p>
+						<table className="w-full border-collapse text-center text-xs">
+							<thead className="sticky top-0 z-20 bg-yellow-600 dark:bg-yellow-700 dark:bg-opacity-40">
+								<tr>
+									<th className="w-8 px-1 py-2 font-medium">S/N</th>
+									<th className="px-1 py-2 font-medium">Name</th>
+									<th className="px-1 py-2 font-medium">Address</th>
+									<th className="px-1 py-2 font-medium">Relation</th>
+									<th className="px-1 py-2 font-medium">Phone</th>
+								</tr>
+							</thead>
+							<tbody>
+								{/* Row 1 */}
+								{references.map((serial, index) => (
+									<tr
+										key={index}
+										className="hover:bg-zinc-200 dark:hover:bg-zinc-900 dark:focus:bg-teal-800 dark:focus:bg-opacity-50"
+									>
+										<td className="relative w-8 border border-slate-400 border-opacity-60 p-0 font-normal ">
+											{index + 1}
+										</td>
+										<td className="relative border border-slate-400 border-opacity-60 p-0 font-normal ">
+											<Field
+												className="custom-number-input h-8 w-full bg-zinc-50 bg-transparent p-1 outline-none transition focus:border-opacity-100  dark:focus:border-opacity-75"
+												type="text"
+												name={`employeeProfessionalDetail.${serial}ReferenceName`}
+											/>
+										</td>
+										<td className="relative border border-slate-400 border-opacity-60 p-0 font-normal ">
+											<Field
+												className="custom-number-input h-8 w-full bg-zinc-50 bg-transparent p-1 outline-none transition focus:border-opacity-100  dark:focus:border-opacity-75"
+												type="text"
+												name={`employeeProfessionalDetail.${serial}ReferenceAddress`}
+											/>
+										</td>
+										<td className="relative w-36 border border-slate-400 border-opacity-60 p-0 font-normal">
+											<Field
+												className="custom-number-input h-8 w-full bg-zinc-50 bg-transparent p-1 outline-none transition focus:border-opacity-100  dark:focus:border-opacity-75"
+												type="text"
+												name={`employeeProfessionalDetail.${serial}ReferenceRelation`}
+											/>
+										</td>
+										<td className="relative w-32 border border-slate-400 border-opacity-60 p-0 font-normal ">
+											<Field
+												className="custom-number-input h-8 w-full bg-zinc-50 bg-transparent p-1 outline-none transition focus:border-opacity-100  dark:focus:border-opacity-75"
+												type="number"
+												name={`employeeProfessionalDetail.${serial}ReferencePhone`}
+											/>
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					</section>
 
 					<section className="mt-4 mb-2 flex flex-row gap-4">
 						<button

@@ -4,8 +4,8 @@ from rest_framework import generics, status, mixins
 from django.db import transaction
 from rest_framework import serializers
 
-from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer, EmployeeGenerativeLeaveRecordSerializer, EmployeeLeaveOpeningSerializer, EmployeeMonthlyAttendancePresentDetailsSerializer, EmployeeAdvancePaymentSerializer, EmployeeMonthlyAttendanceDetailsSerializer, EmployeeSalaryPreparedSerializer, EarnedAmountSerializer, SalaryOvertimeSheetSerializer, AttendanceReportsSerializer, EmployeeAttendanceBulkAutofillSerializer, BulkPrepareSalariesSerializer, MachineAttendanceSerializer
-from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift, EmployeeSalaryEarning, EarningsHead, EmployeeShifts, EmployeeGenerativeLeaveRecord, EmployeeSalaryPrepared, EarnedAmount, EmployeeAdvanceEmiRepayment, EmployeeAdvancePayment, EmployeeAttendance
+from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer, EmployeeGenerativeLeaveRecordSerializer, EmployeeLeaveOpeningSerializer, EmployeeMonthlyAttendancePresentDetailsSerializer, EmployeeAdvancePaymentSerializer, EmployeeMonthlyAttendanceDetailsSerializer, EmployeeSalaryPreparedSerializer, EarnedAmountSerializer, SalaryOvertimeSheetSerializer, AttendanceReportsSerializer, EmployeeAttendanceBulkAutofillSerializer, BulkPrepareSalariesSerializer, MachineAttendanceSerializer, PersonnelFileReportsSerializer
+from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift, EmployeeSalaryEarning, EarningsHead, EmployeeShifts, EmployeeGenerativeLeaveRecord, EmployeeSalaryPrepared, EarnedAmount, EmployeeAdvanceEmiRepayment, EmployeeAdvancePayment, EmployeeAttendance, EmployeePersonalDetail
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
@@ -32,6 +32,8 @@ from .reports.generate_attendance_register import generate_attendance_register
 from .reports.generate_payslip import generate_payslip
 from .reports.generate_overtime_sheet import generate_overtime_sheet
 from .reports.generate_present_report import generate_present_report
+from .reports.personnnel_file_reports.generate_personnel_file_reports import generate_personnel_file_reports
+# from .reports.personnnel_file_reports.generate_application_form import generate_application_form
 from itertools import groupby
 from operator import attrgetter
 import re
@@ -2269,6 +2271,50 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
                 return Response({"detail": "No Overtime for any Employee in the given month"}, status=status.HTTP_404_NOT_FOUND)
 
         # return Response({"message": "Payslip successful"}, status=status.HTTP_200_OK)
+        print('idk')
+
+
+class PersonnelFileReportsCreateAPIView(generics.CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = PersonnelFileReportsSerializer
+
+    def create(self, request, *args, **kwargs):
+        user = request.user
+        if user.role != "OWNER":
+            user = OwnerToRegular.objects.get(user=user).owner
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+        print(validated_data)
+
+        employee_ids = validated_data["employee_ids"]
+
+        if validated_data['report_type'] == 'personnel_file_reports':
+            # if 'biodata' in validated_data['filters']['personnel_file_reports_selected']:
+            order_by = None
+            if validated_data['filters']['sort_by'] == "attendance_card_no":
+                order_by = ("employee__attendance_card_no",)
+            elif validated_data['filters']['sort_by'] == "employee_name":
+                order_by = ('employee__name',)
+            # if validated_data['filters']['group_by'] != 'none':
+            #     order_by = ('employee__employee_professional_detail__department',)
+            employees = EmployeePersonalDetail.objects.filter(id__in=employee_ids)
+
+            #Use python regular expression to orderby if the order by is using paycode because it is alpha numeric
+            if validated_data['filters']['sort_by'] == "paycode":
+                employees = sorted(employees, key=lambda x: (re.sub(r'[^A-Za-z]', '', x.paycode), int(re.sub(r'[^0-9]', '', x.paycode))))
+            else:
+                employees = employees.order_by(*order_by)
+
+            if len(employees) != 0:
+                response = StreamingHttpResponse(generate_personnel_file_reports(serializer.validated_data, employees), content_type="application/pdf")
+                response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
+                return response
+            else:
+                return Response({"detail": "No Employee Selected or Found"}, status=status.HTTP_404_NOT_FOUND)
+                
+        return Response({"message": "Payslip successful"}, status=status.HTTP_200_OK)
         print('idk')
 
 

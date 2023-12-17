@@ -143,7 +143,7 @@ class EmployeePersonalDetailSerializer(serializers.ModelSerializer):
                   'marital_status', 'blood_group', 'religion', 'education_qualification', 'technical_qualification',
                   'local_address', 'local_district', 'local_state_or_union_territory', 'local_pincode',
                   'permanent_address', 'permanent_district', 'permanent_state_or_union_territory', 'permanent_pincode',
-                  'isActive', 'created_at']
+                  'isActive', 'created_at', 'nationality']
         
     #Just return the absolute path of the photo without the domain so that domain can be added on client side
     def to_representation(self, instance):
@@ -171,7 +171,8 @@ class EmployeeProfessionalDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = EmployeeProfessionalDetail
-        fields = ['company', 'employee', 'date_of_joining', 'date_of_confirm', 'department', 'designation', 'category', 'salary_grade', 'weekly_off', 'extra_off', 'resigned', 'resignation_date']
+        fields = ['company', 'employee', 'date_of_joining', 'date_of_confirm', 'department', 'designation', 'category', 'salary_grade', 'weekly_off', 'extra_off', 'resigned', 'resignation_date', 'first_previous_experience_company_name', 'first_previous_experience_from_date', 'first_previous_experience_to_date', 'first_previous_experience_designation', 'first_previous_experience_reason_for_leaving', 'first_previous_experience_salary', 'second_previous_experience_company_name', 'second_previous_experience_from_date', 'second_previous_experience_to_date', 'second_previous_experience_designation', 'second_previous_experience_reason_for_leaving', 'second_previous_experience_salary', 'third_previous_experience_company_name', 'third_previous_experience_from_date', 'third_previous_experience_to_date', 'third_previous_experience_designation', 'third_previous_experience_reason_for_leaving', 'third_previous_experience_salary', 'first_reference_name', 'first_reference_address', 'first_reference_relation', 'first_reference_phone', 'second_reference_name', 'second_reference_address', 'second_reference_relation', 'second_reference_phone'
+]
 
 
 class EmployeeSalaryEarningSerializer(serializers.ModelSerializer):
@@ -290,12 +291,22 @@ class SalaryOvertimeSheetSerializer(serializers.Serializer):
     year = serializers.IntegerField()
     report_type = serializers.ChoiceField(choices=["salary_sheet", "payslip", "overtime_sheet"])
 
+    class Meta:
+        fields = ['employee_ids', "filters"]
+        
+class FiltersPersonnelFileReports(serializers.Serializer):
+    resignation_filter = serializers.ChoiceField(choices=["all", "without_resigned", "only_resigned"])
+    sort_by = serializers.ChoiceField(choices=["paycode", "attendance_card_no", "employee_name"])
+    language = serializers.ChoiceField(choices=["hindi", "english"])
+    personnel_file_reports_selected = serializers.ListField(allow_empty=True)
 
-    # filters = serializers.DictField()
-    # sort_by = serializers.ChoiceField(choices=["paycode", "attendance_card_no", "employee_name"])
-    # group_by = serializers.ChoiceField(choices=["department", "none"])
-    # payment_mode = serializers.ChoiceField(choices=["all", "bank_transfer", "cheque", "cash", "rtgs", "neft"])
-    # resignation_filter = serializers.ChoiceField(choices=["all", "without_resigned", "only_resigned"])
+class PersonnelFileReportsSerializer(serializers.Serializer):
+    employee_ids = serializers.ListField(child=serializers.IntegerField())
+    filters = FiltersPersonnelFileReports()
+    company = serializers.IntegerField()
+    # month = serializers.IntegerField()
+    # year = serializers.IntegerField()
+    report_type = serializers.ChoiceField(choices=["personnel_file_reports", "id_card"])
 
     class Meta:
         fields = ['employee_ids', "filters"]

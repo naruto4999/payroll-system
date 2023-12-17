@@ -78,6 +78,7 @@ export const EmployeePersonalDetailSchema = yup.object().shape({
 		.string()
 		.oneOf(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'], 'Invalid Blood Group')
 		.nullable(), // Allows the field to be null (optional),
+	nationality: yup.string().max(50, 'Nationality must be at most 50 characters'),
 
 	// 3rd column
 	panNumber: yup

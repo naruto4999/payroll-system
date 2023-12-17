@@ -504,6 +504,35 @@ const EmployeePersonalDetail = ({
 							<option value="O+">O+</option>
 							<option value="O-">O-</option>
 						</select>
+
+						<label
+							htmlFor="nationality"
+							className="text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
+						>
+							Nationality
+						</label>
+						<div className="relative">
+							<input
+								className={classNames(
+									errors.nationality && touched.nationality
+										? 'border-red-500 border-opacity-100 dark:border-red-700 dark:border-opacity-75'
+										: 'border-gray-800 border-opacity-25 dark:border-slate-100 dark:border-opacity-25',
+									'w-full rounded border-2 bg-zinc-50  bg-opacity-50   p-1 outline-none transition focus:border-opacity-100 dark:bg-zinc-700 dark:focus:border-opacity-75'
+								)}
+								type="text"
+								maxLength={50}
+								id="nationality"
+								name="nationality"
+								onChange={handleChange}
+								onBlur={handleBlur}
+								value={values.nationality}
+							/>
+							{errors.nationality && touched.nationality && (
+								<div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
+									{errors.nationality}
+								</div>
+							)}
+						</div>
 					</div>
 
 					<div className="w-full">

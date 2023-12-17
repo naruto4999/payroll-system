@@ -162,6 +162,11 @@ const menuItems = [
 		icon: FaNewspaper,
 		children: [
 			{
+				title: 'Personnel File Forms',
+				icon: FaFilePdf,
+				path: '/home/reports/personnel-file-forms',
+			},
+			{
 				title: 'Salary/Overtime Sheet',
 				icon: FaFilePdf,
 				path: '/home/reports/salary-overtime-sheet',

@@ -256,22 +256,27 @@ const TimeUpdationForm = () => {
 		const filteredData = employeePersonalDetails.filter((employee) => {
 			const comparisonDate = new Date(Date.UTC(selectedDate.year, parseInt(selectedDate.month) - 1, 1));
 			// Extract the year and month from the original dateOfJoining
-			const [year, month] = employee.dateOfJoining.split('-').map(Number);
-			if (employee.resignationDate) {
-				const [resignYear, resignMonth] = employee.resignationDate.split('-').map(Number);
-				const resignDate = new Date(Date.UTC(resignYear, resignMonth, 0));
-				if (resignDate < comparisonDate) {
-					return false;
+			console.log(employee);
+			if (employee.dateOfJoining) {
+				const [year, month] = employee.dateOfJoining.split('-').map(Number);
+				if (employee.resignationDate) {
+					const [resignYear, resignMonth] = employee.resignationDate.split('-').map(Number);
+					const resignDate = new Date(Date.UTC(resignYear, resignMonth, 0));
+					if (resignDate < comparisonDate) {
+						return false;
+					}
 				}
+
+				// Create a new date with the same year and month but set day to 1
+				const newDateOfJoining = new Date(Date.UTC(year, month - 1, 1));
+
+				// Compare the new date with "2023-08-01"
+
+				// Include the object if the new date is less than the comparison date
+				return newDateOfJoining <= comparisonDate;
+			} else {
+				return false;
 			}
-
-			// Create a new date with the same year and month but set day to 1
-			const newDateOfJoining = new Date(Date.UTC(year, month - 1, 1));
-
-			// Compare the new date with "2023-08-01"
-
-			// Include the object if the new date is less than the comparison date
-			return newDateOfJoining <= comparisonDate;
 		});
 
 		return filteredData;
