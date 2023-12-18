@@ -14,9 +14,7 @@ const ViewShift = ({ viewShiftPopoverHandler, shift }) => {
 						<h3 className="rounded text-sm font-bold text-blueAccent-600 text-opacity-100 dark:text-blueAccent-500 dark:text-opacity-70 sm:text-base">
 							Shift Name
 						</h3>
-						<p className="text-sm font-medium sm:text-base">
-							{shift?.name}
-						</p>
+						<p className="text-sm font-medium sm:text-base">{shift?.name}</p>
 					</div>
 
 					<div className="rounded p-2 hover:bg-zinc-400 dark:hover:bg-zinc-700">
@@ -24,10 +22,7 @@ const ViewShift = ({ viewShiftPopoverHandler, shift }) => {
 							Beginning Time
 						</h3>
 						<p className="text-sm font-medium sm:text-base">
-							{shift?.beginningTime
-								.split(':')
-								.slice(0, 2)
-								.join(':')}
+							{shift?.beginningTime.split(':').slice(0, 2).join(':')}
 						</p>
 					</div>
 
@@ -42,29 +37,32 @@ const ViewShift = ({ viewShiftPopoverHandler, shift }) => {
 
 					<div className="rounded p-2 hover:bg-zinc-400 dark:hover:bg-zinc-700">
 						<h3 className="rounded text-sm font-bold text-blueAccent-600 text-opacity-100 dark:text-blueAccent-500 dark:text-opacity-70 sm:text-base">
-							Lunch Time
+							Lunch Beginning Time
 						</h3>
 						<p className="text-sm font-medium sm:text-base">
-							{shift?.lunchTime}
+							{shift?.lunchBeginningTime?.split(':').slice(0, 2).join(':')}
 						</p>
+					</div>
+
+					<div className="rounded p-2 hover:bg-zinc-400 dark:hover:bg-zinc-700">
+						<h3 className="rounded text-sm font-bold text-blueAccent-600 text-opacity-100 dark:text-blueAccent-500 dark:text-opacity-70 sm:text-base">
+							Lunch Duration
+						</h3>
+						<p className="text-sm font-medium sm:text-base">{shift?.lunchDuration}</p>
 					</div>
 
 					<div className="rounded p-2 hover:bg-zinc-400 dark:hover:bg-zinc-700">
 						<h3 className="rounded text-sm font-bold text-blueAccent-600 text-opacity-100 dark:text-blueAccent-500 dark:text-opacity-70 sm:text-base">
 							Tea Time
 						</h3>
-						<p className="text-sm font-medium sm:text-base">
-							{shift?.teaTime}
-						</p>
+						<p className="text-sm font-medium sm:text-base">{shift?.teaTime}</p>
 					</div>
 
 					<div className="rounded p-2 hover:bg-zinc-400 dark:hover:bg-zinc-700">
 						<h3 className="rounded text-sm font-bold text-blueAccent-600 text-opacity-100 dark:text-blueAccent-500 dark:text-opacity-70 sm:text-base">
 							Late Grace
 						</h3>
-						<p className="text-sm font-medium sm:text-base">
-							{shift?.lateGrace}
-						</p>
+						<p className="text-sm font-medium sm:text-base">{shift?.lateGrace}</p>
 					</div>
 				</div>
 
@@ -73,63 +71,49 @@ const ViewShift = ({ viewShiftPopoverHandler, shift }) => {
 						<h3 className="rounded text-sm font-bold text-blueAccent-600 text-opacity-100 dark:text-blueAccent-500 dark:text-opacity-70 sm:text-base">
 							Over Time Begins After
 						</h3>
-						<p className="text-sm font-medium sm:text-base">
-							{shift?.otBeginAfter}
-						</p>
+						<p className="text-sm font-medium sm:text-base">{shift?.otBeginAfter}</p>
 					</div>
 
 					<div className="rounded p-2 hover:bg-zinc-400 dark:hover:bg-zinc-700">
 						<h3 className="rounded text-sm font-bold text-blueAccent-600 text-opacity-100 dark:text-blueAccent-500 dark:text-opacity-70 sm:text-base">
 							Next Shift Delay
 						</h3>
-						<p className="text-sm font-medium sm:text-base">
-							{shift?.nextShiftDelay}
-						</p>
+						<p className="text-sm font-medium sm:text-base">{shift?.nextShiftDelay}</p>
 					</div>
 
 					<div className="rounded p-2 hover:bg-zinc-400 dark:hover:bg-zinc-700">
 						<h3 className="rounded text-sm font-bold text-blueAccent-600 text-opacity-100 dark:text-blueAccent-500 dark:text-opacity-70 sm:text-base">
 							Accidental Punch Buffer
 						</h3>
-						<p className="text-sm font-medium sm:text-base">
-							{shift?.accidentalPunchBuffer}
-						</p>
+						<p className="text-sm font-medium sm:text-base">{shift?.accidentalPunchBuffer}</p>
 					</div>
 
 					<div className="rounded p-2 hover:bg-zinc-400 dark:hover:bg-zinc-700">
 						<h3 className="rounded text-sm font-bold text-blueAccent-600 text-opacity-100 dark:text-blueAccent-500 dark:text-opacity-70 sm:text-base">
 							Half Day Minimum Minutes{' '}
 						</h3>
-						<p className="text-sm font-medium sm:text-base">
-							{shift?.halfDayMinimumMinutes}
-						</p>
+						<p className="text-sm font-medium sm:text-base">{shift?.halfDayMinimumMinutes}</p>
 					</div>
 
 					<div className="rounded p-2 hover:bg-zinc-400 dark:hover:bg-zinc-700">
 						<h3 className="rounded text-sm font-bold text-blueAccent-600 text-opacity-100 dark:text-blueAccent-500 dark:text-opacity-70 sm:text-base">
 							Full Day Minimum Minutes{' '}
 						</h3>
-						<p className="text-sm font-medium sm:text-base">
-							{shift?.fullDayMinimumMinutes}
-						</p>
+						<p className="text-sm font-medium sm:text-base">{shift?.fullDayMinimumMinutes}</p>
 					</div>
 
 					<div className="rounded p-2 hover:bg-zinc-400 dark:hover:bg-zinc-700">
 						<h3 className="rounded text-sm font-bold text-blueAccent-600 text-opacity-100 dark:text-blueAccent-500 dark:text-opacity-70 sm:text-base">
 							Max late allowed Minutes
 						</h3>
-						<p className="text-sm font-medium sm:text-base">
-							{shift?.maxLateAllowedMin}{' '}
-						</p>
+						<p className="text-sm font-medium sm:text-base">{shift?.maxLateAllowedMin} </p>
 					</div>
 
 					<div className="rounded p-2 hover:bg-zinc-400 dark:hover:bg-zinc-700">
 						<h3 className="rounded text-sm font-bold text-blueAccent-600 text-opacity-100 dark:text-blueAccent-500 dark:text-opacity-70 sm:text-base">
 							Short Leaves{' '}
 						</h3>
-						<p className="text-sm font-medium sm:text-base">
-							{shift?.shortLeaves}
-						</p>
+						<p className="text-sm font-medium sm:text-base">{shift?.shortLeaves}</p>
 					</div>
 				</div>
 			</section>

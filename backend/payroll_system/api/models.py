@@ -265,7 +265,8 @@ class Shift(models.Model):
     name = models.CharField(max_length=256, null=False, blank=False)
     beginning_time = models.TimeField(null=False, blank=False)
     end_time = models.TimeField(null=False, blank=False)
-    lunch_time = models.PositiveSmallIntegerField(default=0, null=False, blank=False) # In minutes
+    lunch_duration = models.PositiveSmallIntegerField(default=0, null=False, blank=False) # In minutes
+    lunch_beginning_time = models.TimeField(null=True, blank=True)
     tea_time = models.PositiveSmallIntegerField(default=0, null=False, blank=False) # In minutes
     late_grace = models.PositiveSmallIntegerField(default=0, null=False, blank=False) # In minutes
     ot_begin_after = models.PositiveSmallIntegerField(default=0, null=False, blank=False) # In minutes (minimum number of minutes that needs to fulfilled for Over Time to be applied)

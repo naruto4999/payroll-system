@@ -24,14 +24,8 @@ const ShiftModal = ({
 	}, []);
 	return (
 		<div className="text-gray-900 dark:text-slate-100">
-			<h1 className="mb-2 text-2xl font-medium">
-				{isEditing ? 'Edit Shift' : 'Add Shift'}
-			</h1>
-			<form
-				action=""
-				className="flex flex-col justify-center gap-2"
-				onSubmit={handleSubmit}
-			>
+			<h1 className="mb-2 text-2xl font-medium">{isEditing ? 'Edit Shift' : 'Add Shift'}</h1>
+			<form action="" className="flex flex-col justify-center gap-2" onSubmit={handleSubmit}>
 				<section className="flex flex-row justify-center gap-4">
 					<div className="w-full">
 						<label
@@ -57,9 +51,7 @@ const ShiftModal = ({
 								<ErrorMessage name={'name'} />
 							</div>
 							{errorMessage && (
-								<p className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
-									{errorMessage}
-								</p>
+								<p className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">{errorMessage}</p>
 							)}
 						</div>
 
@@ -72,8 +64,7 @@ const ShiftModal = ({
 						<div className="relative">
 							<Field
 								className={classNames(
-									errors.beginningTime &&
-										touched.beginningTime
+									errors.beginningTime && touched.beginningTime
 										? 'border-red-500 border-opacity-100 dark:border-red-700 dark:border-opacity-75'
 										: 'border-gray-800 border-opacity-25 dark:border-slate-100 dark:border-opacity-25',
 									'w-full rounded border-2 bg-zinc-50  bg-opacity-50   p-1 outline-none transition focus:border-opacity-100 dark:bg-zinc-700 dark:focus:border-opacity-75'
@@ -111,25 +102,48 @@ const ShiftModal = ({
 						</div>
 
 						<label
-							htmlFor="lunchTime"
+							htmlFor="lunchBeginningTime"
 							className="text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
 						>
-							Lunch Time
+							Lunch Beginning Time
 						</label>
 						<div className="relative">
 							<Field
 								className={classNames(
-									errors.lunchTime && touched.lunchTime
+									errors.lunchBeginningTime && touched.lunchBeginningTime
+										? 'border-red-500 border-opacity-100 dark:border-red-700 dark:border-opacity-75'
+										: 'border-gray-800 border-opacity-25 dark:border-slate-100 dark:border-opacity-25',
+									'w-full rounded border-2 bg-zinc-50  bg-opacity-50   p-1 outline-none transition focus:border-opacity-100 dark:bg-zinc-700 dark:focus:border-opacity-75'
+								)}
+								type="time"
+								id="lunchBeginningTime"
+								name="lunchBeginningTime"
+							/>
+							<div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
+								<ErrorMessage name="lunchBeginningTime" />
+							</div>
+						</div>
+
+						<label
+							htmlFor="lunchDuration"
+							className="text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
+						>
+							Lunch Duration
+						</label>
+						<div className="relative">
+							<Field
+								className={classNames(
+									errors.lunchDuration && touched.lunchDuration
 										? 'border-red-500 border-opacity-100 dark:border-red-700 dark:border-opacity-75'
 										: 'border-gray-800 border-opacity-25 dark:border-slate-100 dark:border-opacity-25',
 									'custom-number-input w-full rounded border-2  bg-zinc-50   bg-opacity-50 p-1 outline-none transition focus:border-opacity-100 dark:bg-zinc-700 dark:focus:border-opacity-75'
 								)}
 								type="number"
-								id="lunchTime"
-								name="lunchTime"
+								id="lunchDuration"
+								name="lunchDuration"
 							/>
 							<div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
-								<ErrorMessage name="lunchTime" />
+								<ErrorMessage name="lunchDuration" />
 							</div>
 						</div>
 
@@ -213,8 +227,7 @@ const ShiftModal = ({
 						<div className="relative">
 							<Field
 								className={classNames(
-									errors.nextShiftDelay &&
-										touched.nextShiftDelay
+									errors.nextShiftDelay && touched.nextShiftDelay
 										? 'border-red-500 border-opacity-100 dark:border-red-700 dark:border-opacity-75'
 										: 'border-gray-800 border-opacity-25 dark:border-slate-100 dark:border-opacity-25',
 									'custom-number-input w-full rounded border-2  bg-zinc-50   bg-opacity-50 p-1 outline-none transition focus:border-opacity-100 dark:bg-zinc-700 dark:focus:border-opacity-75'
@@ -237,8 +250,7 @@ const ShiftModal = ({
 						<div className="relative">
 							<Field
 								className={classNames(
-									errors.accidentalPunchBuffer &&
-										touched.accidentalPunchBuffer
+									errors.accidentalPunchBuffer && touched.accidentalPunchBuffer
 										? 'border-red-500 border-opacity-100 dark:border-red-700 dark:border-opacity-75'
 										: 'border-gray-800 border-opacity-25 dark:border-slate-100 dark:border-opacity-25',
 									'custom-number-input w-full rounded border-2  bg-zinc-50   bg-opacity-50 p-1 outline-none transition focus:border-opacity-100 dark:bg-zinc-700 dark:focus:border-opacity-75'
@@ -261,8 +273,7 @@ const ShiftModal = ({
 						<div className="relative">
 							<Field
 								className={classNames(
-									errors.halfDayMinimumMinutes &&
-										touched.halfDayMinimumMinutes
+									errors.halfDayMinimumMinutes && touched.halfDayMinimumMinutes
 										? 'border-red-500 border-opacity-100 dark:border-red-700 dark:border-opacity-75'
 										: 'border-gray-800 border-opacity-25 dark:border-slate-100 dark:border-opacity-25',
 									'custom-number-input w-full rounded border-2  bg-zinc-50   bg-opacity-50 p-1 outline-none transition focus:border-opacity-100 dark:bg-zinc-700 dark:focus:border-opacity-75'
@@ -285,8 +296,7 @@ const ShiftModal = ({
 						<div className="relative">
 							<Field
 								className={classNames(
-									errors.fullDayMinimumMinutes &&
-										touched.fullDayMinimumMinutes
+									errors.fullDayMinimumMinutes && touched.fullDayMinimumMinutes
 										? 'border-red-500 border-opacity-100 dark:border-red-700 dark:border-opacity-75'
 										: 'border-gray-800 border-opacity-25 dark:border-slate-100 dark:border-opacity-25',
 									'custom-number-input w-full rounded border-2  bg-zinc-50   bg-opacity-50 p-1 outline-none transition focus:border-opacity-100 dark:bg-zinc-700 dark:focus:border-opacity-75'
@@ -309,8 +319,7 @@ const ShiftModal = ({
 						<div className="relative">
 							<Field
 								className={classNames(
-									errors.maxLateAllowedMin &&
-										touched.maxLateAllowedMin
+									errors.maxLateAllowedMin && touched.maxLateAllowedMin
 										? 'border-red-500 border-opacity-100 dark:border-red-700 dark:border-opacity-75'
 										: 'border-gray-800 border-opacity-25 dark:border-slate-100 dark:border-opacity-25',
 									'custom-number-input w-full rounded border-2  bg-zinc-50   bg-opacity-50 p-1 outline-none transition focus:border-opacity-100 dark:bg-zinc-700 dark:focus:border-opacity-75'
@@ -351,9 +360,7 @@ const ShiftModal = ({
 				<section className="mt-4 mb-2 flex flex-row gap-4">
 					<button
 						className={classNames(
-							isValid
-								? 'hover:bg-teal-600  dark:hover:bg-teal-600'
-								: 'opacity-40',
+							isValid ? 'hover:bg-teal-600  dark:hover:bg-teal-600' : 'opacity-40',
 							'w-20 rounded bg-teal-500 p-2 text-base font-medium dark:bg-teal-700'
 						)}
 						type="submit"

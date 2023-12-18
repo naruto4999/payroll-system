@@ -47,6 +47,15 @@ const FilterOptions = ({ handleChange, values, isValid, handleSubmit, isSubmitti
 						/>
 						Application Form
 					</label>
+					<label>
+						<Field
+							type="checkbox"
+							name="filters.personnelFileReportsSelected"
+							value="employee_orientation"
+							className="mr-1 h-4 w-4 translate-y-0.5 rounded accent-teal-600"
+						/>
+						Employee Orientation
+					</label>
 				</div>
 			)}
 			{values.reportType == 'personnel_file_reports' && (

@@ -6,13 +6,7 @@ import {
 	useReactTable,
 	getSortedRowModel,
 } from '@tanstack/react-table';
-import {
-	FaRegTrashAlt,
-	FaPen,
-	FaAngleUp,
-	FaAngleDown,
-	FaEye,
-} from 'react-icons/fa';
+import { FaRegTrashAlt, FaPen, FaAngleUp, FaAngleDown, FaEye } from 'react-icons/fa';
 import { useSelector, useDispatch } from 'react-redux';
 import {
 	useGetShiftsQuery,
@@ -59,10 +53,8 @@ const ShiftEntryForm = () => {
 	} = useGetShiftsQuery(globalCompany);
 	// console.log(fetchedData)
 	const [addShift, { isLoading: isAddingShift }] = useAddShiftMutation();
-	const [updateShift, { isLoading: isUpdatingShift }] =
-		useUpdateShiftMutation();
-	const [deleteShift, { isLoading: isDeletingShift }] =
-		useDeleteShiftMutation();
+	const [updateShift, { isLoading: isUpdatingShift }] = useUpdateShiftMutation();
+	const [deleteShift, { isLoading: isDeletingShift }] = useDeleteShiftMutation();
 	const [addShiftPopover, setAddShiftPopover] = useState(false);
 	const [showLoadingBar, setShowLoadingBar] = useOutletContext();
 	const [editShiftPopover, setEditShiftPopover] = useState(false);
@@ -184,25 +176,19 @@ const ShiftEntryForm = () => {
 				<div className="flex justify-center gap-4">
 					<div
 						className="rounded bg-redAccent-500 p-1.5 hover:bg-redAccent-700 dark:bg-redAccent-700 dark:hover:bg-redAccent-500"
-						onClick={() =>
-							deleteButtonClicked(props.row.original.id)
-						}
+						onClick={() => deleteButtonClicked(props.row.original.id)}
 					>
 						<FaRegTrashAlt className="h-4" />
 					</div>
 					<div
 						className="rounded bg-teal-600 p-1.5 hover:bg-teal-700 dark:bg-teal-700 dark:hover:bg-teal-600"
-						onClick={() =>
-							editShiftPopoverHandler(props.row.original)
-						}
+						onClick={() => editShiftPopoverHandler(props.row.original)}
 					>
 						<FaPen className="h-4" />
 					</div>
 					<div
 						className="rounded bg-blueAccent-600 p-1.5 hover:bg-blueAccent-700 dark:bg-blueAccent-600 dark:hover:bg-blueAccent-500"
-						onClick={() =>
-							viewShiftPopoverHandler(props.row.original)
-						}
+						onClick={() => viewShiftPopoverHandler(props.row.original)}
 					>
 						<FaEye className="h-4" />
 					</div>
@@ -211,10 +197,7 @@ const ShiftEntryForm = () => {
 		}),
 	];
 
-	const data = useMemo(
-		() => (fetchedData ? [...fetchedData] : []),
-		[fetchedData]
-	);
+	const data = useMemo(() => (fetchedData ? [...fetchedData] : []), [fetchedData]);
 
 	const table = useReactTable({
 		data,
@@ -229,9 +212,7 @@ const ShiftEntryForm = () => {
 
 	useEffect(() => {
 		// Add more for adding, editing and deleting later on
-		setShowLoadingBar(
-			isLoading || isAddingShift || isUpdatingShift || isDeletingShift
-		);
+		setShowLoadingBar(isLoading || isAddingShift || isUpdatingShift || isDeletingShift);
 	}, [isLoading, isAddingShift, isUpdatingShift, isDeletingShift]);
 
 	if (globalCompany.id == null) {
@@ -266,39 +247,28 @@ const ShiftEntryForm = () => {
 							{table.getHeaderGroups().map((headerGroup) => (
 								<tr key={headerGroup.id}>
 									{headerGroup.headers.map((header) => (
-										<th
-											key={header.id}
-											scope="col"
-											className="px-4 py-4 font-medium"
-										>
+										<th key={header.id} scope="col" className="px-4 py-4 font-medium">
 											{header.isPlaceholder ? null : (
 												<div className="">
 													<div
 														{...{
-															className:
-																header.column.getCanSort()
-																	? 'cursor-pointer select-none flex flex-row justify-center'
-																	: '',
-															onClick:
-																header.column.getToggleSortingHandler(),
+															className: header.column.getCanSort()
+																? 'cursor-pointer select-none flex flex-row justify-center'
+																: '',
+															onClick: header.column.getToggleSortingHandler(),
 														}}
 													>
 														{flexRender(
-															header.column
-																.columnDef
-																.header,
+															header.column.columnDef.header,
 															header.getContext()
 														)}
 
-														{console.log(
-															header.column.getIsSorted()
-														)}
+														{console.log(header.column.getIsSorted())}
 														{header.column.getCanSort() ? (
 															<div className="relative pl-2">
 																<FaAngleUp
 																	className={classNames(
-																		header.column.getIsSorted() ==
-																			'asc'
+																		header.column.getIsSorted() == 'asc'
 																			? 'text-teal-700'
 																			: '',
 																		'absolute -translate-y-2 text-lg'
@@ -306,8 +276,7 @@ const ShiftEntryForm = () => {
 																/>
 																<FaAngleDown
 																	className={classNames(
-																		header.column.getIsSorted() ==
-																			'desc'
+																		header.column.getIsSorted() == 'desc'
 																			? 'text-teal-700'
 																			: '',
 																		'absolute translate-y-2 text-lg'
@@ -327,22 +296,12 @@ const ShiftEntryForm = () => {
 						</thead>
 						<tbody className="divide-y divide-black divide-opacity-50 border-t border-black border-opacity-50">
 							{table.getRowModel().rows.map((row) => (
-								<tr
-									className="hover:bg-zinc-200 dark:hover:bg-zinc-800"
-									key={row.id}
-								>
+								<tr className="hover:bg-zinc-200 dark:hover:bg-zinc-800" key={row.id}>
 									{row.getVisibleCells().map((cell) => (
-										<td
-											className="px-4 py-4 font-normal"
-											key={cell.id}
-										>
+										<td className="px-4 py-4 font-normal" key={cell.id}>
 											<div className="text-sm">
 												<div className="font-medium">
-													{flexRender(
-														cell.column.columnDef
-															.cell,
-														cell.getContext()
-													)}
+													{flexRender(cell.column.columnDef.cell, cell.getContext())}
 												</div>
 											</div>
 										</td>
@@ -370,7 +329,8 @@ const ShiftEntryForm = () => {
 										name: '',
 										beginningTime: '',
 										endTime: '',
-										lunchTime: '',
+										lunchDuration: '',
+										lunchBeginningTime: '',
 										teaTime: '',
 										lateGrace: '',
 										otBeginAfter: '',
@@ -381,19 +341,10 @@ const ShiftEntryForm = () => {
 										shortLeaves: '',
 										maxLateAllowedMin: '',
 								  }
-								: replaceNullWithEmpty(
-										fetchedData.find(
-											(shift) =>
-												shift.id === updateShiftId
-										)
-								  )
+								: replaceNullWithEmpty(fetchedData.find((shift) => shift.id === updateShiftId))
 						}
 						validationSchema={ShiftSchema}
-						onSubmit={
-							addShiftPopover
-								? addButtonClicked
-								: updateButtonClicked
-						}
+						onSubmit={addShiftPopover ? addButtonClicked : updateButtonClicked}
 						component={(props) => (
 							<ShiftModal
 								{...props}
@@ -421,13 +372,7 @@ const ShiftEntryForm = () => {
 					}}
 				>
 					<ViewShift
-						shift={
-							viewShiftId
-								? fetchedData.find(
-										(shift) => shift.id === viewShiftId
-								  )
-								: null
-						}
+						shift={viewShiftId ? fetchedData.find((shift) => shift.id === viewShiftId) : null}
 						viewShiftPopoverHandler={viewShiftPopoverHandler}
 					/>
 				</ReactModal>

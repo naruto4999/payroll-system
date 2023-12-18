@@ -4,6 +4,7 @@ from ...models import CompanyDetails, EmployeeGenerativeLeaveRecord, LeaveGrade,
 from datetime import date
 from .generate_biodata import generate_biodata
 from .generate_application_form import generate_application_form
+from .generate_employee_orientation import generate_employee_orientation
 
 
 def generate_personnel_file_reports(request_data, employees):
@@ -25,6 +26,9 @@ def generate_personnel_file_reports(request_data, employees):
 
         if 'application_form' in request_data['filters']['personnel_file_reports_selected']:
             generate_application_form(personnel_file_reports, default_cell_height, default_cell_height_for_heading, employee, left_margin, right_margin)
+        
+        if 'employee_orientation' in request_data['filters']['personnel_file_reports_selected']:
+            generate_employee_orientation(personnel_file_reports, default_cell_height, default_cell_height_for_heading, employee, left_margin, right_margin)
         
     buffer = bytes(personnel_file_reports.output())
     yield buffer
