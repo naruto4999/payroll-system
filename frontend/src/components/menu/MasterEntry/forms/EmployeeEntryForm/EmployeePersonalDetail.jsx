@@ -473,6 +473,7 @@ const EmployeePersonalDetail = ({
 							name="maritalStatus"
 							id="maritalStatus"
 							onChange={handleChange}
+							value={values.maritalStatus}
 						>
 							<option value="">-- Select an option --</option>
 							<option value="S">Single</option>

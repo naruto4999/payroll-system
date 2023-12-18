@@ -4,8 +4,6 @@ from rest_framework import serializers
 from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning, EmployeeSalaryDetail, EmployeeFamilyNomineeDetial, EmployeePfEsiDetail, WeeklyOffHolidayOff, PfEsiSetup, Calculations, EmployeeShifts, EmployeeAttendance, EmployeeGenerativeLeaveRecord, EmployeeLeaveOpening, EmployeeMonthlyAttendanceDetails, EmployeeAdvancePayment, EmployeeSalaryPrepared, EarnedAmount
 from rest_framework import serializers
 
-
-
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User

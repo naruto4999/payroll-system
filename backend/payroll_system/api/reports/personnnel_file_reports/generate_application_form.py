@@ -87,10 +87,7 @@ def generate_application_form(report, default_cell_height, default_cell_height_f
     # coordinates_after_main_body = {"x": report.get_x(), "y": report.get_y()}
     #Signature and footers
     #A4: 210 x 297
-    report.set_xy(x=report.get_x(), y=297-10-(footer_cell_height*2))
-    report.cell(w=None, h=footer_cell_height, text='स्थान: ', align="L", new_x="RIGHT", new_y='TOP', border=0)
-    report.line(x1=report.get_x(), y1=report.get_y()+(footer_cell_height), x2=report.get_x()+width_of_columns['placeholder'], y2=report.get_y()+(footer_cell_height))
-    report.cell(w=width_of_columns['placeholder'], h=footer_cell_height, text='', align="L", new_x="LMARGIN", new_y='NEXT', border=0)
+    report.set_xy(x=report.get_x(), y=297-10-(footer_cell_height))
     report.cell(w=None, h=footer_cell_height, text='दिनांक: ', align="L", new_x="RIGHT", new_y='TOP', border=0)
     report.line(x1=report.get_x(), y1=report.get_y()+(footer_cell_height), x2=report.get_x()+width_of_columns['placeholder'], y2=report.get_y()+(footer_cell_height))
 

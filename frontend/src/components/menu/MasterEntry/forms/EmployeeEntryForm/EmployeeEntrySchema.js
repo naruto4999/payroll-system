@@ -7,7 +7,10 @@ export const EmployeePersonalDetailSchema = yup.object().shape({
 			if (!value) return true; // Allow empty values
 
 			// Handle URL case
-			if (typeof value === 'string' && value.startsWith('http')) {
+			if (
+				typeof `${import.meta.env.VITE_MEDIA_URL}${value}` === 'string' &&
+				`${import.meta.env.VITE_MEDIA_URL}${value}`.startsWith('http')
+			) {
 				return true; // Assume URL is valid
 			}
 
@@ -22,7 +25,10 @@ export const EmployeePersonalDetailSchema = yup.object().shape({
 			if (!value) return true; // Allow empty values
 
 			// Handle URL case
-			if (typeof value === 'string' && value.startsWith('http')) {
+			if (
+				typeof `${import.meta.env.VITE_MEDIA_URL}${value}` === 'string' &&
+				`${import.meta.env.VITE_MEDIA_URL}${value}`.startsWith('http')
+			) {
 				return true; // Assume URL is valid
 			}
 
