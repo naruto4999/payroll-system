@@ -57,7 +57,7 @@ def generate_employee_orientation(report, default_cell_height, default_cell_heig
     except:
         pass
     report.cell(w=width_of_columns['serial'], h=default_cell_height, text='2.', align="C", new_x="RIGHT", new_y="TOP", border=0)
-    report.cell(w=0, h=default_cell_height, text=f"दोपहर के भोजन का समय    {lunch_beginning_time.strftime('%H:%M') if lunch_beginning_time else ''}    से    {lunch_end_time.strftime('%H:%M') if lunch_end_time else ''}    है |", align="L", new_x="LMARGIN", new_y='NEXT', border=0)
+    report.cell(w=0, h=default_cell_height, text=f"दोपहर के भोजन का समय    {lunch_beginning_time.strftime('%H:%M') if lunch_beginning_time else ''}    से    {lunch_end_time.strftime('%H:%M') if lunch_end_time else ''}    तक है |", align="L", new_x="LMARGIN", new_y='NEXT', border=0)
     
     #3
     first_shift = None
@@ -142,6 +142,7 @@ def generate_employee_orientation(report, default_cell_height, default_cell_heig
     report.cell(w=None, h=footer_cell_height, text="कर्मचारी के हस्ताक्षर", align="L", new_x="RIGHT", new_y='TOP', border=0)
 
     #Bottom Right
-    report.set_xy(x=210-width_of_columns['authorized_signature'], y=297-10-(footer_cell_height*2))
-    report.cell(w=None, h=footer_cell_height, text=f"{employee.company.name}", align="L", new_x="LEFT", new_y='NEXT', border=0)
-    report.cell(w=None, h=footer_cell_height, text=f"अधिकृत हस्ताक्षरकर्ता", align="L", new_x="LEFT", new_y='NEXT', border=0)
+    report.set_xy(x=210-width_of_columns['authorized_signature']-left_margin-right_margin, y=297-10-(footer_cell_height*3))
+    report.cell(w=width_of_columns["authorized_signature"], h=footer_cell_height, text=f"For {employee.company.name}", align="R", new_x="LEFT", new_y='NEXT', border=0)
+    report.set_xy(x=report.get_x(), y=report.get_y()+footer_cell_height)
+    report.cell(w=width_of_columns["authorized_signature"], h=footer_cell_height, text=f"अधिकृत हस्ताक्षरकर्ता", align="R", new_x="LEFT", new_y='NEXT', border=0)

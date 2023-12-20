@@ -83,6 +83,24 @@ const FilterOptions = ({ handleChange, values, isValid, handleSubmit, isSubmitti
 						/>
 						Form-F Front
 					</label>
+					<label>
+						<Field
+							type="checkbox"
+							name="filters.personnelFileReportsSelected"
+							value="form_f_back"
+							className="mr-1 h-4 w-4 translate-y-0.5 rounded accent-teal-600"
+						/>
+						Form-F Back
+					</label>
+					<label>
+						<Field
+							type="checkbox"
+							name="filters.personnelFileReportsSelected"
+							value="confirmation_letter"
+							className="mr-1 h-4 w-4 translate-y-0.5 rounded accent-teal-600"
+						/>
+						Confirmation Letter
+					</label>
 				</div>
 			)}
 			{values.reportType == 'personnel_file_reports' && (

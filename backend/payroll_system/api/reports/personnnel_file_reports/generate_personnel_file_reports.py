@@ -8,6 +8,8 @@ from .generate_employee_orientation import generate_employee_orientation
 from .generate_employee_personal_details import generate_employee_personal_details
 from .generate_form_no_16 import generate_form_no_16
 from .generate_form_f_front import generate_form_f_front
+from .generate_form_f_back import generate_form_f_back
+from .generate_confirmation_letter import generate_confirmation_letter
 
 
 def generate_personnel_file_reports(request_data, employees):
@@ -41,6 +43,12 @@ def generate_personnel_file_reports(request_data, employees):
         
         if 'form_f_front' in request_data['filters']['personnel_file_reports_selected']:
             generate_form_f_front(personnel_file_reports, default_cell_height, default_cell_height_for_heading, employee, left_margin, right_margin)
+        
+        if 'form_f_back' in request_data['filters']['personnel_file_reports_selected']:
+            generate_form_f_back(personnel_file_reports, default_cell_height, default_cell_height_for_heading, employee, left_margin, right_margin)
+        
+        if 'confirmation_letter' in request_data['filters']['personnel_file_reports_selected']:
+            generate_confirmation_letter(personnel_file_reports, default_cell_height, default_cell_height_for_heading, employee, left_margin, right_margin)
         
     buffer = bytes(personnel_file_reports.output())
     yield buffer
