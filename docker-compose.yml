@@ -40,7 +40,7 @@ services:
             - media_volume:/payroll-system/backend/payroll_system/mediafiles
 
     database:
-        image: postgres:latest # Replace with the actual image name or tag
+        image: postgres:16 # Specify PostgreSQL version 16
         container_name: database
         env_file:
             - .env.db

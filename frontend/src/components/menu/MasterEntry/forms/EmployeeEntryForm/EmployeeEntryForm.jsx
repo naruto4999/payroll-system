@@ -338,18 +338,18 @@ const EmployeeEntryForm = () => {
 			firstPreviousExperienceSalary: '',
 			// Previous Experience Row 2
 			secondPreviousExperienceCompanyName: '',
-			secondPreviousExperienceFromDate: null,
-			secondPreviousExperienceToDate: null,
+			secondPreviousExperienceFromDate: '',
+			secondPreviousExperienceToDate: '',
 			secondPreviousExperienceDesignation: '',
 			secondPreviousExperienceReasonForLeaving: '',
-			secondPreviousExperienceSalary: null,
+			secondPreviousExperienceSalary: '',
 			// Previous Experience Row 3
 			thirdPreviousExperienceCompanyName: '',
-			thirdPreviousExperienceFromDate: null,
-			thirdPreviousExperienceToDate: null,
+			thirdPreviousExperienceFromDate: '',
+			thirdPreviousExperienceToDate: '',
 			thirdPreviousExperienceDesignation: '',
 			thirdPreviousExperienceReasonForLeaving: '',
-			thirdPreviousExperienceSalary: null,
+			thirdPreviousExperienceSalary: '',
 			// References Row 1
 			firstReferenceName: '',
 			firstReferenceAddress: '',
@@ -375,7 +375,6 @@ const EmployeeEntryForm = () => {
 			return updatedState;
 		});
 	};
-	console.log(singleEmployeeProfessionalDetail);
 	const editEmployeePopoverHandler = async ({ popoverName, id }) => {
 		setUpdateEmployeeId(id);
 
@@ -386,7 +385,6 @@ const EmployeeEntryForm = () => {
 						{ id: id, company: globalCompany.id },
 						true
 					).unwrap();
-					console.log(personalData);
 					editEmployeePopoverStateUpdater(popoverName);
 					break;
 
@@ -444,7 +442,6 @@ const EmployeeEntryForm = () => {
 						},
 						true
 					).unwrap();
-					console.log(pfEsiData);
 					editEmployeePopoverStateUpdater(popoverName);
 					break;
 
@@ -472,10 +469,6 @@ const EmployeeEntryForm = () => {
 							true
 						).unwrap(),
 					]);
-
-					console.log('Personal Detail:', personalDetail);
-					console.log('PF ESI Detail:', pfEsiDetail);
-					console.log('Nominee Data:', nomineeData);
 
 					editEmployeePopoverStateUpdater(popoverName);
 					break;
@@ -530,16 +523,13 @@ const EmployeeEntryForm = () => {
 			const data = await addEmployeePersonalDetail({
 				formData,
 			}).unwrap();
-			console.log(data);
 			setErrorMessage('');
 			setAddedEmployeeId(data.id);
 			formikBag.resetForm();
 			dispatchAlert('Success');
 			addEmployeePopoverHandler('addEmployeeProfessionalDetail');
 		} catch (err) {
-			console.log(err);
 			if (err.status === 400) {
-				console.log(err.data.error);
 				setErrorMessage(err.data.error);
 			}
 			dispatchAlert('Error');
@@ -548,8 +538,6 @@ const EmployeeEntryForm = () => {
 
 	const addProfessionalDetailButtonClicked = useCallback(
 		async (values, formikBag) => {
-			console.log(values);
-			console.log(addedEmployeeId);
 			let employeeId = addedEmployeeId;
 			if (updateEmployeeId !== null) {
 				employeeId = updateEmployeeId;
@@ -562,14 +550,15 @@ const EmployeeEntryForm = () => {
 			employeeShift.employee = employeeId;
 			employeeShift.company = globalCompany.id;
 
-			console.log(employeeShift);
 			try {
 				const addEmployeeShiftsPromise = addEmployeeShifts(employeeShift).unwrap();
-				const addEmployeeProfessionalDetailPromise = addEmployeeProfessionalDetail({
-					...values.employeeProfessionalDetail,
-					employee: employeeId,
-					company: globalCompany.id,
-				}).unwrap();
+				const addEmployeeProfessionalDetailPromise = addEmployeeProfessionalDetail(
+					replaceEmptyStringsWithNull({
+						...values.employeeProfessionalDetail,
+						employee: employeeId,
+						company: globalCompany.id,
+					})
+				).unwrap();
 
 				const [shiftsData, professionalDetailData] = await Promise.all([
 					addEmployeeShiftsPromise,
