@@ -10,6 +10,8 @@ from .generate_form_no_16 import generate_form_no_16
 from .generate_form_f_front import generate_form_f_front
 from .generate_form_f_back import generate_form_f_back
 from .generate_confirmation_letter import generate_confirmation_letter
+from .generate_esi_form_1 import generate_esi_form_1
+from .generate_duty_join import generate_duty_join
 
 
 def generate_personnel_file_reports(request_data, employees):
@@ -49,6 +51,12 @@ def generate_personnel_file_reports(request_data, employees):
         
         if 'confirmation_letter' in request_data['filters']['personnel_file_reports_selected']:
             generate_confirmation_letter(personnel_file_reports, default_cell_height, default_cell_height_for_heading, employee, left_margin, right_margin)
+        
+        if 'esi_form_1' in request_data['filters']['personnel_file_reports_selected']:
+            generate_esi_form_1(personnel_file_reports, default_cell_height, default_cell_height_for_heading, employee, left_margin, right_margin)
+        
+        if 'duty_join' in request_data['filters']['personnel_file_reports_selected']:
+            generate_duty_join(personnel_file_reports, default_cell_height, default_cell_height_for_heading, employee, left_margin, right_margin)
         
     buffer = bytes(personnel_file_reports.output())
     yield buffer

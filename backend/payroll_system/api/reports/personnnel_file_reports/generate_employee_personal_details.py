@@ -1,7 +1,7 @@
 import os
 from datetime import datetime, date, time
 from dateutil.relativedelta import relativedelta
-from ...models import EmployeeSalaryEarning
+from ...models import EmployeeSalaryEarning, EarningsHead
 
 def generate_employee_personal_details(report, default_cell_height, default_cell_height_for_heading, employee, left_margin, right_margin):
     default_cell_height = 7
@@ -72,14 +72,16 @@ def generate_employee_personal_details(report, default_cell_height, default_cell
     #Total Rate or Wages
     total_earnings_rate = None
     try:
-        today = datetime.now() #Replace with date coming from backend later
-        employee_salary_rates = EmployeeSalaryEarning.objects.filter(from_date__lte=date(today.year, today.month, 1), to_date__gte=date(today.year, today.month, 1), employee=employee).order_by('earnings_head__id')
         total_earnings_rate = 0
-        for index, salary_rate in enumerate(employee_salary_rates):
-            total_earnings_rate += salary_rate.value
+        earnings_heads = EarningsHead.objects.filter(company=employee.company, user=employee.user)
+        employee_salary_rates = EmployeeSalaryEarning.objects.filter(employee=employee).order_by('from_date', 'earnings_head__id')
+        for head in earnings_heads:
+            salary_for_particular_earning_head = employee_salary_rates.filter(earnings_head=head).order_by('from_date')
+            if salary_for_particular_earning_head.exists():
+                total_earnings_rate += salary_for_particular_earning_head.first().value
     except: 
         pass
-    report.cell(w=width_of_columns['intro'], h=default_cell_height, text=f"Wages: {total_earnings_rate if total_earnings_rate else ''} / month or day", align="L", new_x="LMARGIN", new_y='NEXT', border=0)
+    report.cell(w=width_of_columns['intro'], h=default_cell_height, text=f"Salary/Wages: {total_earnings_rate if total_earnings_rate else ''} / month or day", align="L", new_x="LMARGIN", new_y='NEXT', border=0)
 
     #Department
     department = None

@@ -96,10 +96,28 @@ const FilterOptions = ({ handleChange, values, isValid, handleSubmit, isSubmitti
 						<Field
 							type="checkbox"
 							name="filters.personnelFileReportsSelected"
+							value="esi_form_1"
+							className="mr-1 h-4 w-4 translate-y-0.5 rounded accent-teal-600"
+						/>
+						ESI Form 1
+					</label>
+					<label>
+						<Field
+							type="checkbox"
+							name="filters.personnelFileReportsSelected"
 							value="confirmation_letter"
 							className="mr-1 h-4 w-4 translate-y-0.5 rounded accent-teal-600"
 						/>
 						Confirmation Letter
+					</label>
+					<label>
+						<Field
+							type="checkbox"
+							name="filters.personnelFileReportsSelected"
+							value="duty_join"
+							className="mr-1 h-4 w-4 translate-y-0.5 rounded accent-teal-600"
+						/>
+						Duty Join
 					</label>
 				</div>
 			)}

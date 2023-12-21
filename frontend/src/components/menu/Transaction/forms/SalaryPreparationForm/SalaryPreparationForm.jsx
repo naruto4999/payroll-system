@@ -103,18 +103,22 @@ const SalaryPreparationForm = () => {
 		if (!employeePersonalDetails) return [];
 
 		const filteredData = employeePersonalDetails.filter((employee) => {
-			const comparisonDate = new Date(Date.UTC(selectedDate.year, parseInt(selectedDate.month) - 1, 1));
-			// Extract the year and month from the original dateOfJoining
-			const [year, month] = employee.dateOfJoining.split('-').map(Number);
-			if (employee.resignationDate) {
-				const [resignYear, resignMonth] = employee.resignationDate.split('-').map(Number);
-				const resignDate = new Date(Date.UTC(resignYear, resignMonth, 0));
-				if (resignDate < comparisonDate) {
-					return false;
+			if (employee.dateOfJoining) {
+				const comparisonDate = new Date(Date.UTC(selectedDate.year, parseInt(selectedDate.month) - 1, 1));
+				// Extract the year and month from the original dateOfJoining
+				const [year, month] = employee.dateOfJoining.split('-').map(Number);
+				if (employee.resignationDate) {
+					const [resignYear, resignMonth] = employee.resignationDate.split('-').map(Number);
+					const resignDate = new Date(Date.UTC(resignYear, resignMonth, 0));
+					if (resignDate < comparisonDate) {
+						return false;
+					}
 				}
+				const newDateOfJoining = new Date(Date.UTC(year, month - 1, 1));
+				return newDateOfJoining <= comparisonDate;
+			} else {
+				return false;
 			}
-			const newDateOfJoining = new Date(Date.UTC(year, month - 1, 1));
-			return newDateOfJoining <= comparisonDate;
 		});
 
 		return filteredData;

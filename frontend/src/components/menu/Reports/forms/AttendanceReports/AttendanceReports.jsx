@@ -129,20 +129,24 @@ const AttendanceReports = () => {
 		if (!employeePersonalDetails) return [];
 
 		const filteredData = employeePersonalDetails.filter((employee) => {
-			const comparisonDate = new Date(Date.UTC(selectedDate.year, parseInt(selectedDate.month) - 1, 1));
-			// Extract the year and month from the original dateOfJoining
-			const [year, month] = employee.dateOfJoining.split('-').map(Number);
-			if (employee.resignationDate) {
-				const [resignYear, resignMonth] = employee.resignationDate.split('-').map(Number);
-				const resignDate = new Date(Date.UTC(resignYear, resignMonth, 0));
-				if (resignDate < comparisonDate) {
-					return false;
+			if (employee.dateOfJoining) {
+				const comparisonDate = new Date(Date.UTC(selectedDate.year, parseInt(selectedDate.month) - 1, 1));
+				// Extract the year and month from the original dateOfJoining
+				const [year, month] = employee.dateOfJoining.split('-').map(Number);
+				if (employee.resignationDate) {
+					const [resignYear, resignMonth] = employee.resignationDate.split('-').map(Number);
+					const resignDate = new Date(Date.UTC(resignYear, resignMonth, 0));
+					if (resignDate < comparisonDate) {
+						return false;
+					}
 				}
-			}
-			const dateOfJoiningOfEmployee = new Date(Date.UTC(year, month - 1, 1));
-			// Check if employee.id exists in the array
+				const dateOfJoiningOfEmployee = new Date(Date.UTC(year, month - 1, 1));
+				// Check if employee.id exists in the array
 
-			return dateOfJoiningOfEmployee <= comparisonDate;
+				return dateOfJoiningOfEmployee <= comparisonDate;
+			} else {
+				return false;
+			}
 		});
 
 		return filteredData;
