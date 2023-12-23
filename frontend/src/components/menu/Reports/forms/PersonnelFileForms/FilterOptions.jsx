@@ -119,6 +119,24 @@ const FilterOptions = ({ handleChange, values, isValid, handleSubmit, isSubmitti
 						/>
 						Duty Join
 					</label>
+					<label>
+						<Field
+							type="checkbox"
+							name="filters.personnelFileReportsSelected"
+							value="pf_form_2_front"
+							className="mr-1 h-4 w-4 translate-y-0.5 rounded accent-teal-600"
+						/>
+						PF Form 2 Front
+					</label>
+					<label>
+						<Field
+							type="checkbox"
+							name="filters.personnelFileReportsSelected"
+							value="pf_form_2_back"
+							className="mr-1 h-4 w-4 translate-y-0.5 rounded accent-teal-600"
+						/>
+						PF Form 2 Back
+					</label>
 				</div>
 			)}
 			{values.reportType == 'personnel_file_reports' && (
