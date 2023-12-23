@@ -326,35 +326,36 @@ const PersonnelFileForms = () => {
 	};
 
 	return (
-		<section className="mt-4">
+		<section className="mt-4 w-full">
 			<div className="ml-4 flex flex-row flex-wrap place-content-between">
 				<div className="mr-4">
 					<h1 className="text-3xl font-medium">Personnel File Forms</h1>
 					<p className="my-2 text-sm">Generate Personnel File Forms here</p>
 				</div>
 			</div>
-			<div className="ml-4 flex w-1/3 flex-row justify-between">
-				<div>
-					<label
-						htmlFor="fromDate"
-						className="mr-4 text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
-					>
-						From :
-					</label>
-					<DateSelector date={fromDate} setDate={setFromDate} id={'fromDate'} name={'toDate'} />
-				</div>
-				<div>
-					<label
-						htmlFor="toDate"
-						className="mr-4 text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
-					>
-						To :
-					</label>
-					<DateSelector date={toDate} setDate={setToDate} id={'toDate'} name={'toDate'} />
-				</div>
-			</div>
-			<div className="flex w-full flex-row gap-8">
-				<div className="ml-4 flex w-1/2 flex-col">
+
+			<div className="mx-4 flex flex-row flex-wrap gap-8 lg:flex-nowrap">
+				<div className="w-full ">
+					<div className=" flex w-full flex-row justify-between">
+						<div>
+							<label
+								htmlFor="fromDate"
+								className="mr-4 text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
+							>
+								From :
+							</label>
+							<DateSelector date={fromDate} setDate={setFromDate} id={'fromDate'} name={'toDate'} />
+						</div>
+						<div>
+							<label
+								htmlFor="toDate"
+								className="mr-4 text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
+							>
+								To :
+							</label>
+							<DateSelector date={toDate} setDate={setToDate} id={'toDate'} name={'toDate'} />
+						</div>
+					</div>
 					<EmployeeTable table={table} flexRender={flexRender} />
 				</div>
 				<div className="mt-4">
