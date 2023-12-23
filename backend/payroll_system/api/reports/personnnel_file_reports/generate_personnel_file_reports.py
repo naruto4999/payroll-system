@@ -14,6 +14,8 @@ from .generate_esi_form_1 import generate_esi_form_1
 from .generate_duty_join import generate_duty_join
 from .generate_pf_form_2_front import generate_pf_form_2_front
 from .generate_pf_form_2_back import generate_pf_form_2_back
+from .generate_probation import generate_probation
+from .generate_form_11 import generate_form_11
 
 
 def generate_personnel_file_reports(request_data, employees):
@@ -65,6 +67,12 @@ def generate_personnel_file_reports(request_data, employees):
         
         if 'pf_form_2_back' in request_data['filters']['personnel_file_reports_selected']:
             generate_pf_form_2_back(personnel_file_reports, default_cell_height, default_cell_height_for_heading, employee, left_margin, right_margin)
+        
+        if 'probation' in request_data['filters']['personnel_file_reports_selected']:
+            generate_probation(personnel_file_reports, default_cell_height, default_cell_height_for_heading, employee, left_margin, right_margin)
+        
+        if 'form_11' in request_data['filters']['personnel_file_reports_selected']:
+            generate_form_11(personnel_file_reports, default_cell_height, default_cell_height_for_heading, employee, left_margin, right_margin)
         
     buffer = bytes(personnel_file_reports.output())
     yield buffer

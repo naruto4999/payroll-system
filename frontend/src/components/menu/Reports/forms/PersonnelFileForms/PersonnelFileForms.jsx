@@ -333,7 +333,7 @@ const PersonnelFileForms = () => {
 					<p className="my-2 text-sm">Generate Personnel File Forms here</p>
 				</div>
 			</div>
-			<div className="ml-4 flex w-2/5 flex-row justify-between">
+			<div className="ml-4 flex w-1/3 flex-row justify-between">
 				<div>
 					<label
 						htmlFor="fromDate"
@@ -354,7 +354,7 @@ const PersonnelFileForms = () => {
 				</div>
 			</div>
 			<div className="flex w-full flex-row gap-8">
-				<div className="ml-4 flex w-2/5 flex-col">
+				<div className="ml-4 flex w-1/2 flex-col">
 					<EmployeeTable table={table} flexRender={flexRender} />
 				</div>
 				<div className="mt-4">

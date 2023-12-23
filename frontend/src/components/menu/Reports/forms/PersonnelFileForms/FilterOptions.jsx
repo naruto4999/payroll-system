@@ -28,7 +28,7 @@ const FilterOptions = ({ handleChange, values, isValid, handleSubmit, isSubmitti
 				</Field>
 			</div>
 			{values.reportType == 'personnel_file_reports' && (
-				<div role="group" aria-labelledby="checkbox-group" className="flex flex-row  flex-wrap gap-5">
+				<div role="group" aria-labelledby="checkbox-group" className="flex flex-row flex-wrap gap-5">
 					<label>
 						<Field
 							type="checkbox"
@@ -136,6 +136,24 @@ const FilterOptions = ({ handleChange, values, isValid, handleSubmit, isSubmitti
 							className="mr-1 h-4 w-4 translate-y-0.5 rounded accent-teal-600"
 						/>
 						PF Form 2 Back
+					</label>
+					<label>
+						<Field
+							type="checkbox"
+							name="filters.personnelFileReportsSelected"
+							value="probation"
+							className="mr-1 h-4 w-4 translate-y-0.5 rounded accent-teal-600"
+						/>
+						Probation
+					</label>
+					<label>
+						<Field
+							type="checkbox"
+							name="filters.personnelFileReportsSelected"
+							value="form_11"
+							className="mr-1 h-4 w-4 translate-y-0.5 rounded accent-teal-600"
+						/>
+						Form-11
 					</label>
 				</div>
 			)}
