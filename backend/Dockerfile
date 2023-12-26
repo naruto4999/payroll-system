@@ -2,7 +2,7 @@ FROM python:3.10-slim-buster
 
 RUN apt-get update
 # Add dependcies for pyscopg2, which django uses to connect to postgres sql database
-RUN apt-get install -y --no-install-recommends libpq-dev gcc python3-dev
+RUN apt-get install -y --no-install-recommends libpq-dev gcc python3-dev mdbtools
 # Remove all the unecessary packages installed by the update command
 RUN rm -rf /var/lib/apt/lists/*
 RUN pip install --upgrade pip

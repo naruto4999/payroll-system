@@ -155,6 +155,24 @@ const FilterOptions = ({ handleChange, values, isValid, handleSubmit, isSubmitti
 						/>
 						Form-11
 					</label>
+					<label>
+						<Field
+							type="checkbox"
+							name="filters.personnelFileReportsSelected"
+							value="appointment_letter_front"
+							className="mr-1 h-4 w-4 translate-y-0.5 rounded accent-teal-600"
+						/>
+						Appointment Letter Front
+					</label>
+					<label>
+						<Field
+							type="checkbox"
+							name="filters.personnelFileReportsSelected"
+							value="appointment_letter_back"
+							className="mr-1 h-4 w-4 translate-y-0.5 rounded accent-teal-600"
+						/>
+						Appointment Letter Back
+					</label>
 				</div>
 			)}
 			{values.reportType == 'personnel_file_reports' && (
