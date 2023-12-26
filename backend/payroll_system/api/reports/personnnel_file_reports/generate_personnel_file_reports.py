@@ -19,6 +19,7 @@ from .generate_form_11 import generate_form_11
 from .generate_appointment_letter_front_english import generate_appointment_letter_front_english
 from .generate_appointment_letter_back_english import generate_appointment_letter_back_english
 from .generate_appointment_letter_front_hindi import generate_appointment_letter_front_hindi
+from .generate_appointment_letter_back_hindi import generate_appointment_letter_back_hindi
 
 
 def generate_personnel_file_reports(request_data, employees):
@@ -85,7 +86,10 @@ def generate_personnel_file_reports(request_data, employees):
 
 
         if 'appointment_letter_back' in request_data['filters']['personnel_file_reports_selected']:
-            generate_appointment_letter_back_english(personnel_file_reports, default_cell_height, default_cell_height_for_heading, employee, left_margin, right_margin)
+            if request_data['filters']['language'] == 'english':
+                generate_appointment_letter_back_english(personnel_file_reports, default_cell_height, default_cell_height_for_heading, employee, left_margin, right_margin)
+            else:
+                generate_appointment_letter_back_hindi(personnel_file_reports, default_cell_height, default_cell_height_for_heading, employee, left_margin, right_margin)
         
     buffer = bytes(personnel_file_reports.output())
     yield buffer
