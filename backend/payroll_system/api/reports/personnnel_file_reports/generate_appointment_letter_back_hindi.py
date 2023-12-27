@@ -66,7 +66,7 @@ def generate_appointment_letter_back_hindi(report, default_cell_height, default_
     report.set_xy(x=report.get_x(), y=297-10-(default_cell_height_large*6))
     report.set_font('noto-sans-devanagari', size=8, style="B")
     report.cell(w=0, h=default_cell_height_large, text=f"मैंने ऊपर लिखी सभी शर्ते पढ़ और समझ", align="L", new_x="LMARGIN", new_y='NEXT', border=0)
-    report.cell(w=0, h=default_cell_height_large, text=f"ली हैं मैं उन्हें स्वीकार करता हूँ |", align="L", new_x="LMARGIN", new_y='NEXT', border=0)
+    report.cell(w=0, h=default_cell_height_large, text=f"ली हैं मैं उन्हें स्वीकार करता/करती हूँ |", align="L", new_x="LMARGIN", new_y='NEXT', border=0)
 
     report.set_xy(x=left_margin, y=report.get_y()+default_cell_height_large*2)
     report.cell(w=0, h=default_cell_height_large, text=f"हस्ताक्षर कर्मचारी", align="L", new_x="RIGHT", new_y='TOP', border=0)

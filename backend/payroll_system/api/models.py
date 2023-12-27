@@ -177,10 +177,14 @@ class OwnerToRegular(models.Model):
 class Company(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="companies")
     id = models.BigAutoField(primary_key=True)
-    name = models.CharField(max_length=256, null=False, unique=True)
+    name = models.CharField(max_length=256, null=False)
     visible = models.BooleanField(default=False)
     def __str__(self):
         return f"{self.user.email} -> {self.name}"
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'name'], name='unique_company_for_a_user'),
+        ]
 
 
 class CompanyDetails(models.Model):

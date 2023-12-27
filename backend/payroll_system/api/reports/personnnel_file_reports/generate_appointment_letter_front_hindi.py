@@ -175,7 +175,7 @@ def generate_appointment_letter_front_hindi(report, default_cell_height, default
     #2.
     report.set_xy(x=left_margin, y=report.get_y()+default_cell_height)
     report.cell(w=width_of_columns['serial'], h=default_cell_height, text=f"2.", align="C", new_x="RIGHT", new_y='TOP', border=0)
-    report.cell(w=0, h=default_cell_height, text=f"अस्थाई / प्रोबेशन कार्यालय या बढाई गयी अस्थाई / प्रोबेशन कार्यालय, के दौरान आपको यह अधिकार होगा कि आप बिना किसी सूचना (नोटिस) दिए नौकरी छोड़ सकते हैं |", align="L", new_x="LEFT", new_y='NEXT', border=0)
+    report.cell(w=0, h=default_cell_height, text=f"अस्थाई / प्रोबेशन कार्यकाल या बढाई गयी अस्थाई / प्रोबेशन कार्यकाल, के दौरान आपको यह अधिकार होगा कि आप बिना किसी सूचना (नोटिस) दिए नौकरी छोड़ सकते हैं |", align="L", new_x="LEFT", new_y='NEXT', border=0)
     report.cell(w=0, h=default_cell_height, text=f"इस अस्थाई / प्रोबेशन के दौरान कम्पनी को भी अधिकार होगा कि वह आपको बिना किसी सूचना (नोटिस) के नौकरी छोड़ने के लिए कह सकती है |", align="L", new_x="LEFT", new_y='NEXT', border=0)
 
     #3.

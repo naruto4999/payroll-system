@@ -252,10 +252,25 @@ class EmployeeAttendanceManager(models.Manager):
                     current_employee_salary_detail = current_employee.employee.employee_salary_detail
                 except:
                     continue
+
+                #current_employee user_id in machine db
+                user_info_df = mdb.read_table(temp_file.name, 'USERINFO')
+                # print(user_info_df.tail(50))
+                print(type(user_info_df['Badgenumber'].iloc[0]))
+                print(f'Current Employee ACN: {current_employee.employee.attendance_card_no}')
+                filtered_user_info = user_info_df[user_info_df['Badgenumber'] == str(current_employee.employee.attendance_card_no)]
+                user_id = None
+                if not filtered_user_info.empty:
+                    user_id = filtered_user_info['USERID'].iloc[0]
+                    print(f"The USERID for Badgenumber is: {user_id}")
+                else:
+                    print(f"No USERID found for Badgenumber/ACN {current_employee.employee.attendance_card_no}")
+                    continue
                 #Filter the Dataframe rows corresponding to the current employee
-                employee_rows = filtered_rows[filtered_rows['USERID'] == current_employee.employee.attendance_card_no]
+                employee_rows = filtered_rows[filtered_rows['USERID'] == user_id]
                 employee_rows_asc_time = employee_rows.sort_values(by='CHECKTIME', ascending=True)
                 employee_rows_desc_time = employee_rows.sort_values(by='CHECKTIME', ascending=False)
+                print(employee_rows_desc_time)
                 print(employee_rows_desc_time)
                 #Getting Shift Before the start of the loop
                 employee_shift_on_particular_date=None

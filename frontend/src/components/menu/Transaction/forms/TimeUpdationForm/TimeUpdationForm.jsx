@@ -185,7 +185,7 @@ const TimeUpdationForm = () => {
 			manualToDate: '',
 			attendance: {},
 			machineAttendanceUpload: '',
-			allEmployeeMachineAttendance: false,
+			allEmployeesMachineAttendance: false,
 		};
 
 		for (let day = 1; day <= daysInMonth; day++) {
