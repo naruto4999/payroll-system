@@ -1,10 +1,13 @@
 FROM python:3.10-slim-buster
 
-RUN apt-get update
-# Add dependcies for pyscopg2, which django uses to connect to postgres sql database
-RUN apt-get install -y --no-install-recommends libpq-dev gcc python3-dev mdbtools
-# Remove all the unecessary packages installed by the update command
-RUN rm -rf /var/lib/apt/lists/*
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libpq-dev gcc python3-dev gnupg2 \
+    && echo "deb http://deb.debian.org/debian buster main" >> /etc/apt/sources.list \
+    && echo "deb http://http.debian.net/debian buster-backports main" >> /etc/apt/sources.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends mdbtools \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN pip install --upgrade pip
 # Add new user so we don't run pip as root
 RUN adduser --disabled-login worker

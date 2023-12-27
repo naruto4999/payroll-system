@@ -984,11 +984,6 @@ const EditAttendance = memo(
 			const fileInput = document.getElementById('machineAttendanceUpload'); // Replace with the actual ID of your file input element
 			const file = fileInput.files[0];
 			const formData = new FormData();
-			// for (const key in values) {
-			// 	if (values.hasOwnProperty(key)) {
-			// 		formData.append(key, values[key]);
-			// 	}
-			// }
 			formData.append('mdbDatabase', file);
 			formData.append('employee', updateEmployeeId);
 			formData.append('company', globalCompany.id);

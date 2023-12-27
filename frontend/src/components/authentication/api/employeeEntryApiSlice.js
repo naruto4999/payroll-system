@@ -38,7 +38,16 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
 				{ type: 'EmployeePersonalDetails', id: 'LIST' },
 			],
 		}),
-
+		deleteEmployee: builder.mutation({
+			query: (employee) => ({
+				url: `/api/employee-personal-detail/${employee.company}/${employee.id}`,
+				method: 'DELETE',
+			}),
+			invalidatesTags: (result, error, id) => [
+				{ type: 'EmployeePersonalDetails', id: id.id },
+				{ type: 'EmployeePersonalDetails', id: 'LIST' },
+			],
+		}),
 		// Professional Details
 		getSingleEmployeeProfessionalDetail: builder.query({
 			query: (employee) => ({
@@ -206,6 +215,7 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
 });
 
 export const {
+	useDeleteEmployeeMutation,
 	useGetEmployeePersonalDetailsQuery,
 	useAddEmployeePersonalDetailMutation,
 	useAddEmployeeProfessionalDetailMutation,

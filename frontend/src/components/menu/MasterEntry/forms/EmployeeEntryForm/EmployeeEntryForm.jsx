@@ -27,6 +27,7 @@ import {
 	useLazyGetEmployeeFamilyNomineeDetailsQuery,
 	useUpdateEmployeeFamilyNomineeDetailMutation,
 	useDeleteEmployeeFamilyNomineeDetailMutation,
+	useDeleteEmployeeMutation,
 } from '../../../../authentication/api/employeeEntryApiSlice';
 import { useGetEarningsHeadsQuery } from '../../../../authentication/api/earningsHeadEntryApiSlice';
 import { useLazyGetEmployeeShiftsQuery } from '../../../../authentication/api/employeeShiftsApiSlice';
@@ -50,6 +51,8 @@ import * as yup from 'yup';
 import { useDispatch } from 'react-redux';
 import { alertActions } from '../../../../authentication/store/slices/alertSlice';
 import { useAddEmployeeShiftsMutation } from '../../../../authentication/api/employeeShiftsApiSlice';
+import ConfirmationModal from '../../../../UI/ConfirmationModal';
+import { ConfirmationModalSchema } from '../../../Transaction/forms/TimeUpdationForm/TimeUpdationSchema';
 
 ReactModal.setAppElement('#root');
 
@@ -109,6 +112,8 @@ const replaceEmptyStringsWithNull = (obj) => {
 const EmployeeEntryForm = () => {
 	const globalCompany = useSelector((state) => state.globalCompany);
 	const dispatch = useDispatch();
+	const [showConfirmModal, setShowConfirmModal] = useState(false);
+	const [employeeToDelete, setEmployeeToDelete] = useState(null);
 
 	const dispatchAlert = (type) => {
 		if (type === 'Success') {
@@ -245,6 +250,8 @@ const EmployeeEntryForm = () => {
 
 	const [deleteEmployeeFamilyNomineeDetail, { isLoading: isDeletingEmployeeFamilyNomineeDetail }] =
 		useDeleteEmployeeFamilyNomineeDetailMutation();
+
+	const [deleteEmployee, { isLoading: isDeletingEmployee }] = useDeleteEmployeeMutation();
 
 	let earningHeadInitialValues = {};
 	if (EarningsHeadsSuccess) {
@@ -1011,8 +1018,31 @@ const EmployeeEntryForm = () => {
 		}
 	};
 
-	const deleteButtonClicked = async (id) => {
-		console.log(id);
+	const deleteButtonClicked = async (formikBag) => {
+		console.log(employeeToDelete);
+		try {
+			const data = await deleteEmployee({ company: globalCompany.id, id: employeeToDelete }).unwrap();
+			dispatch(
+				alertActions.createAlert({
+					message: `Deleted Successfully`,
+					type: 'Success',
+					duration: 3000,
+				})
+			);
+		} catch (err) {
+			console.log(err);
+			dispatch(
+				alertActions.createAlert({
+					message: 'Error Occurred',
+					type: 'Error',
+					duration: 5000,
+				})
+			);
+		}
+		setShowConfirmModal(false);
+		setEmployeeToDelete(null);
+		// setShowConfirmModal(true);
+
 		// deleteShift({ id: id, company: globalCompany.id });
 	};
 
@@ -1063,7 +1093,10 @@ const EmployeeEntryForm = () => {
 				<div className="flex justify-center gap-4">
 					<div
 						className="rounded bg-redAccent-500 p-1.5 hover:bg-redAccent-700 dark:bg-redAccent-700 dark:hover:bg-redAccent-500"
-						onClick={() => deleteButtonClicked(props.row.original.id)}
+						onClick={() => {
+							setEmployeeToDelete(props.row.original.id);
+							setShowConfirmModal(true);
+						}}
 					>
 						<FaRegTrashAlt className="h-4 text-white" />
 					</div>
@@ -1735,6 +1768,33 @@ const EmployeeEntryForm = () => {
 								/>
 							)}
 						</>
+					</ReactModal>
+
+					<ReactModal
+						className="items-left fixed inset-0 mx-2 my-auto flex h-fit flex-col gap-4 rounded bg-zinc-300 p-4 shadow-xl dark:bg-zinc-800 sm:mx-auto sm:max-w-lg"
+						isOpen={showConfirmModal}
+						onRequestClose={() => {
+							setShowConfirmModal(false);
+							setEmployeeToDelete(null);
+						}}
+						style={{
+							overlay: {
+								backgroundColor: 'rgba(0, 0, 0, 0.75)',
+							},
+						}}
+					>
+						<Formik
+							initialValues={{ userInput: '' }}
+							validationSchema={ConfirmationModalSchema}
+							onSubmit={deleteButtonClicked}
+							component={(props) => (
+								<ConfirmationModal
+									{...props}
+									displayHeading={'Delete Employee (Keep in mind this is irreversible)'}
+									setShowConfirmModal={setShowConfirmModal}
+								/>
+							)}
+						/>
 					</ReactModal>
 				</section>
 			</>
