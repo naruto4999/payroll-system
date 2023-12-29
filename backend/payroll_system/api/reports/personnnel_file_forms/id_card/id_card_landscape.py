@@ -106,7 +106,7 @@ def generate_id_card_landscape(request_data, employees):
         if employee.local_pincode:
             if len(text) !=0:
                 text += ', '
-        text += employee.local_pincode
+            text += employee.local_pincode
         id_card.set_xy(x=initial_coordinates_for_current_id_card['x'], y=id_card.get_y())
         id_card.cell(w=width_of_columns['intro_headers'], h=default_cell_height, text=f"Address :", align="L", new_x="RIGHT", new_y='TOP', border='LR')
         id_card.multi_cell(w=width_of_columns['intro_values'], h=default_cell_height, text=f"{text}", align="L", new_x="RIGHT", new_y='TOP', border=0)
