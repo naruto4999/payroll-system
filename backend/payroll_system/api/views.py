@@ -32,7 +32,8 @@ from .reports.generate_attendance_register import generate_attendance_register
 from .reports.generate_payslip import generate_payslip
 from .reports.generate_overtime_sheet import generate_overtime_sheet
 from .reports.generate_present_report import generate_present_report
-from .reports.personnnel_file_reports.generate_personnel_file_reports import generate_personnel_file_reports
+from .reports.personnnel_file_forms.id_card.id_card_landscape import generate_id_card_landscape
+from .reports.personnnel_file_forms.personnnel_file_reports.generate_personnel_file_reports import generate_personnel_file_reports
 # from .reports.personnnel_file_reports.generate_application_form import generate_application_form
 from itertools import groupby
 from operator import attrgetter
@@ -1845,6 +1846,7 @@ class EmployeeAttendanceListCreateAPIView(generics.ListCreateAPIView):
         last_day = calendar.monthrange(year, month)[1]
         to_date = datetime(year, month, last_day).date()
         queryset = self.get_queryset().filter(date__range=[from_date, to_date])
+        print(f"queryset size: {len(queryset)}")
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
         # return Response(status.HTTP_200_OK)
@@ -2314,6 +2316,12 @@ class PersonnelFileReportsCreateAPIView(generics.CreateAPIView):
             else:
                 return Response({"detail": "No Employee Selected or Found"}, status=status.HTTP_404_NOT_FOUND)
                 
+        if validated_data['report_type'] == 'id_card':
+            employees = EmployeePersonalDetail.objects.filter(id__in=employee_ids)
+            response = StreamingHttpResponse(generate_id_card_landscape(serializer.validated_data, employees), content_type="application/pdf")
+            response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
+            return response
+
         return Response({"message": "Payslip successful"}, status=status.HTTP_200_OK)
         print('idk')
 

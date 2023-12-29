@@ -27,6 +27,25 @@ const FilterOptions = ({ handleChange, values, isValid, handleSubmit, isSubmitti
 					<option value="id_card">ID card</option>
 				</Field>
 			</div>
+			{values.reportType == 'id_card' && (
+				<div>
+					<label
+						htmlFor="orientation"
+						className="mr-4 text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
+					>
+						Orientation :
+					</label>
+					<Field
+						as="select"
+						id="orientation"
+						className="my-1 rounded-md bg-zinc-50 bg-opacity-50 p-1 dark:bg-zinc-700"
+						name="orientation"
+					>
+						<option value="landscape">Landscape</option>
+						<option value="portrait">Portrait</option>
+					</Field>
+				</div>
+			)}
 			{values.reportType == 'personnel_file_reports' && (
 				<div role="group" aria-labelledby="checkbox-group" className="flex flex-row flex-wrap gap-5">
 					<label>

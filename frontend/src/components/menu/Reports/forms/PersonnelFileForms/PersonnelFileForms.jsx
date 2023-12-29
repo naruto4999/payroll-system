@@ -175,7 +175,8 @@ const PersonnelFileForms = () => {
 				groupBy: 'none',
 				sortBy: 'paycode',
 				resignationFilter: 'all',
-				language: 'english',
+				language: 'hindi',
+				orientation: 'landscape',
 				personnelFileReportsSelected: [],
 			},
 			reportType: 'personnel_file_reports',
@@ -335,7 +336,7 @@ const PersonnelFileForms = () => {
 			</div>
 
 			<div className="mx-4 flex flex-row flex-wrap gap-8 lg:flex-nowrap">
-				<div className="w-full ">
+				<div className="w-1/2 ">
 					<div className=" flex w-full flex-row justify-between">
 						<div>
 							<label
@@ -358,7 +359,7 @@ const PersonnelFileForms = () => {
 					</div>
 					<EmployeeTable table={table} flexRender={flexRender} />
 				</div>
-				<div className="mt-4">
+				<div className="mt-4 w-1/2">
 					<Formik
 						initialValues={initialValues}
 						validationSchema={''}
