@@ -474,7 +474,6 @@ def generate_salary_sheet(request_data, prepared_salaries):
 
 
 
-
             if column_name == "net_payable":
                 salary_sheet_pdf.rect(salary_sheet_pdf.get_x(), salary_sheet_pdf.get_y(), w=column_width, h=default_cell_height*default_number_of_cells_in_row)
                 salary_sheet_pdf.set_xy(x=initial_cursor_position_before_row["x"]+width_of_columns["paycode"]+width_of_columns["employee_name"]+width_of_columns["attendance_detail"]+width_of_columns["salary_wage_rate"]+width_of_columns["earnings"]+width_of_columns["arrears"]+width_of_columns["ot_incentive"]+width_of_columns["total_earnings"]+width_of_columns["deductions"], y=initial_cursor_position_before_row["y"]+(default_number_of_cells_in_row-1)*default_cell_height)

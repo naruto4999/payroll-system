@@ -384,8 +384,14 @@ const EditAttendance = memo(
 			let manualInObj = getTimeInDateObj(manualIn, day);
 			let manualOutObj = getTimeInDateObj(manualOut, manualIn < manualOut ? day : parseInt(day) + 1);
 
+			const shift = getShift(values.year, values.month, day);
+
+			console.log('Employee Shift ', shift);
 			const timeDifferenceInMilliseconds = manualOutObj - manualInObj;
-			const timeDifferenceInMinutes = timeDifferenceInMilliseconds / (1000 * 60);
+			let timeDifferenceInMinutes = timeDifferenceInMilliseconds / (1000 * 60);
+			if (shift.lunchBeginningTime && shift.lunchDuration) {
+				timeDifferenceInMinutes -= shift.lunchDuration;
+			}
 			overtime += timeDifferenceInMinutes;
 			return overtime;
 		};
@@ -709,7 +715,7 @@ const EditAttendance = memo(
 						// const hasManualOut = attendance.manualOut !== '';
 						const hasPunchIn = attendance.machineIn !== '' || attendance.manualIn !== '';
 						const hasPunchOut = attendance.machineOut !== '' || attendance.manualOut !== '';
-						console.log('Punch In: ', hasPunchIn, ' Punch Out: ', hasPunchOut);
+						// console.log('Punch In: ', hasPunchIn, ' Punch Out: ', hasPunchOut);
 						const shift = getShift(values.year, values.month, day);
 
 						if (hasPunchIn && hasPunchOut) {
@@ -1010,7 +1016,7 @@ const EditAttendance = memo(
 				}
 			} catch (err) {
 				// setShowLoadingBar(false);
-				console.log(err);
+				// console.log(err);
 				dispatch(
 					alertActions.createAlert({
 						message: 'Error Occurred',
@@ -1046,7 +1052,7 @@ const EditAttendance = memo(
 				// setShowLoadingBar(false);
 			} catch (err) {
 				// setShowLoadingBar(false);
-				console.log(err);
+				// console.log(err);
 				dispatch(
 					alertActions.createAlert({
 						message: 'Error Occurred',

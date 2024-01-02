@@ -256,7 +256,7 @@ const TimeUpdationForm = () => {
 		const filteredData = employeePersonalDetails.filter((employee) => {
 			const comparisonDate = new Date(Date.UTC(selectedDate.year, parseInt(selectedDate.month) - 1, 1));
 			// Extract the year and month from the original dateOfJoining
-			console.log(employee);
+			// console.log(employee);
 			if (employee.dateOfJoining) {
 				const [year, month] = employee.dateOfJoining.split('-').map(Number);
 				if (employee.resignationDate) {

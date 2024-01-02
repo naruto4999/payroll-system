@@ -392,6 +392,8 @@ class EmployeeAttendanceManager(models.Manager):
                                 minutes_worked = (punch_out_time - punch_in_time)
                                 # print(minutes_worked)
                                 if minutes_worked > timedelta(minutes=employee_shift_on_particular_date.shift.ot_begin_after):
+                                    if employee_shift_on_particular_date.shift.lunch_beginning_time and employee_shift_on_particular_date.shift.lunch_duration:
+                                        minutes_worked -= timedelta(minutes=employee_shift_on_particular_date.shift.lunch_duration)
                                     overtime_minutes += minutes_worked
                             elif current_employee_salary_detail.overtime_type == 'all_days':
                                 arrived_early_minutes = shift_beginning_time - punch_in_time
