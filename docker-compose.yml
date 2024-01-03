@@ -54,6 +54,7 @@ services:
             - database
         volumes:
             - ./backup:/backup # Mount a volume to store backups
+            - ../database_backups:/database_backups # Mount a volume to store backups
 
         env_file:
             - .env.db
