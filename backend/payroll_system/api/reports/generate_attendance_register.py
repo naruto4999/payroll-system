@@ -171,19 +171,31 @@ def generate_attendance_register(request_data, attendance_dict):
                 late_hrs = ''
                 ot_hrs = ''
                 attendance_status = ' '
-                # print(f"Attendance First Half: {attendance.first_half.name} Attendance second half: {attendance.second_half.name}")
-                in_time_str = attendance.manual_in.strftime('%H:%M') if attendance.manual_in is not None else ""
-                out_time_str = attendance.manual_out.strftime('%H:%M') if attendance.manual_out is not None else ""
-                if attendance.manual_in is not None and attendance.manual_out is not None:
-                    # Convert the strings to datetime.time objects (assuming the date is not important)
-                    in_time = datetime.strptime(in_time_str, '%H:%M').time()
-                    out_time = datetime.strptime(out_time_str, '%H:%M').time()
+                #Getting in Time and Out time
+                in_time = None
+                out_time = None
+                if attendance.manual_in:
+                    in_time = attendance.manual_in
+                    in_time_str = in_time.strftime('%H:%M')
+                elif attendance.machine_in:
+                    in_time = attendance.machine_in
+                    in_time_str = in_time.strftime('%H:%M')
+                if attendance.manual_out:
+                    out_time = attendance.manual_out
+                    out_time_str = out_time.strftime('%H:%M')
+                elif attendance.machine_out:
+                    out_time = attendance.machine_out
+                    out_time_str = out_time.strftime('%H:%M')
+                
+                if in_time is not None and out_time is not None:
+                    # in_time = datetime.strptime(in_time_str, '%H:%M').time()
+                    # out_time = datetime.strptime(out_time_str, '%H:%M').time()
                     # Convert time objects to datetime objects with a common date
                     common_date = datetime(1900, 1, 1)
                     in_datetime = datetime.combine(common_date, in_time)
                     out_datetime = datetime.combine(common_date, out_time)
 
-                    if attendance.manual_out < attendance.manual_in:
+                    if out_time < in_time:
                         out_datetime += timedelta(hours=24)
 
                     # Calculate the time difference

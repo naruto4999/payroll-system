@@ -59,7 +59,7 @@ const LoginForm = () => {
 				is_staff: decoded.is_staff,
 			};
 			dispatch(authActions.setAccount(user));
-			navigate('/home');
+			navigate('/home/select-company');
 			setUserDetails({
 				// email: "",
 				password: '',
