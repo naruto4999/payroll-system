@@ -256,21 +256,21 @@ def generate_form_14(request_data, employees):
             # print(earned_amounts)
             
             #Total Earned
-            total_earnings_amount_with_arrear = None
+            total_earnings_amount = None
             if earned_amounts and earned_amounts.exists():
-                total_earnings_amount_with_arrear = 0
+                total_earnings_amount = 0
                 for earned in earned_amounts:
-                    total_earnings_amount_with_arrear += (earned.earned_amount)
-            # print(f"Total Earned for the month: {month}: {total_earnings_amount_with_arrear}")
+                    total_earnings_amount += (earned.earned_amount-earned.arear_amount)
+            # print(f"Total Earned for the month: {month}: {total_earnings_amount}")
 
-            #Total Deductions
-            net_payable = None
-            if current_month_salary:
-                total_deductions = current_month_salary.pf_deducted+current_month_salary.esi_deducted+current_month_salary.vpf_deducted+current_month_salary.advance_deducted+current_month_salary.tds_deducted
-                net_payable = total_earnings_amount_with_arrear-total_deductions
+            # #Total Deductions
+            # net_payable = None
+            # if current_month_salary:
+            #     total_deductions = current_month_salary.pf_deducted+current_month_salary.esi_deducted+current_month_salary.vpf_deducted+current_month_salary.advance_deducted+current_month_salary.tds_deducted
+            #     net_payable = total_earnings_amount-total_deductions
 
             form_14.cell(w=width_of_columns['wages_period'], h=height_of_table_row, text=f"{month}", align="C", new_x="RIGHT", new_y='TOP', border=1)
-            form_14.cell(w=width_of_columns['wages_earned'], h=height_of_table_row, text=f"{net_payable if net_payable else ''}", align="R", new_x="RIGHT", new_y='TOP', border=1)
+            form_14.cell(w=width_of_columns['wages_earned'], h=height_of_table_row, text=f"{total_earnings_amount if total_earnings_amount else ''}", align="R", new_x="RIGHT", new_y='TOP', border=1)
 
             #Work Days
             working_days_str = ''

@@ -47,6 +47,22 @@ services:
         volumes:
             - db_volume:/var/lib/postgresql/data
 
+    backup:
+        image: postgres:16 # Use the same PostgreSQL version
+        container_name: db_backup
+        depends_on:
+            - database
+        volumes:
+            - ./backup:/backup # Mount a volume to store backups
+
+        env_file:
+            - .env.db
+        environment:
+            - DB_HOST=database
+        command: /bin/bash /backup/start_backup.sh
+
 volumes:
     db_volume:
     media_volume:
+    # Volume for storing backups
+    # backup:
