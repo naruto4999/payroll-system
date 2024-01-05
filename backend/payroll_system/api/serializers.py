@@ -287,7 +287,7 @@ class SalaryOvertimeSheetSerializer(serializers.Serializer):
     company = serializers.IntegerField()
     month = serializers.IntegerField()
     year = serializers.IntegerField()
-    report_type = serializers.ChoiceField(choices=["salary_sheet", "payslip", "overtime_sheet"])
+    report_type = serializers.ChoiceField(choices=["salary_sheet", "payslip", "overtime_sheet", "payment_sheet"])
 
     class Meta:
         fields = ['employee_ids', "filters"]

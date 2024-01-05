@@ -24,6 +24,7 @@ const FilterOptions = ({ handleChange, values, isValid, handleSubmit, isSubmitti
 					name="reportType"
 				>
 					<option value="salary_sheet">Salary Sheet</option>
+					<option value="payment_sheet">Payment Sheet</option>
 					<option value="payslip">Payslip</option>
 					<option value="overtime_sheet">Over Time Sheet</option>
 				</Field>

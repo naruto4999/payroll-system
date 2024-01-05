@@ -28,6 +28,7 @@ import math
 from fpdf import FPDF
 from django.http import HttpResponse, StreamingHttpResponse
 from .reports.generate_salary_sheet import generate_salary_sheet
+from .reports.generate_payment_sheet import generate_payment_sheet
 from .reports.generate_attendance_register import generate_attendance_register
 from .reports.generate_payslip import generate_payslip
 from .reports.generate_overtime_sheet import generate_overtime_sheet
@@ -2212,17 +2213,47 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
             elif validated_data['filters']['sort_by'] == "employee_name":
                 order_by = ('employee__name',)
             if validated_data['filters']['group_by'] != 'none':
-                order_by = ('employee__employee_professional_detail__department',)
+                if order_by != None:
+                    order_by = ('employee__employee_professional_detail__department', *order_by)
+                else:
+                    order_by = ('employee__employee_professional_detail__department',)
             employee_salaries = EmployeeSalaryPrepared.objects.filter(employee__id__in=employee_ids, date=salary_date)
 
             #Use python regular expression to orderby if the order by is using paycode because it is alpha numeric
-            if validated_data['filters']['sort_by'] == "paycode":
+            if validated_data['filters']['sort_by'] == "paycode" and validated_data['filters']['group_by'] == 'none':
                 employee_salaries = sorted(employee_salaries, key=lambda x: (re.sub(r'[^A-Za-z]', '', x.employee.paycode), int(re.sub(r'[^0-9]', '', x.employee.paycode))))
             else:
                 employee_salaries = employee_salaries.order_by(*order_by)
 
             if len(employee_salaries) != 0:
                 response = StreamingHttpResponse(generate_salary_sheet(serializer.validated_data, employee_salaries), content_type="application/pdf")
+                response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
+                return response
+            else:
+                return Response({"detail": "No Salary Prepared for the given month"}, status=status.HTTP_404_NOT_FOUND)
+        
+        if validated_data['report_type'] == 'payment_sheet':
+            salary_date = date(validated_data["year"], validated_data["month"], 1)
+            order_by = None
+            if validated_data['filters']['sort_by'] == "attendance_card_no":
+                order_by = ("employee__attendance_card_no",)
+            elif validated_data['filters']['sort_by'] == "employee_name":
+                order_by = ('employee__name',)
+            if validated_data['filters']['group_by'] != 'none':
+                if order_by != None:
+                    order_by = ('employee__employee_professional_detail__department', *order_by)
+                else:
+                    order_by = ('employee__employee_professional_detail__department',)
+            employee_salaries = EmployeeSalaryPrepared.objects.filter(employee__id__in=employee_ids, date=salary_date)
+
+            #Use python regular expression to orderby if the order by is using paycode because it is alpha numeric
+            if validated_data['filters']['sort_by'] == "paycode" and validated_data['filters']['group_by'] == 'none':
+                employee_salaries = sorted(employee_salaries, key=lambda x: (re.sub(r'[^A-Za-z]', '', x.employee.paycode), int(re.sub(r'[^0-9]', '', x.employee.paycode))))
+            else:
+                employee_salaries = employee_salaries.order_by(*order_by)
+
+            if len(employee_salaries) != 0:
+                response = StreamingHttpResponse(generate_payment_sheet(serializer.validated_data, employee_salaries), content_type="application/pdf")
                 response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
                 return response
             else:
