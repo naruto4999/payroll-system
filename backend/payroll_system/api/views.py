@@ -2430,6 +2430,11 @@ class AttendanceReportsCreateAPIView(generics.CreateAPIView):
                 order_by = ("employee__attendance_card_no",)
             elif validated_data['filters']['sort_by'] == "employee_name":
                 order_by = ('employee__name',)
+            if validated_data['filters']['group_by'] != 'none':
+                if order_by != None:
+                    order_by = ('employee__employee_professional_detail__department', *order_by)
+                else:
+                    order_by = ('employee__employee_professional_detail__department',)
 
             present_employees_attendances = EmployeeAttendance.objects.filter(
                 (Q(manual_in__isnull=False) |
@@ -2444,7 +2449,14 @@ class AttendanceReportsCreateAPIView(generics.CreateAPIView):
 
             #Use python regular expression to orderby if the order by is using paycode because it is alpha numeric
             if validated_data['filters']['sort_by'] == "paycode":
-                present_employees_attendances = sorted(present_employees_attendances, key=lambda x: (re.sub(r'[^A-Za-z]', '', x.employee.paycode), int(re.sub(r'[^0-9]', '', x.employee.paycode))))
+                present_employees_attendances = sorted(
+                    present_employees_attendances, 
+                    key=lambda x: (
+                        (getattr(x.employee.employee_professional_detail.department, 'name', 'zzzzzzzz') if hasattr(x.employee.employee_professional_detail, 'department') else 'zzzzzzzz') if validated_data['filters']['group_by'] != 'none' else '',
+                        re.sub(r'[^A-Za-z]', '', x.employee.paycode), 
+                        int(re.sub(r'[^0-9]', '', x.employee.paycode))
+                    )
+                )
             else:
                 present_employees_attendances = present_employees_attendances.order_by(*order_by)
 

@@ -53,8 +53,8 @@ class FPDF(FPDF):
         self.set_line_width(0.2)
 
 def generate_present_report(request_data, present_employees_attendances):
-    
     default_cell_height = 5
+    default_cell_height_large = 7
     default_row_number_of_cells = 1
     left_margin = 6
     right_margin = 7
@@ -71,6 +71,16 @@ def generate_present_report(request_data, present_employees_attendances):
     present_report.set_font("Helvetica", size=8)
 
     for employee_index, attendance in enumerate(present_employees_attendances):
+        if request_data['filters']['group_by'] != 'none':
+            try:
+                current_employee_department = attendance.employee.employee_professional_detail.department
+                previous_employee_department = present_employees_attendances[employee_index-1].employee.employee_professional_detail.department if employee_index!=0 else None
+                if employee_index == 0 or current_employee_department != previous_employee_department:
+                    present_report.set_font("Helvetica", size=10, style="B")
+                    present_report.cell(w=0, h=default_cell_height_large, text=f'{current_employee_department.name if current_employee_department else "No Department"}', align="L", new_x="LMARGIN", new_y='NEXT', border=0)
+            except:
+                pass
+        present_report.set_font("Helvetica", size=8, style="")
         #Serial Number
         present_report.cell(w=width_of_columns['serial_number'], h=default_cell_height*default_row_number_of_cells, text=f'{employee_index+1}', align="C", new_x="RIGHT", new_y='TOP', border=1)
 

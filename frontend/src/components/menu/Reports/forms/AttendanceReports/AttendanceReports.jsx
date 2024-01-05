@@ -203,7 +203,7 @@ const AttendanceReports = () => {
 				monthToDate: null,
 				date: '',
 			},
-			reportType: 'attendance_register',
+			reportType: 'present_report',
 		};
 		return initialValues;
 	};
