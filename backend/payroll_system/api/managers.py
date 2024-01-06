@@ -76,6 +76,7 @@ class EmployeeAttendanceManager(models.Manager):
             EmployeeProfessionalDetail = apps.get_model('api', 'EmployeeProfessionalDetail')
             EmployeeAttendance = apps.get_model('api', 'EmployeeAttendance')
             active_employees = EmployeeProfessionalDetail.objects.active_employees_between_dates(from_date=from_date, to_date=to_date, company_id=company_id, user=user)
+            print(f"Length of active employees: {len(active_employees)}")
             if active_employees.exists():
                 for employee in active_employees:
                     existing_attendance_dates = set(
@@ -88,6 +89,7 @@ class EmployeeAttendanceManager(models.Manager):
 
                     date_range = [from_date + timedelta(days=x) for x in range((to_date - from_date).days + 1)]
                     dates_without_attendance = [date for date in date_range if date not in existing_attendance_dates]
+                    print(f"Dates without attendances: {dates_without_attendance}")
 
                     # Mark attendance for dates where attendance object doesn't exist
                     attendance_records = []
