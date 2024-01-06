@@ -1138,14 +1138,12 @@ class EmployeeAttendance(models.Model):
         ]
 
     def save(self, *args, **kwargs):
-        if self.pay_multiplier is None:
-            if self.first_half.paid and self.second_half.paid:
-                self.pay_multiplier = 1
-            elif self.first_half.paid or self.second_half.paid:
-                self.pay_multiplier = 0.5
-            else:
-                self.pay_multiplier = 0
-            # self.pay_multiplier = calculate_pay_multiplier()
+        if self.first_half.paid and self.second_half.paid:
+            self.pay_multiplier = 1
+        elif self.first_half.paid or self.second_half.paid:
+            self.pay_multiplier = 0.5
+        else:
+            self.pay_multiplier = 0
         super().save(*args, **kwargs)
     
 

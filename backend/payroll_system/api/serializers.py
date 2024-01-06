@@ -352,6 +352,12 @@ class MachineAttendanceSerializer(serializers.Serializer):
     month = serializers.IntegerField()
     year = serializers.IntegerField()
 
+class DefaultAttendanceSerializer(serializers.Serializer):
+    user = UserSerializer(read_only=True)
+    company = serializers.IntegerField()
+    month = serializers.IntegerField()
+    year = serializers.IntegerField()
+
 
 # class CompanyEmployeeStatisticsSerializer(serializers.ModelSerializer):
 #     class Meta:

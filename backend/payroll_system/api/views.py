@@ -4,7 +4,7 @@ from rest_framework import generics, status, mixins
 from django.db import transaction
 from rest_framework import serializers
 
-from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer, EmployeeGenerativeLeaveRecordSerializer, EmployeeLeaveOpeningSerializer, EmployeeMonthlyAttendancePresentDetailsSerializer, EmployeeAdvancePaymentSerializer, EmployeeMonthlyAttendanceDetailsSerializer, EmployeeSalaryPreparedSerializer, EarnedAmountSerializer, SalaryOvertimeSheetSerializer, AttendanceReportsSerializer, EmployeeAttendanceBulkAutofillSerializer, BulkPrepareSalariesSerializer, MachineAttendanceSerializer, PersonnelFileReportsSerializer
+from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer, EmployeeGenerativeLeaveRecordSerializer, EmployeeLeaveOpeningSerializer, EmployeeMonthlyAttendancePresentDetailsSerializer, EmployeeAdvancePaymentSerializer, EmployeeMonthlyAttendanceDetailsSerializer, EmployeeSalaryPreparedSerializer, EarnedAmountSerializer, SalaryOvertimeSheetSerializer, AttendanceReportsSerializer, EmployeeAttendanceBulkAutofillSerializer, BulkPrepareSalariesSerializer, MachineAttendanceSerializer, PersonnelFileReportsSerializer, DefaultAttendanceSerializer
 from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift, EmployeeSalaryEarning, EarningsHead, EmployeeShifts, EmployeeGenerativeLeaveRecord, EmployeeSalaryPrepared, EarnedAmount, EmployeeAdvanceEmiRepayment, EmployeeAdvancePayment, EmployeeAttendance, EmployeePersonalDetail, EmployeeProfessionalDetail
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -1879,8 +1879,14 @@ class EmployeeAttendanceUpdateAPIView(generics.UpdateAPIView):
             print(f"Employee: {employee_id} Company: {company_id}")
             print(total_expected_instances)
             for day in employee_attendance:
+                print(f"Day id: {day['id']}")
                 instance = self.get_queryset().filter(id=day['id'])
-                serializer = self.get_serializer(instance.first(), data=day)
+                print("instance ", instance) 
+                print(day)
+                if instance.exists():
+                    serializer = self.get_serializer(instance.first(), data=day)
+                else:
+                    print(f"Update shouldn't be done, do create here")
                 serializer.is_valid(raise_exception=True)
                 if user.role == "OWNER":
                     serializer.save(user=user)
@@ -2419,7 +2425,8 @@ class AttendanceReportsCreateAPIView(generics.CreateAPIView):
                 return response
             else:
                 return Response({"detail": "No Attendances Found for the given month"}, status=status.HTTP_404_NOT_FOUND)
-            
+
+
         if validated_data['report_type'] == 'present_report':
             num_days_in_month = calendar.monthrange(validated_data['year'], validated_data['month'])[1]
             if validated_data['filters']['date']> num_days_in_month:
@@ -2538,7 +2545,26 @@ class MachineAttendanceAPIView(APIView):
         # print(f"Operation result: {operation_result}, Message: {message}")
         return Response({"message": "Bulk Prepare Salaries successful"}, status=status.HTTP_200_OK)
         
-        
+class DefaultAttendanceAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        user = self.request.user
+        print(request.data)
+        serializer = DefaultAttendanceSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+        print(validated_data)
+        num_days_in_month = calendar.monthrange(validated_data['year'], validated_data['month'])[1]
+        from_date = date(validated_data['year'], validated_data['month'], 1)
+        to_date = date(validated_data['year'], validated_data['month'], num_days_in_month)
+        print(from_date)
+
+        operation_result, message = EmployeeAttendance.objects.mark_default_attendance(from_date=from_date, to_date=to_date, company_id=validated_data['company'], user=user)
+        print(operation_result, message)
+
+        if operation_result == True:
+            return Response({"message": "Bulk Default Attendance successful"}, status=status.HTTP_200_OK)
+        else:
+            return Response({"message": "Bulk Default Attendance Failed"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 

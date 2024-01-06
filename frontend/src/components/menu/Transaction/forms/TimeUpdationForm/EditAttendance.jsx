@@ -25,6 +25,7 @@ import { ConfirmationModalSchema } from './TimeUpdationSchema';
 import {
 	useBulkAutoFillAttendanceAddMutation,
 	useMachineAttendanceAddMutation,
+	useBulkDefaultAttendanceMutation,
 } from '../../../../authentication/api/timeUpdationApiSlice';
 import { alertActions } from '../../../../authentication/store/slices/alertSlice';
 import { useOutletContext } from 'react-router-dom';
@@ -126,6 +127,15 @@ const EditAttendance = memo(
 				isSuccess: isAddMachineAttendanceSuccess,
 			},
 		] = useMachineAttendanceAddMutation();
+
+		const [
+			bulkDefaultAttendance,
+			{
+				isLoading: isUpdatingDefaultAttendance,
+				// isError: errorRegisteringRegular,
+				isSuccess: isUpdateDefaultAttendanceSuccess,
+			},
+		] = useBulkDefaultAttendanceMutation();
 
 		const {
 			data: allEmployeeAttendance,
@@ -1064,6 +1074,38 @@ const EditAttendance = memo(
 			setShowConfirmModal(false);
 		};
 
+		const bulkDefaultAttendanceClicked = async (formikBag) => {
+			let toSend = {
+				company: globalCompany.id,
+				month: values.month,
+				year: values.year,
+			};
+			console.log('yoooo');
+			try {
+				// setShowLoadingBar(true);
+				const startTime = performance.now();
+				const data = await bulkDefaultAttendance(toSend).unwrap();
+				const endTime = performance.now(); // Record the end time
+				const responseTime = endTime - startTime;
+				const responseTimeInSeconds = (responseTime / 1000).toFixed(2);
+				dispatch(
+					alertActions.createAlert({
+						message: `Saved, Time Taken: ${responseTimeInSeconds} seconds`,
+						type: 'Success',
+						duration: 3000,
+					})
+				);
+			} catch (err) {
+				dispatch(
+					alertActions.createAlert({
+						message: 'Error Occurred',
+						type: 'Error',
+						duration: 5000,
+					})
+				);
+			}
+		};
+
 		const clearAttendance = useCallback(() => {
 			const manualFromDate = values.manualFromDate;
 			const manualToDate = values.manualToDate;
@@ -1372,13 +1414,10 @@ const EditAttendance = memo(
 
 									<button
 										type="button"
-										className="h-10 w-20 rounded bg-zinc-400 p-2 text-base font-medium hover:bg-zinc-500 dark:bg-zinc-600 dark:hover:bg-zinc-700"
-										onClick={() => {
-											cancelButtonClicked(isEditing);
-											setErrorMessage('');
-										}}
+										className="h-10 w-64 rounded bg-blueAccent-400 p-1 text-base font-medium hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:hover:bg-blueAccent-600"
+										onClick={bulkDefaultAttendanceClicked}
 									>
-										Cancel
+										Update All with Default Value
 									</button>
 								</div>
 							</section>
