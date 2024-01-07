@@ -35,6 +35,7 @@ from .reports.generate_overtime_sheet import generate_overtime_sheet
 from .reports.generate_present_report import generate_present_report
 from .reports.generate_form_14 import generate_form_14
 from .reports.personnnel_file_forms.id_card.id_card_landscape import generate_id_card_landscape
+from .reports.generate_overtime_sheet_daily import generate_overtime_sheet_daily
 from .reports.personnnel_file_forms.personnnel_file_reports.generate_personnel_file_reports import generate_personnel_file_reports
 # from .reports.personnnel_file_reports.generate_application_form import generate_application_form
 from itertools import groupby
@@ -2475,6 +2476,54 @@ class AttendanceReportsCreateAPIView(generics.CreateAPIView):
                 return response
             else:
                 return Response({"detail": "No Employee Present on this date"}, status=status.HTTP_404_NOT_FOUND)
+
+
+        if validated_data['report_type'] == 'overtime_sheet_daily':
+            num_days_in_month = calendar.monthrange(validated_data['year'], validated_data['month'])[1]
+            if validated_data['filters']['date']> num_days_in_month:
+                return Response({"detail": "Invalid Date"}, status=status.HTTP_400_BAD_REQUEST)
+
+            order_by = None
+            if validated_data['filters']['sort_by'] == "attendance_card_no":
+                order_by = ("employee__attendance_card_no",)
+            elif validated_data['filters']['sort_by'] == "employee_name":
+                order_by = ('employee__name',)
+            if validated_data['filters']['group_by'] != 'none':
+                if order_by != None:
+                    order_by = ('employee__employee_professional_detail__department', *order_by)
+                else:
+                    order_by = ('employee__employee_professional_detail__department',)
+
+            employees_attendances_with_ot = EmployeeAttendance.objects.filter(
+                Q(employee__id__in=employee_ids) &
+                Q(ot_min__isnull=False) & Q(ot_min__gt=0),
+                date=date(validated_data['year'], validated_data['month'], validated_data['filters']['date']),
+                company_id=validated_data['company'],
+                user=user
+            )
+            print(len(employees_attendances_with_ot))
+
+            #Use python regular expression to orderby if the order by is using paycode because it is alpha numeric
+            if validated_data['filters']['sort_by'] == "paycode":
+                employees_attendances_with_ot = sorted(
+                    employees_attendances_with_ot, 
+                    key=lambda x: (
+                        (getattr(x.employee.employee_professional_detail.department, 'name', 'zzzzzzzz') if hasattr(x.employee.employee_professional_detail, 'department') else 'zzzzzzzz') if validated_data['filters']['group_by'] != 'none' else '',
+                        re.sub(r'[^A-Za-z]', '', x.employee.paycode), 
+                        int(re.sub(r'[^0-9]', '', x.employee.paycode))
+                    )
+                )
+            else:
+                employees_attendances_with_ot = employees_attendances_with_ot.order_by(*order_by)
+
+            if len(employees_attendances_with_ot) !=0:
+                print('inside the if')
+                response = StreamingHttpResponse(generate_overtime_sheet_daily(serializer.validated_data, employees_attendances_with_ot), content_type="application/pdf")
+                response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
+                print('returnining the report now ')
+                return response
+            else:
+                return Response({"detail": "No OT Employees on this date"}, status=status.HTTP_404_NOT_FOUND)
             
         if validated_data['report_type'] == 'form_14':
             order_by = None

@@ -29,10 +29,11 @@ const FilterOptions = ({ handleChange, values, isValid, handleSubmit, isSubmitti
 				>
 					<option value="attendance_register">Attendance Register</option>
 					<option value="present_report">Present Report</option>
+					<option value="overtime_sheet_daily">{'Over Time Sheet (Daily)'}</option>
 					<option value="form_14">{'Form-14 (Leave Register)'}</option>
 				</Field>
 			</div>
-			{values.reportType == 'present_report' && (
+			{(values.reportType == 'present_report' || values.reportType == 'overtime_sheet_daily') && (
 				<div>
 					<label
 						htmlFor="filters.date"
