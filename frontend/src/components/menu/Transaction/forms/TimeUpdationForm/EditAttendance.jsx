@@ -1419,6 +1419,12 @@ const EditAttendance = memo(
 									>
 										Update All with Default Value
 									</button>
+									<FaCircleNotch
+										className={classNames(
+											isUpdatingDefaultAttendance ? '' : 'hidden',
+											'my-auto inline animate-spin text-xl text-white'
+										)}
+									/>
 								</div>
 							</section>
 						</form>
