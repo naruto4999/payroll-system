@@ -4,8 +4,8 @@ from rest_framework import generics, status, mixins
 from django.db import transaction
 from rest_framework import serializers
 
-from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer, EmployeeGenerativeLeaveRecordSerializer, EmployeeLeaveOpeningSerializer, EmployeeMonthlyAttendancePresentDetailsSerializer, EmployeeAdvancePaymentSerializer, EmployeeMonthlyAttendanceDetailsSerializer, EmployeeSalaryPreparedSerializer, EarnedAmountSerializer, SalaryOvertimeSheetSerializer, AttendanceReportsSerializer, EmployeeAttendanceBulkAutofillSerializer, BulkPrepareSalariesSerializer, MachineAttendanceSerializer, PersonnelFileReportsSerializer, DefaultAttendanceSerializer
-from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift, EmployeeSalaryEarning, EarningsHead, EmployeeShifts, EmployeeGenerativeLeaveRecord, EmployeeSalaryPrepared, EarnedAmount, EmployeeAdvanceEmiRepayment, EmployeeAdvancePayment, EmployeeAttendance, EmployeePersonalDetail, EmployeeProfessionalDetail
+from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer, EmployeeGenerativeLeaveRecordSerializer, EmployeeLeaveOpeningSerializer, EmployeeMonthlyAttendancePresentDetailsSerializer, EmployeeAdvancePaymentSerializer, EmployeeMonthlyAttendanceDetailsSerializer, EmployeeSalaryPreparedSerializer, EarnedAmountSerializer, SalaryOvertimeSheetSerializer, AttendanceReportsSerializer, EmployeeAttendanceBulkAutofillSerializer, BulkPrepareSalariesSerializer, MachineAttendanceSerializer, PersonnelFileReportsSerializer, DefaultAttendanceSerializer, EmployeeResignationSerializer, EmployeeUnresignSerializer, BonusCalculationSerializer, BonusPercentageSerializer, EmployeeProfessionalDetailRetrieveSerializer
+from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift, EmployeeSalaryEarning, EarningsHead, EmployeeShifts, EmployeeGenerativeLeaveRecord, EmployeeSalaryPrepared, EarnedAmount, EmployeeAdvanceEmiRepayment, EmployeeAdvancePayment, EmployeeAttendance, EmployeePersonalDetail, EmployeeProfessionalDetail, BonusCalculation, BonusPercentage
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
@@ -985,6 +985,20 @@ class EmployeeProfessionalDetailRetrieveUpdateDestroyAPIView(generics.RetrieveUp
         serializer.save(user=self.request.user)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class EmployeeProfessionalDetailRetrieveAPIView(generics.RetrieveAPIView):
+    permission_classes= [IsAuthenticated]
+    serializer_class = EmployeeProfessionalDetailRetrieveSerializer
+    lookup_field = 'employee'
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        user = self.request.user
+        if user.role == "OWNER":
+            return user.all_companys_employee_professional_details.filter(company=company_id)
+        instance = OwnerToRegular.objects.get(user=user)
+        return instance.owner.all_companys_employee_professional_details.filter(company=company_id)
+    
     
         
 class EmployeeSalaryEarningListCreateAPIView(generics.ListCreateAPIView):
@@ -2382,45 +2396,73 @@ class AttendanceReportsCreateAPIView(generics.CreateAPIView):
             date_range_query = Q(date__year=validated_data['year'], date__month=validated_data['month'])
             # resignation_filter_query = Q()  # You might need to adjust this based on your logic
 
-            order_by = ('date',)
+            # order_by = ('date',)
+            # if validated_data['filters']['sort_by'] == "attendance_card_no":
+            #     order_by = ("employee__attendance_card_no", 'date')
+            # elif validated_data['filters']['sort_by'] == "employee_name":
+            #     order_by = ('employee__name', 'date')
+            # if validated_data['filters']['group_by'] != 'none' and validated_data['filters']['sort_by'] != "paycode":
+            #         order_by = ('employee__employee_professional_detail__department',) + order_by
+
+
+            # attendance_objects = EmployeeAttendance.objects.filter(
+            #     Q(employee__id__in=employee_ids) &
+            #     Q(company_id=validated_data['company']) &
+            #     date_range_query
+            #     # resignation_filter_query
+            # ).order_by(*order_by)
+
+
+            # attendance_dict = {}
+            # for attendance in attendance_objects:
+            #     key = attendance.employee.id
+            #     if key not in attendance_dict:
+            #         attendance_dict[key] = []
+            #     attendance_dict[key].append(attendance)
+
+
+            # if validated_data['filters']['sort_by'] == "paycode":
+            #     sorted_keys = sorted(
+            #         attendance_dict.items(),
+            #         key=lambda x: (
+            #             getattr(x[1][0].employee.employee_professional_detail.department, 'name', '') if validated_data['filters']['group_by'] != 'none' else '',
+            #             re.sub(r'[^A-Za-z]', '', x[1][0].employee.paycode),  # Sort by paycode within the department
+            #             int(re.sub(r'[^0-9]', '', x[1][0].employee.paycode))  # Secondary sorting by numeric part of paycode
+            #         )
+            #     )
+            #     ordered_attendance_dict = dict(sorted_keys)
+            #     attendance_dict = ordered_attendance_dict
+            order_by = None
             if validated_data['filters']['sort_by'] == "attendance_card_no":
-                order_by = ("employee__attendance_card_no", 'date')
+                order_by = ("employee__attendance_card_no",)
             elif validated_data['filters']['sort_by'] == "employee_name":
-                order_by = ('employee__name', 'date')
-            if validated_data['filters']['group_by'] != 'none' and validated_data['filters']['sort_by'] != "paycode":
-                    order_by = ('employee__employee_professional_detail__department',) + order_by
+                order_by = ('employee__name',)
+            if validated_data['filters']['group_by'] != 'none':
+                if order_by != None:
+                    order_by = ('employee__employee_professional_detail__department', *order_by)
+                else:
+                    order_by = ('employee__employee_professional_detail__department',)
 
+            employees = EmployeePersonalDetail.objects.filter(id__in=employee_ids, user=user, company_id=validated_data['company'])
 
-            attendance_objects = EmployeeAttendance.objects.filter(
-                Q(employee__id__in=employee_ids) &
-                Q(company_id=validated_data['company']) &
-                date_range_query
-                # resignation_filter_query
-            ).order_by(*order_by)
+            print(len(employees))
 
-
-            attendance_dict = {}
-            for attendance in attendance_objects:
-                key = attendance.employee.id
-                if key not in attendance_dict:
-                    attendance_dict[key] = []
-                attendance_dict[key].append(attendance)
-
-
+            #Use python regular expression to orderby if the order by is using paycode because it is alpha numeric
             if validated_data['filters']['sort_by'] == "paycode":
-                sorted_keys = sorted(
-                    attendance_dict.items(),
+                employees = sorted(
+                    employees, 
                     key=lambda x: (
-                        getattr(x[1][0].employee.employee_professional_detail.department, 'name', '') if validated_data['filters']['group_by'] != 'none' else '',
-                        re.sub(r'[^A-Za-z]', '', x[1][0].employee.paycode),  # Sort by paycode within the department
-                        int(re.sub(r'[^0-9]', '', x[1][0].employee.paycode))  # Secondary sorting by numeric part of paycode
+                        (getattr(x.employee_professional_detail.department, 'name', 'zzzzzzzz') if hasattr(x.employee_professional_detail, 'department') else 'zzzzzzzz') if validated_data['filters']['group_by'] != 'none' else '',
+                        re.sub(r'[^A-Za-z]', '', x.paycode), 
+                        int(re.sub(r'[^0-9]', '', x.paycode))
                     )
                 )
-                ordered_attendance_dict = dict(sorted_keys)
-                attendance_dict = ordered_attendance_dict
+            else:
+                employees = employees.order_by(*order_by)
 
-            if attendance_objects.exists():
-                response = StreamingHttpResponse(generate_attendance_register(serializer.validated_data, attendance_dict), content_type="application/pdf")
+
+            if len(employees) != 0:
+                response = StreamingHttpResponse(generate_attendance_register(serializer.validated_data, employees), content_type="application/pdf")
                 response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
                 print('returnining the report now ')
                 return response
@@ -2614,10 +2656,198 @@ class DefaultAttendanceAPIView(APIView):
             return Response({"message": "Bulk Default Attendance successful"}, status=status.HTTP_200_OK)
         else:
             return Response({"message": "Bulk Default Attendance Failed"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+
+class EmployeeResignationUpdateAPIView(generics.UpdateAPIView):
+    permission_classes= [IsAuthenticated]
+    serializer_class = EmployeeResignationSerializer
+    lookup_field = 'employee'
+
+    def delete_attendance_records_after_resignation(self, employee_id, resignation_date):
+        # Assuming 'resignation_date' is in datetime format
+        EmployeeAttendance.objects.filter(
+            Q(employee_id=employee_id) & Q(date__gt=resignation_date)
+        ).delete()
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        user = self.request.user
+        if user.role == "OWNER":
+            return user.all_companys_employee_professional_details.filter(company_id=company_id)
+        instance = OwnerToRegular.objects.get(user=user)
+        return instance.owner.all_companys_employee_professional_details.filter(company_id=company_id)
+    
+    def update(self, request, *args, **kwargs):
+        # user = self.request.user
+        employee_id = kwargs.get('employee')
+        instance = self.get_queryset().filter(employee_id=employee_id).first()
+
+        if instance:
+            serializer = self.get_serializer(instance, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+            # After saving the resignation details, delete attendance records
+            resignation_date = serializer.validated_data.get('resignation_date')  # Change this to match your serializer field
+            if resignation_date:
+                self.delete_attendance_records_after_resignation(employee_id, resignation_date)
+
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response({"error": "Employee not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+class EmployeeUnresignUpdateAPIView(generics.UpdateAPIView):
+    permission_classes= [IsAuthenticated]
+    serializer_class = EmployeeUnresignSerializer
+    lookup_field = 'employee'
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        user = self.request.user
+        if user.role == "OWNER":
+            return user.all_companys_employee_professional_details.filter(company_id=company_id)
+        instance = OwnerToRegular.objects.get(user=user)
+        return instance.owner.all_companys_employee_professional_details.filter(company_id=company_id)
+    
+    def update(self, request, *args, **kwargs):
+        # user = self.request.user
+        employee_id = kwargs.get('employee')
+        instance = self.get_queryset().filter(employee_id=employee_id)
+        print(instance)
+        to_update = request.data
+        to_update['resigned'] = False
+        to_update['resignation_date'] = None
+        serializer = self.get_serializer(instance.first(), data=to_update, partial=True)
+        serializer.is_valid(raise_exception=True)
+        print(serializer.validated_data)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+   
+    
+class BonusCalculationListAPIView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = BonusCalculationSerializer
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        user = self.request.user
+        if user.role == "OWNER":
+            return user.all_company_bonus_calculation.filter(company=company_id)
+        instance = OwnerToRegular.objects.get(user=user)
+        return instance.owner.all_company_bonus_calculation.filter(company=company_id)
+    
+    def list(self, request, *args, **kwargs):
+        start_date = datetime.strptime(self.kwargs.get('start_date'), "%Y-%m-%d").date()
+        end_date = datetime.strptime(self.kwargs.get('end_date'), "%Y-%m-%d").date()
+        print(f"{start_date}, {end_date}")
+        queryset = self.get_queryset().filter(date__gte=start_date, date__lte=end_date)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    
+class BonusPercentageListAPIView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = BonusPercentageSerializer
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        user = self.request.user
+        if user.role == "OWNER":
+            return user.all_company_bonus_percentage.filter(company=company_id)
+        instance = OwnerToRegular.objects.get(user=user)
+        return instance.owner.all_company_bonus_percentage.filter(company=company_id)
+    
+    # def list(self, request, *args, **kwargs):
+    #     queryset = self.get_queryset().filter(date__gte=start_date, date__lte=end_date)
+    #     serializer = self.get_serializer(queryset, many=True)
+    #     return Response(serializer.data)
 
 
 
-            
+class BonusCalculationAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        user = self.request.user
+        # print(request.data)
+        for category, month_dict in request.data['calculations'].items():
+            print(month_dict)
+            for date, amount in month_dict.items():
+                existing_bonus_calculation = BonusCalculation.objects.filter(user=user,company_id=request.data['company'], category_id=category, date=date)
+                if existing_bonus_calculation.exists():
+                    calculation = {'company': request.data['company'], 'category': category, 'amount': amount, 'date': date}
+                    serializer = BonusCalculationSerializer(existing_bonus_calculation.first(), data=calculation)
+                    serializer.is_valid(raise_exception=True)
+                    serializer.save(user=user)
+                else:
+                    calculation = {'company': request.data['company'], 'category': category, 'amount': amount, 'date': date}
+                    serializer = BonusCalculationSerializer(data=calculation)
+                    serializer.is_valid(raise_exception=True)
+                    # print(serializer.validated_data)
+                    serializer.save(user=user)
+        
+        existing_bonus_percentage = BonusPercentage.objects.filter(user=user,company_id=request.data['company'])
+        bonus_percentage_data = {
+            'company': request.data['company'], 'bonus_percentage': request.data['bonus_percentage']
+        }
+        if existing_bonus_percentage.exists():
+            serializer = BonusPercentageSerializer(existing_bonus_percentage.first(), data=bonus_percentage_data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save(user=user)
+
+        else:
+            serializer = BonusPercentageSerializer(data=bonus_percentage_data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save(user=user)
+        print(f"Bonus Percentage: {bonus_percentage_data}")
+        
+        return Response({"message": "Successful"}, status=status.HTTP_200_OK)
+
+
+    
+# class BonusCalculationCreateAPIView(generics.CreateAPIView):
+#     permission_classes = [IsAuthenticated]
+#     serializer_class = BonusCalculationSerializer
+#     def create(self, request, *args, **kwargs):
+#         try:
+#             serializer = self.get_serializer(data=request.data['employee_advance_details'])
+#             serializer.is_valid(raise_exception=True)
+#             user = self.request.user
+
+#             if user.role == "OWNER":
+#                 serializer.save(user=user)
+#                 return Response(serializer.data, status=status.HTTP_200_OK)
+#                 # return Response({"msg": "try"}, status=status.HTTP_200_OK)
+#             # else:
+#             #     instance = OwnerToRegular.objects.get(user=user)
+#             #     serializer.save(user=instance.owner)
+#             #     return Response(serializer.data, status=status.HTTP_200_OK)
+#         except ValidationError as e:
+#             print(e)
+#             return Response({'error': e}, status=status.HTTP_400_BAD_REQUEST)
+    
+# class BonusCalculationRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+#     permission_classes= [IsAuthenticated]
+#     serializer_class = BonusCalculationSerializer
+#     lookup_field = 'company_id'
+
+#     def get_queryset(self, *args, **kwargs):
+#         user = self.request.user
+#         if user.role == "OWNER":
+#             return user.calculations
+#         instance = OwnerToRegular.objects.get(user=user)
+#         return instance.owner.calculations
+    
+#     def update(self, request, *args, **kwargs):
+#         user = self.request.user
+#         if user.role == "OWNER":
+#             pass
+#         else:
+#             instance = OwnerToRegular.objects.get(user=user)
+#             user = instance.owner
+#         instance = self.get_object()
+#         serializer = self.get_serializer(instance, data=request.data)
+#         print(request.data)
+#         serializer.is_valid(raise_exception=True)
+#         serializer.save(user=user)
+#         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 

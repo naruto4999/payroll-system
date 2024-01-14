@@ -23,6 +23,21 @@ const CalculationsForm = () => {
 	const globalCompany = useSelector((state) => state.globalCompany);
 	const [showLoadingBar, setShowLoadingBar] = useOutletContext();
 
+	const months = [
+		'January',
+		'February',
+		'March',
+		'April',
+		'May',
+		'June',
+		'July',
+		'August',
+		'September',
+		'October',
+		'November',
+		'December',
+	];
+
 	const {
 		data: { company, ...calculations } = {},
 		isLoading,
@@ -106,9 +121,7 @@ const CalculationsForm = () => {
 	};
 
 	useEffect(() => {
-		setShowLoadingBar(
-			isLoading || isAddingCalculations || isUpdatingCalculations
-		);
+		setShowLoadingBar(isLoading || isAddingCalculations || isUpdatingCalculations);
 	}, [isLoading, isAddingCalculations, isUpdatingCalculations]);
 
 	if (isLoading) {
@@ -125,8 +138,7 @@ const CalculationsForm = () => {
 					<div className="mr-4">
 						<h1 className="text-3xl font-medium">Calculations</h1>
 						<p className="my-2 text-sm">
-							Edit Values for Overtime Time Calculation, EL
-							Calculation, Notice Pay Calculation, Service
+							Edit Values for Overtime Time Calculation, EL Calculation, Notice Pay Calculation, Service
 							Calculation and Gratuity Calculation
 						</p>
 					</div>
@@ -138,8 +150,7 @@ const CalculationsForm = () => {
 						isSuccess
 							? {
 									...calculations,
-									elDaysCalculation:
-										calculations.elDaysCalculation ?? '',
+									elDaysCalculation: calculations.elDaysCalculation ?? '',
 							  }
 							: {
 									otCalculation: '26',
@@ -148,6 +159,7 @@ const CalculationsForm = () => {
 									serviceCalculation: '30',
 									gratuityCalculation: '26',
 									elDaysCalculation: 20,
+									bonusStartMonth: 1,
 							  }
 					}
 					validationSchema={''}
@@ -172,9 +184,7 @@ const CalculationsForm = () => {
 									>
 										<option value="26">26 Days</option>
 										<option value="30">30 Days</option>
-										<option value="month_days">
-											Monthly Days
-										</option>
+										<option value="month_days">Monthly Days</option>
 									</Field>
 									<div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
 										<ErrorMessage name={`otCalculation`} />
@@ -211,8 +221,7 @@ const CalculationsForm = () => {
 									</label>
 									<Field
 										className={classNames(
-											errors.elDaysCalculation &&
-												touched.elDaysCalculation
+											errors.elDaysCalculation && touched.elDaysCalculation
 												? 'border-red-500 border-opacity-100 dark:border-red-700 dark:border-opacity-75'
 												: 'border-gray-800 border-opacity-25 dark:border-slate-100 dark:border-opacity-25',
 											'custom-number-input w-20 rounded  border-2 bg-zinc-200 bg-opacity-50 p-1 outline-none transition focus:border-opacity-100 dark:bg-zinc-800 dark:focus:border-opacity-75'
@@ -222,9 +231,7 @@ const CalculationsForm = () => {
 										id="elDaysCalculation"
 									/>
 									<div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
-										<ErrorMessage
-											name={`elDaysCalculation`}
-										/>
+										<ErrorMessage name={`elDaysCalculation`} />
 									</div>
 								</div>
 
@@ -266,9 +273,7 @@ const CalculationsForm = () => {
 										<option value="30">30 Days</option>
 									</Field>
 									<div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
-										<ErrorMessage
-											name={`serviceCalculation`}
-										/>
+										<ErrorMessage name={`serviceCalculation`} />
 									</div>
 								</div>
 								<div>
@@ -288,9 +293,42 @@ const CalculationsForm = () => {
 										<option value="30">30 Days</option>
 									</Field>
 									<div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
-										<ErrorMessage
-											name={`gratuityCalculation`}
-										/>
+										<ErrorMessage name={`gratuityCalculation`} />
+									</div>
+								</div>
+								<div>
+									<label
+										htmlFor="bonusStartMonth"
+										className="my-auto block font-medium text-blueAccent-700 dark:text-blueAccent-400"
+									>
+										Bonus Period
+									</label>
+									<p className="inline">From: </p>
+									<Field
+										as="select"
+										name="bonusStartMonth"
+										id="bonusStartMonth"
+										className="my-1 mx-1 inline rounded-md bg-zinc-300 bg-opacity-50 p-1 dark:bg-zinc-800 "
+									>
+										{months.map((monthName, index) => (
+											<option key={index} value={index + 1}>
+												{monthName}
+											</option>
+										))}
+									</Field>
+									<p className="ml-4 inline">
+										To:{' '}
+										{
+											months[
+												(parseInt(values.bonusStartMonth) + 11) % 12 === 0
+													? 11
+													: ((parseInt(values.bonusStartMonth) + 11) % 12) - 1
+											]
+										}
+									</p>
+
+									<div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
+										<ErrorMessage name={`bonusStartMonth`} />
 									</div>
 								</div>
 

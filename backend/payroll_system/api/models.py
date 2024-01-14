@@ -867,6 +867,7 @@ class Calculations(models.Model):
     service_calculation =  models.CharField(max_length=2, choices=CALCULATION_CHOICES, default='30', null=False, blank=False)
     gratuity_calculation =  models.CharField(max_length=2, choices=CALCULATION_CHOICES, default='26', null=False, blank=False)
     el_days_calculation = models.PositiveSmallIntegerField(default=20, null=False, blank=False)
+    bonus_start_month = models.PositiveSmallIntegerField(default=1, validators=[MinValueValidator(1), MaxValueValidator(12)])
 
 
 class EmployeeShiftsManager(models.Manager):
@@ -1393,6 +1394,24 @@ class EarnedAmount(models.Model):
             models.UniqueConstraint(fields=['earnings_head', 'salary_prepared'], name='unique_earned_amount_for_each_earnings_head'),
         ]
 
+class BonusCalculation(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_company_bonus_calculation")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="bonus_calculation")
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="same_category_bonus_calculation", null=False, blank=False)
+    date = models.DateField(null=False, blank=False) #day of date is always 1
+    amount = models.IntegerField(default=0, null=False, blank=False)
+
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['company', 'date', 'category'], name='unique_bonus_calculation_for_each_month'),
+        ]
+
+class BonusPercentage(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_company_bonus_percentage")
+    company = models.OneToOneField(Company, on_delete=models.CASCADE, related_name="bonus_percentage")
+    bonus_percentage = models.DecimalField(max_digits=5, decimal_places=2, validators=PERCENTAGE_VALIDATOR, null=False, blank=False, default=8.33)
+
 
     
 @receiver(post_save, sender=Company)
@@ -1488,7 +1507,7 @@ def create_default_calculations(sender, instance, created, **kwargs):
     if created:
         company = instance  # Assign the instance to a variable
         user = company.user
-        Calculations.objects.create( user=user, company=company, ot_calculation='26', el_calculation='26', notice_pay='26', service_calculation='26', gratuity_calculation='26', el_days_calculation=20,)
+        Calculations.objects.create( user=user, company=company, ot_calculation='26', el_calculation='26', notice_pay='26', service_calculation='26', gratuity_calculation='26', el_days_calculation=20, bonus_start_month=1)
 
 @receiver(post_save, sender=EmployeeAttendance)
 def create_generative_leave_record(sender, instance, created, **kwargs):

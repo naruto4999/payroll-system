@@ -16,7 +16,7 @@ export const calculationsApiSlice = apiSlice.injectEndpoints({
 				method: 'POST',
 				body: body,
 			}),
-			invalidatesTags: ['Calculations'],
+			invalidatesTags: ['Calculations', 'BonusCalculations'],
 		}),
 		updateCalculations: builder.mutation({
 			query: (body) => ({
@@ -24,13 +24,10 @@ export const calculationsApiSlice = apiSlice.injectEndpoints({
 				method: 'PUT',
 				body: body,
 			}),
-			invalidatesTags: ['Calculations'],
+			invalidatesTags: ['Calculations', 'BonusCalculations'],
 		}),
 	}),
 });
 
-export const {
-	useGetCalculationsQuery,
-	useAddCalculationsMutation,
-	useUpdateCalculationsMutation,
-} = calculationsApiSlice;
+export const { useGetCalculationsQuery, useAddCalculationsMutation, useUpdateCalculationsMutation } =
+	calculationsApiSlice;

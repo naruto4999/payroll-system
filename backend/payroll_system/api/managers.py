@@ -343,8 +343,7 @@ class EmployeeAttendanceManager(models.Manager):
                 employee_rows = filtered_rows[filtered_rows['USERID'] == user_id]
                 employee_rows_asc_time = employee_rows.sort_values(by='CHECKTIME', ascending=True)
                 employee_rows_desc_time = employee_rows.sort_values(by='CHECKTIME', ascending=False)
-                print(employee_rows_desc_time)
-                print(employee_rows_desc_time)
+                # print(employee_rows_desc_time)
                 #Getting Shift Before the start of the loop
                 employee_shift_on_particular_date=None
                 employee_shift_on_particular_date_queryset = EmployeeShifts.objects.filter(company_id=company_id, user=user, employee=current_employee.employee, from_date__lte=from_date, to_date__gte=from_date)
@@ -363,6 +362,10 @@ class EmployeeAttendanceManager(models.Manager):
                 # print(attendance_by_date)
 
                 while current_date <= to_date:
+                    print(f"Current Date of loop{current_date}")
+                    if current_date.date() < current_employee.date_of_joining:
+                        current_date += timedelta(days=1)
+                        continue
                     #Get current attendance if any
                     skip_calculating_attendances = False
                     # existing_attendance = self.filter(user=user, company_id=company_id, date=current_date, employee=current_employee.employee)

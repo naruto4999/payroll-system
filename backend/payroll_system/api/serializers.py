@@ -1,7 +1,7 @@
 from dataclasses import field
 from rest_framework import serializers
 
-from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning, EmployeeSalaryDetail, EmployeeFamilyNomineeDetial, EmployeePfEsiDetail, WeeklyOffHolidayOff, PfEsiSetup, Calculations, EmployeeShifts, EmployeeAttendance, EmployeeGenerativeLeaveRecord, EmployeeLeaveOpening, EmployeeMonthlyAttendanceDetails, EmployeeAdvancePayment, EmployeeSalaryPrepared, EarnedAmount
+from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning, EmployeeSalaryDetail, EmployeeFamilyNomineeDetial, EmployeePfEsiDetail, WeeklyOffHolidayOff, PfEsiSetup, Calculations, EmployeeShifts, EmployeeAttendance, EmployeeGenerativeLeaveRecord, EmployeeLeaveOpening, EmployeeMonthlyAttendanceDetails, EmployeeAdvancePayment, EmployeeSalaryPrepared, EarnedAmount, BonusCalculation, BonusPercentage
 from rest_framework import serializers
 
 class UserSerializer(serializers.ModelSerializer):
@@ -171,6 +171,17 @@ class EmployeeProfessionalDetailSerializer(serializers.ModelSerializer):
         model = EmployeeProfessionalDetail
         fields = ['company', 'employee', 'date_of_joining', 'date_of_confirm', 'department', 'designation', 'category', 'salary_grade', 'weekly_off', 'extra_off', 'resigned', 'resignation_date', 'first_previous_experience_company_name', 'first_previous_experience_from_date', 'first_previous_experience_to_date', 'first_previous_experience_designation', 'first_previous_experience_reason_for_leaving', 'first_previous_experience_salary', 'second_previous_experience_company_name', 'second_previous_experience_from_date', 'second_previous_experience_to_date', 'second_previous_experience_designation', 'second_previous_experience_reason_for_leaving', 'second_previous_experience_salary', 'third_previous_experience_company_name', 'third_previous_experience_from_date', 'third_previous_experience_to_date', 'third_previous_experience_designation', 'third_previous_experience_reason_for_leaving', 'third_previous_experience_salary', 'first_reference_name', 'first_reference_address', 'first_reference_relation', 'first_reference_phone', 'second_reference_name', 'second_reference_address', 'second_reference_relation', 'second_reference_phone'
 ]
+        
+class EmployeeProfessionalDetailRetrieveSerializer(serializers.ModelSerializer):
+    weekly_off = serializers.ChoiceField(choices=EmployeeProfessionalDetail.WEEKDAY_CHOICES, allow_blank=False)
+    extra_off = serializers.ChoiceField(choices=EmployeeProfessionalDetail.EXTRA_OFF_CHOICES, allow_blank=False)
+    department = DepartmentSerializer()
+    designation = DesignationSerializer()
+
+    class Meta:
+        model = EmployeeProfessionalDetail
+        fields = ['company', 'employee', 'date_of_joining', 'date_of_confirm', 'department', 'designation', 'category', 'salary_grade', 'weekly_off', 'extra_off', 'resigned', 'resignation_date', 'first_previous_experience_company_name', 'first_previous_experience_from_date', 'first_previous_experience_to_date', 'first_previous_experience_designation', 'first_previous_experience_reason_for_leaving', 'first_previous_experience_salary', 'second_previous_experience_company_name', 'second_previous_experience_from_date', 'second_previous_experience_to_date', 'second_previous_experience_designation', 'second_previous_experience_reason_for_leaving', 'second_previous_experience_salary', 'third_previous_experience_company_name', 'third_previous_experience_from_date', 'third_previous_experience_to_date', 'third_previous_experience_designation', 'third_previous_experience_reason_for_leaving', 'third_previous_experience_salary', 'first_reference_name', 'first_reference_address', 'first_reference_relation', 'first_reference_phone', 'second_reference_name', 'second_reference_address', 'second_reference_relation', 'second_reference_phone'
+]
 
 
 class EmployeeSalaryEarningSerializer(serializers.ModelSerializer):
@@ -213,7 +224,7 @@ class PfEsiSetupSerializer(serializers.ModelSerializer):
 class CalculationsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Calculations
-        fields = ('company' ,'ot_calculation', 'el_calculation', 'notice_pay', 'service_calculation', 'gratuity_calculation', 'el_days_calculation',)
+        fields = ('company' ,'ot_calculation', 'el_calculation', 'notice_pay', 'service_calculation', 'gratuity_calculation', 'el_days_calculation', 'bonus_start_month')
 
 class EmployeeShiftsSerializer(serializers.ModelSerializer):
     shift = ShiftSerializer()
@@ -357,6 +368,26 @@ class DefaultAttendanceSerializer(serializers.Serializer):
     company = serializers.IntegerField()
     month = serializers.IntegerField()
     year = serializers.IntegerField()
+
+class EmployeeResignationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmployeeProfessionalDetail
+        fields = ['employee', 'resignation_date', 'resigned']
+
+class EmployeeUnresignSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmployeeProfessionalDetail
+        fields = ['employee', 'resigned', 'resignation_date']
+
+class BonusCalculationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BonusCalculation
+        fields = ('company' ,'date', 'amount', 'category')
+
+class BonusPercentageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BonusPercentage
+        fields = ('company' , 'bonus_percentage')
 
 
 # class CompanyEmployeeStatisticsSerializer(serializers.ModelSerializer):

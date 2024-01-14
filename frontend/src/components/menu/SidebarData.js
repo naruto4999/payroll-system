@@ -25,6 +25,8 @@ import {
 	FaBusinessTime,
 	FaNewspaper,
 	FaFilePdf,
+	FaChalkboardUser,
+	FaMoneyBillTrendUp,
 } from 'react-icons/fa6';
 
 const menuItems = [
@@ -154,6 +156,16 @@ const menuItems = [
 				title: 'Salary Preparation',
 				icon: FaMoneyBill1,
 				path: '/home/transaction/salary-preparation',
+			},
+			{
+				title: 'Bonus Calculation',
+				icon: FaMoneyBillTrendUp,
+				path: '/home/transaction/bonus-calculation',
+			},
+			{
+				title: 'Resignation',
+				icon: FaChalkboardUser,
+				path: '/home/transaction/resignation',
 			},
 		],
 	},

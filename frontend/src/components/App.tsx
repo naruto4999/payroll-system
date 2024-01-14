@@ -32,6 +32,8 @@ import SalaryPreparationForm from './menu/Transaction/forms/SalaryPreparationFor
 import SalaryOvertimeSheet from './menu/Reports/forms/SalaryOvertimeSheet/SalaryOvertimeSheet';
 import AttendanceReports from './menu/Reports/forms/AttendanceReports/AttendanceReports';
 import PersonnelFileForms from './menu/Reports/forms/PersonnelFileForms/PersonnelFileForms';
+import ResignationForm from './menu/Transaction/forms/ResignationForm/ResignationForm';
+import BonusCalculationForm from './menu/Transaction/forms/BonusCalculationForm/BonusCalculationForm';
 // import store, { persistor } from "./authentication/store/index"
 // import { PersistGate } from "redux-persist/integration/react";
 // import { Provider } from "react-redux";
@@ -112,6 +114,8 @@ function App() {
 						<Route path="time-updation" element={<TimeUpdationForm />} />
 						<Route path="advance-updation" element={<AdvanceUpdationForm />} />
 						<Route path="salary-preparation" element={<SalaryPreparationForm />} />
+						<Route path="bonus-calculation" element={<BonusCalculationForm />} />
+						<Route path="/home/transaction/resignation" element={<ResignationForm />} />
 					</Route>
 					<Route path="reports">
 						<Route path="personnel-file-forms" element={<PersonnelFileForms />} />

@@ -129,6 +129,9 @@ def generate_attendance_register(request_data, attendance_dict):
 
         #Employee Monthly Details
         employee_monthly_details = employee_attendances[0].employee.monthly_attendance_details.filter(date=date(request_data['year'], request_data['month'], 1)).first()
+        if not employee_monthly_details:
+            continue
+        print(f"Monthly Details: {employee_monthly_details}")
         paid_days_count = int(employee_monthly_details.paid_days_count/2) if employee_monthly_details.paid_days_count/2%1==0 else employee_monthly_details.paid_days_count/2
         present_count = int(employee_monthly_details.present_count/2) if employee_monthly_details.present_count/2%1==0 else employee_monthly_details.present_count/2
         weekly_off_days_count = int(employee_monthly_details.weekly_off_days_count/2) if employee_monthly_details.weekly_off_days_count/2%1==0 else employee_monthly_details.weekly_off_days_count/2
