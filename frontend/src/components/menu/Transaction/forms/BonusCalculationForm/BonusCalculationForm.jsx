@@ -194,7 +194,8 @@ const BonusCalculationForm = () => {
 	// };
 	const generateInitialValues = () => {
 		let initialValues = {
-			bonusPercentage: bonusPercentage != undefined ? bonusPercentage[0].bonusPercentage : 8.33,
+			bonusPercentage:
+				bonusPercentage != undefined && bonusPercentage.length != 0 ? bonusPercentage[0].bonusPercentage : 8.33,
 			bonusCalculationsMonthWise: {},
 		};
 		if (categories !== undefined) {
