@@ -559,8 +559,6 @@ class EmployeeProfessionalDetail(models.Model):
     #Custom Manager
     objects = ActiveEmployeeManager()
 
-
-
     def save(self, *args, **kwargs):
         if self.department and (self.department.company != self.company or self.department.user != self.user):
             raise ValidationError("Invalid department selected.")
@@ -855,6 +853,11 @@ class Calculations(models.Model):
         ('30', '30'),
         ('month_days', 'month_days'),
     ]
+    BONUS_CALCULATION_CHOICES = [
+        ('26', '26'),
+        ('30', '30'),
+        ('month_days', 'month_days'),
+    ]
     CALCULATION_CHOICES = [
         ('26', '26'),
         ('30', '30')
@@ -868,6 +871,7 @@ class Calculations(models.Model):
     gratuity_calculation =  models.CharField(max_length=2, choices=CALCULATION_CHOICES, default='26', null=False, blank=False)
     el_days_calculation = models.PositiveSmallIntegerField(default=20, null=False, blank=False)
     bonus_start_month = models.PositiveSmallIntegerField(default=1, validators=[MinValueValidator(1), MaxValueValidator(12)])
+    bonus_calculation_days = models.CharField(max_length=10, choices=OT_CALCULATION_CHOICES, default='month_days', null=False, blank=False)
 
 
 class EmployeeShiftsManager(models.Manager):
@@ -1507,7 +1511,7 @@ def create_default_calculations(sender, instance, created, **kwargs):
     if created:
         company = instance  # Assign the instance to a variable
         user = company.user
-        Calculations.objects.create( user=user, company=company, ot_calculation='26', el_calculation='26', notice_pay='26', service_calculation='26', gratuity_calculation='26', el_days_calculation=20, bonus_start_month=1)
+        Calculations.objects.create( user=user, company=company, ot_calculation='26', el_calculation='26', notice_pay='26', service_calculation='26', gratuity_calculation='26', el_days_calculation=20, bonus_start_month=1, bonus_calculation_days='month_days')
 
 @receiver(post_save, sender=EmployeeAttendance)
 def create_generative_leave_record(sender, instance, created, **kwargs):

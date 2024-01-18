@@ -184,7 +184,7 @@ const menuItems = [
 				path: '/home/reports/salary-overtime-sheet',
 			},
 			{
-				title: 'Attendance',
+				title: 'Attendance/Bonus',
 				icon: FaFilePdf,
 				path: '/home/reports/attendance-reports',
 			},

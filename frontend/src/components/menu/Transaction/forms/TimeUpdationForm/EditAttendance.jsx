@@ -857,6 +857,7 @@ const EditAttendance = memo(
 		}, [values.attendance, currentEmployeeProfessionalDetail, currentEmployeeSalaryDetail]);
 
 		// Runs when fetch value of employeeAttendance changes
+		console.log(values);
 		useEffect(() => {
 			if (!isSubmitting && employeeAttendance && currentEmployeeProfessionalDetail && updateEmployeeId) {
 				const daysInMonth = new Date(values.year, values.month, 0).getDate();
@@ -869,7 +870,12 @@ const EditAttendance = memo(
 					const matchingEmployeeAttendance = employeeAttendance.find(
 						(entry) => new Date(entry.date).getTime() === attendanceDate.getTime()
 					);
-					if (attendanceDate < new Date(currentEmployeeProfessionalDetail.dateOfJoining)) {
+					console.log(currentEmployeeProfessionalDetail);
+					if (
+						attendanceDate < new Date(currentEmployeeProfessionalDetail.dateOfJoining) ||
+						(currentEmployeeProfessionalDetail.resignationDate != null &&
+							attendanceDate > new Date(currentEmployeeProfessionalDetail.resignationDate))
+					) {
 						continue;
 					}
 					new_attendance[day] = {

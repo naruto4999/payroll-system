@@ -224,7 +224,7 @@ class PfEsiSetupSerializer(serializers.ModelSerializer):
 class CalculationsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Calculations
-        fields = ('company' ,'ot_calculation', 'el_calculation', 'notice_pay', 'service_calculation', 'gratuity_calculation', 'el_days_calculation', 'bonus_start_month')
+        fields = ('company' ,'ot_calculation', 'el_calculation', 'notice_pay', 'service_calculation', 'gratuity_calculation', 'el_days_calculation', 'bonus_start_month', 'bonus_calculation_days')
 
 class EmployeeShiftsSerializer(serializers.ModelSerializer):
     shift = ShiftSerializer()
@@ -335,7 +335,7 @@ class AttendanceReportsSerializer(serializers.Serializer):
     company = serializers.IntegerField()
     month = serializers.IntegerField()
     year = serializers.IntegerField()
-    report_type = serializers.ChoiceField(choices=["present_report", "attendance_register", "form_14", "overtime_sheet_daily"])
+    report_type = serializers.ChoiceField(choices=["present_report", "attendance_register", "form_14", "overtime_sheet_daily", "bonus_calculation_sheet", "bonus_form_c"])
     class Meta:
         fields = ['employee_ids', "filters"]
 

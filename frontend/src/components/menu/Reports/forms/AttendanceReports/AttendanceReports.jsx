@@ -371,7 +371,7 @@ const AttendanceReports = () => {
 			<section className="mt-4">
 				<div className="ml-4 flex flex-row flex-wrap place-content-between">
 					<div className="mr-4">
-						<h1 className="text-3xl font-medium">Attendance Reports</h1>
+						<h1 className="text-3xl font-medium">Attendance/Bonus Reports</h1>
 						<p className="my-2 text-sm">Generate Reports related to attendance of the employees here</p>
 					</div>
 				</div>

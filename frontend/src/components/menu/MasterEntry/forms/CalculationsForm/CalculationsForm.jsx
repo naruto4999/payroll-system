@@ -160,6 +160,7 @@ const CalculationsForm = () => {
 									gratuityCalculation: '26',
 									elDaysCalculation: 20,
 									bonusStartMonth: 1,
+									bonusCalculationDays: 'month_days',
 							  }
 					}
 					validationSchema={''}
@@ -184,7 +185,7 @@ const CalculationsForm = () => {
 									>
 										<option value="26">26 Days</option>
 										<option value="30">30 Days</option>
-										<option value="month_days">Monthly Days</option>
+										<option value="month_days">Month Days</option>
 									</Field>
 									<div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
 										<ErrorMessage name={`otCalculation`} />
@@ -329,6 +330,27 @@ const CalculationsForm = () => {
 
 									<div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
 										<ErrorMessage name={`bonusStartMonth`} />
+									</div>
+								</div>
+								<div>
+									<label
+										htmlFor="bonusCalculationDays"
+										className="my-auto block font-medium text-blueAccent-700 dark:text-blueAccent-400"
+									>
+										Bonus Calculation Days
+									</label>
+									<Field
+										as="select"
+										name="bonusCalculationDays"
+										id="bonusCalculationDays"
+										className="my-1 block rounded-md bg-zinc-300 bg-opacity-50 p-1 dark:bg-zinc-800 "
+									>
+										<option value="26">26 Days</option>
+										<option value="30">30 Days</option>
+										<option value="month_days">Month Days</option>
+									</Field>
+									<div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
+										<ErrorMessage name={`bonusCalculationDays`} />
 									</div>
 								</div>
 
