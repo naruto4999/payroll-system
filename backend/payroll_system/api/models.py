@@ -1521,6 +1521,13 @@ def create_generative_leave_record(sender, instance, created, **kwargs):
         print(employee_attendance)
         # Calculations.objects.create( user=user, company=company, ot_calculation='26', el_calculation='26', notice_pay='26', service_calculation='26', gratuity_calculation='26', el_days_calculation=20,)
 
+@receiver(post_save, sender=Company)
+def create_default_bonus_percentage(sender, instance, created, **kwargs):
+    if created:
+        company = instance  # Assign the instance to a variable
+        user = company.user
+        # Create the default Weekly Off and Holiday Off on post save for company
+        BonusPercentage.objects.create(user=user,company=company, bonus_percentage=8.33)
 # @receiver(post_save, sender=EmployeeProfessionalDetail)
 # @receiver(post_delete, sender=EmployeeProfessionalDetail)
 
