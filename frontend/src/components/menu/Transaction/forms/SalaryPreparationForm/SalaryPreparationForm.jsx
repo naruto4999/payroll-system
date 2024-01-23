@@ -248,14 +248,12 @@ const SalaryPreparationForm = () => {
 	};
 
 	const updateButtonClicked = async (values, formikBag) => {
-		console.log('here bish', values);
 		let toSend = { employeeSalaryPrepared: {}, allEarnedAmounts: [] };
 		toSend.employeeSalaryPrepared = { ...values.employeeSalaryPrepared };
 		toSend.employeeSalaryPrepared.date = `${values.year}-${values.month}-1`;
 		toSend.employeeSalaryPrepared.employee = parseInt(updateEmployeeId);
 		toSend.employeeSalaryPrepared.company = globalCompany.id;
 		toSend.allEarnedAmounts = [...values.earnedAmount];
-		console.log(toSend);
 
 		try {
 			const data = await addEmployeeSalaryPrepared(toSend).unwrap();

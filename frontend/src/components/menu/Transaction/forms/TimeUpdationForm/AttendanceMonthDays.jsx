@@ -33,7 +33,7 @@ const AttendanceMonthDays = memo(
 			<div
 				className={classNames(
 					day == daysInMonth ? '' : 'border-b-0',
-					'relative h-6 rounded-sm border  dark:border-slate-400 dark:border-opacity-30 focus-within:dark:bg-zinc-900 hover:dark:bg-zinc-900 ',
+					'relative h-6 rounded-sm border  dark:border-slate-400 dark:border-opacity-30 focus-within:dark:bg-zinc-900 hover:dark:bg-zinc-800 ',
 					weekdayIndex == 0 || isHoliday || isExtraOff ? 'dark:bg-red-700 dark:bg-opacity-40' : ''
 				)}
 			>

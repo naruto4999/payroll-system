@@ -862,6 +862,10 @@ class Calculations(models.Model):
         ('26', '26'),
         ('30', '30')
     ]
+    SALARY_CHOICES = [
+        ('basic', 'basic'),
+        ('gross', 'gross')
+    ]
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="calculations")
     company = models.OneToOneField(Company, on_delete=models.CASCADE, related_name="calculations", primary_key=True)
     ot_calculation = models.CharField(max_length=10, choices=OT_CALCULATION_CHOICES, default='26', null=False, blank=False)
@@ -869,6 +873,7 @@ class Calculations(models.Model):
     notice_pay =  models.CharField(max_length=2, choices=CALCULATION_CHOICES, default='30', null=False, blank=False)
     service_calculation =  models.CharField(max_length=2, choices=CALCULATION_CHOICES, default='30', null=False, blank=False)
     gratuity_calculation =  models.CharField(max_length=2, choices=CALCULATION_CHOICES, default='26', null=False, blank=False)
+    gratuity_salary =  models.CharField(max_length=5, choices=SALARY_CHOICES, default='gross', null=False, blank=False)
     el_days_calculation = models.PositiveSmallIntegerField(default=20, null=False, blank=False)
     bonus_start_month = models.PositiveSmallIntegerField(default=1, validators=[MinValueValidator(1), MaxValueValidator(12)])
     bonus_calculation_days = models.CharField(max_length=10, choices=OT_CALCULATION_CHOICES, default='month_days', null=False, blank=False)
@@ -1416,6 +1421,27 @@ class BonusPercentage(models.Model):
     company = models.OneToOneField(Company, on_delete=models.CASCADE, related_name="bonus_percentage")
     bonus_percentage = models.DecimalField(max_digits=5, decimal_places=2, validators=PERCENTAGE_VALIDATOR, null=False, blank=False, default=8.33)
 
+class FullAndFinal(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_company_employees_full_and_final")
+    employee = models.OneToOneField(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="full_and_final")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="all_employees_full_and_final")
+    full_and_final_date = models.DateField(null=False, blank=False)
+    el_encashment_days = models.SmallIntegerField(null=False, blank=False, default=0)
+    el_encashment_amount = models.SmallIntegerField(null=False, blank=False, default=0)
+    bonus_prev_year = models.PositiveIntegerField(null=False, blank=False, default=0)
+    bonus_current_year = models.PositiveIntegerField(null=False, blank=False, default=0)
+    gratuity = models.PositiveIntegerField(null=False, blank=False, default=0)
+    service_compensation_days = models.PositiveSmallIntegerField(null=False, blank=False, default=0)
+    service_compensation_amount = models.PositiveIntegerField(null=False, blank=False, default=0)
+    earnings_notice_period_days = models.PositiveSmallIntegerField(null=False, blank=False, default=0)
+    earnings_notice_period_amount = models.PositiveIntegerField(null=False, blank=False, default=0)
+    ot_min = models.PositiveIntegerField(null=False, blank=False, default=0)
+    ot_amount = models.PositiveIntegerField(null=False, blank=False, default=0)
+    earnings_others = models.PositiveIntegerField(null=False, blank=False, default=0)
+    deductions_notice_period_days = models.PositiveSmallIntegerField(null=False, blank=False, default=0)
+    deductions_notice_period_amount = models.PositiveIntegerField(null=False, blank=False, default=0)
+    deductions_others = models.PositiveIntegerField(null=False, blank=False, default=0)
+
 
     
 @receiver(post_save, sender=Company)
@@ -1511,7 +1537,7 @@ def create_default_calculations(sender, instance, created, **kwargs):
     if created:
         company = instance  # Assign the instance to a variable
         user = company.user
-        Calculations.objects.create( user=user, company=company, ot_calculation='26', el_calculation='26', notice_pay='26', service_calculation='26', gratuity_calculation='26', el_days_calculation=20, bonus_start_month=1, bonus_calculation_days='month_days')
+        Calculations.objects.create( user=user, company=company, ot_calculation='26', el_calculation='26', notice_pay='26', service_calculation='26', gratuity_calculation='26', gratuity_salary='gross', el_days_calculation=20, bonus_start_month=1, bonus_calculation_days='month_days')
 
 @receiver(post_save, sender=EmployeeAttendance)
 def create_generative_leave_record(sender, instance, created, **kwargs):

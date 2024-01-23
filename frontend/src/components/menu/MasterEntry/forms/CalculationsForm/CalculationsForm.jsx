@@ -158,6 +158,7 @@ const CalculationsForm = () => {
 									noticePay: '30',
 									serviceCalculation: '30',
 									gratuityCalculation: '26',
+									gratuitySalary: 'gross',
 									elDaysCalculation: 20,
 									bonusStartMonth: 1,
 									bonusCalculationDays: 'month_days',
@@ -295,6 +296,26 @@ const CalculationsForm = () => {
 									</Field>
 									<div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
 										<ErrorMessage name={`gratuityCalculation`} />
+									</div>
+								</div>
+								<div>
+									<label
+										htmlFor="gratuitySalary"
+										className="my-auto block font-medium text-blueAccent-700 dark:text-blueAccent-400"
+									>
+										Gratuity Salary
+									</label>
+									<Field
+										as="select"
+										name="gratuitySalary"
+										id="gratuitySalary"
+										className="my-1 block rounded-md bg-zinc-300 bg-opacity-50 p-1 dark:bg-zinc-800 "
+									>
+										<option value="basic">Basic</option>
+										<option value="gross">Gross</option>
+									</Field>
+									<div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
+										<ErrorMessage name={`gratuitySalary`} />
 									</div>
 								</div>
 								<div>

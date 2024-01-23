@@ -1,7 +1,7 @@
 from dataclasses import field
 from rest_framework import serializers
 
-from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning, EmployeeSalaryDetail, EmployeeFamilyNomineeDetial, EmployeePfEsiDetail, WeeklyOffHolidayOff, PfEsiSetup, Calculations, EmployeeShifts, EmployeeAttendance, EmployeeGenerativeLeaveRecord, EmployeeLeaveOpening, EmployeeMonthlyAttendanceDetails, EmployeeAdvancePayment, EmployeeSalaryPrepared, EarnedAmount, BonusCalculation, BonusPercentage
+from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning, EmployeeSalaryDetail, EmployeeFamilyNomineeDetial, EmployeePfEsiDetail, WeeklyOffHolidayOff, PfEsiSetup, Calculations, EmployeeShifts, EmployeeAttendance, EmployeeGenerativeLeaveRecord, EmployeeLeaveOpening, EmployeeMonthlyAttendanceDetails, EmployeeAdvancePayment, EmployeeSalaryPrepared, EarnedAmount, BonusCalculation, BonusPercentage, FullAndFinal
 from rest_framework import serializers
 
 class UserSerializer(serializers.ModelSerializer):
@@ -224,7 +224,7 @@ class PfEsiSetupSerializer(serializers.ModelSerializer):
 class CalculationsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Calculations
-        fields = ('company' ,'ot_calculation', 'el_calculation', 'notice_pay', 'service_calculation', 'gratuity_calculation', 'el_days_calculation', 'bonus_start_month', 'bonus_calculation_days')
+        fields = ('company' ,'ot_calculation', 'el_calculation', 'notice_pay', 'service_calculation', 'gratuity_calculation', 'el_days_calculation', 'bonus_start_month', 'bonus_calculation_days', 'gratuity_salary')
 
 class EmployeeShiftsSerializer(serializers.ModelSerializer):
     shift = ShiftSerializer()
@@ -389,7 +389,38 @@ class BonusPercentageSerializer(serializers.ModelSerializer):
         model = BonusPercentage
         fields = ('company' , 'bonus_percentage')
 
+# class EmployeeSalaryPreparedSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = EmployeeSalaryPrepared
+#         fields = ['id', 'employee', 'company', 'date', 'incentive_amount', 'pf_deducted', 'esi_deducted',
+#                   'vpf_deducted', 'advance_deducted', 'tds_deducted', 'labour_welfare_fund_deducted',
+#                   'others_deducted', 'net_ot_minutes_monthly', 'net_ot_amount_monthly', 'payment_mode']
+        
+class EarnedAmountSerializerPreparedSalary(serializers.ModelSerializer):
+    earnings_head = EarningsHeadSerializer()
+    salary_prepared = EmployeeSalaryPreparedSerializer()
+    class Meta:
+        model = EarnedAmount
+        fields = ['id', 'earnings_head', 'salary_prepared', 'rate', 'earned_amount', 'arear_amount']
 
+class FullAndFinalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FullAndFinal
+        fields = ['employee', 'company', 'full_and_final_date', 'el_encashment_days', 'el_encashment_amount', 'bonus_prev_year', 'bonus_current_year', 'gratuity', 'service_compensation_days', 'service_compensation_amount', 'earnings_notice_period_days', 'earnings_notice_period_amount', 'ot_min', 'ot_amount', 'earnings_others', 'deductions_notice_period_days', 'deductions_notice_period_amount', 'deductions_others',]
+
+
+class EmployeeELLeftSerializer(serializers.Serializer):
+    el_left = serializers.DecimalField(max_digits=4, decimal_places=1)
+
+class EmployeeYearlyBonusAmountSerializer(serializers.Serializer):
+    bonus_amount = serializers.IntegerField()
+    employee = serializers.IntegerField()
+
+class FullAndFinalReportSerializer(serializers.Serializer):
+    employee = serializers.IntegerField()
+    company = serializers.IntegerField()
+    class Meta:
+        fields = ['employee', "company"]
 # class CompanyEmployeeStatisticsSerializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = CompanyEmployeeStatistics

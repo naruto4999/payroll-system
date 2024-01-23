@@ -74,6 +74,7 @@ const EditSalary = ({
 		isError: isEarningsHeadsError,
 		error: earningsHeadsError,
 	} = useGetEarningsHeadsQuery(globalCompany);
+	console.log(earningsHeads);
 
 	const [
 		employeeBulkSalaryPrepared,
@@ -90,7 +91,6 @@ const EditSalary = ({
 		isSuccess: isCompanyCalculationsSuccess,
 		isError: isCompanyCalculationsError,
 	} = useGetCalculationsQuery(globalCompany.id);
-	console.log(companyCalculations);
 
 	const {
 		data: allEmployeeMonthlyAttendanceDetails,
@@ -253,6 +253,8 @@ const EditSalary = ({
 		updateEmployeeId,
 	]);
 
+	console.log(values.earnedAmount);
+
 	// This use Effect is causing problem with updation of rate
 	const prevArearAmounts = useRef(values.earnedAmount.map((item) => item.arearAmount).join(','));
 
@@ -260,7 +262,6 @@ const EditSalary = ({
 	useEffect(() => {
 		if (prevArearAmounts.current != values.earnedAmount.map((item) => item.arearAmount).join(',')) {
 			const updatedEarnedAmount = values.earnedAmount.map((item, index) => {
-				console.log(item.rate);
 				const rate = item.rate;
 				const year = values.year;
 				const month = values.month;

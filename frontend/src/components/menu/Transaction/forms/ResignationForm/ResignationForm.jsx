@@ -4,6 +4,10 @@ import { FaCheck, FaWindowMinimize } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { useGetEmployeePersonalDetailsQuery } from '../../../../authentication/api/employeeEntryApiSlice';
 import {
+	useAddFullAndFinalMutation,
+	useGenerateFullAndFinalReportMutation,
+} from '../../../../authentication/api/fullAndFinalApiSlice';
+import {
 	// column,
 	createColumnHelper,
 	flexRender,
@@ -24,6 +28,7 @@ import ReactModal from 'react-modal';
 import { ConfirmationModalSchema } from '../TimeUpdationForm/TimeUpdationSchema';
 import { useUpdateResignationMutation, useUnresignMutation } from '../../../../authentication/api/resignationApiSlice';
 import FullAndFinal from './FullAndFinal';
+import { FaCircleNotch } from 'react-icons/fa';
 
 ReactModal.setAppElement('#root');
 
@@ -83,6 +88,15 @@ const ResignationForm = () => {
 			isSuccess: isUpdateResignationSuccess,
 		},
 	] = useUpdateResignationMutation();
+
+	const [
+		addFullAndFinal,
+		{
+			isLoading: isAddingFullAndFinal,
+			// isError: errorRegisteringRegular,
+			isSuccess: isAddFullAndFinalSuccess,
+		},
+	] = useAddFullAndFinalMutation();
 
 	const [
 		unresign,
@@ -275,8 +289,166 @@ const ResignationForm = () => {
 		},
 	});
 
-	const saveButtonClicked = async (values, formikBag) => {
-		console(values);
+	const saveFullAndFinalButtonClicked = async (values, formikBag) => {
+		console.log(values);
+		try {
+			const data = await addFullAndFinal({
+				...values,
+				company: globalCompany.id,
+				employee: fullAndFinalEmployeeId,
+			}).unwrap();
+			dispatch(
+				alertActions.createAlert({
+					message: 'Saved',
+					type: 'Success',
+					duration: 3000,
+				})
+			);
+		} catch (err) {
+			console.log(err);
+			let message = 'Error Occurred';
+			dispatch(
+				alertActions.createAlert({
+					message: message,
+					type: 'Error',
+					duration: 5000,
+				})
+			);
+		}
+	};
+
+	const generateButtonClicked = async (values, formikBag) => {
+		setShowLoadingBar(true);
+		const toSend = {
+			company: globalCompany.id,
+			employee: fullAndFinalEmployeeId,
+		};
+		// using fetch
+		const requestOptions = {
+			method: 'POST',
+			headers: {
+				Authorization: `Bearer ${auth.token}`,
+				'Content-Type': 'application/json', // Set the Content-Type based on your request payload
+				// Add any other headers as needed
+			},
+			body: JSON.stringify(toSend),
+		};
+
+		const generateFullAndFinalReport = async () => {
+			try {
+				const response = await fetch(
+					`${import.meta.env.VITE_BACKEND_URL}api/generate-full-and-final-report`,
+					requestOptions
+				);
+
+				if (response.status === 401) {
+					console.log('Received a 401 status, attempting to refresh the token...');
+
+					const refreshResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}api/auth/refresh/`, {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify({ refresh: auth.refreshToken }),
+					});
+
+					if (refreshResponse.status === 200) {
+						const refreshData = await refreshResponse.json();
+
+						if (refreshData.access && refreshData.refresh) {
+							dispatch(
+								authActions.setAuthTokens({
+									token: refreshData.access,
+									refreshToken: refreshData.refresh,
+								})
+							);
+
+							const refreshedResponse = await fetch(
+								`${import.meta.env.VITE_BACKEND_URL}api/generate-attendance-reports`,
+								{
+									...requestOptions,
+									headers: {
+										Authorization: `Bearer ${refreshData.access}`,
+										'Content-Type': 'application/json',
+									},
+								}
+							);
+
+							if (refreshedResponse.status === 200) {
+								dispatch(
+									alertActions.createAlert({
+										message: 'Generated',
+										type: 'Success',
+										duration: 8000,
+									})
+								);
+								const pdfData = await refreshedResponse.arrayBuffer();
+								const pdfBlob = new Blob([pdfData], { type: 'application/pdf' });
+								const pdfUrl = URL.createObjectURL(pdfBlob);
+								window.open(pdfUrl, '_blank');
+							} else if (refreshedResponse.status === 404) {
+								dispatch(
+									alertActions.createAlert({
+										message: 'No Full And Final Found',
+										type: 'Error',
+										duration: 5000,
+									})
+								);
+							}
+						}
+					} else {
+						console.log('Error refreshing token');
+						// Handle the refresh token failure
+						dispatch(
+							alertActions.createAlert({
+								message: 'Error Occurred',
+								type: 'Error',
+								duration: 5000,
+							})
+						);
+						dispatch(authActions.logout());
+					}
+				} else if (response.status != 200) {
+					console.error('Request failed with status: ', response.status);
+					response.json().then((data) => {
+						console.log('Error:', data.detail);
+						dispatch(
+							alertActions.createAlert({
+								message: data.detail,
+								type: 'Error',
+								duration: 5000,
+							})
+						);
+					});
+					// throw new Error('Request failed');
+				} else if (response.status == 200) {
+					const pdfData = await response.arrayBuffer();
+					const pdfBlob = new Blob([pdfData], { type: 'application/pdf' });
+					const pdfUrl = URL.createObjectURL(pdfBlob);
+					dispatch(
+						alertActions.createAlert({
+							message: 'Generated',
+							type: 'Success',
+							duration: 8000,
+						})
+					);
+					window.open(pdfUrl, '_blank');
+				}
+			} catch (error) {
+				console.error('Fetch error: ', error);
+				dispatch(
+					alertActions.createAlert({
+						message: 'Error Occurred',
+						type: 'Error',
+						duration: 5000,
+					})
+				);
+			}
+			setShowLoadingBar(false);
+		};
+
+		// Call the generateFullAndFinalReport function to initiate the request
+		generateFullAndFinalReport();
 	};
 
 	const resignButtonClicked = async (formikBag) => {
@@ -322,6 +494,31 @@ const ResignationForm = () => {
 
 		// deleteShift({ id: id, company: globalCompany.id });
 	};
+
+	const generateFullAndFinalInitialValues = () => {
+		let initialValues = {
+			fullAndFinalDate: '',
+			elEncashmentDays: 0,
+			elEncashmentAmount: 0,
+			bonusPrevYear: 0,
+			bonusCurrentYear: 0,
+			gratuity: 0,
+			serviceCompensationDays: 0,
+			serviceCompensationAmount: 0,
+			earningsNoticePeriodDays: 0,
+			earningsNoticePeriodAmount: 0,
+			otMin: 0,
+			otAmount: 0,
+			earningsOthers: 0,
+			deductionsNoticePeriodDays: 0,
+			deductionsNoticePeriodAmount: 0,
+			deductionsOthers: 0,
+		};
+		return initialValues;
+	};
+
+	const fullAndFinalInitialValues = useMemo(() => generateFullAndFinalInitialValues(), []);
+	console.log(fullAndFinalInitialValues);
 
 	const unresignButtonClicked = async (formikBag) => {
 		try {
@@ -417,9 +614,9 @@ const ResignationForm = () => {
 					}}
 				>
 					<Formik
-						initialValues={{ userInput: '' }}
+						initialValues={fullAndFinalInitialValues}
 						validationSchema={''}
-						onSubmit={saveButtonClicked}
+						onSubmit={saveFullAndFinalButtonClicked}
 						component={(props) => (
 							<FullAndFinal
 								{...props}
@@ -431,6 +628,7 @@ const ResignationForm = () => {
 								setShowFullAndFinalModal={setShowFullAndFinalModal}
 								fullAndFinalEmployeeId={fullAndFinalEmployeeId}
 								globalCompany={globalCompany}
+								generateButtonClicked={generateButtonClicked}
 							/>
 						)}
 					/>
