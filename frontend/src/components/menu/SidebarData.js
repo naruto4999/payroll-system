@@ -188,6 +188,11 @@ const menuItems = [
 				icon: FaFilePdf,
 				path: '/home/reports/attendance-reports',
 			},
+			{
+				title: 'PF/ESI Reports',
+				icon: FaFilePdf,
+				path: '/home/reports/pf-esi-reports',
+			},
 		],
 	},
 

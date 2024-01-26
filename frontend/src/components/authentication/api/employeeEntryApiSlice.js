@@ -147,7 +147,7 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
 				method: 'POST',
 				body: employeePfEsiDetail,
 			}),
-			invalidatesTags: ['AllEmployeePfEsiDetail'],
+			invalidatesTags: ['AllEmployeePfEsiDetail', { type: 'EmployeePersonalDetails', id: 'LIST' }],
 		}),
 		updateEmployeePfEsiDetail: builder.mutation({
 			query: (employee) => ({
@@ -159,6 +159,7 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
 				{ type: 'EmployeePfEsiDetails', id: id.employee },
 				{ type: 'EmployeeFamilyNomineeDetails', id: id.employee },
 				'AllEmployeePfEsiDetail',
+				{ type: 'EmployeePersonalDetails', id: 'LIST' },
 			],
 		}),
 

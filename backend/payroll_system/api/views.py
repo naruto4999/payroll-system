@@ -4,7 +4,7 @@ from rest_framework import generics, status, mixins
 from django.db import transaction
 from rest_framework import serializers
 
-from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer, EmployeeGenerativeLeaveRecordSerializer, EmployeeLeaveOpeningSerializer, EmployeeMonthlyAttendancePresentDetailsSerializer, EmployeeAdvancePaymentSerializer, EmployeeMonthlyAttendanceDetailsSerializer, EmployeeSalaryPreparedSerializer, EarnedAmountSerializer, SalaryOvertimeSheetSerializer, AttendanceReportsSerializer, EmployeeAttendanceBulkAutofillSerializer, BulkPrepareSalariesSerializer, MachineAttendanceSerializer, PersonnelFileReportsSerializer, DefaultAttendanceSerializer, EmployeeResignationSerializer, EmployeeUnresignSerializer, BonusCalculationSerializer, BonusPercentageSerializer, EmployeeProfessionalDetailRetrieveSerializer, EarnedAmountSerializerPreparedSalary, FullAndFinalSerializer, EmployeeELLeftSerializer, EmployeeYearlyBonusAmountSerializer, FullAndFinalReportSerializer
+from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer, EmployeeGenerativeLeaveRecordSerializer, EmployeeLeaveOpeningSerializer, EmployeeMonthlyAttendancePresentDetailsSerializer, EmployeeAdvancePaymentSerializer, EmployeeMonthlyAttendanceDetailsSerializer, EmployeeSalaryPreparedSerializer, EarnedAmountSerializer, SalaryOvertimeSheetSerializer, AttendanceReportsSerializer, EmployeeAttendanceBulkAutofillSerializer, BulkPrepareSalariesSerializer, MachineAttendanceSerializer, PersonnelFileReportsSerializer, DefaultAttendanceSerializer, EmployeeResignationSerializer, EmployeeUnresignSerializer, BonusCalculationSerializer, BonusPercentageSerializer, EmployeeProfessionalDetailRetrieveSerializer, EarnedAmountSerializerPreparedSalary, FullAndFinalSerializer, EmployeeELLeftSerializer, EmployeeYearlyBonusAmountSerializer, FullAndFinalReportSerializer, PfEsiReportsSerializer
 from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift, EmployeeSalaryEarning, EarningsHead, EmployeeShifts, EmployeeGenerativeLeaveRecord, EmployeeSalaryPrepared, EarnedAmount, EmployeeAdvanceEmiRepayment, EmployeeAdvancePayment, EmployeeAttendance, EmployeePersonalDetail, EmployeeProfessionalDetail, BonusCalculation, BonusPercentage, EmployeeSalaryDetail, FullAndFinal, Calculations
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -36,6 +36,8 @@ from .reports.generate_overtime_sheet import generate_overtime_sheet
 from .reports.generate_present_report import generate_present_report
 from .reports.generate_bonus_calculation_sheet import generate_bonus_calculation_sheet
 from .reports.generate_bonus_form_c import generate_bonus_form_c
+from .reports.pf_esi_reports.generate_pf_statement import generate_pf_statement
+from .reports.pf_esi_reports.generate_pf_statement_txt import generate_pf_statement_txt
 from .reports.generate_form_14 import generate_form_14
 from .reports.personnnel_file_forms.id_card.id_card_landscape import generate_id_card_landscape
 from .reports.generate_overtime_sheet_daily import generate_overtime_sheet_daily
@@ -832,7 +834,7 @@ class EmployeePersonalDetailListCreateView(generics.ListCreateAPIView):
         else:
             instance = OwnerToRegular.objects.get(user=user)
             personal_details_list = instance.owner.employee_personal_details.filter(company=company_id)
-        combined_queryset = personal_details_list.prefetch_related('employee_professional_detail')
+        combined_queryset = personal_details_list.prefetch_related('employee_professional_detail', 'employee_pf_esi_detail')
         # print(combined_queryset)
         return combined_queryset
 
@@ -2397,45 +2399,7 @@ class AttendanceReportsCreateAPIView(generics.CreateAPIView):
         employee_ids = validated_data["employee_ids"]
 
         if validated_data['report_type'] == 'attendance_register':
-            date_range_query = Q(date__year=validated_data['year'], date__month=validated_data['month'])
-            # resignation_filter_query = Q()  # You might need to adjust this based on your logic
-
-            # order_by = ('date',)
-            # if validated_data['filters']['sort_by'] == "attendance_card_no":
-            #     order_by = ("employee__attendance_card_no", 'date')
-            # elif validated_data['filters']['sort_by'] == "employee_name":
-            #     order_by = ('employee__name', 'date')
-            # if validated_data['filters']['group_by'] != 'none' and validated_data['filters']['sort_by'] != "paycode":
-            #         order_by = ('employee__employee_professional_detail__department',) + order_by
-
-
-            # attendance_objects = EmployeeAttendance.objects.filter(
-            #     Q(employee__id__in=employee_ids) &
-            #     Q(company_id=validated_data['company']) &
-            #     date_range_query
-            #     # resignation_filter_query
-            # ).order_by(*order_by)
-
-
-            # attendance_dict = {}
-            # for attendance in attendance_objects:
-            #     key = attendance.employee.id
-            #     if key not in attendance_dict:
-            #         attendance_dict[key] = []
-            #     attendance_dict[key].append(attendance)
-
-
-            # if validated_data['filters']['sort_by'] == "paycode":
-            #     sorted_keys = sorted(
-            #         attendance_dict.items(),
-            #         key=lambda x: (
-            #             getattr(x[1][0].employee.employee_professional_detail.department, 'name', '') if validated_data['filters']['group_by'] != 'none' else '',
-            #             re.sub(r'[^A-Za-z]', '', x[1][0].employee.paycode),  # Sort by paycode within the department
-            #             int(re.sub(r'[^0-9]', '', x[1][0].employee.paycode))  # Secondary sorting by numeric part of paycode
-            #         )
-            #     )
-            #     ordered_attendance_dict = dict(sorted_keys)
-            #     attendance_dict = ordered_attendance_dict
+            # date_range_query = Q(date__year=validated_data['year'], date__month=validated_data['month'])
             order_by = None
             if validated_data['filters']['sort_by'] == "attendance_card_no":
                 order_by = ("employee__attendance_card_no",)
@@ -2676,6 +2640,66 @@ class AttendanceReportsCreateAPIView(generics.CreateAPIView):
             
             # print(f"EMployees found: {employees}")
             # return Response({"detail": "Yo"}, status=status.HTTP_200_OK)
+
+class PfEsiReportsCreateAPIView(generics.CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = PfEsiReportsSerializer
+
+    def create(self, request, *args, **kwargs):
+        user = request.user
+        if user.role != "OWNER":
+            user = OwnerToRegular.objects.get(user=user).owner
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)        
+        validated_data = serializer.validated_data
+        employee_ids = validated_data["employee_ids"]
+
+        if validated_data['report_type'] == 'pf_statement':
+            order_by = None
+            if validated_data['filters']['sort_by'] == "attendance_card_no":
+                order_by = ("attendance_card_no",)
+            elif validated_data['filters']['sort_by'] == "employee_name":
+                order_by = ('name',)
+            # if validated_data['filters']['group_by'] != 'none':
+            #     if order_by != None:
+            #         order_by = ('employee__employee_professional_detail__department', *order_by)
+            #     else:
+            #         order_by = ('employee__employee_professional_detail__department',)
+
+            employees = EmployeePersonalDetail.objects.filter(id__in=employee_ids, user=user, company_id=validated_data['company'])
+
+            print(len(employees))
+
+            #Use python regular expression to orderby if the order by is using paycode because it is alpha numeric
+            if validated_data['filters']['sort_by'] == "paycode":
+                employees = sorted(
+                    employees, 
+                    key=lambda x: (
+                        re.sub(r'[^A-Za-z]', '', x.paycode), 
+                        int(re.sub(r'[^0-9]', '', x.paycode))
+                    )
+                )
+            else:
+                employees = employees.order_by(*order_by)
+
+
+            if len(employees) != 0 and validated_data['filters']['format']=='xlsx':
+                response = StreamingHttpResponse(generate_pf_statement(serializer.validated_data, employees), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                response["Content-Disposition"] = 'attachment; filename="myexcel.xlsx"'
+                return response
+            
+            elif len(employees) != 0 and validated_data['filters']['format']=='txt':
+                txt_content = generate_pf_statement_txt(serializer.validated_data, employees)
+                response = HttpResponse(content_type='text/plain')
+                response['Content-Disposition'] = 'attachment; filename="employee_data.txt"'
+                response.write(txt_content)
+                return response
+
+            else:
+                return Response({"detail": "No Attendances Found for the given month"}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response({"detail": "Yo"}, status=status.HTTP_200_OK)
+
 
 # class EmployeePersonalDetailListCreateView(generics.ListCreateAPIView):
 #     permission_classes = [IsAuthenticated]

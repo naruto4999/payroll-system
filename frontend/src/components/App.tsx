@@ -44,6 +44,7 @@ import { useSelector } from 'react-redux';
 import { useState, useEffect } from 'react';
 import SwitchToggle from './UI/ToggleSwitch';
 import Alert from './UI/Alert';
+import PfEsiReports from './menu/Reports/forms/PfEsiReports/PfEsiReports';
 
 function App() {
 	document.documentElement.classList.add('scrollbar');
@@ -121,6 +122,7 @@ function App() {
 						<Route path="personnel-file-forms" element={<PersonnelFileForms />} />
 						<Route path="salary-overtime-sheet" element={<SalaryOvertimeSheet />} />
 						<Route path="attendance-reports" element={<AttendanceReports />} />
+						<Route path="pf-esi-reports" element={<PfEsiReports />} />
 					</Route>
 
 					{/* <Route path="bank-entry" element={<BankEntryForm />} />

@@ -159,8 +159,10 @@ class EmployeeListSerializer(serializers.Serializer):
     date_of_joining = serializers.DateField(source='employee_professional_detail.date_of_joining', read_only=True)
     designation = serializers.CharField(source='employee_professional_detail.designation', read_only=True)
     resignation_date = serializers.DateField(source='employee_professional_detail.resignation_date', read_only=True)
+    pf_allow = serializers.BooleanField(source='employee_pf_esi_detail.pf_allow', read_only=True)
+    esi_allow = serializers.BooleanField(source='employee_pf_esi_detail.esi_allow', read_only=True)
     class Meta:
-        fields = ['id', 'name', 'paycode', 'attendance_card_no', 'date_of_joining', 'designation', 'resignation_date']
+        fields = ['id', 'name', 'paycode', 'attendance_card_no', 'date_of_joining', 'designation', 'resignation_date', 'pf_allow', 'esi_allow']
 
 
 class EmployeeProfessionalDetailSerializer(serializers.ModelSerializer):
@@ -336,6 +338,20 @@ class AttendanceReportsSerializer(serializers.Serializer):
     month = serializers.IntegerField()
     year = serializers.IntegerField()
     report_type = serializers.ChoiceField(choices=["present_report", "attendance_register", "form_14", "overtime_sheet_daily", "bonus_calculation_sheet", "bonus_form_c"])
+    class Meta:
+        fields = ['employee_ids', "filters"]
+
+class FiltersPfEsiReportsSerializer(serializers.Serializer):
+    sort_by = serializers.ChoiceField(choices=["paycode", "attendance_card_no", "employee_name"])
+    format = serializers.ChoiceField(choices=["xlsx", "txt"])
+
+class PfEsiReportsSerializer(serializers.Serializer):
+    employee_ids = serializers.ListField(child=serializers.IntegerField())
+    filters = FiltersPfEsiReportsSerializer()
+    company = serializers.IntegerField()
+    month = serializers.IntegerField()
+    year = serializers.IntegerField()
+    report_type = serializers.ChoiceField(choices=["pf_statement"])
     class Meta:
         fields = ['employee_ids', "filters"]
 
