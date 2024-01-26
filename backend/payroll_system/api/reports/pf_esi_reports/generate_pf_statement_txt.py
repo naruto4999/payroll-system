@@ -64,7 +64,8 @@ def generate_pf_statement_txt(request_data, employees):
         #EPS Wages
         eps_deducted = 0
         epsable_amount = 0
-        if salary_prepared and earned_basic_amount and employee.dob and calculate_age(employee.dob, date(request_data['year'], request_data['month'], 1)-relativedelta(days=1))<60:
+        if salary_prepared and earned_basic_amount and (employee.dob==None or calculate_age(employee.dob, date(request_data['year'], request_data['month'], 1)-relativedelta(days=1))<60):
+            print(f'inside if')
             if employee.employee_pf_esi_detail.pf_limit_ignore_employer == False:
                 epsable_amount = min(company_pf_esi_setup.ac_10_eps_employer_limit, earned_basic_amount.earned_amount)
                 

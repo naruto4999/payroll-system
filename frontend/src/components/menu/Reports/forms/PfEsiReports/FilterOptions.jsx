@@ -23,7 +23,13 @@ const FilterOptions = ({
 	// }, [selectedDate.month]);
 	const handleRadioChange = (event) => {
 		setPfEsiFilter(event.target.value);
+		if (event.target.value == 'pfAllow') {
+			setFieldValue('reportType', 'pf_statement');
+		} else if (event.target.value == 'esiAllow') {
+			setFieldValue('reportType', 'esi_statement');
+		}
 	};
+	console.log(values);
 
 	return (
 		<div className="flex flex-col gap-2">

@@ -37,6 +37,7 @@ from .reports.generate_present_report import generate_present_report
 from .reports.generate_bonus_calculation_sheet import generate_bonus_calculation_sheet
 from .reports.generate_bonus_form_c import generate_bonus_form_c
 from .reports.pf_esi_reports.generate_pf_statement import generate_pf_statement
+from .reports.pf_esi_reports.generate_esi_statement_xlsx import generate_esi_statement_xlsx
 from .reports.pf_esi_reports.generate_pf_statement_txt import generate_pf_statement_txt
 from .reports.generate_form_14 import generate_form_14
 from .reports.personnnel_file_forms.id_card.id_card_landscape import generate_id_card_landscape
@@ -2660,15 +2661,8 @@ class PfEsiReportsCreateAPIView(generics.CreateAPIView):
                 order_by = ("attendance_card_no",)
             elif validated_data['filters']['sort_by'] == "employee_name":
                 order_by = ('name',)
-            # if validated_data['filters']['group_by'] != 'none':
-            #     if order_by != None:
-            #         order_by = ('employee__employee_professional_detail__department', *order_by)
-            #     else:
-            #         order_by = ('employee__employee_professional_detail__department',)
 
             employees = EmployeePersonalDetail.objects.filter(id__in=employee_ids, user=user, company_id=validated_data['company'])
-
-            print(len(employees))
 
             #Use python regular expression to orderby if the order by is using paycode because it is alpha numeric
             if validated_data['filters']['sort_by'] == "paycode":
@@ -2693,6 +2687,36 @@ class PfEsiReportsCreateAPIView(generics.CreateAPIView):
                 response = HttpResponse(content_type='text/plain')
                 response['Content-Disposition'] = 'attachment; filename="employee_data.txt"'
                 response.write(txt_content)
+                return response
+
+            else:
+                return Response({"detail": "No Attendances Found for the given month"}, status=status.HTTP_404_NOT_FOUND)
+            
+        if validated_data['report_type'] == 'esi_statement':
+            order_by = None
+            if validated_data['filters']['sort_by'] == "attendance_card_no":
+                order_by = ("attendance_card_no",)
+            elif validated_data['filters']['sort_by'] == "employee_name":
+                order_by = ('name',)
+
+            employees = EmployeePersonalDetail.objects.filter(id__in=employee_ids, user=user, company_id=validated_data['company'])
+
+            #Use python regular expression to orderby if the order by is using paycode because it is alpha numeric
+            if validated_data['filters']['sort_by'] == "paycode":
+                employees = sorted(
+                    employees, 
+                    key=lambda x: (
+                        re.sub(r'[^A-Za-z]', '', x.paycode), 
+                        int(re.sub(r'[^0-9]', '', x.paycode))
+                    )
+                )
+            else:
+                employees = employees.order_by(*order_by)
+
+
+            if len(employees) != 0:
+                response = StreamingHttpResponse(generate_esi_statement_xlsx(serializer.validated_data, employees), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                response["Content-Disposition"] = 'attachment; filename="myexcel.xlsx"'
                 return response
 
             else:

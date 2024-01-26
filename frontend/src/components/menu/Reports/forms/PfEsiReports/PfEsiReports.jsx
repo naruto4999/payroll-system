@@ -236,8 +236,10 @@ const PfEsiReports = () => {
 		console.log(toSend);
 		let fileName = 'pf_statement.xlsx';
 
-		if (values.filters.format == 'txt') {
+		if (values.reportType == 'pf_statement' && values.filters.format == 'txt') {
 			fileName = 'pf_statement.txt';
+		} else if (values.reportType == 'esi_statement') {
+			fileName = 'esi_statement.xlsx';
 		}
 
 		// using fetch

@@ -100,7 +100,7 @@ def generate_pf_statement(request_data, employees):
             print(f"Age : {calculate_age(employee.dob, date(request_data['year'], request_data['month'], 1)-relativedelta(months=1))} Name: {employee.name}")
         eps_deducted = 0
         epsable_amount = 0
-        if salary_prepared and earned_basic_amount and employee.dob and calculate_age(employee.dob, date(request_data['year'], request_data['month'], 1)-relativedelta(days=1))<60:
+        if salary_prepared and earned_basic_amount and (employee.dob==None or calculate_age(employee.dob, date(request_data['year'], request_data['month'], 1)-relativedelta(days=1))<60):
             if employee.employee_pf_esi_detail.pf_limit_ignore_employer == False:
                 epsable_amount = min(company_pf_esi_setup.ac_10_eps_employer_limit, earned_basic_amount.earned_amount)
                 eps_deducted += (Decimal(company_pf_esi_setup.ac_10_eps_employer_percentage)/Decimal(100)) * Decimal(epsable_amount)
@@ -166,7 +166,7 @@ def generate_pf_statement(request_data, employees):
 
         
     # Create a DataFrame from the names
-    df = pd.DataFrame({'SN': serial, 'Paycode': paycode, 'UAN': uan_numbers, 'Name': employee_names, 'Gross Wages': gross_wages, "EPF Wages": epf_wages, "EPS Wages": eps_wages, "EDLI Wages": edli_wages, "EPF Employee": epf_employee, "EPF Employer": epf_employer, "DIFF EPF-EPS": edli_employer, "NCP Days": ncp_days, "REF ADV": ref_adv})
+    df = pd.DataFrame({'SN': serial, 'Paycode': paycode, 'UAN': uan_numbers, 'Employee Name': employee_names, 'Gross Wages': gross_wages, "EPF Wages": epf_wages, "EPS Wages": eps_wages, "EDLI Wages": edli_wages, "EPF Employee": epf_employee, "EPF Employer": epf_employer, "DIFF EPF-EPS": edli_employer, "NCP Days": ncp_days, "REF ADV": ref_adv})
     # Create an Excel file in memory
     excel_buffer = io.BytesIO()
     with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
