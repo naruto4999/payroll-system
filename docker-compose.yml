@@ -13,6 +13,8 @@ services:
             - ./data/certbot/www:/var/www/certbot
             - ./data/dhparam:/etc/ssl/certs
             - media_volume:/mediafiles
+            - static_volume:/staticfiles
+
         depends_on:
             - backend
 
@@ -38,6 +40,7 @@ services:
             - database
         volumes:
             - media_volume:/payroll-system/backend/payroll_system/mediafiles
+            - static_volume:/payroll-system/backend/payroll_system/staticfiles
 
     database:
         image: postgres:16 # Specify PostgreSQL version 16
@@ -65,5 +68,6 @@ services:
 volumes:
     db_volume:
     media_volume:
+    static_volume:
     # Volume for storing backups
     # backup:

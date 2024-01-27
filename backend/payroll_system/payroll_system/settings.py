@@ -49,9 +49,18 @@ CORS_ALLOW_CREDENTIALS = True
 1
 # CORS_ALLOW_ALL_ORIGINS = True
 
-if DEBUG:
-    CORS_ALLOWED_ORIGINS = []
-    CORS_ALLOWED_ORIGINS += os.environ.get("CORS_ALLOWED_ORIGINS").split(' ') 
+CORS_ALLOWED_ORIGINS = []
+CORS_ALLOWED_ORIGINS += os.environ.get("CORS_ALLOWED_ORIGINS").split(' ') 
+CSRF_TRUSTED_ORIGINS = []
+CSRF_TRUSTED_ORIGINS += os.environ.get("CSRF_TRUSTED_ORIGINS").split(' ') 
+
+# CSRF_TRUSTED_ORIGINS = [
+#     "https://pay-per.me",
+#     # Add other trusted origins as needed
+# ]
+# if DEBUG:
+#     CORS_ALLOWED_ORIGINS = []
+#     CORS_ALLOWED_ORIGINS += os.environ.get("CORS_ALLOWED_ORIGINS").split(' ') 
 
 # CORS_ALLOWED_ORIGIN_REGEXES = [
 #     r".*",
@@ -208,7 +217,11 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
-STATIC_URL = '/static/'
+if DEBUG:
+    STATIC_URL = '/static/'
+else:
+    STATIC_URL = os.environ.get("STATIC_URL").split(' ')
+
 
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
@@ -217,6 +230,7 @@ MEDIA_ROOT = BASE_DIR / "mediafiles"
 MEDIA_URL = '/media/'
 
 # STATIC_ROOT = BASE_DIR / "staticfiles-cdn" #this is a production setting
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field

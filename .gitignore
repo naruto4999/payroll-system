@@ -19,6 +19,7 @@ backend/payroll_system/api/auth/__pycache__
 backend/payroll_system/.env
 backend/payroll_system/db.sqlite3
 backend/payroll_system/mediafiles/*
+backend/payroll_system/staticfiles/*
 backend/payroll_system/automation_testing_scripts/*
 
 # dist folder(production bundle)
