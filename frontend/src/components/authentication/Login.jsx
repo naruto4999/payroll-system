@@ -56,7 +56,8 @@ const LoginForm = () => {
 				id: decoded.user_id,
 				role: decoded.role,
 				username: decoded.username,
-				is_staff: decoded.is_staff,
+				is_admin: decoded.is_admin,
+				subscription_end_date: decoded.subscription_end_date,
 			};
 			dispatch(authActions.setAccount(user));
 			navigate('/home/select-company');
@@ -66,10 +67,16 @@ const LoginForm = () => {
 				username: '',
 			});
 		} catch (err) {
+			console.log(err.status);
+
 			console.log(err);
 			if (err.status == 401) {
 				if (err.data?.detail == 'No active account found with the given credentials') {
 					setErrorMessage('Invalid username or password');
+				} else if (err.data?.detail) {
+					setErrorMessage(
+						err.status == 401 && err?.data?.detail + ' \nOr email us at payper.webapp@gmail.com'
+					);
 				}
 			}
 		}

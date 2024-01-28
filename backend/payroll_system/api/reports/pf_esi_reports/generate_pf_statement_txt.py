@@ -110,7 +110,7 @@ def generate_pf_statement_txt(request_data, employees):
             monthly_details = employee.monthly_attendance_details.filter(date=date(request_data['year'], request_data['month'], 1)).first()
             paid_days = monthly_details.paid_days_count
             num_days_in_month = calendar.monthrange(request_data['year'], request_data['month'])[1]
-            non_paid_days = num_days_in_month - (paid_days/2)
+            non_paid_days = int((num_days_in_month - (paid_days/2))//1)
             txt_content += str(non_paid_days)+'#~#'
         except: 
             txt_content += '0'+'#~#'

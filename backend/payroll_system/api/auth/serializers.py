@@ -24,11 +24,11 @@ from django.contrib.auth.tokens import default_token_generator
 from django.conf import settings
 from django.utils.html import strip_tags
 
-
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth import get_user_model
 from django.utils.encoding import force_bytes
 from builtins import str
+from rest_framework.exceptions import AuthenticationFailed
 
 
 
@@ -42,7 +42,9 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['username'] = user.username
         token['email'] = user.email
         token['role'] = user.role
-        token['is_staff'] = user.is_staff
+        token['is_admin'] = user.is_admin
+        token['subscription_end_date'] = user.subscription_end_date.strftime('%Y-%m-%d') if user.subscription_end_date else None
+
         # ...
 
         return token
@@ -54,15 +56,20 @@ class LoginSerializer(MyTokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
 
-        refresh = self.get_token(self.user)
-        # data['user'] = UserSerializer(self.user).data
-        data['refresh'] = str(refresh)
-        data['access'] = str(refresh.access_token)
+        user = self.user
+        if user.is_subscription_active():
+            refresh = self.get_token(user)
+            data['refresh'] = str(refresh)
+            data['access'] = str(refresh.access_token)
 
-        if api_settings.UPDATE_LAST_LOGIN:
-            update_last_login(None, self.user)
+            if api_settings.UPDATE_LAST_LOGIN:
+                update_last_login(None, user)
 
-        return data
+            return data
+        else:
+            raise AuthenticationFailed(detail="Subscription has ended. Please renew your subscription to log in.")
+
+            # raise serializers.ValidationError("Subscription has ended. Please renew your subscription to log in.")
 
 class RegisterSerializer(UserSerializer):
     password = serializers.CharField(max_length=128, min_length=8, write_only=True, required=True)

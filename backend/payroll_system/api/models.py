@@ -15,6 +15,7 @@ import math
 from django.db.models import Sum
 from django.core.files.storage import FileSystemStorage
 from .managers import EmployeeAttendanceManager, ActiveEmployeeManager, EmployeeSalaryPreparedManager
+import pytz
 
 
 
@@ -135,21 +136,37 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(db_index=True, unique=True,  null=True, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    is_admin = models.BooleanField(default=False)
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = ['email', 'phone_no']
     phone_no = models.PositiveBigIntegerField(null=False, unique=True)
+    # Subscription Fields
+    subscription_end_date = models.DateField(null=True, blank=True)
     # is_superuser = models.BooleanField(default=False)
-
 
     objects = UserManager()
     def __str__(self):
-        return f"{self.email}"
+        return f"{self.username}"
     def save(self, *args, **kwargs):
+        if self.role == self.Role.REGULAR and self.is_admin:
+            raise ValidationError("Regular users cannot have is_admin set to True.")
         if not self.pk:
             self.role = self.base_role
             return super().save(*args, **kwargs)
         else:
             return super().save(*args, **kwargs)
+        
+    def is_subscription_active(self):
+        """
+        Check if the user's subscription is still active.
+        """
+        # india_timezone = 'Asia/Kolkata'
+        # current_time_in_india = timezone.now().astimezone(timezone.get_timezone(india_timezone))
+        india_tz = pytz.timezone("Asia/Kolkata") 
+        time_in_india = datetime.now(india_tz)
+        print(f"Indian Time: {time_in_india}")
+        return self.subscription_end_date is None or self.subscription_end_date >= time_in_india.date()
+        
         
 class Regular(User):
     base_role = User.Role.REGULAR
@@ -157,7 +174,12 @@ class Regular(User):
         proxy=True
     def welcome(self):
         return "Only for Regular"
-    
+
+
+class OwnerToRegular(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='owners')
+    owner = models.OneToOneField(User, on_delete=models.CASCADE, related_name='regulars')
+
 
 class OTP(models.Model):
     email = models.EmailField()
@@ -167,11 +189,6 @@ class OTP(models.Model):
 
     def is_valid(self):
         return self.expires_at > timezone.now()
-
-
-class OwnerToRegular(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='owners')
-    owner = models.OneToOneField(User, on_delete=models.CASCADE, related_name='regulars')
 
 
 class Company(models.Model):

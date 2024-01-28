@@ -43,6 +43,7 @@ from .serializers import PasswordResetConfirmSerializer
 from django.contrib.auth.forms import SetPasswordForm
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import redirect
+from .authentication import CustomRefreshTokenSerializer
 
 # from ..models import User
 
@@ -113,7 +114,6 @@ class RegisterView(generics.CreateAPIView, MyTokenObtainPairView):
     permission_classes = (AllowAny,)
 
     def post(self, request, *args, **kwargs):
-        print(request.data)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         # user = serializer.save()
@@ -148,16 +148,37 @@ class RegisterView(generics.CreateAPIView, MyTokenObtainPairView):
 
 class RefreshView(generics.CreateAPIView, TokenRefreshView):
     permission_classes = (AllowAny,)
+    serializer_class = CustomRefreshTokenSerializer
 
     def post(self, request, *args, **kwargs):
+        print(f"User: {request.user}")
         serializer = self.get_serializer(data=request.data)
 
         try:
             serializer.is_valid(raise_exception=True)
+            print(f"Serializer validated data: {serializer.validated_data}")
         except TokenError as e:
             raise InvalidToken(e.args[0])
 
         return Response(serializer.validated_data, status=status.HTTP_200_OK)
+    # def post(self, request, *args, **kwargs):
+    #     print(request.data)
+    #     serializer = self.get_serializer(data=request.data)
+
+    #     try:
+    #         serializer.is_valid(raise_exception=True)
+    #         refresh_token = serializer.validated_data['refresh']
+    #         user = self.get_user_from_refresh_token(refresh_token)
+    #         print(f"User associated with the refresh token: {user}")
+
+    #         # Now you can use the 'user' object as needed, such as checking subscription status
+    #         self.check_subscription_status(user)
+
+    #     except TokenError as e:
+    #         raise InvalidToken(e.args[0])
+
+    #     return Response(serializer.validated_data, status=status.HTTP_200_OK)
+
     
 class PasswordResetView(BasePasswordResetView):
     template_name = 'registration/password_reset_form.html'
