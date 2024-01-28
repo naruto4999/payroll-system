@@ -1701,7 +1701,8 @@ const EmployeeEntryForm = () => {
 									}
 									validationSchema={EmployeePfEsiDetailSchema}
 									onSubmit={
-										Object.keys(singleEmployeePfEsiDetail).length !== 0
+										// Object.keys(singleEmployeePfEsiDetail).length !== 0
+										getSingleEmployeePfEsiDetailIsSuccess
 											? updatePfEsiDetailButtonClicked
 											: addPfEsiDetailButtonClicked
 									}

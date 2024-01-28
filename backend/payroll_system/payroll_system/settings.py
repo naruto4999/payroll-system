@@ -220,7 +220,7 @@ USE_TZ = True
 if DEBUG:
     STATIC_URL = '/static/'
 else:
-    STATIC_URL = os.environ.get("STATIC_URL").split(' ')
+    STATIC_URL = os.environ.get("STATIC_URL")
 
 
 STATICFILES_DIRS = [BASE_DIR / "static"]
