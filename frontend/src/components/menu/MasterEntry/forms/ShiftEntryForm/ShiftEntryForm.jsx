@@ -152,8 +152,29 @@ const ShiftEntryForm = () => {
 	};
 
 	const deleteButtonClicked = async (id) => {
-		console.log(id);
-		deleteShift({ id: id, company: globalCompany.id });
+		try {
+			const data = await deleteShift({ id: id, company: globalCompany.id }).unwrap();
+			dispatch(
+				alertActions.createAlert({
+					message: 'Saved',
+					type: 'Success',
+					duration: 3000,
+				})
+			);
+		} catch (err) {
+			console.log(err);
+			let message = 'Error Occurred';
+			if (err?.data?.error) {
+				message = err?.data?.error;
+			}
+			dispatch(
+				alertActions.createAlert({
+					message: message,
+					type: 'Error',
+					duration: 5000,
+				})
+			);
+		}
 	};
 
 	const columnHelper = createColumnHelper();

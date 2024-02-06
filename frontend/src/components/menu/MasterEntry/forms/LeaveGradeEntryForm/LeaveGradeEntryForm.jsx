@@ -49,12 +49,9 @@ const LeaveGradeEntryForm = () => {
 		refetch,
 	} = useGetLeaveGradesQuery(globalCompany);
 	console.log(fetchedData);
-	const [addLeaveGrade, { isLoading: isAddingLeaveGrade }] =
-		useAddLeaveGradeMutation();
-	const [updateLeaveGrade, { isLoading: isUpdatingLeaveGrade }] =
-		useUpdateLeaveGradeMutation();
-	const [deleteLeaveGrade, { isLoading: isDeletingLeaveGrade }] =
-		useDeleteLeaveGradeMutation();
+	const [addLeaveGrade, { isLoading: isAddingLeaveGrade }] = useAddLeaveGradeMutation();
+	const [updateLeaveGrade, { isLoading: isUpdatingLeaveGrade }] = useUpdateLeaveGradeMutation();
+	const [deleteLeaveGrade, { isLoading: isDeletingLeaveGrade }] = useDeleteLeaveGradeMutation();
 	const [addLeaveGradePopover, setAddLeaveGradePopover] = useState(false);
 	const [showLoadingBar, setShowLoadingBar] = useOutletContext();
 	const [editLeaveGradePopover, setEditLeaveGradePopover] = useState(false);
@@ -157,8 +154,29 @@ const LeaveGradeEntryForm = () => {
 	};
 
 	const deleteButtonClicked = async (id) => {
-		console.log(id);
-		deleteLeaveGrade({ id: id, company: globalCompany.id });
+		try {
+			const data = await deleteLeaveGrade({ id: id, company: globalCompany.id }).unwrap();
+			dispatch(
+				alertActions.createAlert({
+					message: 'Saved',
+					type: 'Success',
+					duration: 3000,
+				})
+			);
+		} catch (err) {
+			console.log(err);
+			let message = 'Error Occurred';
+			if (err?.data?.error) {
+				message = err?.data?.error;
+			}
+			dispatch(
+				alertActions.createAlert({
+					message: message,
+					type: 'Error',
+					duration: 5000,
+				})
+			);
+		}
 	};
 
 	const columnHelper = createColumnHelper();
@@ -200,9 +218,7 @@ const LeaveGradeEntryForm = () => {
 					) : (
 						<div
 							className="rounded bg-redAccent-500 p-1.5 hover:bg-redAccent-700 dark:bg-redAccent-700 dark:hover:bg-redAccent-500"
-							onClick={() =>
-								deleteButtonClicked(props.row.original.id)
-							}
+							onClick={() => deleteButtonClicked(props.row.original.id)}
 						>
 							<FaRegTrashAlt className="h-4" />
 						</div>
@@ -212,9 +228,7 @@ const LeaveGradeEntryForm = () => {
 					) : (
 						<div
 							className="rounded bg-teal-600 p-1.5 hover:bg-teal-700 dark:bg-teal-700 dark:hover:bg-teal-600"
-							onClick={() =>
-								editLeaveGradePopoverHandler(props.row.original)
-							}
+							onClick={() => editLeaveGradePopoverHandler(props.row.original)}
 						>
 							<FaPen className="h-4" />
 						</div>
@@ -224,10 +238,7 @@ const LeaveGradeEntryForm = () => {
 		}),
 	];
 
-	const data = useMemo(
-		() => (fetchedData ? [...fetchedData] : []),
-		[fetchedData]
-	);
+	const data = useMemo(() => (fetchedData ? [...fetchedData] : []), [fetchedData]);
 	const table = useReactTable({
 		data,
 		columns,
@@ -241,18 +252,8 @@ const LeaveGradeEntryForm = () => {
 	});
 	// console.log(tableInstance)
 	useEffect(() => {
-		setShowLoadingBar(
-			isLoading ||
-				isAddingLeaveGrade ||
-				isDeletingLeaveGrade ||
-				isUpdatingLeaveGrade
-		);
-	}, [
-		isLoading,
-		isAddingLeaveGrade,
-		isDeletingLeaveGrade,
-		isUpdatingLeaveGrade,
-	]);
+		setShowLoadingBar(isLoading || isAddingLeaveGrade || isDeletingLeaveGrade || isUpdatingLeaveGrade);
+	}, [isLoading, isAddingLeaveGrade, isDeletingLeaveGrade, isUpdatingLeaveGrade]);
 
 	if (globalCompany.id == null) {
 		return (
@@ -271,9 +272,7 @@ const LeaveGradeEntryForm = () => {
 				<div className="flex flex-row flex-wrap place-content-between">
 					<div className="mr-4">
 						<h1 className="text-3xl font-medium">Leave Grades</h1>
-						<p className="my-2 text-sm">
-							Add more leave grades here
-						</p>
+						<p className="my-2 text-sm">Add more leave grades here</p>
 					</div>
 					<button
 						className="my-auto whitespace-nowrap rounded bg-teal-500 p-2 text-base font-medium hover:bg-teal-600 dark:bg-teal-700 dark:hover:bg-teal-600"
@@ -288,27 +287,19 @@ const LeaveGradeEntryForm = () => {
 							{table.getHeaderGroups().map((headerGroup) => (
 								<tr key={headerGroup.id}>
 									{headerGroup.headers.map((header) => (
-										<th
-											key={header.id}
-											scope="col"
-											className="px-4 py-4 font-medium"
-										>
+										<th key={header.id} scope="col" className="px-4 py-4 font-medium">
 											{header.isPlaceholder ? null : (
 												<div className="">
 													<div
 														{...{
-															className:
-																header.column.getCanSort()
-																	? 'cursor-pointer select-none flex flex-row justify-center'
-																	: '',
-															onClick:
-																header.column.getToggleSortingHandler(),
+															className: header.column.getCanSort()
+																? 'cursor-pointer select-none flex flex-row justify-center'
+																: '',
+															onClick: header.column.getToggleSortingHandler(),
 														}}
 													>
 														{flexRender(
-															header.column
-																.columnDef
-																.header,
+															header.column.columnDef.header,
 															header.getContext()
 														)}
 
@@ -316,8 +307,7 @@ const LeaveGradeEntryForm = () => {
 															<div className="relative pl-2">
 																<FaAngleUp
 																	className={classNames(
-																		header.column.getIsSorted() ==
-																			'asc'
+																		header.column.getIsSorted() == 'asc'
 																			? 'text-teal-700'
 																			: '',
 																		'absolute -translate-y-2 text-lg'
@@ -325,8 +315,7 @@ const LeaveGradeEntryForm = () => {
 																/>
 																<FaAngleDown
 																	className={classNames(
-																		header.column.getIsSorted() ==
-																			'desc'
+																		header.column.getIsSorted() == 'desc'
 																			? 'text-teal-700'
 																			: '',
 																		'absolute translate-y-2 text-lg'
@@ -346,22 +335,12 @@ const LeaveGradeEntryForm = () => {
 						</thead>
 						<tbody className="divide-y divide-black divide-opacity-50 border-t border-black border-opacity-50">
 							{table.getRowModel().rows.map((row) => (
-								<tr
-									className="hover:bg-zinc-200 dark:hover:bg-zinc-800"
-									key={row.id}
-								>
+								<tr className="hover:bg-zinc-200 dark:hover:bg-zinc-800" key={row.id}>
 									{row.getVisibleCells().map((cell) => (
-										<td
-											className="px-4 py-4 font-normal"
-											key={cell.id}
-										>
+										<td className="px-4 py-4 font-normal" key={cell.id}>
 											<div className="text-sm">
 												<div className="font-medium">
-													{flexRender(
-														cell.column.columnDef
-															.cell,
-														cell.getContext()
-													)}
+													{flexRender(cell.column.columnDef.cell, cell.getContext())}
 												</div>
 											</div>
 										</td>
@@ -398,9 +377,7 @@ const LeaveGradeEntryForm = () => {
 									{...props}
 									errorMessage={errorMessage}
 									setErrorMessage={setErrorMessage}
-									setAddLeaveGradePopover={
-										setAddLeaveGradePopover
-									}
+									setAddLeaveGradePopover={setAddLeaveGradePopover}
 									isEditing={false}
 									cancelButtonClicked={cancelButtonClicked}
 								/>
@@ -412,9 +389,7 @@ const LeaveGradeEntryForm = () => {
 						<Formik
 							// Remember to divide generateFrequency by two in submission function
 							initialValues={replaceNullWithEmpty(
-								fetchedData.find(
-									(grade) => grade.id === updateLeaveGradeId
-								)
+								fetchedData.find((grade) => grade.id === updateLeaveGradeId)
 							)}
 							validationSchema={LeaveGradeSchema}
 							onSubmit={updateButtonClicked}
@@ -423,9 +398,7 @@ const LeaveGradeEntryForm = () => {
 									{...props}
 									errorMessage={errorMessage}
 									setErrorMessage={setErrorMessage}
-									setAddLeaveGradePopover={
-										setAddLeaveGradePopover
-									}
+									setAddLeaveGradePopover={setAddLeaveGradePopover}
 									disabledEdit={disabledEdit}
 									isEditing={true}
 									disableEdit={disabledEdit}

@@ -23,12 +23,32 @@ const Sidebar = () => {
 	};
 
 	const auth = useSelector((state) => state.auth);
-	let items = menuItems.filter((item) => item.title !== 'Admin Controls');
+
+	let items = menuItems
+		.map((main_menu_item) => {
+			if (main_menu_item.title === 'Admin Controls') {
+				return auth.account.role === 'OWNER' && auth.account.is_admin === true ? main_menu_item : null;
+			} else {
+				return main_menu_item;
+			}
+		})
+		.filter(Boolean)
+		.map((main_menu_item) => {
+			return main_menu_item.title === 'Master Entry'
+				? {
+						...main_menu_item,
+						children: main_menu_item.children.filter((item) => {
+							return item.title === 'Setup Entry' ? auth.account.role === 'OWNER' : true;
+						}),
+				  }
+				: main_menu_item;
+		});
+
 	// console.log(auth)
-	if (auth.account.role == 'OWNER' && auth.account.is_admin == true) {
-		items = menuItems;
-		// const items = itemsWithoutAdminControl
-	}
+	// if (auth.account.role == 'OWNER' && auth.account.is_admin == true) {
+	// 	items = menuItems;
+	// 	// const items = itemsWithoutAdminControl
+	// }
 	const [showSidebar, setShowSidebar] = useState(false);
 	const [showLoadingBar, setShowLoadingBar] = useState(false);
 	const sidebarHandler = () => {

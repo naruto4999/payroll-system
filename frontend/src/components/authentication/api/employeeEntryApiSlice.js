@@ -48,6 +48,17 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
 				{ type: 'EmployeePersonalDetails', id: 'LIST' },
 			],
 		}),
+
+		// Visibilty of employees in sub user account
+		updateVisibleEmployees: builder.mutation({
+			query: (body) => ({
+				url: `/api/employee-visible`,
+				method: 'PATCH',
+				body: body,
+			}),
+			invalidatesTags: [{ type: 'EmployeePersonalDetails', id: 'LIST' }],
+		}),
+
 		// Professional Details
 		getSingleEmployeeProfessionalDetail: builder.query({
 			query: (employee) => ({
@@ -74,6 +85,7 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
 			invalidatesTags: (result, error, id) => [
 				{ type: 'EmployeeProfessionalDetails', id: id.employee },
 				{ type: 'EmployeePersonalDetails', id: 'LIST' },
+				'EmployeeShifts',
 			],
 		}),
 
@@ -242,4 +254,5 @@ export const {
 	useDeleteEmployeeFamilyNomineeDetailMutation,
 	useGetSingleEmployeePersonalDetailQuery,
 	useGetSingleEmployeeProfessionalDetailQuery,
+	useUpdateVisibleEmployeesMutation,
 } = employeeEntryApiSlice;

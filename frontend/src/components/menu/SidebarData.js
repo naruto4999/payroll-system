@@ -215,6 +215,11 @@ const menuItems = [
 				icon: FaEye,
 				path: '/admin-controls/visible-companies',
 			},
+			{
+				title: 'Visible Employees',
+				icon: FaEye,
+				path: '/admin-controls/visible-employees',
+			},
 		],
 	},
 ];

@@ -549,28 +549,16 @@ const EmployeeEntryForm = () => {
 			if (updateEmployeeId !== null) {
 				employeeId = updateEmployeeId;
 			}
-			const employeeShift = {
-				...values.employeeShift,
-			};
-			employeeShift.toDate = '9999-01-01';
-			employeeShift.fromDate = values.employeeProfessionalDetail.dateOfJoining;
-			employeeShift.employee = employeeId;
-			employeeShift.company = globalCompany.id;
 
 			try {
-				const addEmployeeShiftsPromise = addEmployeeShifts(employeeShift).unwrap();
-				const addEmployeeProfessionalDetailPromise = addEmployeeProfessionalDetail(
-					replaceEmptyStringsWithNull({
+				const addEmployeeProfessionalDetailPromise = await addEmployeeProfessionalDetail({
+					professionalDetail: replaceEmptyStringsWithNull({
 						...values.employeeProfessionalDetail,
 						employee: employeeId,
 						company: globalCompany.id,
-					})
-				).unwrap();
-
-				const [shiftsData, professionalDetailData] = await Promise.all([
-					addEmployeeShiftsPromise,
-					addEmployeeProfessionalDetailPromise,
-				]);
+					}),
+					...values.employeeShift,
+				}).unwrap();
 				setErrorMessage('');
 				dispatchAlert('Success');
 

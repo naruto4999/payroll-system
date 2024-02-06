@@ -11,8 +11,8 @@ import CompanyEntryForm from './menu/MasterEntry/forms/CompanyEntryForm/CompanyE
 import DepartmentEntryForm from './menu/MasterEntry/forms/DepartmentEntryForm/DepartmentEntryForm';
 import DesignationEntryForm from './menu/MasterEntry/forms/DesignationEntryForm/DesignationEntryForm';
 import SalaryGradeEntryForm from './menu/MasterEntry/forms/SalaryGradeEntryForm/SalaryGradeEntryForm';
-import RegularRegisterForm from './menu/AdminControlsForm/RegularRegisterForm';
-import VisibleCompaniesForm from './menu/AdminControlsForm/VisibleCompaniesForm';
+import RegularRegisterForm from './menu/AdminControlsForm/RegularRegisterForm/RegularRegisterForm';
+import VisibleCompaniesForm from './menu/AdminControlsForm/VisibleCompaniesForm/VisibleCompaniesForm';
 import CategoryEntryForm from './menu/MasterEntry/forms/CategoryEntryForm/CategoryEntryForm';
 import BankEntryForm from './menu/MasterEntry/forms/BankEntryForm/BankEntryForm';
 import LeaveGradeEntryForm from './menu/MasterEntry/forms/LeaveGradeEntryForm/LeaveGradeEntryForm';
@@ -34,11 +34,13 @@ import AttendanceReports from './menu/Reports/forms/AttendanceReports/Attendance
 import PersonnelFileForms from './menu/Reports/forms/PersonnelFileForms/PersonnelFileForms';
 import ResignationForm from './menu/Transaction/forms/ResignationForm/ResignationForm';
 import BonusCalculationForm from './menu/Transaction/forms/BonusCalculationForm/BonusCalculationForm';
+import VisibleEmployeesForm from './menu/AdminControlsForm/VisibleEmployeesForm/VisibleEmployeesForm';
 // import store, { persistor } from "./authentication/store/index"
 // import { PersistGate } from "redux-persist/integration/react";
 // import { Provider } from "react-redux";
-import ProtectedRouteProps from './authentication/routes/ProtectedRoute';
-import ProtectedRoute from './authentication/routes/ProtectedRoute';
+// import ProtectedRouteProps from './authentication/routes/ProtectedRoute';
+// import ProtectedRoute from './authentication/routes/ProtectedRoute';
+import { ProtectedAndAdminRoute, ProtectedRoute } from './authentication/routes/ProtectedRoute';
 // import { RootState } from './authentication/store/index';
 import { useSelector } from 'react-redux';
 import { useState, useEffect } from 'react';
@@ -135,13 +137,14 @@ function App() {
 				<Route
 					path="admin-controls"
 					element={
-						<ProtectedRoute>
+						<ProtectedAndAdminRoute>
 							<Sidebar />
-						</ProtectedRoute>
+						</ProtectedAndAdminRoute>
 					}
 				>
 					<Route path="regular-registration" element={<RegularRegisterForm />} />
 					<Route path="visible-companies" element={<VisibleCompaniesForm />} />
+					<Route path="visible-employees" element={<VisibleEmployeesForm />} />
 				</Route>
 				<Route path="login" element={<LoginForm />} />
 				<Route path="register" element={<RegisterForm />} />

@@ -1,6 +1,5 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { useState } from 'react';
 import {
 	createColumnHelper,
 	flexRender,
@@ -10,10 +9,10 @@ import {
 } from '@tanstack/react-table';
 import { FaRegTrashAlt, FaPen, FaCircleNotch, FaCheck, FaWindowMinimize, FaAngleUp, FaAngleDown } from 'react-icons/fa';
 import { useOutletContext } from 'react-router-dom';
-import { useEffect } from 'react';
+import { alertActions } from '../../../authentication/store/slices/alertSlice';
 
 //imports after using RTK query
-import { useGetCompaniesQuery, useVisibleCompanyMutation } from '../../authentication/api/newCompanyEntryApiSlice';
+import { useGetCompaniesQuery, useVisibleCompanyMutation } from '../../../authentication/api/newCompanyEntryApiSlice';
 import ReactModal from 'react-modal';
 import { Formik } from 'formik';
 
@@ -72,19 +71,32 @@ const VisibleCompaniesForm = () => {
 		console.log(selectedRows);
 		for (let i = 0; i < selectedRows.length; i++) {
 			const original = selectedRows[i].original;
-			// Do something with the original property, for example:
-			// console.log(original);
 			body.push({
 				company_id: original.id,
 				visible: true,
 			});
 		}
-		console.log(body);
 		try {
 			const data = await visibleCompany(body).unwrap();
-			console.log(data);
+			dispatch(
+				alertActions.createAlert({
+					message: 'Saved',
+					type: 'Success',
+					duration: 3000,
+				})
+			);
 		} catch (err) {
-			console.log(err);
+			let message = 'Error Occurred';
+			if (err?.data?.error) {
+				message = err?.data?.error;
+			}
+			dispatch(
+				alertActions.createAlert({
+					message: message,
+					type: 'Error',
+					duration: 5000,
+				})
+			);
 		}
 	};
 	const columnHelper = createColumnHelper();
@@ -163,8 +175,8 @@ const VisibleCompaniesForm = () => {
 			<section className="mx-5 mt-2">
 				<div className="flex flex-row place-content-between">
 					<div className="">
-						<h1 className="text-3xl font-medium">Companies</h1>
-						<p className="my-2 text-sm">Add more companies here</p>
+						<h1 className="text-3xl font-medium">Companies in Sub User Account</h1>
+						<p className="my-2 text-sm">Manage the visibility of companies in sub user account here</p>
 					</div>
 					<button
 						className="my-4 rounded bg-teal-500 p-2 text-base font-medium hover:bg-teal-600 dark:bg-teal-700 dark:hover:bg-teal-600"

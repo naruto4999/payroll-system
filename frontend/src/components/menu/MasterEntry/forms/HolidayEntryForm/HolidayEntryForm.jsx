@@ -7,7 +7,7 @@ import {
 	getSortedRowModel,
 } from '@tanstack/react-table';
 import { FaRegTrashAlt, FaPen, FaAngleUp, FaAngleDown } from 'react-icons/fa';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import {
 	useGetHolidaysQuery,
 	useAddHolidayMutation,
@@ -20,6 +20,7 @@ import ReactModal from 'react-modal';
 import { Formik } from 'formik';
 import AddHoliday from './AddHoliday';
 import { HolidaySchema } from './HolidaySchema';
+import { alertActions } from '../../../../authentication/store/slices/alertSlice';
 
 ReactModal.setAppElement('#root');
 
@@ -28,6 +29,7 @@ const classNames = (...classes) => {
 };
 
 const HolidayEntryForm = () => {
+	const dispatch = useDispatch();
 	const globalCompany = useSelector((state) => state.globalCompany);
 
 	const {
@@ -67,26 +69,50 @@ const HolidayEntryForm = () => {
 		console.log(values);
 		console.log(formikBag);
 
+		// try {
+		// 	const data = await .unwrap();
+		// 	console.log(data);
+
+		// } catch (err) {
+		// 	console.log(err);
+		// 	if (err.status === 400) {
+		// 		setErrorMessage('Holiday with this name already exists');
+		// 	} else {
+		// 		console.log(err);
+		// 	}
+		// }
+
 		try {
 			const data = await addHoliday({
 				company: globalCompany.id,
 				name: values.holidayName,
 				date: values.holidayDate,
 			}).unwrap();
-			console.log(data);
 			setErrorMessage('');
 			setAddHolidayPopover(!addHolidayPopover);
 			formikBag.resetForm();
+			dispatch(
+				alertActions.createAlert({
+					message: 'Saved',
+					type: 'Success',
+					duration: 3000,
+				})
+			);
 		} catch (err) {
 			console.log(err);
-			if (err.status === 400) {
-				setErrorMessage('Holiday with this name already exists');
-			} else {
-				console.log(err);
+			let message = 'Error Occurred';
+			if (err?.data?.error) {
+				message = err?.data?.error;
+				setErrorMessage(message);
 			}
+			dispatch(
+				alertActions.createAlert({
+					message: message,
+					type: 'Error',
+					duration: 5000,
+				})
+			);
 		}
-
-		console.log(values);
 	};
 
 	const updateButtonClicked = async (values, formikBag) => {
@@ -113,15 +139,39 @@ const HolidayEntryForm = () => {
 	};
 
 	const deleteButtonClicked = async (id) => {
-		console.log(id);
+		// console.log(id);
+		// try {
+		// 	const data = await .unwrap();
+		// 	console.log(data);
+		// } catch (err) {
+		// 	console.log(err);
+		// }
+
 		try {
 			const data = await deleteHoliday({
 				id: id,
 				company: globalCompany.id,
 			}).unwrap();
-			console.log(data);
+			dispatch(
+				alertActions.createAlert({
+					message: 'Saved',
+					type: 'Success',
+					duration: 3000,
+				})
+			);
 		} catch (err) {
 			console.log(err);
+			let message = 'Error Occurred';
+			if (err?.data?.error) {
+				message = err?.data?.error;
+			}
+			dispatch(
+				alertActions.createAlert({
+					message: message,
+					type: 'Error',
+					duration: 5000,
+				})
+			);
 		}
 	};
 

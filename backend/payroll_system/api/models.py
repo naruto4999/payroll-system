@@ -177,8 +177,8 @@ class Regular(User):
 
 
 class OwnerToRegular(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='owners')
-    owner = models.OneToOneField(User, on_delete=models.CASCADE, related_name='regulars')
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='regular_to_owner')
+    owner = models.OneToOneField(User, on_delete=models.CASCADE, related_name='owner_to_regular')
 
 
 class OTP(models.Model):
@@ -313,7 +313,7 @@ class Holiday(models.Model):
     mandatory_holiday = models.BooleanField(default=False, null=False, blank=False)
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['user', 'company', 'name'], name='unique_hodiday_name_per_user')
+            models.UniqueConstraint(fields=['user', 'company', 'name', 'date'], name='unique_hodiday_name_date_per_user')
         ]
     def __str__(self):
         return f"{self.user.email} -> {self.company.name}: {self.name}"
@@ -472,6 +472,7 @@ class EmployeePersonalDetail(models.Model):
     permanent_pincode = models.CharField(max_length=6, null=True, blank=True)
     isActive = models.BooleanField(default=True, null=False, blank=False)
     created_at = models.DateTimeField(auto_now_add=True)
+    visible = models.BooleanField(default=False)
 
 
     class Meta:
@@ -531,10 +532,10 @@ class EmployeeProfessionalDetail(models.Model):
     employee = models.OneToOneField(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="employee_professional_detail", primary_key=True)
     date_of_joining = models.DateField(null=False, blank=False)
     date_of_confirm = models.DateField(null=False, blank=False)
-    department = models.ForeignKey(Deparment, on_delete=models.CASCADE, related_name="same_department_employees", null=True, blank=True)
-    designation = models.ForeignKey(Designation, on_delete=models.CASCADE, related_name="same_designation_employees", null=True, blank=True)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="same_category_employees", null=True, blank=True)
-    salary_grade = models.ForeignKey(SalaryGrade, on_delete=models.CASCADE, related_name="same_salary_grade_employees", null=True, blank=True)
+    department = models.ForeignKey(Deparment, on_delete=models.SET_NULL, related_name="same_department_employees", null=True, blank=True)
+    designation = models.ForeignKey(Designation, on_delete=models.SET_NULL, related_name="same_designation_employees", null=True, blank=True)
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, related_name="same_category_employees", null=True, blank=True)
+    salary_grade = models.ForeignKey(SalaryGrade, on_delete=models.SET_NULL, related_name="same_salary_grade_employees", null=True, blank=True)
     # shift = models.ForeignKey(Shift, on_delete=models.CASCADE, related_name="employee_professional_detail", null=True, blank=True)
     weekly_off = models.CharField(max_length=6, choices=WEEKDAY_CHOICES, null=False, blank=False, default='sun')    
     extra_off = models.CharField(max_length=10, choices=EXTRA_OFF_CHOICES, default='no_off', null=False, blank=False)
@@ -1097,6 +1098,7 @@ class EmployeeShifts(models.Model):
         print(f'from_date type : {type(self.from_date)} value: {self.from_date} and to_date type: {type(self.to_date)} and value {self.to_date}')
         if self.from_date > self.to_date:
             raise ValidationError("'from_date' must be before 'to_date'")
+        
         # if self.from_date.year < 1950 or self.from_date.year > 2100:
         #     raise ValidationError("Invalid From Date value")
         
@@ -1104,6 +1106,15 @@ class EmployeeShifts(models.Model):
         self.clean()
         if self.shift.company != self.company or self.shift.user != self.user:
             raise ValidationError("Invalid Shift selected.")
+        
+        # Check if EmployeeProfessionalDetail exists for the employee
+        try:
+            employee_professional_detail = EmployeeProfessionalDetail.objects.get(employee=self.employee)
+        except EmployeeProfessionalDetail.DoesNotExist:
+            raise ValidationError("EmployeeProfessionalDetail does not exist for this employee.")
+
+
+        # raise ValidationError("Invalid Shift selected.")
         super().save(*args, **kwargs)
 
 

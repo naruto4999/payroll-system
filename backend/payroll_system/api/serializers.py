@@ -67,6 +67,14 @@ class RegularRegisterSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=True, write_only=False, max_length=128)
     owner = UserSerializer(read_only=True)
 
+    class Meta:
+        model = Regular
+        fields = ['id', 'username', 'email', 'password', 'is_active', 'owner', 'phone_no']
+
+class RegularRetrieveUpdateSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(max_length=128, min_length=8, write_only=True)
+    email = serializers.EmailField(required=True, write_only=False, max_length=128)
+    owner = UserSerializer(read_only=True)
 
     class Meta:
         model = Regular
@@ -161,8 +169,9 @@ class EmployeeListSerializer(serializers.Serializer):
     resignation_date = serializers.DateField(source='employee_professional_detail.resignation_date', read_only=True)
     pf_allow = serializers.BooleanField(source='employee_pf_esi_detail.pf_allow', read_only=True)
     esi_allow = serializers.BooleanField(source='employee_pf_esi_detail.esi_allow', read_only=True)
+    visible = serializers.BooleanField(read_only=True, default=False)
     class Meta:
-        fields = ['id', 'name', 'paycode', 'attendance_card_no', 'date_of_joining', 'designation', 'resignation_date', 'pf_allow', 'esi_allow']
+        fields = ['id', 'name', 'paycode', 'attendance_card_no', 'date_of_joining', 'designation', 'resignation_date', 'pf_allow', 'esi_allow', 'visible']
 
 
 class EmployeeProfessionalDetailSerializer(serializers.ModelSerializer):
@@ -437,6 +446,12 @@ class FullAndFinalReportSerializer(serializers.Serializer):
     company = serializers.IntegerField()
     class Meta:
         fields = ['employee', "company"]
+
+class EmployeeVisibilitySerializer(serializers.Serializer):
+    employees_id = serializers.ListField()
+    company = serializers.IntegerField()
+    class Meta:
+        fields = ["employees_id", "company"]
 # class CompanyEmployeeStatisticsSerializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = CompanyEmployeeStatistics
