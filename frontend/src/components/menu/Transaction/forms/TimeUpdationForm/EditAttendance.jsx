@@ -152,6 +152,7 @@ const EditAttendance = memo(
 				skip: globalCompany === null || globalCompany === '',
 			}
 		);
+		// console.log(allEmployeeAttendance);
 		const {
 			data: allEmployeeProfessionalDetail,
 			isLoading: isLoadingAllEmployeeProfessionalDetail,
@@ -230,18 +231,47 @@ const EditAttendance = memo(
 			}
 		);
 
+		// const categorizedAllEmployeeAttendance = useMemo(() => {
+		// 	if (allEmployeeAttendance) {
+		// 		const result = {};
+
+		// 		allEmployeeAttendance.forEach((obj) => {
+		// 			const employeeId = obj.employee;
+
+		// 			if (!result[employeeId]) {
+		// 				result[employeeId] = [];
+		// 			}
+
+		// 			result[employeeId].push(obj);
+		// 		});
+
+		// 		return result;
+		// 	} else {
+		// 		return {};
+		// 	}
+		// }, [allEmployeeAttendance]);
 		const categorizedAllEmployeeAttendance = useMemo(() => {
 			if (allEmployeeAttendance) {
 				const result = {};
 
 				allEmployeeAttendance.forEach((obj) => {
-					const employeeId = obj.employee;
+					const newObj = {
+						...obj,
+						firstHalf: obj.firstHalfId,
+						secondHalf: obj.secondHalfId,
+						employee: obj.employeeId,
+					};
+					delete newObj.firstHalfId;
+					delete newObj.secondHalfId;
+					delete newObj.employeeId;
+
+					const employeeId = obj.employeeId;
 
 					if (!result[employeeId]) {
 						result[employeeId] = [];
 					}
 
-					result[employeeId].push(obj);
+					result[employeeId].push(newObj);
 				});
 
 				return result;
@@ -396,7 +426,6 @@ const EditAttendance = memo(
 
 			const shift = getShift(values.year, values.month, day);
 
-			console.log('Employee Shift ', shift);
 			const timeDifferenceInMilliseconds = manualOutObj - manualInObj;
 			let timeDifferenceInMinutes = timeDifferenceInMilliseconds / (1000 * 60);
 			if (shift.lunchBeginningTime && shift.lunchDuration) {
@@ -848,7 +877,7 @@ const EditAttendance = memo(
 				clearTimeout(timeoutId);
 				timeoutId = setTimeout(() => {
 					performCalculations();
-				}, 500);
+				}, 350);
 			}
 
 			return () => {
@@ -857,7 +886,6 @@ const EditAttendance = memo(
 		}, [values.attendance, currentEmployeeProfessionalDetail, currentEmployeeSalaryDetail]);
 
 		// Runs when fetch value of employeeAttendance changes
-		console.log(values);
 		useEffect(() => {
 			if (!isSubmitting && employeeAttendance && currentEmployeeProfessionalDetail && updateEmployeeId) {
 				const daysInMonth = new Date(values.year, values.month, 0).getDate();
@@ -870,7 +898,6 @@ const EditAttendance = memo(
 					const matchingEmployeeAttendance = employeeAttendance.find(
 						(entry) => new Date(entry.date).getTime() === attendanceDate.getTime()
 					);
-					console.log(currentEmployeeProfessionalDetail);
 					if (
 						attendanceDate < new Date(currentEmployeeProfessionalDetail.dateOfJoining) ||
 						(currentEmployeeProfessionalDetail.resignationDate != null &&
@@ -1128,8 +1155,10 @@ const EditAttendance = memo(
 
 		useEffect(() => {
 			// Add more for adding, editing and deleting later on
-			setShowLoadingBar(isLoadingAllEmployeeAttendance || isLoadingAllEmployeeProfessionalDetail);
-		}, [isLoadingAllEmployeeAttendance, isLoadingAllEmployeeProfessionalDetail]);
+			setShowLoadingBar(
+				isLoadingAllEmployeeAttendance || isLoadingAllEmployeeProfessionalDetail || isAddingMachineAttendance
+			);
+		}, [isLoadingAllEmployeeAttendance, isLoadingAllEmployeeProfessionalDetail, isAddingMachineAttendance]);
 
 		if (isLoadingAllEmployeeSalaryDetail || isLoadingAllEmployeeProfessionalDetail || isFetchingAllEmployeeShifts) {
 			return <></>;
@@ -1233,7 +1262,7 @@ const EditAttendance = memo(
 									</select>
 									<select
 										name="year"
-										id="month"
+										id="year"
 										onChange={(e) => {
 											handleChange(e);
 											setSelectedDate((prevValue) => ({ ...prevValue, year: e.target.value }));
@@ -1391,16 +1420,14 @@ const EditAttendance = memo(
 										/>
 									</div>
 								)}
-								{table && (
-									<div>
-										<GenerativeLeaveTable
-											globalCompany={globalCompany}
-											year={values.year}
-											updateEmployeeId={updateEmployeeId}
-											month={values.month}
-										/>
-									</div>
-								)}
+								<div>
+									<GenerativeLeaveTable
+										globalCompany={globalCompany}
+										year={values.year}
+										updateEmployeeId={updateEmployeeId}
+										month={values.month}
+									/>
+								</div>
 
 								<div className="mt-4 mb-2 flex w-fit flex-row gap-4">
 									<button
@@ -1459,7 +1486,7 @@ const EditAttendance = memo(
 							/>
 						</ReactModal>
 						<ReactModal
-							className="items-left fixed inset-0 mx-2 my-auto flex h-fit flex-col gap-4 rounded bg-zinc-300 p-4 shadow-xl dark:bg-zinc-800 sm:mx-auto sm:max-w-lg"
+							className="items-left fixed inset-0 z-20 mx-2 my-auto flex h-fit flex-col gap-4 rounded bg-zinc-300 p-4 shadow-xl dark:bg-zinc-800 sm:mx-auto sm:max-w-lg"
 							isOpen={showConfirmModalMachineAttendance}
 							onRequestClose={() =>
 								setShowConfirmModalMachineAttendance(false || isAddingMachineAttendance)

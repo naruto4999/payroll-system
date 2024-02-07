@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, memo } from 'react';
 import {
 	useGetAllEmployeeLeaveOpeningQuery,
 	useGetAllEmployeePresentCountQuery,
@@ -9,7 +9,7 @@ const classNames = (...classes) => {
 	return classes.filter(Boolean).join(' ');
 };
 
-const GenerativeLeaveTable = ({ globalCompany, year, updateEmployeeId, month }) => {
+const GenerativeLeaveTable = memo(({ globalCompany, year, updateEmployeeId, month }) => {
 	const {
 		data: allEmployeeGenerativeLeaveRecord,
 		isLoading: isLoadingAllEmployeeGenerativeLeaveRecord,
@@ -88,9 +88,8 @@ const GenerativeLeaveTable = ({ globalCompany, year, updateEmployeeId, month }) 
 		const memoizedObject = {};
 		// let firstIteration = true;
 		// let leaveIdForTotalPresent;
-
 		allEmployeeGenerativeLeaveRecord?.forEach((item) => {
-			if (item.employee === updateEmployeeId) {
+			if (item.employee == updateEmployeeId) {
 				const leaveId = item.leave.id;
 				const leaveName = item.leave.name;
 				const date = item.date;
@@ -120,7 +119,6 @@ const GenerativeLeaveTable = ({ globalCompany, year, updateEmployeeId, month }) 
 				memoizedObject[leaveId].yearly += leaveCount;
 			}
 		});
-
 		return memoizedObject;
 	}, [allEmployeeGenerativeLeaveRecord, updateEmployeeId]);
 
@@ -178,6 +176,6 @@ const GenerativeLeaveTable = ({ globalCompany, year, updateEmployeeId, month }) 
 			</table>
 		</div>
 	);
-};
+});
 
 export default GenerativeLeaveTable;

@@ -116,6 +116,15 @@ INSTALLED_APPS = [
 
 ]
 
+# BROTLI_COMPRESS_LEVEL = 1
+
+# # Specify content types to compress (default is text/*)
+# BROTLI_COMPRESS_CONTENT_TYPES = [
+#     'application/json',  # JSON data
+#     'text/html',         # HTML content
+#     # Add more content types as needed
+# ]
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -131,6 +140,7 @@ MIDDLEWARE = [
     'djangorestframework_camel_case.middleware.CamelCaseMiddleWare', #for camel case to snake case and vice versa
 
     'django.middleware.gzip.GZipMiddleware',
+    # 'django_brotli.middleware.BrotliMiddleware',
 ]
 
 ROOT_URLCONF = 'payroll_system.urls'

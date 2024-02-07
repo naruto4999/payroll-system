@@ -26,6 +26,7 @@ const TableFilterInput = ({
 		<div>
 			<input
 				type="text"
+				id="search"
 				value={globalFilter ?? ''}
 				onFocus={handleFocus}
 				onBlur={handleBlur}

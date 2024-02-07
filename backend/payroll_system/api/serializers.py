@@ -253,6 +253,21 @@ class EmployeeAttendanceSerializer(serializers.ModelSerializer):
         model = EmployeeAttendance
         fields = ['id', 'employee', 'company', 'machine_in', 'machine_out', 'manual_in', 'manual_out', 'first_half', 'second_half', 'date', 'ot_min', 'late_min', 'manual_mode']
 
+class AllEmployeeCurrentMonthAttendanceSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    employee = serializers.PrimaryKeyRelatedField(read_only=True)
+    company = serializers.PrimaryKeyRelatedField(read_only=True)
+    machine_in = serializers.DateTimeField(read_only=True)
+    machine_out = serializers.DateTimeField(read_only=True)
+    manual_in = serializers.DateTimeField(read_only=True)
+    manual_out = serializers.DateTimeField(read_only=True)
+    first_half = serializers.BooleanField(read_only=True)
+    second_half = serializers.BooleanField(read_only=True)
+    date = serializers.DateField(read_only=True)
+    ot_min = serializers.IntegerField(read_only=True)
+    late_min = serializers.IntegerField(read_only=True)
+    manual_mode = serializers.BooleanField(read_only=True)
+
 class EmployeeGenerativeLeaveRecordSerializer(serializers.ModelSerializer):
     leave = LeaveGradeSerializer()
     class Meta:
