@@ -1582,7 +1582,7 @@ class PfEsiSetupRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIVi
         return Response({'error': "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
 
 class CalculationsCreateAPIView(generics.CreateAPIView):
-    permission_classes = [IsAuthenticated, isOwnerAndAdmin]
+    permission_classes = [IsAuthenticated]
     serializer_class = CalculationsSerializer
     def perform_create(self, serializer):
         user = self.request.user
@@ -1592,7 +1592,7 @@ class CalculationsCreateAPIView(generics.CreateAPIView):
 
     
 class CalculationsRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes= [IsAuthenticated, isOwnerAndAdmin]
+    permission_classes= [IsAuthenticated]
     serializer_class = CalculationsSerializer
     lookup_field = 'company_id'
 
