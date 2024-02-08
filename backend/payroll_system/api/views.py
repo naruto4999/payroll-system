@@ -1,8 +1,8 @@
 from django.forms import ValidationError
 from django.shortcuts import render
 from rest_framework import generics, status, mixins, serializers
-from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer, EmployeeGenerativeLeaveRecordSerializer, EmployeeLeaveOpeningSerializer, EmployeeMonthlyAttendancePresentDetailsSerializer, EmployeeAdvancePaymentSerializer, EmployeeMonthlyAttendanceDetailsSerializer, EmployeeSalaryPreparedSerializer, EarnedAmountSerializer, SalaryOvertimeSheetSerializer, AttendanceReportsSerializer, EmployeeAttendanceBulkAutofillSerializer, BulkPrepareSalariesSerializer, MachineAttendanceSerializer, PersonnelFileReportsSerializer, DefaultAttendanceSerializer, EmployeeResignationSerializer, EmployeeUnresignSerializer, BonusCalculationSerializer, BonusPercentageSerializer, EmployeeProfessionalDetailRetrieveSerializer, EarnedAmountSerializerPreparedSalary, FullAndFinalSerializer, EmployeeELLeftSerializer, EmployeeYearlyBonusAmountSerializer, FullAndFinalReportSerializer, PfEsiReportsSerializer, RegularRetrieveUpdateSerializer, EmployeeVisibilitySerializer, AllEmployeeCurrentMonthAttendanceSerializer
-from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift, EmployeeSalaryEarning, EarningsHead, EmployeeShifts, EmployeeGenerativeLeaveRecord, EmployeeSalaryPrepared, EarnedAmount, EmployeeAdvanceEmiRepayment, EmployeeAdvancePayment, EmployeeAttendance, EmployeePersonalDetail, EmployeeProfessionalDetail, BonusCalculation, BonusPercentage, EmployeeSalaryDetail, FullAndFinal, Calculations
+from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer, EmployeeGenerativeLeaveRecordSerializer, EmployeeLeaveOpeningSerializer, EmployeeMonthlyAttendancePresentDetailsSerializer, EmployeeAdvancePaymentSerializer, EmployeeMonthlyAttendanceDetailsSerializer, EmployeeSalaryPreparedSerializer, EarnedAmountSerializer, SalaryOvertimeSheetSerializer, AttendanceReportsSerializer, EmployeeAttendanceBulkAutofillSerializer, BulkPrepareSalariesSerializer, MachineAttendanceSerializer, PersonnelFileReportsSerializer, DefaultAttendanceSerializer, EmployeeResignationSerializer, EmployeeUnresignSerializer, BonusCalculationSerializer, BonusPercentageSerializer, EmployeeProfessionalDetailRetrieveSerializer, EarnedAmountSerializerPreparedSalary, FullAndFinalSerializer, EmployeeELLeftSerializer, EmployeeYearlyBonusAmountSerializer, FullAndFinalReportSerializer, PfEsiReportsSerializer, RegularRetrieveUpdateSerializer, EmployeeVisibilitySerializer, AllEmployeeCurrentMonthAttendanceSerializer, SubUserOvertimeSettingsSerializer
+from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift, EmployeeSalaryEarning, EarningsHead, EmployeeShifts, EmployeeGenerativeLeaveRecord, EmployeeSalaryPrepared, EarnedAmount, EmployeeAdvanceEmiRepayment, EmployeeAdvancePayment, EmployeeAttendance, EmployeePersonalDetail, EmployeeProfessionalDetail, BonusCalculation, BonusPercentage, EmployeeSalaryDetail, FullAndFinal, Calculations, SubUserOvertimeSettings
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
@@ -1524,8 +1524,6 @@ class WeeklyOffHolidayOffCreateAPIView(generics.CreateAPIView):
         user = self.request.user
         if user.role != "OWNER":
             user = user.regular_to_owner.owner
-        #     return serializer.save(user=self.request.user)
-        # instance = OwnerToRegular.objects.get(user=user)
         return serializer.save(user=user)
     
 class WeeklyOffHolidayOffRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -1534,11 +1532,9 @@ class WeeklyOffHolidayOffRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDes
     lookup_field = 'company_id'
 
     def get_queryset(self, *args, **kwargs):
-        # company_id = self.kwargs.get('company_id')
         user = self.request.user
         if user.role == "OWNER":
             return user.weekly_off_holiday_off_entries
-        # instance = OwnerToRegular.objects.get(user=user)
         return user.regular_to_owner.owner.weekly_off_holiday_off_entries
     
     def update(self, request, *args, **kwargs):
@@ -1614,8 +1610,7 @@ class CalculationsRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPI
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response({'error': "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
 
-#### 2nd Account Done till above here ###
-    
+
 class EmployeeShiftsListAPIView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = EmployeeShiftsSerializer
@@ -1626,14 +1621,12 @@ class EmployeeShiftsListAPIView(generics.ListAPIView):
         user = self.request.user
         if user.role == "OWNER":
             return user.all_employees_shifts.filter(company=company_id, employee=employee)
-        instance = OwnerToRegular.objects.get(user=user)
-        return instance.owner.all_employees_shifts.filter(company=company_id, employee=employee)
+        return user.regular_to_owner.owner.all_employees_shifts.filter(company=company_id, employee=employee)
     
     def list(self, request, *args, **kwargs):
         year = self.kwargs.get('year')
         queryset = self.get_queryset().filter(from_date__year__lte=year, to_date__year__gte=year)
         serializer = self.get_serializer(queryset, many=True)
-        print(serializer.data)
         return Response(serializer.data)
     
 class AllEmployeeMonthyShiftsListAPIView(generics.ListAPIView):
@@ -1642,82 +1635,50 @@ class AllEmployeeMonthyShiftsListAPIView(generics.ListAPIView):
 
     def get_queryset(self, *args, **kwargs):
         company_id = self.kwargs.get('company_id')
-        # employee = self.kwargs.get('employee')
         user = self.request.user
         if user.role == "OWNER":
             return user.all_employees_shifts.filter(company=company_id)
-        instance = OwnerToRegular.objects.get(user=user)
-        return instance.owner.all_employees_shifts.filter(company=company_id)
+        return user.regular_to_owner.owner.all_employees_shifts.filter(company=company_id)
     
     def list(self, request, *args, **kwargs):
-
-        # year = self.kwargs.get('year')
-        # month = self.kwargs.get('month')
-        # from_date = datetime(year, month, 1).date() - relativedelta(days=6)
-        # last_day = calendar.monthrange(year, month)[1]
-        # to_date = datetime(year, month, last_day).date()
-
-
-        # print(type(from_date))
-        # print(from_date)
-        # print(to_date)
-        # # print(month)
-        # queryset = self.get_queryset().filter(date__range=[from_date, to_date])
-        # serializer = self.get_serializer(queryset, many=True)
-        # return Response(serializer.data)
-        # # return Response(status.HTTP_200_OK)
-
         year = self.kwargs.get('year')
-        print(year)
         month = self.kwargs.get('month')
         start_date = datetime(year, month, 1).date()
-        print(f'Star Date: {start_date}')
         end_date = (start_date + relativedelta(months=1)) - relativedelta(days=1)
-        print(end_date)
-        print(len(self.get_queryset()))
-
         queryset = self.get_queryset().filter(
             from_date__lte=end_date,  # Shifts that start before or in the specified year
             to_date__gte=start_date,    # Shifts that end in the specified year or later
         )
         serializer = self.get_serializer(queryset, many=True)
-        # print(serializer.data)
-        # print(len(serializer.data))
         return Response(serializer.data)
-        # return Response(status.HTTP_200_OK)
     
     
 class EmployeeShiftsCreateAPIView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = EmployeeShiftsUpdateSerializer
-
     def perform_create(self, serializer):
         user = self.request.user
         if user.role == "OWNER":
             return serializer.save(user=self.request.user)
-        instance = OwnerToRegular.objects.get(user=user)
-        return serializer.save(user=instance.owner)
+        return serializer.save(user=user.regular_to_owner.owner)
 
 class EmployeeShiftsUpdateAPIView(generics.UpdateAPIView):
     permission_classes= [IsAuthenticated]
     serializer_class = EmployeeShiftsUpdateSerializer
     lookup_field = 'employee'
-
     def get_queryset(self, *args, **kwargs):
         company_id = self.kwargs.get('company_id')
         employee = self.kwargs.get('employee')
         user = self.request.user
         if user.role == "OWNER":
             return user.all_employees_shifts.filter(company=company_id, employee=employee)
-        instance = OwnerToRegular.objects.get(user=user)
-        return instance.owner.all_employees_shifts.filter(company=company_id, employee=employee)
+        return user.regular_to_owner.owner.all_employees_shifts.filter(company=company_id, employee=employee)
     
     def update(self, request, *args, **kwargs):
         user = self.request.user
         if user.role != "OWNER":
-            user = OwnerToRegular.objects.get(user=user).owner
+            user = user.regular_to_owner.owner
         employee_shifts = request.data['employee_shifts']
-        # print(employee_shifts)
         for shift in employee_shifts:
             serializer = self.get_serializer(data=shift)
             serializer.is_valid(raise_exception=True)
@@ -1736,42 +1697,21 @@ class EmployeeShiftsPermanentUpdateAPIView(generics.UpdateAPIView):
         user = self.request.user
         if user.role == "OWNER":
             return user.all_employees_shifts.filter(company=company_id, employee=employee)
-        instance = OwnerToRegular.objects.get(user=user)
-        return instance.owner.all_employees_shifts.filter(company=company_id, employee=employee)
+        return user.regular_to_owner.owner.all_employees_shifts.filter(company=company_id, employee=employee)
     
     def update(self, request, *args, **kwargs):
         user = self.request.user
         if user.role != "OWNER":
-            user = OwnerToRegular.objects.get(user=user).owner
+            user = user.regular_to_owner.owner
         employee_shift = request.data
         employee_shift['to_date'] = datetime.strptime('9999-01-01', "%Y-%m-%d").date()
-        # print(employee_shift)
         serializer = self.get_serializer(data=employee_shift)
         serializer.is_valid(raise_exception=True)
         validated_shift = serializer.validated_data
         EmployeeShifts.objects.process_employee_permanent_shift(user=user, employee_shift_data=validated_shift)
         return Response({"message": "Employee earnings updated successfully"}, status=status.HTTP_200_OK)
     
-
-# class EmployeeShiftsListAPIView(generics.ListAPIView):
-#     permission_classes = [IsAuthenticated]
-#     serializer_class = EmployeeShiftsSerializer
-
-#     def get_queryset(self, *args, **kwargs):
-#         company_id = self.kwargs.get('company_id')
-#         employee = self.kwargs.get('employee')
-#         user = self.request.user
-#         if user.role == "OWNER":
-#             return user.all_employees_shifts.filter(company=company_id, employee=employee)
-#         instance = OwnerToRegular.objects.get(user=user)
-#         return instance.owner.all_employees_shifts.filter(company=company_id, employee=employee)
-    
-#     def list(self, request, *args, **kwargs):
-#         year = self.kwargs.get('year')
-#         queryset = self.get_queryset().filter(from_date__year__lte=year, to_date__year__gte=year)
-#         serializer = self.get_serializer(queryset, many=True)
-#         print(serializer.data)
-#         return Response(serializer.data)
+#### 2nd Account Done till above here ###
     
 class EmployeeAttendanceListCreateAPIView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
@@ -3125,9 +3065,36 @@ class EmployeeBonusAmountYearlyRetrieveAPIView(generics.RetrieveAPIView):
                 # print(serializer.data)
                 return Response(serializer.data)
                 # return Response({"message": "Successful"}, status=status.HTTP_200_OK)
+            
+class SubUserOvertimeSettingsMonthlyCreateUpdateAPIView(APIView):
+    def post(self, request, format=None):
+        # Get the data from the request
+        data = request.data.get('data', [])
+
+        for entry in data:
+            # Extract relevant data
+            company_id = entry.get('company')
+            date = entry.get('date')
+
+            # Use update_or_create to update or create the object
+            defaults = {key: value for key, value in entry.items() if key not in ['company', 'date']}
+            obj, created = SubUserOvertimeSettings.objects.update_or_create(
+                company_id=company_id,
+                date=date,
+                defaults=defaults
+            )
+
+            # Serialize the object and check for errors
+            serializer = SubUserOvertimeSettingsSerializer(obj, data=entry)
+            if serializer.is_valid():
+                serializer.save()
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response("Data processed successfully", status=status.HTTP_200_OK)
 
 '''
-Sub User Views (Exclusively) start from here.
+Sub User Views (Exclusive) start from here.
 '''
 class CompanyVisibilityPatchAPIView(APIView):
     permission_classes = [IsAuthenticated, isOwnerAndAdmin]

@@ -1,7 +1,7 @@
 from dataclasses import field
 from rest_framework import serializers
 
-from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning, EmployeeSalaryDetail, EmployeeFamilyNomineeDetial, EmployeePfEsiDetail, WeeklyOffHolidayOff, PfEsiSetup, Calculations, EmployeeShifts, EmployeeAttendance, EmployeeGenerativeLeaveRecord, EmployeeLeaveOpening, EmployeeMonthlyAttendanceDetails, EmployeeAdvancePayment, EmployeeSalaryPrepared, EarnedAmount, BonusCalculation, BonusPercentage, FullAndFinal
+from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning, EmployeeSalaryDetail, EmployeeFamilyNomineeDetial, EmployeePfEsiDetail, WeeklyOffHolidayOff, PfEsiSetup, Calculations, EmployeeShifts, EmployeeAttendance, EmployeeGenerativeLeaveRecord, EmployeeLeaveOpening, EmployeeMonthlyAttendanceDetails, EmployeeAdvancePayment, EmployeeSalaryPrepared, EarnedAmount, BonusCalculation, BonusPercentage, FullAndFinal, SubUserOvertimeSettings
 from rest_framework import serializers
 
 class UserSerializer(serializers.ModelSerializer):
@@ -467,6 +467,11 @@ class EmployeeVisibilitySerializer(serializers.Serializer):
     company = serializers.IntegerField()
     class Meta:
         fields = ["employees_id", "company"]
+
+class SubUserOvertimeSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SubUserOvertimeSettings
+        fields = ['company', 'date', 'max_ot_hrs']  # List all the fields you want to include
 # class CompanyEmployeeStatisticsSerializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = CompanyEmployeeStatistics

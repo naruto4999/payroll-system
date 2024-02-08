@@ -220,6 +220,11 @@ const menuItems = [
 				icon: FaEye,
 				path: '/admin-controls/visible-employees',
 			},
+			{
+				title: 'OverTime Settings',
+				icon: FaCogs,
+				path: '/admin-controls/overtime-settings',
+			},
 		],
 	},
 ];

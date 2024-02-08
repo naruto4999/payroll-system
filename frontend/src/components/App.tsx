@@ -35,6 +35,7 @@ import PersonnelFileForms from './menu/Reports/forms/PersonnelFileForms/Personne
 import ResignationForm from './menu/Transaction/forms/ResignationForm/ResignationForm';
 import BonusCalculationForm from './menu/Transaction/forms/BonusCalculationForm/BonusCalculationForm';
 import VisibleEmployeesForm from './menu/AdminControlsForm/VisibleEmployeesForm/VisibleEmployeesForm';
+import OverTimeSettingsForm from './menu/AdminControlsForm/OverTimeSettingsForm/OverTimeSettingsForm';
 // import store, { persistor } from "./authentication/store/index"
 // import { PersistGate } from "redux-persist/integration/react";
 // import { Provider } from "react-redux";
@@ -145,6 +146,7 @@ function App() {
 					<Route path="regular-registration" element={<RegularRegisterForm />} />
 					<Route path="visible-companies" element={<VisibleCompaniesForm />} />
 					<Route path="visible-employees" element={<VisibleEmployeesForm />} />
+					<Route path="overtime-settings" element={<OverTimeSettingsForm />} />
 				</Route>
 				<Route path="login" element={<LoginForm />} />
 				<Route path="register" element={<RegisterForm />} />

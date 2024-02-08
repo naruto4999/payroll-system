@@ -1470,6 +1470,18 @@ class FullAndFinal(models.Model):
     deductions_notice_period_amount = models.PositiveIntegerField(null=False, blank=False, default=0)
     deductions_others = models.PositiveIntegerField(null=False, blank=False, default=0)
 
+class SubUserOvertimeSettings(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_companies_sub_user_settings")
+    company = models.OneToOneField(Company, on_delete=models.CASCADE, related_name="company_sub_user_settings", primary_key=True)
+    date = models.DateField(null=False, blank=False)
+    max_ot_hrs = models.PositiveSmallIntegerField(null=False, blank=False)
+    def save(self, *args, **kwargs):
+        if self.max_ot_hrs == 0:
+            raise ValidationError('Maximum overtime hours cannot be 0.')
+        super().save(*args, **kwargs)
+    
+
+
 
     
 @receiver(post_save, sender=Company)

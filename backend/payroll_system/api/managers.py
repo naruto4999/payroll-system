@@ -408,17 +408,26 @@ class EmployeeAttendanceManager(models.Manager):
                     machine_punch_in = None
                     machine_punch_out = None
                     #Checking for punch in time
-                    if existing_attendance != None and existing_attendance.manual_in is not None:
-                        if employee_shift_on_particular_date.shift.beginning_time < employee_shift_on_particular_date.shift.end_time:
-                            if existing_attendance.manual_in < employee_shift_on_particular_date.shift.end_time:
-                                punch_in_time = datetime.combine(current_date.date(), existing_attendance.manual_in)
-                            elif existing_attendance.manual_in > employee_shift_on_particular_date.shift.end_time:
-                                punch_in_time = datetime.combine(current_date.date(), existing_attendance.manual_in) - relativedelta(days=1)
-                        if employee_shift_on_particular_date.shift.beginning_time > employee_shift_on_particular_date.shift.end_time:
-                            if existing_attendance.manual_in < employee_shift_on_particular_date.shift.end_time:
-                                punch_in_time = datetime.combine(current_date.date(), existing_attendance.manual_in) + relativedelta(days=1)
-                            else:
-                                punch_in_time = datetime.combine(current_date.date(), existing_attendance.manual_in)
+                    if existing_attendance != None: 
+                        if existing_attendance.machine_in is not None:
+                            machine_punch_in = datetime.combine(current_date.date(), existing_attendance.machine_in)
+                            if machine_punch_in > maximum_out_time:
+                                machine_punch_in = machine_punch_in - relativedelta(days=1)
+
+                        if existing_attendance.manual_in is not None:
+                            if employee_shift_on_particular_date.shift.beginning_time < employee_shift_on_particular_date.shift.end_time:
+                                if existing_attendance.manual_in < employee_shift_on_particular_date.shift.end_time:
+                                    punch_in_time = datetime.combine(current_date.date(), existing_attendance.manual_in)
+                                elif existing_attendance.manual_in > employee_shift_on_particular_date.shift.end_time:
+                                    punch_in_time = datetime.combine(current_date.date(), existing_attendance.manual_in) - relativedelta(days=1)
+                            if employee_shift_on_particular_date.shift.beginning_time > employee_shift_on_particular_date.shift.end_time:
+                                if existing_attendance.manual_in < employee_shift_on_particular_date.shift.end_time:
+                                    punch_in_time = datetime.combine(current_date.date(), existing_attendance.manual_in) + relativedelta(days=1)
+                                else:
+                                    punch_in_time = datetime.combine(current_date.date(), existing_attendance.manual_in)
+                        elif existing_attendance.machine_in is not None:
+                            punch_in_time = machine_punch_in
+                            
                     
                     #Punch in from machine
                     elif not punch_in_row.empty and 'CHECKTIME' in punch_in_row:
@@ -433,17 +442,26 @@ class EmployeeAttendanceManager(models.Manager):
                         
 
                     #Checking for punch out time
-                    if existing_attendance != None and existing_attendance.manual_out is not None:
-                        if employee_shift_on_particular_date.shift.beginning_time < employee_shift_on_particular_date.shift.end_time:
-                            if existing_attendance.manual_out > employee_shift_on_particular_date.shift.beginning_time:
-                                punch_out_time = datetime.combine(current_date.date(), existing_attendance.manual_out)
-                            elif existing_attendance.manual_out < employee_shift_on_particular_date.shift.beginning_time:
-                                punch_out_time = datetime.combine(current_date.date(), existing_attendance.manual_out) + relativedelta(days=1)
-                        else:
-                            if existing_attendance.manual_out < employee_shift_on_particular_date.shift.beginning_time:
-                                punch_out_time = datetime.combine(current_date.date(), existing_attendance.manual_out) + relativedelta(days=1)
+                    if existing_attendance != None:
+                        if existing_attendance.machine_out is not None:
+                            machine_punch_out = datetime.combine(current_date.date(), existing_attendance.machine_out)
+                            if machine_punch_out < minimum_in_time:
+                                machine_punch_out = machine_punch_out + relativedelta(days=1)
+
+                        if existing_attendance.manual_out is not None:
+                            if employee_shift_on_particular_date.shift.beginning_time < employee_shift_on_particular_date.shift.end_time:
+                                if existing_attendance.manual_out > employee_shift_on_particular_date.shift.beginning_time:
+                                    punch_out_time = datetime.combine(current_date.date(), existing_attendance.manual_out)
+                                elif existing_attendance.manual_out < employee_shift_on_particular_date.shift.beginning_time:
+                                    punch_out_time = datetime.combine(current_date.date(), existing_attendance.manual_out) + relativedelta(days=1)
                             else:
-                                punch_out_time = datetime.combine(current_date.date(), existing_attendance.manual_out)
+                                if existing_attendance.manual_out < employee_shift_on_particular_date.shift.beginning_time:
+                                    punch_out_time = datetime.combine(current_date.date(), existing_attendance.manual_out) + relativedelta(days=1)
+                                else:
+                                    punch_out_time = datetime.combine(current_date.date(), existing_attendance.manual_out)
+
+                        elif existing_attendance.machine_out is not None:
+                            punch_out_time = machine_punch_out
                     
                     #Punch out from machine
                     elif not punch_out_row.empty and 'CHECKTIME' in punch_out_row:
