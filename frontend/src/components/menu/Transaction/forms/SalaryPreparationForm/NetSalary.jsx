@@ -14,17 +14,41 @@ const NetSalary = React.memo(({ values, updateEmployeeId }) => {
 			);
 			// Deductions
 			const labourWelfareFundDeducted = new BigNumber(values.employeeSalaryPrepared.labourWelfareFundDeducted);
-			const pfDeducted = new BigNumber(values.employeeSalaryPrepared.pfDeducted);
-			const esiDeducted = new BigNumber(values.employeeSalaryPrepared.esiDeducted);
-			const vpfDeducted = new BigNumber(values.employeeSalaryPrepared.vpfDeducted);
-			const advanceDeducted = new BigNumber(values.employeeSalaryPrepared.advanceDeducted);
-			const tdsDeducted = new BigNumber(values.employeeSalaryPrepared.tdsDeducted);
-			const othersDeducted = new BigNumber(values.employeeSalaryPrepared.othersDeducted);
-			const incentiveAmount =
-				values.employeeSalaryPrepared.incentiveAmount === ''
-					? new BigNumber(0)
-					: new BigNumber(values.employeeSalaryPrepared.incentiveAmount);
-
+			const pfDeducted = new BigNumber(
+				typeof values.employeeSalaryPrepared.pfDeducted == 'number'
+					? values.employeeSalaryPrepared.pfDeducted
+					: 0
+			);
+			const esiDeducted = new BigNumber(
+				typeof values.employeeSalaryPrepared.esiDeducted == 'number'
+					? values.employeeSalaryPrepared.esiDeducted
+					: 0
+			);
+			const vpfDeducted = new BigNumber(
+				typeof values.employeeSalaryPrepared.vpfDeducted == 'number'
+					? values.employeeSalaryPrepared.vpfDeducted
+					: 0
+			);
+			const advanceDeducted = new BigNumber(
+				typeof values.employeeSalaryPrepared.advanceDeducted == 'number'
+					? values.employeeSalaryPrepared.advanceDeducted
+					: 0
+			);
+			const tdsDeducted = new BigNumber(
+				typeof values.employeeSalaryPrepared.tdsDeducted == 'number'
+					? values.employeeSalaryPrepared.tdsDeducted
+					: 0
+			);
+			const othersDeducted = new BigNumber(
+				typeof values.employeeSalaryPrepared.othersDeducted == 'number'
+					? values.employeeSalaryPrepared.othersDeducted
+					: 0
+			);
+			const incentiveAmount = new BigNumber(
+				typeof values.employeeSalaryPrepared.incentiveAmount == 'number'
+					? values.employeeSalaryPrepared.incentiveAmount
+					: 0
+			);
 			netSalary = netSalary
 				.plus(totalEarned)
 				.minus(pfDeducted)

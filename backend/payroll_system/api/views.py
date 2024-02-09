@@ -1549,7 +1549,7 @@ class WeeklyOffHolidayOffRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDes
         return Response(serializer.data, status=status.HTTP_200_OK)
     
 class PfEsiSetupCreateAPIView(generics.CreateAPIView):
-    permission_classes = [IsAuthenticated, isOwnerAndAdmin]
+    permission_classes = [IsAuthenticated]
     serializer_class = PfEsiSetupSerializer
     def perform_create(self, serializer):
         user = self.request.user
@@ -1558,7 +1558,7 @@ class PfEsiSetupCreateAPIView(generics.CreateAPIView):
         return Response({'error': "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
     
 class PfEsiSetupRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes= [IsAuthenticated, isOwnerAndAdmin]
+    permission_classes= [IsAuthenticated]
     serializer_class = PfEsiSetupSerializer
     lookup_field = 'company_id'
 
