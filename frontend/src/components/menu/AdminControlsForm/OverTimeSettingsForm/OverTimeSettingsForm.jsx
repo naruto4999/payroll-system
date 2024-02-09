@@ -51,8 +51,8 @@ const OverTimeSettingsForm = () => {
 		const dayArray = Array.from({ length: daysInMonth }, (_, index) => index + 1);
 		// const dayOfWeek = firstDayOfMonth.getDay();
 
-		const initialValues = {};
-		dayArray.map((day, index) => (initialValues[day] = 0));
+		const initialValues = { dayArray: [] };
+		dayArray.map((day, index) => (initialValues.dayArray[index] = { day: day, maxOtHrs: 0 }));
 
 		// for (let day = 1; day <= daysInMonth; day++) {
 		// 	initialValues.dayWiseShifts[day] = '';
@@ -66,14 +66,14 @@ const OverTimeSettingsForm = () => {
 		console.log(values);
 	};
 	return (
-		<div className="m-4">
+		<div className="m-4 mx-auto max-w-5xl">
 			<MonthYearSelector
 				setSelectedDate={setSelectedDate}
 				selectedDate={selectedDate}
 				earliestMonthAndYear={earliestMonthAndYear}
 			/>
 			<Formik
-				initialValues={''}
+				initialValues={initialValues}
 				validationSchema={''}
 				onSubmit={updateButtonClicked}
 				component={(props) => <EditOverTimeSettings {...props} selectedDate={selectedDate} />}

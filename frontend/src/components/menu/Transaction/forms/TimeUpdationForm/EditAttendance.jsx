@@ -877,7 +877,7 @@ const EditAttendance = memo(
 				clearTimeout(timeoutId);
 				timeoutId = setTimeout(() => {
 					performCalculations();
-				}, 350);
+				}, 500);
 			}
 
 			return () => {

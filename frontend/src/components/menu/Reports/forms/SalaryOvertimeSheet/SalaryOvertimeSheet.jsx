@@ -186,6 +186,8 @@ const SalaryOvertimeSheet = () => {
 		};
 		console.log(toSend);
 
+		let fileName = 'payment_sheet.xlsx';
+
 		// using fetch
 		const requestOptions = {
 			method: 'POST',
@@ -288,17 +290,36 @@ const SalaryOvertimeSheet = () => {
 
 					// throw new Error('Request failed');
 				} else if (response.status == 200) {
-					const pdfData = await response.arrayBuffer();
-					const pdfBlob = new Blob([pdfData], { type: 'application/pdf' });
-					const pdfUrl = URL.createObjectURL(pdfBlob);
-					dispatch(
-						alertActions.createAlert({
-							message: 'Generated',
-							type: 'Success',
-							duration: 8000,
-						})
-					);
-					window.open(pdfUrl, '_blank');
+					if (values.filters.format == 'xlsx') {
+						const excelData = await response.arrayBuffer();
+						const excelBlob = new Blob([excelData], {
+							type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+						});
+						const excelUrl = URL.createObjectURL(excelBlob);
+
+						const downloadLink = document.createElement('a');
+						downloadLink.href = excelUrl;
+						downloadLink.download = fileName;
+						document.body.appendChild(downloadLink);
+
+						// Trigger the click event on the anchor element to initiate download
+						downloadLink.click();
+
+						// Remove the temporary anchor element from the DOM
+						document.body.removeChild(downloadLink);
+					} else {
+						const pdfData = await response.arrayBuffer();
+						const pdfBlob = new Blob([pdfData], { type: 'application/pdf' });
+						const pdfUrl = URL.createObjectURL(pdfBlob);
+						dispatch(
+							alertActions.createAlert({
+								message: 'Generated',
+								type: 'Success',
+								duration: 8000,
+							})
+						);
+						window.open(pdfUrl, '_blank');
+					}
 				}
 			} catch (error) {
 				console.error('Fetch error: ', error);
@@ -368,6 +389,7 @@ const SalaryOvertimeSheet = () => {
 				paymentMode: 'all',
 				resignationFilter: 'all',
 				language: 'english',
+				format: 'pdf',
 			},
 			reportType: 'salary_sheet',
 		};

@@ -40,6 +40,7 @@ from .reports.generate_form_14 import generate_form_14
 from .reports.personnnel_file_forms.id_card.id_card_landscape import generate_id_card_landscape
 from .reports.generate_overtime_sheet_daily import generate_overtime_sheet_daily
 from .reports.personnnel_file_forms.personnnel_file_reports.generate_personnel_file_reports import generate_personnel_file_reports
+from .reports.generate_payment_sheet_xlsx import generate_payment_sheet_xlsx
 # from .reports.personnnel_file_reports.generate_application_form import generate_application_form
 from itertools import groupby
 from operator import attrgetter
@@ -2148,13 +2149,14 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
                 return Response({"detail": "No Salary Prepared for the given month"}, status=status.HTTP_404_NOT_FOUND)
         
         if validated_data['report_type'] == 'payment_sheet':
+            print(f"Validated Data: {validated_data['filters']['format']}")
             salary_date = date(validated_data["year"], validated_data["month"], 1)
             order_by = None
             if validated_data['filters']['sort_by'] == "attendance_card_no":
                 order_by = ("employee__attendance_card_no",)
             elif validated_data['filters']['sort_by'] == "employee_name":
                 order_by = ('employee__name',)
-            if validated_data['filters']['group_by'] != 'none':
+            if validated_data['filters']['group_by'] != 'none' and validated_data['filters']['format']!='xlsx':
                 if order_by != None:
                     order_by = ('employee__employee_professional_detail__department', *order_by)
                 else:
@@ -2167,9 +2169,13 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
             else:
                 employee_salaries = employee_salaries.order_by(*order_by)
 
-            if len(employee_salaries) != 0:
+            if len(employee_salaries) != 0 and validated_data['filters']['format']=='pdf':
                 response = StreamingHttpResponse(generate_payment_sheet(serializer.validated_data, employee_salaries), content_type="application/pdf")
                 response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
+                return response
+            elif len(employee_salaries) != 0 and validated_data['filters']['format']=='xlsx':
+                response = StreamingHttpResponse(generate_payment_sheet_xlsx(serializer.validated_data, employee_salaries), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                response["Content-Disposition"] = 'attachment; filename="myexcel.xlsx"'
                 return response
             else:
                 return Response({"detail": "No Salary Prepared for the given month"}, status=status.HTTP_404_NOT_FOUND)

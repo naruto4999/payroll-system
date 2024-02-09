@@ -317,7 +317,7 @@ const TimeUpdationForm = () => {
 		debouncedSetUpdateEmployeeId = setTimeout(() => {
 			focusedRowRef.current = currentRow.getAttribute('id');
 			setUpdateEmployeeId(row.original.id);
-		}, 100);
+		}, 200);
 	};
 
 	const handleKeyDown = (event, row) => {
@@ -336,7 +336,7 @@ const TimeUpdationForm = () => {
 					debouncedSetUpdateEmployeeId = setTimeout(() => {
 						focusedRowRef.current = previousRow?.getAttribute('id');
 						setUpdateEmployeeId(previousRow?.getAttribute('data-row-id'));
-					}, 100);
+					}, 200);
 				}
 				break;
 			case 'ArrowDown':

@@ -317,6 +317,7 @@ class FiltersSalaryOvertimeSheet(serializers.Serializer):
     resignation_filter = serializers.ChoiceField(choices=["all", "without_resigned", "only_resigned"])
     sort_by = serializers.ChoiceField(choices=["paycode", "attendance_card_no", "employee_name"])
     language = serializers.ChoiceField(choices=["hindi", "english"])
+    format = serializers.ChoiceField(choices=["xlsx", "pdf"])
 
 class SalaryOvertimeSheetSerializer(serializers.Serializer):
     employee_ids = serializers.ListField(child=serializers.IntegerField())

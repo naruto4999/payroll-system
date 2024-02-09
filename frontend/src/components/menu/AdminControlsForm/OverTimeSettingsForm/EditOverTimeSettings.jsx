@@ -1,4 +1,5 @@
 import React from 'react';
+import MonthDays from './MonthDays';
 
 const classNames = (...classes) => {
 	return classes.filter(Boolean).join(' ');
@@ -19,6 +20,7 @@ const EditOverTimeSettings = ({
 	const daysInMonth = new Date(selectedDate.year, selectedDate.month, 0).getDate();
 	const dayArray = Array.from({ length: daysInMonth }, (_, index) => index + 1);
 	const dayOfWeek = firstDayOfMonth.getDay();
+	console.log(values);
 	return (
 		<div>
 			<form
@@ -40,15 +42,10 @@ const EditOverTimeSettings = ({
 							{/* <MonthDays /> */}
 						</div>
 					))}
-					{dayArray.map((day) => (
-						<div className="h-fit w-full" key={day}>
-							{/* <MonthDays
-									day={day}
-									shifts={shifts}
-									shiftValue={values?.dayWiseShifts[day]}
-									fieldName={`dayWiseShifts.${day}`}
-								/> */}
-							1
+					{values.dayArray.map((element, index) => (
+						<div className="h-fit w-full" key={index}>
+							<MonthDays element={element} />
+							{/* {element.maxOtHrs} */}
 						</div>
 					))}
 				</section>

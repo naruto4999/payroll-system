@@ -29,6 +29,25 @@ const FilterOptions = ({ handleChange, values, isValid, handleSubmit, isSubmitti
 					<option value="overtime_sheet">Over Time Sheet</option>
 				</Field>
 			</div>
+			{values.reportType == 'payment_sheet' && (
+				<div>
+					<label
+						htmlFor="format"
+						className="mr-4 text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
+					>
+						Format :
+					</label>
+					<Field
+						as="select"
+						id="format"
+						className="my-1 rounded-md bg-zinc-50 bg-opacity-50 p-1 dark:bg-zinc-700"
+						name="filters.format"
+					>
+						<option value="pdf">PDF</option>
+						<option value="xlsx">MS Excel</option>
+					</Field>
+				</div>
+			)}
 			{values.reportType == 'payslip' && (
 				<div>
 					<label
