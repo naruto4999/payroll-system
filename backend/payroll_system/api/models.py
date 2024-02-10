@@ -1472,13 +1472,21 @@ class FullAndFinal(models.Model):
 
 class SubUserOvertimeSettings(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_companies_sub_user_settings")
-    company = models.OneToOneField(Company, on_delete=models.CASCADE, related_name="company_sub_user_settings", primary_key=True)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="company_sub_user_settings")
     date = models.DateField(null=False, blank=False)
     max_ot_hrs = models.PositiveSmallIntegerField(null=False, blank=False)
     def save(self, *args, **kwargs):
         if self.max_ot_hrs == 0:
             raise ValidationError('Maximum overtime hours cannot be 0.')
         super().save(*args, **kwargs)
+
+class SubUserMiscSettings(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sub_user_misc_settings")
+    company = models.OneToOneField(Company, on_delete=models.CASCADE, related_name="sub_user_misc_settings")
+    date = models.DateField(null=False, blank=False)
+    female_ot_allow = models.BooleanField(default=False, null=False, blank=False)
+    max_female_ot = models.PositiveSmallIntegerField(null=False, blank=False, default=0)
+
     
 
 

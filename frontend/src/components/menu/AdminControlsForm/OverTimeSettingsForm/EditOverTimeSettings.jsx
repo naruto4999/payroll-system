@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import MonthDays from './MonthDays';
+import { useGetOverTimeSettingsQuery } from '../../../authentication/api/overTimeSettingsApiSlice';
 
 const classNames = (...classes) => {
 	return classes.filter(Boolean).join(' ');
@@ -14,20 +15,39 @@ const EditOverTimeSettings = ({
 	setFieldValue,
 	isSubmitting,
 	selectedDate,
+	globalCompany,
+	resetForm,
 }) => {
+	const {
+		data: overTimeSettings,
+		isLoading: isLoadingoverTimeSettings,
+		isSuccess: isSuccessoverTimeSettings,
+	} = useGetOverTimeSettingsQuery({ company: globalCompany.id, year: selectedDate.year, month: selectedDate.month });
+	console.log(overTimeSettings);
 	const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 	const firstDayOfMonth = new Date(selectedDate.year, selectedDate.month - 1, 1);
-	const daysInMonth = new Date(selectedDate.year, selectedDate.month, 0).getDate();
-	const dayArray = Array.from({ length: daysInMonth }, (_, index) => index + 1);
 	const dayOfWeek = firstDayOfMonth.getDay();
+
+	useEffect(() => {
+		if (!isSubmitting) {
+			resetForm();
+			if (overTimeSettings && overTimeSettings.length != 0) {
+				console.log('Component did mount');
+				overTimeSettings.forEach((element) => {
+					const date = new Date(element.date);
+					const day = parseInt(date.getDate().toString());
+					console.log(day);
+					if (selectedDate.month - 1 == date.getMonth()) {
+						setFieldValue(`dayArray[${day - 1}]`, { day: day, maxOtHrs: element.maxOtHrs });
+					}
+				});
+			}
+		}
+	}, [overTimeSettings]);
 	console.log(values);
 	return (
 		<div>
-			<form
-				action=""
-				className="flex flex-col justify-center gap-2"
-				//  onSubmit={handleSubmit}
-			>
+			<form action="" className="flex flex-col justify-center gap-2" onSubmit={handleSubmit}>
 				<section className="container grid max-w-full grid-cols-7 gap-1">
 					{weekdays.map((weekday, index) => {
 						return (
@@ -44,7 +64,7 @@ const EditOverTimeSettings = ({
 					))}
 					{values.dayArray.map((element, index) => (
 						<div className="h-fit w-full" key={index}>
-							<MonthDays element={element} />
+							<MonthDays element={element} index={index} />
 							{/* {element.maxOtHrs} */}
 						</div>
 					))}

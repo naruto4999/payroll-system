@@ -1,7 +1,7 @@
 from django.forms import ValidationError
 from django.shortcuts import render
 from rest_framework import generics, status, mixins, serializers
-from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer, EmployeeGenerativeLeaveRecordSerializer, EmployeeLeaveOpeningSerializer, EmployeeMonthlyAttendancePresentDetailsSerializer, EmployeeAdvancePaymentSerializer, EmployeeMonthlyAttendanceDetailsSerializer, EmployeeSalaryPreparedSerializer, EarnedAmountSerializer, SalaryOvertimeSheetSerializer, AttendanceReportsSerializer, EmployeeAttendanceBulkAutofillSerializer, BulkPrepareSalariesSerializer, MachineAttendanceSerializer, PersonnelFileReportsSerializer, DefaultAttendanceSerializer, EmployeeResignationSerializer, EmployeeUnresignSerializer, BonusCalculationSerializer, BonusPercentageSerializer, EmployeeProfessionalDetailRetrieveSerializer, EarnedAmountSerializerPreparedSalary, FullAndFinalSerializer, EmployeeELLeftSerializer, EmployeeYearlyBonusAmountSerializer, FullAndFinalReportSerializer, PfEsiReportsSerializer, RegularRetrieveUpdateSerializer, EmployeeVisibilitySerializer, AllEmployeeCurrentMonthAttendanceSerializer, SubUserOvertimeSettingsSerializer
+from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer, EmployeeGenerativeLeaveRecordSerializer, EmployeeLeaveOpeningSerializer, EmployeeMonthlyAttendancePresentDetailsSerializer, EmployeeAdvancePaymentSerializer, EmployeeMonthlyAttendanceDetailsSerializer, EmployeeSalaryPreparedSerializer, EarnedAmountSerializer, SalaryOvertimeSheetSerializer, AttendanceReportsSerializer, EmployeeAttendanceBulkAutofillSerializer, BulkPrepareSalariesSerializer, MachineAttendanceSerializer, PersonnelFileReportsSerializer, DefaultAttendanceSerializer, EmployeeResignationSerializer, EmployeeUnresignSerializer, BonusCalculationSerializer, BonusPercentageSerializer, EmployeeProfessionalDetailRetrieveSerializer, EarnedAmountSerializerPreparedSalary, FullAndFinalSerializer, EmployeeELLeftSerializer, EmployeeYearlyBonusAmountSerializer, FullAndFinalReportSerializer, PfEsiReportsSerializer, RegularRetrieveUpdateSerializer, EmployeeVisibilitySerializer, AllEmployeeCurrentMonthAttendanceSerializer, SubUserOvertimeSettingsSerializer, SubUserMiscSettingsSerializer
 from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift, EmployeeSalaryEarning, EarningsHead, EmployeeShifts, EmployeeGenerativeLeaveRecord, EmployeeSalaryPrepared, EarnedAmount, EmployeeAdvanceEmiRepayment, EmployeeAdvancePayment, EmployeeAttendance, EmployeePersonalDetail, EmployeeProfessionalDetail, BonusCalculation, BonusPercentage, EmployeeSalaryDetail, FullAndFinal, Calculations, SubUserOvertimeSettings
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -3074,30 +3074,106 @@ class EmployeeBonusAmountYearlyRetrieveAPIView(generics.RetrieveAPIView):
             
 class SubUserOvertimeSettingsMonthlyCreateUpdateAPIView(APIView):
     def post(self, request, format=None):
-        # Get the data from the request
-        data = request.data.get('data', [])
+        user = self.request.user
+        if user.role != "OWNER":
+            user = user.regular_to_owner.owner
+        print(request.data)
+        company_id = request.data['company']
+        day_array = request.data['day_array']
+        month = int(request.data['month'])
+        year = int(request.data['year'])
+        num_days_in_month = calendar.monthrange(year, month)[1]
 
-        for entry in data:
-            # Extract relevant data
-            company_id = entry.get('company')
-            date = entry.get('date')
+        for day in range(1, num_days_in_month+1):
+            matching_day_array_elements = [element for element in day_array if element['day'] == day]
+            if len(matching_day_array_elements) != 0: #Max OT Hrs Exists
+                element = matching_day_array_elements[0]
+                element_day = element.get('day')
+                max_ot_hrs = element.get('max_ot_hrs')
+                instance = SubUserOvertimeSettings.objects.filter(user=user, company=company_id, date=date(year, month, element_day))
+                if instance.exists():
+                    print(f"Element{element}, status: updating")
+                    serializer = SubUserOvertimeSettingsSerializer(instance.first(), data={'company': company_id, 'date': date(year, month, element_day), 'max_ot_hrs': max_ot_hrs}, partial=True)
+                else:
+                    print(f"Element{element}, status: creating")
+                    serializer = SubUserOvertimeSettingsSerializer(data={'company': company_id, 'date': date(year, month, element_day), 'max_ot_hrs': max_ot_hrs})
 
-            # Use update_or_create to update or create the object
-            defaults = {key: value for key, value in entry.items() if key not in ['company', 'date']}
-            obj, created = SubUserOvertimeSettings.objects.update_or_create(
-                company_id=company_id,
-                date=date,
-                defaults=defaults
-            )
+                serializer.is_valid(raise_exception=True)     
+                serializer.save(user=user)   
+            else: #No max OT Hrs
+                SubUserOvertimeSettings.objects.filter(user=user, company=company_id, date=date(year, month, day)).delete()
 
-            # Serialize the object and check for errors
-            serializer = SubUserOvertimeSettingsSerializer(obj, data=entry)
-            if serializer.is_valid():
-                serializer.save()
-            else:
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # for element in day_array:
+        #     day = element.get('day')
+        #     max_ot_hrs = element.get('max_ot_hrs')
+        #     instance = SubUserOvertimeSettings.objects.filter(user=user, company=company_id, date=date(year, month, day))
+        #     print(instance)
+        #     if instance.exists():
+        #         print(f"Element{element}, status: updating")
+        #         serializer = SubUserOvertimeSettingsSerializer(instance.first(), data={'company': company_id, 'date': date(year, month, day), 'max_ot_hrs': max_ot_hrs}, partial=True)
+        #     else:
+        #         print(f"Element{element}, status: creating")
+        #         serializer = SubUserOvertimeSettingsSerializer(data={'company': company_id, 'date': date(year, month, day), 'max_ot_hrs': max_ot_hrs})
 
+        #     serializer.is_valid(raise_exception=True)     
+        #     serializer.save(user=user)   
         return Response("Data processed successfully", status=status.HTTP_200_OK)
+    
+class SubUserOvertimeSettingsListAPIView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = SubUserOvertimeSettingsSerializer
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        user = self.request.user
+        if user.role == "OWNER":
+            return user.all_companies_sub_user_settings.filter(company=company_id)
+        # return user.regular_to_owner.owner.all_employees_shifts.filter(company=company_id, employee=employee)
+    
+    def list(self, request, *args, **kwargs):
+        year = self.kwargs.get('year')
+        month = self.kwargs.get('month')
+        start_date = date(year, month, 1)
+        num_days_in_month = calendar.monthrange(year, month)[1]
+        end_date = date(year, month, num_days_in_month)
+        queryset = self.get_queryset().filter(Q(date__gte=start_date) & Q(date__lte=end_date))        
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    
+
+class SubUserMiscSettingsCreateAPIView(generics.CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = SubUserMiscSettingsSerializer
+    def perform_create(self, serializer):
+        user = self.request.user
+        if user.role == "OWNER":
+            return serializer.save(user=self.request.user)
+        return Response({'error': "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
+
+    
+class SubUserMiscSettingsRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes= [IsAuthenticated]
+    serializer_class = SubUserMiscSettingsSerializer
+    lookup_field = 'company_id'
+
+    def get_queryset(self, *args, **kwargs):
+        user = self.request.user
+        if user.role == "OWNER":
+            return user.sub_user_misc_settings
+        return Response({'error': "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
+
+    
+    def update(self, request, *args, **kwargs):
+        user = self.request.user
+        if user.role == "OWNER":
+            instance = self.get_object()
+            serializer = self.get_serializer(instance, data=request.data)
+            print(request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save(user=user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({'error': "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
+    
 
 '''
 Sub User Views (Exclusive) start from here.

@@ -1,7 +1,7 @@
 from dataclasses import field
 from rest_framework import serializers
 
-from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning, EmployeeSalaryDetail, EmployeeFamilyNomineeDetial, EmployeePfEsiDetail, WeeklyOffHolidayOff, PfEsiSetup, Calculations, EmployeeShifts, EmployeeAttendance, EmployeeGenerativeLeaveRecord, EmployeeLeaveOpening, EmployeeMonthlyAttendanceDetails, EmployeeAdvancePayment, EmployeeSalaryPrepared, EarnedAmount, BonusCalculation, BonusPercentage, FullAndFinal, SubUserOvertimeSettings
+from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning, EmployeeSalaryDetail, EmployeeFamilyNomineeDetial, EmployeePfEsiDetail, WeeklyOffHolidayOff, PfEsiSetup, Calculations, EmployeeShifts, EmployeeAttendance, EmployeeGenerativeLeaveRecord, EmployeeLeaveOpening, EmployeeMonthlyAttendanceDetails, EmployeeAdvancePayment, EmployeeSalaryPrepared, EarnedAmount, BonusCalculation, BonusPercentage, FullAndFinal, SubUserOvertimeSettings, SubUserMiscSettings
 from rest_framework import serializers
 
 class UserSerializer(serializers.ModelSerializer):
@@ -472,7 +472,14 @@ class EmployeeVisibilitySerializer(serializers.Serializer):
 class SubUserOvertimeSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = SubUserOvertimeSettings
-        fields = ['company', 'date', 'max_ot_hrs']  # List all the fields you want to include
+        fields = ['company', 'date', 'max_ot_hrs']
+
+class SubUserMiscSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SubUserMiscSettings
+        fields = ['user', 'company', 'date', 'female_ot_allow', 'max_female_ot']
+
+
 # class CompanyEmployeeStatisticsSerializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = CompanyEmployeeStatistics

@@ -109,6 +109,7 @@ export const apiSlice = createApi({
 		'FullAndFinal',
 		'ELLeft',
 		'EmoloyeeYearlyBonus',
+		'OverTimeSettings',
 	],
 	endpoints: (builder) => ({}),
 });
