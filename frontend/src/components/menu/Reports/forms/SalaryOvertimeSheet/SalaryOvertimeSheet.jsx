@@ -186,8 +186,6 @@ const SalaryOvertimeSheet = () => {
 		};
 		console.log(toSend);
 
-		let fileName = 'payment_sheet.xlsx';
-
 		// using fetch
 		const requestOptions = {
 			method: 'POST',
@@ -290,7 +288,8 @@ const SalaryOvertimeSheet = () => {
 
 					// throw new Error('Request failed');
 				} else if (response.status == 200) {
-					if (values.filters.format == 'xlsx') {
+					if (values.reportType == 'payment_sheet' && values.filters.format == 'xlsx') {
+						let fileName = 'payment_sheet.xlsx';
 						const excelData = await response.arrayBuffer();
 						const excelBlob = new Blob([excelData], {
 							type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
