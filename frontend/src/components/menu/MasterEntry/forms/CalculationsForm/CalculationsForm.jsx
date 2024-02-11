@@ -49,7 +49,7 @@ const CalculationsForm = () => {
 
 	console.log(isSuccess);
 	const [
-		addCalculations,
+		addSubUserMiscSettings,
 		{
 			isLoading: isAddingCalculations,
 			// isError: errorRegisteringRegular,

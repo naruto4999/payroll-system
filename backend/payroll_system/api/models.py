@@ -1483,9 +1483,8 @@ class SubUserOvertimeSettings(models.Model):
 class SubUserMiscSettings(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sub_user_misc_settings")
     company = models.OneToOneField(Company, on_delete=models.CASCADE, related_name="sub_user_misc_settings")
-    date = models.DateField(null=False, blank=False)
     female_ot_allow = models.BooleanField(default=False, null=False, blank=False)
-    max_female_ot = models.PositiveSmallIntegerField(null=False, blank=False, default=0)
+    max_female_punch_out = models.TimeField(default='19:00', null=False, blank=False)
 
     
 

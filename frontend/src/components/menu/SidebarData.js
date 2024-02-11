@@ -225,6 +225,11 @@ const menuItems = [
 				icon: FaCogs,
 				path: '/admin-controls/overtime-settings',
 			},
+			{
+				title: 'SubUser Misc Settings',
+				icon: FaCogs,
+				path: '/admin-controls/sub-user-misc-settings',
+			},
 		],
 	},
 ];

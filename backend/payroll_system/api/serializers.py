@@ -477,7 +477,7 @@ class SubUserOvertimeSettingsSerializer(serializers.ModelSerializer):
 class SubUserMiscSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = SubUserMiscSettings
-        fields = ['user', 'company', 'date', 'female_ot_allow', 'max_female_ot']
+        fields = ['company', 'female_ot_allow', 'max_female_punch_out']
 
 
 # class CompanyEmployeeStatisticsSerializer(serializers.ModelSerializer):
