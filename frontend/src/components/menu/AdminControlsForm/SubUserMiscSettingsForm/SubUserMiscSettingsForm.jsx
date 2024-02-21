@@ -120,7 +120,7 @@ const SubUserMiscSettingsForm = () => {
 									...subUserMiscSettings,
 							  }
 							: {
-									femaleOtAllow: true,
+									enableFemaleMaxPunchOut: true,
 									maxFemalePunchOut: '19:00',
 							  }
 					}
@@ -150,20 +150,20 @@ const SubUserMiscSettingsForm = () => {
 								</div>
 								<div>
 									<label
-										htmlFor="femaleOtAllow"
+										htmlFor="enableFemaleMaxPunchOut"
 										className="my-auto font-medium text-blueAccent-700 dark:text-blueAccent-400"
 									>
-										Female Allow OT?
+										Enable Female Max Punch Out
 										<Field
 											type="checkbox"
-											name="femaleOtAllow"
-											id="femaleOtAllow"
+											name="enableFemaleMaxPunchOut"
+											id="enableFemaleMaxPunchOut"
 											className="ml-2.5 inline h-4 w-4 translate-y-0.5 rounded accent-teal-600"
 										/>
 									</label>
 
 									<div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
-										<ErrorMessage name={`femaleOtAllow`} />
+										<ErrorMessage name={`enableFemaleMaxPunchOut`} />
 									</div>
 								</div>
 								<div>

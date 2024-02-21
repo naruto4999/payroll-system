@@ -1084,6 +1084,7 @@ const EditAttendance = memo(
 				const data = await bulkAutoFillAttendanceAdd(toSend).unwrap();
 				const endTime = performance.now(); // Record the end time
 				const responseTime = endTime - startTime;
+				bulkAutoF;
 				const responseTimeInSeconds = (responseTime / 1000).toFixed(2);
 				dispatch(
 					alertActions.createAlert({

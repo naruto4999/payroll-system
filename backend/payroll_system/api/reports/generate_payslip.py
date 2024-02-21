@@ -32,7 +32,7 @@ class FPDF(FPDF):
         # Page number
         self.cell(0, 5, 'Page %s' % self.page_no(), 0, 0, 'R')
 
-def generate_payslip(request_data, employee_salaries):
+def generate_payslip(user, request_data, employee_salaries):
     intro_cell_height = 5
     company_details = CompanyDetails.objects.filter(company_id=request_data['company']).first()
     language = request_data['filters']['language']
@@ -124,7 +124,7 @@ def generate_payslip(request_data, employee_salaries):
         Drawing the Main Salary Slip Table
         """
         #Attendance Details
-        employee_monthly_details = salary.employee.monthly_attendance_details.filter(date=date(request_data['year'], request_data['month'], 1)).first()
+        employee_monthly_details = salary.employee.monthly_attendance_details.filter(user=user, date=date(request_data['year'], request_data['month'], 1)).first()
         payslip.set_xy(x=current_payslip_initial_coordinates['x'], y=current_payslip_initial_coordinates["y"]+intro_cell_height*8)
         payslip.rect(x=payslip.get_x(), y=payslip.get_y(), w=width_of_columns["attendance"], h=(default_number_of_cells_in_main_row+1)*main_table_cell_height)
         payslip.set_font('noto-sans-devanagari', size=7, style='B')
@@ -168,7 +168,7 @@ def generate_payslip(request_data, employee_salaries):
         payslip.cell(w=width_of_columns['attendance'], h=main_table_cell_height, text=f'{int(employee_monthly_details.not_paid_days_count/2) if (employee_monthly_details.not_paid_days_count/2)%1==0 else employee_monthly_details.not_paid_days_count/2}', new_x="RIGHT", align='R')
         payslip.set_xy(x=current_payslip_initial_coordinates['x'], y=current_payslip_initial_coordinates['y']+intro_cell_height*8+main_table_cell_height*6)
         #Generative Leaves
-        employee_generative_leaves = EmployeeGenerativeLeaveRecord.objects.filter(employee=salary.employee, date=date(request_data['year'], request_data['month'], 1)).order_by('leave__name')
+        employee_generative_leaves = EmployeeGenerativeLeaveRecord.objects.filter(user=user, employee=salary.employee, date=date(request_data['year'], request_data['month'], 1)).order_by('leave__name')
         for index, generative_leave in enumerate(employee_generative_leaves):
             payslip.cell(w=None, h=main_table_cell_height, text=f'{generative_leave.leave.name}{" /" if language=="hindi" and generative_leave.leave.name in ("EL", "CL", "SL") else ""}', new_x="RIGHT")
             if language=="hindi" and generative_leave.leave.name in ("EL", "CL", "SL"):

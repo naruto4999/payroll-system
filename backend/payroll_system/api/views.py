@@ -1,7 +1,7 @@
 from django.forms import ValidationError
 from django.shortcuts import render
 from rest_framework import generics, status, mixins, serializers
-from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer, EmployeeGenerativeLeaveRecordSerializer, EmployeeLeaveOpeningSerializer, EmployeeMonthlyAttendancePresentDetailsSerializer, EmployeeAdvancePaymentSerializer, EmployeeMonthlyAttendanceDetailsSerializer, EmployeeSalaryPreparedSerializer, EarnedAmountSerializer, SalaryOvertimeSheetSerializer, AttendanceReportsSerializer, EmployeeAttendanceBulkAutofillSerializer, BulkPrepareSalariesSerializer, MachineAttendanceSerializer, PersonnelFileReportsSerializer, DefaultAttendanceSerializer, EmployeeResignationSerializer, EmployeeUnresignSerializer, BonusCalculationSerializer, BonusPercentageSerializer, EmployeeProfessionalDetailRetrieveSerializer, EarnedAmountSerializerPreparedSalary, FullAndFinalSerializer, EmployeeELLeftSerializer, EmployeeYearlyBonusAmountSerializer, FullAndFinalReportSerializer, PfEsiReportsSerializer, RegularRetrieveUpdateSerializer, EmployeeVisibilitySerializer, AllEmployeeCurrentMonthAttendanceSerializer, SubUserOvertimeSettingsSerializer, SubUserMiscSettingsSerializer
+from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer, EmployeeGenerativeLeaveRecordSerializer, EmployeeLeaveOpeningSerializer, EmployeeMonthlyAttendancePresentDetailsSerializer, EmployeeAdvancePaymentSerializer, EmployeeMonthlyAttendanceDetailsSerializer, EmployeeSalaryPreparedSerializer, EarnedAmountSerializer, SalaryOvertimeSheetSerializer, AttendanceReportsSerializer, EmployeeAttendanceBulkAutofillSerializer, BulkPrepareSalariesSerializer, MachineAttendanceSerializer, PersonnelFileReportsSerializer, DefaultAttendanceSerializer, EmployeeResignationSerializer, EmployeeUnresignSerializer, BonusCalculationSerializer, BonusPercentageSerializer, EmployeeProfessionalDetailRetrieveSerializer, EarnedAmountSerializerPreparedSalary, FullAndFinalSerializer, EmployeeELLeftSerializer, EmployeeYearlyBonusAmountSerializer, FullAndFinalReportSerializer, PfEsiReportsSerializer, RegularRetrieveUpdateSerializer, EmployeeVisibilitySerializer, AllEmployeeCurrentMonthAttendanceSerializer, SubUserOvertimeSettingsSerializer, SubUserMiscSettingsSerializer, TransferAttendanceFromOwnerToRegularSerializer
 from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift, EmployeeSalaryEarning, EarningsHead, EmployeeShifts, EmployeeGenerativeLeaveRecord, EmployeeSalaryPrepared, EarnedAmount, EmployeeAdvanceEmiRepayment, EmployeeAdvancePayment, EmployeeAttendance, EmployeePersonalDetail, EmployeeProfessionalDetail, BonusCalculation, BonusPercentage, EmployeeSalaryDetail, FullAndFinal, Calculations, SubUserOvertimeSettings
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -50,6 +50,8 @@ from django.db.models import F, Value, CharField, Func
 from .permissions import isOwnerAndAdmin
 # import sys
 from django.db import connection, reset_queries 
+from rest_framework.exceptions import APIException
+
 
 # from django.db import IntegrityError, transaction
 
@@ -1564,9 +1566,10 @@ class PfEsiSetupRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIVi
 
     def get_queryset(self, *args, **kwargs):
         user = self.request.user
-        if user.role == "OWNER":
-            return user.all_companies_pf_esi_setup_details
-        return Response({'error': "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
+        if user.role != "OWNER":
+            user = user.regular_to_owner.owner
+        return user.all_companies_pf_esi_setup_details
+        # return Response({'error': "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
     
     def update(self, request, *args, **kwargs):
         user = self.request.user
@@ -1595,9 +1598,10 @@ class CalculationsRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPI
 
     def get_queryset(self, *args, **kwargs):
         user = self.request.user
-        if user.role == "OWNER":
-            return user.calculations
-        return Response({'error': "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
+        if user.role != "OWNER":
+            user = user.regular_to_owner.owner
+        return user.calculations
+        # return Response({'error': "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
 
     
     def update(self, request, *args, **kwargs):
@@ -1712,7 +1716,6 @@ class EmployeeShiftsPermanentUpdateAPIView(generics.UpdateAPIView):
         EmployeeShifts.objects.process_employee_permanent_shift(user=user, employee_shift_data=validated_shift)
         return Response({"message": "Employee earnings updated successfully"}, status=status.HTTP_200_OK)
     
-#### 2nd Account Done till above here ###
     
 class EmployeeAttendanceListCreateAPIView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
@@ -1722,8 +1725,8 @@ class EmployeeAttendanceListCreateAPIView(generics.ListCreateAPIView):
         company_id = self.kwargs.get('company_id')
         # employee = self.kwargs.get('employee')
         user = self.request.user
-        if user.role == "OWNER":
-            return user.all_employees_attendance.filter(company=company_id)
+        # if user.role == "OWNER":
+        return user.all_employees_attendance.filter(company=company_id)
         # instance = OwnerToRegular.objects.get(user=user)
         # return instance.owner.employee_family_nominee_details.filter(company=company_id, employee=employee)
 
@@ -1739,10 +1742,10 @@ class EmployeeAttendanceListCreateAPIView(generics.ListCreateAPIView):
             print(date_for_one_instance.month)
             print(date_for_one_instance.year)
 
-            if user.role == "OWNER":
-                serializer.save(user=user)
-                EmployeeGenerativeLeaveRecord.objects.generate_update_monthly_record(user=user, year=date_for_one_instance.year, month=date_for_one_instance.month, employee_id=employee.id, company_id=company.id)
-                return Response(serializer.data, status=status.HTTP_200_OK)
+            # if user.role == "OWNER":
+            serializer.save(user=user)
+            EmployeeGenerativeLeaveRecord.objects.generate_update_monthly_record(user=user, year=date_for_one_instance.year, month=date_for_one_instance.month, employee_id=employee.id, company_id=company.id)
+            return Response(serializer.data, status=status.HTTP_200_OK)
                 # return Response({"msg": "try"}, status=status.HTTP_200_OK)
             # else:
             #     instance = OwnerToRegular.objects.get(user=user)
@@ -1761,7 +1764,7 @@ class EmployeeAttendanceListCreateAPIView(generics.ListCreateAPIView):
         to_date = datetime(year, month, last_day).date()
         queryset = self.get_queryset().filter(date__range=[from_date, to_date])
         return Response(queryset.values(), content_type='application/json')
-    
+        
 class EmployeeAttendanceUpdateAPIView(generics.UpdateAPIView):
     permission_classes= [IsAuthenticated]
     serializer_class = EmployeeAttendanceSerializer
@@ -1771,43 +1774,34 @@ class EmployeeAttendanceUpdateAPIView(generics.UpdateAPIView):
         company_id = self.kwargs.get('company_id')
         employee = self.kwargs.get('employee')
         user = self.request.user
-        if user.role == "OWNER":
-            return user.all_employees_attendance.filter(company=company_id, employee=employee)
+        return user.all_employees_attendance.filter(company=company_id, employee=employee)
     
     def update(self, request, *args, **kwargs):
-        # print(request.data)
-        # print(request.data['employee_attendance'])
-        try:
-            user = self.request.user
-            employee_attendance = request.data['employee_attendance']
-            total_expected_instances= len(employee_attendance)
-            date_for_one_instance = datetime.strptime(employee_attendance[0]['date'], "%Y-%m-%d").date()
-            print(f"Date: {date_for_one_instance} Type: {type(date_for_one_instance)}")
-            employee_id = employee_attendance[0]['employee']
-            company_id = employee_attendance[0]['company']
-            print(f"Employee: {employee_id} Company: {company_id}")
-            print(total_expected_instances)
-            for day in employee_attendance:
-                print(f"Day id: {day['id']}")
-                instance = self.get_queryset().filter(id=day['id'])
-                print("instance ", instance) 
-                print(day)
-                if instance.exists():
-                    serializer = self.get_serializer(instance.first(), data=day)
-                else:
-                    print(f"Update shouldn't be done, do create here")
-                serializer.is_valid(raise_exception=True)
-                if user.role == "OWNER":
-                    serializer.save(user=user)
+        user = self.request.user
+        employee_attendance = request.data['employee_attendance']
+        total_expected_instances= len(employee_attendance)
+        date_for_one_instance = datetime.strptime(employee_attendance[0]['date'], "%Y-%m-%d").date()
+        print(f"Date: {date_for_one_instance} Type: {type(date_for_one_instance)}")
+        employee_id = employee_attendance[0]['employee']
+        company_id = employee_attendance[0]['company']
+        print(f"Employee: {employee_id} Company: {company_id}")
+        print(total_expected_instances)
+        for day in employee_attendance:
+            print(f"Day id: {day['id']}")
+            instance = self.get_queryset().filter(id=day['id'])
+            print("instance ", instance) 
+            print(day)
+            if instance.exists():
+                serializer = self.get_serializer(instance.first(), data=day)
+            else:
+                print(f"Update shouldn't be done, do create here")
+            serializer.is_valid(raise_exception=True)
+            serializer.save(user=user)
 
-            if user.role == "OWNER":
-                EmployeeGenerativeLeaveRecord.objects.generate_update_monthly_record(user=user, year=date_for_one_instance.year, month=date_for_one_instance.month, employee_id=employee_id, company_id=company_id)
+        EmployeeGenerativeLeaveRecord.objects.generate_update_monthly_record(user=user, year=date_for_one_instance.year, month=date_for_one_instance.month, employee_id=employee_id, company_id=company_id)
 
-            return Response({"detail": "Successful"}, status=status.HTTP_200_OK)
-        except Exception as e:
-            print("Some Error Occured")
-            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
+        return Response({"detail": "Successful"}, status=status.HTTP_200_OK)
+                
 class EmployeeAttendanceBulkAutoFillView(APIView):
     def post(self, request, *args, **kwargs):
         user = self.request.user
@@ -1824,10 +1818,7 @@ class EmployeeAttendanceBulkAutoFillView(APIView):
         # try:
         EmployeeAttendance.objects.bulk_autofill(from_date=from_date, to_date=to_date, company_id=validated_data['company'], user=user)
         return Response({"message": "Bulk autofill successful"}, status=status.HTTP_200_OK)
-        # except Exception as e:
-        #     return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        # return Response({"message": "Bulk autofill successful"}, status=status.HTTP_200_OK)
-        
+
 
 class EmployeeGenerativeLeaveRecordListAPIView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
@@ -1837,8 +1828,8 @@ class EmployeeGenerativeLeaveRecordListAPIView(generics.ListAPIView):
         company_id = self.kwargs.get('company_id')
         year = self.kwargs.get('year')
         user = self.request.user
-        if user.role == "OWNER":
-            return user.all_company_employees_generative_leave_record.filter(company=company_id, date__year=year)
+        # if user.role == "OWNER":
+        return user.all_company_employees_generative_leave_record.filter(company=company_id, date__year=year)
         
 class EmployeeMonthlyAttendancePresentDetailsListAPIView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
@@ -1848,10 +1839,9 @@ class EmployeeMonthlyAttendancePresentDetailsListAPIView(generics.ListAPIView):
         company_id = self.kwargs.get('company_id')
         year = self.kwargs.get('year')
         user = self.request.user
-        if user.role == "OWNER":
-            return user.all_company_employees_monthly_attendance_details.filter(company=company_id, date__year=year)
-        
-        
+        # if user.role == "OWNER":
+        return user.all_company_employees_monthly_attendance_details.filter(company=company_id, date__year=year)
+            
 class EmployeeMonthlyAttendanceDetailsListAPIView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = EmployeeMonthlyAttendanceDetailsSerializer
@@ -1860,8 +1850,8 @@ class EmployeeMonthlyAttendanceDetailsListAPIView(generics.ListAPIView):
         company_id = self.kwargs.get('company_id')
         year = self.kwargs.get('year')
         user = self.request.user
-        if user.role == "OWNER":
-            return user.all_company_employees_monthly_attendance_details.filter(company=company_id, date__year=year)
+        # if user.role == "OWNER":
+        return user.all_company_employees_monthly_attendance_details.filter(company=company_id, date__year=year)
 
 class EmployeeLeaveOpeningListAPIView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
@@ -1871,9 +1861,9 @@ class EmployeeLeaveOpeningListAPIView(generics.ListAPIView):
         company_id = self.kwargs.get('company_id')
         year = self.kwargs.get('year')
         user = self.request.user
-        if user.role == "OWNER":
-            return user.all_company_employees_leave_openings.filter(company=company_id, year=year)
-        
+        # if user.role == "OWNER":
+        return user.all_company_employees_leave_openings.filter(company=company_id, year=year)
+            
 class EmployeeAdvancePaymentListCreateAPIView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = EmployeeAdvancePaymentSerializer
@@ -1882,27 +1872,36 @@ class EmployeeAdvancePaymentListCreateAPIView(generics.ListCreateAPIView):
         company_id = self.kwargs.get('company_id')
         employee_id = self.kwargs.get('employee_id')
         user = self.request.user
-        if user.role == "OWNER":
-            return user.all_company_employees_advance_payments.filter(company=company_id, employee=employee_id)
+        if user.role != "OWNER":
+            user = user = user.regular_to_owner.owner
+        return user.all_company_employees_advance_payments.filter(company=company_id, employee=employee_id)
     
     def create(self, request, *args, **kwargs):
         try:
             serializer = self.get_serializer(data=request.data['employee_advance_details'], many=True)
             serializer.is_valid(raise_exception=True)
             user = self.request.user
-
-            if user.role == "OWNER":
-                serializer.save(user=user)
-                return Response(serializer.data, status=status.HTTP_200_OK)
-                # return Response({"msg": "try"}, status=status.HTTP_200_OK)
-            # else:
-            #     instance = OwnerToRegular.objects.get(user=user)
-            #     serializer.save(user=instance.owner)
-            #     return Response(serializer.data, status=status.HTTP_200_OK)
+            if user.role != "OWNER":
+                user = user = user.regular_to_owner.owner
+            serializer.save(user=user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         except ValidationError as e:
             print(e)
             return Response({'error': e}, status=status.HTTP_400_BAD_REQUEST)
         
+    def list(self, request, *args, **kwargs):
+        user = request.user
+        queryset = self.get_queryset(request)
+        serializer = self.get_serializer(queryset, many=True)
+        if user.role != 'OWNER':
+            print(f"Not owner")
+            for row in serializer.data:
+                emi_repayments = EmployeeAdvanceEmiRepayment.objects.filter(employee_advance_payment=row['id'], user=user)
+                total_repaid_amount = 0
+                if emi_repayments.exists():
+                    total_repaid_amount = emi_repayments.aggregate(total_amount=Sum('amount')).get('total_amount', 0)
+                row['repaid_amount'] = total_repaid_amount
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 class EmployeeAdvancePaymentRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes= [IsAuthenticated]
@@ -1913,23 +1912,22 @@ class EmployeeAdvancePaymentRetrieveUpdateDestroyAPIView(generics.RetrieveUpdate
         company_id = self.kwargs.get('company_id')
         employee_id = self.kwargs.get('employee_id')
         user = self.request.user
-        if user.role == "OWNER":
-            return user.all_company_employees_advance_payments.filter(company=company_id, employee=employee_id)
-    
-    def update(self, request, *args, **kwargs):
-        print(request.data)
-        # print(request.data['employee_advance_details'])
-        # return Response({"detail": "Sub User deleted successfully."}, status=status.HTTP_200_OK)
+        if user.role != "OWNER":
+            user = user = user.regular_to_owner.owner
+        # if user.role == "OWNER":
+        return user.all_company_employees_advance_payments.filter(company=company_id, employee=employee_id)
 
+    def update(self, request, *args, **kwargs):
         try:
             user = self.request.user
+            if user.role != "OWNER":
+                user = user = user.regular_to_owner.owner
             employee_advance_details = request.data['employee_advance_details']
             for detail in employee_advance_details:
                 instance = self.get_queryset().filter(id=detail['id'])
                 serializer = self.get_serializer(instance.first(), data=detail)
                 serializer.is_valid(raise_exception=True)
-                if user.role == "OWNER":
-                    serializer.save(user=user)
+                serializer.save(user=user)
             return Response({"detail": "Successful"}, status=status.HTTP_200_OK)
         except Exception as e:
             print("Some Error Occured")
@@ -1938,6 +1936,8 @@ class EmployeeAdvancePaymentRetrieveUpdateDestroyAPIView(generics.RetrieveUpdate
     def destroy(self, request, *args, **kwargs):
         try:        
             user = self.request.user
+            if user.role != "OWNER":
+                user = user = user.regular_to_owner.owner
             ids_to_delete = self.kwargs.get('ids')
             ids_to_delete = ids_to_delete.split(',')
             print(ids_to_delete)
@@ -1956,8 +1956,6 @@ class EmployeeAdvancePaymentRetrieveUpdateDestroyAPIView(generics.RetrieveUpdate
             print("Some Error Occurred")
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-
-
 class AllEmployeeSalaryEarningListAPIView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = EmployeeSalaryEarningSerializer
@@ -1966,7 +1964,7 @@ class AllEmployeeSalaryEarningListAPIView(generics.ListAPIView):
         company_id = self.kwargs.get('company_id')
         user = self.request.user
         if user.role != "OWNER":
-            user = OwnerToRegular.objects.get(user=user).owner
+            user = user.regular_to_owner.owner
         return user.all_employees_earnings.filter(company=company_id)
         
     def list(self, request, *args, **kwargs):
@@ -1974,20 +1972,17 @@ class AllEmployeeSalaryEarningListAPIView(generics.ListAPIView):
         queryset = self.get_queryset().filter(from_date__year__lte=year, to_date__year__gte=year)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
-    
-
+        
 class EmployeeSalaryPreparedCreateAPIView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = EmployeeSalaryPreparedSerializer
 
     def create(self, request, *args, **kwargs):
         user = request.user
-        if user.role != "OWNER":
-            user = OwnerToRegular.objects.get(user=user).owner
         all_earned_amounts_data = request.data.get('all_earned_amounts', [])
         serializer = self.get_serializer(data=request.data['employee_salary_prepared'])
         serializer.is_valid(raise_exception=True)
-        employee_salary_prepared = EmployeeSalaryPrepared.objects.filter(employee=request.data['employee_salary_prepared']['employee'], date=request.data['employee_salary_prepared']['date'])
+        employee_salary_prepared = EmployeeSalaryPrepared.objects.filter(user=user, employee=request.data['employee_salary_prepared']['employee'], date=request.data['employee_salary_prepared']['date'])
         
         if employee_salary_prepared.exists():
             existing_instance = employee_salary_prepared.first()
@@ -1995,7 +1990,7 @@ class EmployeeSalaryPreparedCreateAPIView(generics.CreateAPIView):
         else:
             serializer.save(user=user)
         #Retrieve Saved salary instance
-        employee_salary_after_saved = EmployeeSalaryPrepared.objects.filter(employee=serializer.data['employee'], date=serializer.data['date'])
+        employee_salary_after_saved = EmployeeSalaryPrepared.objects.filter(user=user, employee=serializer.data['employee'], date=serializer.data['date'])
         
         if employee_salary_after_saved.exists():
             print("YES SALARY EXISTS")
@@ -2010,23 +2005,24 @@ class EmployeeSalaryPreparedCreateAPIView(generics.CreateAPIView):
                 if earned_amount_serializer.is_valid():
                     earned_amount_serializer.save(user=user)
                 else:
-                    print("Not valid")
+                    print("Not valid earned amount")
 
             #First delete all the objects of EmployeeAdvanceEmiRepayment for this salary (which was just saved) then retrieve the advances
             EmployeeAdvanceEmiRepayment.objects.filter(salary_prepared=employee_salary_after_saved_instance.id).delete()
-            employee_advances = EmployeeAdvancePayment.objects.filter(user=employee_salary_after_saved_instance.user, employee=employee_salary_after_saved_instance.employee, company=employee_salary_after_saved_instance.company, date__lt=(employee_salary_after_saved_instance.date + relativedelta(months=1))).order_by('date')
+            employee_advances = EmployeeAdvancePayment.objects.filter(user=user if user.role=='OWNER' else user.regular_to_owner.owner, employee=employee_salary_after_saved_instance.employee, company=employee_salary_after_saved_instance.company, date__lt=(employee_salary_after_saved_instance.date + relativedelta(months=1))).order_by('date')
             if employee_advances.exists():
                 
                 monthly_advance_repayment = 0
                 max_advance_repayment_left = 0
                 for advance in employee_advances:
-                    max_advance_repayment_left += advance.principal-advance.repaid_amount
-                    if advance.emi <= (advance.principal-advance.repaid_amount):
+                    max_advance_repayment_left += advance.principal-(advance.repaid_amount if user.role=='OWNER' else advance.sub_user_repaid_amount)
+                    print(f"Repaid Amt: {advance.repaid_amount}")
+                    if advance.emi <= (advance.principal-(advance.repaid_amount if user.role=='OWNER' else advance.sub_user_repaid_amount)):
                         monthly_advance_repayment += advance.emi
-                    elif (advance.principal-advance.repaid_amount) > 0:
-                        monthly_advance_repayment += (advance.principal-advance.repaid_amount)
-                # print(f"Advance to be paid: {monthly_advance_repayment}")
+                    elif (advance.principal-(advance.repaid_amount if user.role=='OWNER' else advance.sub_user_repaid_amount)) > 0:
+                        monthly_advance_repayment += (advance.principal-(advance.repaid_amount if user.role=='OWNER' else advance.sub_user_repaid_amount))
                 if employee_salary_after_saved_instance.advance_deducted > max_advance_repayment_left:
+                    print(f"Advance Deducted: {employee_salary_after_saved_instance.advance_deducted}, MAx left: {max_advance_repayment_left}")
                     #Changing the advance deducted too since it was wrong
                     employee_salary_after_saved_instance.advance_deducted = 0
                     employee_salary_after_saved_instance.save()
@@ -2035,25 +2031,22 @@ class EmployeeSalaryPreparedCreateAPIView(generics.CreateAPIView):
                 surplus_repayment = employee_salary_after_saved_instance.advance_deducted - monthly_advance_repayment #0
                 advance_deducted_left = employee_salary_after_saved_instance.advance_deducted
                 for advance in employee_advances:
-                    add_to_repaid = min(advance.principal-advance.repaid_amount, advance.emi)
+                    add_to_repaid = min(advance.principal-(advance.repaid_amount if user.role=='OWNER' else advance.sub_user_repaid_amount), advance.emi)
                     if surplus_repayment>0:
-                        add_to_repaid = min(advance.principal-advance.repaid_amount, advance.emi+surplus_repayment)
+                        add_to_repaid = min(advance.principal-(advance.repaid_amount if user.role=='OWNER' else advance.sub_user_repaid_amount), advance.emi+surplus_repayment)
                         if add_to_repaid != advance.emi+surplus_repayment:
-                            surplus_repayment -= add_to_repaid - min(advance.principal-advance.repaid_amount, advance.emi)
+                            surplus_repayment -= add_to_repaid - min(advance.principal-(advance.repaid_amount if user.role=='OWNER' else advance.sub_user_repaid_amount), advance.emi)
                         else:
                             surplus_repayment -= surplus_repayment
                     
                     EmployeeAdvanceEmiRepayment.objects.create(user=user, amount=min(add_to_repaid, advance_deducted_left), employee_advance_payment_id=advance.id, salary_prepared_id=employee_salary_after_saved_instance.id)
                     advance_deducted_left -= min(add_to_repaid, advance_deducted_left)
 
-                # if advance_deducted_left !=0:
-                #     print(f"Advance is not 0 something is wrong: {advance_deducted_left}")
-                #     return Response({"detail": "Too Much Advance Emi Repayment"}, status=status.HTTP_400_BAD_REQUEST)
                 if surplus_repayment != 0:
                     print(f"Surplus is left: {surplus_repayment}")
 
         return Response({"detail": "Successful"}, status=status.HTTP_200_OK)
-    
+        
 class EmployeeSalaryPreparedListAPIView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = EmployeeSalaryPreparedSerializer
@@ -2061,9 +2054,6 @@ class EmployeeSalaryPreparedListAPIView(generics.ListAPIView):
     def get_queryset(self, *args, **kwargs):
         company_id = self.kwargs.get('company_id')
         user = self.request.user
-        if user.role != "OWNER":
-            # user = OwnerToRegular.objects.get(user=user).owner
-            return Response({"detail": "User is regular"}, status=status.HTTP_404_NOT_FOUND)
         return user.all_company_employees_salaries_prepared.filter(company=company_id)
         
     def list(self, request, *args, **kwargs):
@@ -2072,7 +2062,10 @@ class EmployeeSalaryPreparedListAPIView(generics.ListAPIView):
         date_obj = date(year, month, 1)
         queryset = self.get_queryset().filter(date=date_obj)
         serializer = self.get_serializer(queryset, many=True)
+        print(f'RUnning slaary prepared: {queryset}')
         return Response(serializer.data)
+    
+#### 2nd Account Done till above here ###
     
 class BulkPrepareSalariesView(APIView):
     def post(self, request, *args, **kwargs):
@@ -2093,18 +2086,6 @@ class BulkPrepareSalariesView(APIView):
         print(f"Operation result: {operation_result}, Message: {message}")
         return Response({"message": "Bulk Prepare Salaries successful"}, status=status.HTTP_200_OK)
 
-    
-# class CompanyEmployeeStatisticsListAPIView(generics.ListAPIView):
-#     permission_classes = [IsAuthenticated]
-#     serializer_class = CompanyEmployeeStatisticsSerializer
-
-#     def get_queryset(self, *args, **kwargs):
-#         company_id = self.kwargs.get('company_id')
-#         user = self.request.user
-#         if user.role == "OWNER":
-#             return user.all_employees_statistics.filter(company=company_id)
-#         instance = OwnerToRegular.objects.get(user=user)
-#         return instance.owner.all_employees_statistics.filter(company=company_id)
 
 class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
@@ -2112,8 +2093,8 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
 
     def create(self, request, *args, **kwargs):
         user = request.user
-        if user.role != "OWNER":
-            user = OwnerToRegular.objects.get(user=user).owner
+        # if user.role != "OWNER":
+        #     user = OwnerToRegular.objects.get(user=user).owner
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -2133,7 +2114,7 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
                     order_by = ('employee__employee_professional_detail__department', *order_by)
                 else:
                     order_by = ('employee__employee_professional_detail__department',)
-            employee_salaries = EmployeeSalaryPrepared.objects.filter(employee__id__in=employee_ids, date=salary_date)
+            employee_salaries = EmployeeSalaryPrepared.objects.filter(user=user, employee__id__in=employee_ids, date=salary_date)
 
             #Use python regular expression to orderby if the order by is using paycode because it is alpha numeric
             if validated_data['filters']['sort_by'] == "paycode" and validated_data['filters']['group_by'] == 'none':
@@ -2142,7 +2123,7 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
                 employee_salaries = employee_salaries.order_by(*order_by)
 
             if len(employee_salaries) != 0:
-                response = StreamingHttpResponse(generate_salary_sheet(serializer.validated_data, employee_salaries), content_type="application/pdf")
+                response = StreamingHttpResponse(generate_salary_sheet(request.user, serializer.validated_data, employee_salaries), content_type="application/pdf")
                 response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
                 return response
             else:
@@ -2161,7 +2142,7 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
                     order_by = ('employee__employee_professional_detail__department', *order_by)
                 else:
                     order_by = ('employee__employee_professional_detail__department',)
-            employee_salaries = EmployeeSalaryPrepared.objects.filter(employee__id__in=employee_ids, date=salary_date)
+            employee_salaries = EmployeeSalaryPrepared.objects.filter(user=request.user, employee__id__in=employee_ids, date=salary_date)
 
             #Use python regular expression to orderby if the order by is using paycode because it is alpha numeric
             if validated_data['filters']['sort_by'] == "paycode" and validated_data['filters']['group_by'] == 'none':
@@ -2170,7 +2151,7 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
                 employee_salaries = employee_salaries.order_by(*order_by)
 
             if len(employee_salaries) != 0 and validated_data['filters']['format']=='pdf':
-                response = StreamingHttpResponse(generate_payment_sheet(serializer.validated_data, employee_salaries), content_type="application/pdf")
+                response = StreamingHttpResponse(generate_payment_sheet(request.user, serializer.validated_data, employee_salaries), content_type="application/pdf")
                 response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
                 return response
             elif len(employee_salaries) != 0 and validated_data['filters']['format']=='xlsx':
@@ -2187,7 +2168,7 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
                 order_by = ("employee__attendance_card_no",)
             elif validated_data['filters']['sort_by'] == "employee_name":
                 order_by = ('employee__name',)
-            employee_salaries = EmployeeSalaryPrepared.objects.filter(employee__id__in=employee_ids, date=payslip_date)
+            employee_salaries = EmployeeSalaryPrepared.objects.filter(user=request.user, employee__id__in=employee_ids, date=payslip_date)
 
             #Use python regular expression to orderby if the order by is using paycode because it is alpha numeric
             if validated_data['filters']['sort_by'] == "paycode":
@@ -2196,7 +2177,7 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
                 employee_salaries = employee_salaries.order_by(*order_by)
 
             if len(employee_salaries) != 0:
-                response = StreamingHttpResponse(generate_payslip(serializer.validated_data, employee_salaries), content_type="application/pdf")
+                response = StreamingHttpResponse(generate_payslip(request.user, serializer.validated_data, employee_salaries), content_type="application/pdf")
                 response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
                 return response
             else:
@@ -3215,12 +3196,31 @@ class EmployeeVisibilityPatchAPIView(APIView):
                 employee.save()
         return Response(status=status.HTTP_200_OK)
     
+class TransferAttendanceFromOwnerToRegularAPIView(APIView):
+    permission_classes = [IsAuthenticated, isOwnerAndAdmin]
+    def post(self, request, *args, **kwargs):
+        user = self.request.user
+        serializer = TransferAttendanceFromOwnerToRegularSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+        
+        # try:
+        # Call the model manager method
+        success, message = EmployeeAttendance.objects.transfer_attendance_from_owner_to_regular(
+            month=validated_data['month'],
+            year=validated_data['year'],
+            company_id=validated_data['company'],
+            user=user
+        )
+        if not success:
+            # If the operation fails, raise an APIException with the error message
+            raise APIException(message)
+            
+        # except Exception as e:
+        #     # Handle any other exceptions and return an appropriate error response
+        #     return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-
-
-
-
-
+        return Response({"message": "Attendance Transfer Successful"}, status=status.HTTP_200_OK)
 
 '''
 User and Auth Views start from here.

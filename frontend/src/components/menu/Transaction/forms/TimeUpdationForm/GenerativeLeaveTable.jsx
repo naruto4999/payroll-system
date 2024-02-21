@@ -24,6 +24,7 @@ const GenerativeLeaveTable = memo(({ globalCompany, year, updateEmployeeId, mont
 			skip: globalCompany === null || globalCompany === '' || year == '',
 		}
 	);
+	console.log(allEmployeeGenerativeLeaveRecord);
 	const {
 		data: allEmployeeLeaveOpening,
 		isLoading: isLoadingAllEmployeeLeaveOpening,

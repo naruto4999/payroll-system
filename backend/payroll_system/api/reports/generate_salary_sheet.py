@@ -104,7 +104,8 @@ class FPDF(FPDF):
             self.set_xy(x=position_before_drawing_box_for_paycode["x"], y=position_before_drawing_box_for_paycode["y"]+15)
 
 
-def generate_salary_sheet(request_data, prepared_salaries):
+def generate_salary_sheet(user, request_data, prepared_salaries):
+    print(f"Salary Sheet User: {user.id}")
     global default_cell_height
     global default_number_of_cells_in_row
     default_cell_height = 5
@@ -168,8 +169,6 @@ def generate_salary_sheet(request_data, prepared_salaries):
         "esi_wages_total": 0,
     }
 
-    # if request_data['filters']['group_by'] != 'none':
-    #     initial_cursor_position_before_row['y'] = initial_cursor_position_before_row['y'] + group_by_filter_heading_height
     department_grand_total = {}
 
     employee_department_list = []
@@ -177,9 +176,9 @@ def generate_salary_sheet(request_data, prepared_salaries):
         employee_professional_details = EmployeeProfessionalDetail.objects.get(employee=salary.employee.id)
         employee_pf_esi_details = EmployeePfEsiDetail.objects.get(employee=salary.employee.id)
         employee_salary_details = EmployeeSalaryDetail.objects.get(employee=salary.employee.id)
-        employee_monthly_attendance_details = EmployeeMonthlyAttendanceDetails.objects.get(employee=salary.employee.id, date=salary.date)
+        employee_monthly_attendance_details = EmployeeMonthlyAttendanceDetails.objects.get(user=user, employee=salary.employee.id, date=salary.date)
         employee_salary_rates = EmployeeSalaryEarning.objects.filter(from_date__lte=salary.date, to_date__gte=salary.date, employee=salary.employee.id).order_by('earnings_head__id')
-        earned_amounts = EarnedAmount.objects.filter(salary_prepared = salary.id).order_by('earnings_head__id')
+        earned_amounts = EarnedAmount.objects.filter(user=user, salary_prepared = salary.id).order_by('earnings_head__id')
         basic_earned = earned_amounts.filter(earnings_head__name="Basic").first()
 
         #For Department Name Header and Total if the group_by is not none
@@ -276,7 +275,7 @@ def generate_salary_sheet(request_data, prepared_salaries):
             
             if column_name == "attendance_detail":
                 salary_sheet_pdf.rect(salary_sheet_pdf.get_x(), salary_sheet_pdf.get_y(), w=width_of_columns["attendance_detail"], h=default_cell_height*default_number_of_cells_in_row)
-                employee_generative_leaves = EmployeeGenerativeLeaveRecord.objects.filter(employee=salary.employee.id, date=salary.date).order_by('leave__name')
+                employee_generative_leaves = EmployeeGenerativeLeaveRecord.objects.filter(user=user, employee=salary.employee.id, date=salary.date).order_by('leave__name')
                 # generative_leaves = [{"name": "EL", "amount":4}, {"name":"CL", "amount":2}, {"name":"SL", "amount":1}] #Get actual data from db and replace this                
                 generative_leave_text = "\n".join(f"{leave.leave.name} : {int(leave.leave_count/2) if leave.leave_count/2%1==0 else leave.leave_count/2}" for leave in employee_generative_leaves)
                 salary_sheet_pdf.multi_cell(w=column_width/2, h=default_cell_height, txt=generative_leave_text, align='L', border=0)

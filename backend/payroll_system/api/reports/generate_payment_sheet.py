@@ -105,7 +105,7 @@ class FPDF(FPDF):
             #Signature
             self.cell(w=width_of_columns['signature'], h=10, text=f'Signature', align="C", new_x="LMARGIN", new_y='NEXT', border=1)
 
-def generate_payment_sheet(request_data, prepared_salaries):
+def generate_payment_sheet(user, request_data, prepared_salaries):
 
     left_margin = 6
     right_margin = 7

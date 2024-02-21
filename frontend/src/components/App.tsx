@@ -37,6 +37,7 @@ import BonusCalculationForm from './menu/Transaction/forms/BonusCalculationForm/
 import VisibleEmployeesForm from './menu/AdminControlsForm/VisibleEmployeesForm/VisibleEmployeesForm';
 import OverTimeSettingsForm from './menu/AdminControlsForm/OverTimeSettingsForm/OverTimeSettingsForm';
 import SubUserMiscSettingsForm from './menu/AdminControlsForm/SubUserMiscSettingsForm/SubUserMiscSettingsForm';
+import TransferAttendanceForm from './menu/AdminControlsForm/TransferAttendaceForm/TransferAttendanceForm';
 // import store, { persistor } from "./authentication/store/index"
 // import { PersistGate } from "redux-persist/integration/react";
 // import { Provider } from "react-redux";
@@ -149,6 +150,7 @@ function App() {
 					<Route path="visible-employees" element={<VisibleEmployeesForm />} />
 					<Route path="overtime-settings" element={<OverTimeSettingsForm />} />
 					<Route path="sub-user-misc-settings" element={<SubUserMiscSettingsForm />} />
+					<Route path="transfer-attendance" element={<TransferAttendanceForm />} />
 				</Route>
 				<Route path="login" element={<LoginForm />} />
 				<Route path="register" element={<RegisterForm />} />

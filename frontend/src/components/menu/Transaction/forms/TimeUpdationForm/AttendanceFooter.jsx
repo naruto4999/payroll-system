@@ -5,7 +5,7 @@ import {
 	useGetAllEmployeeGenerativeLeaveRecordQuery,
 } from '../../../../authentication/api/timeUpdationApiSlice';
 import { useGetSingleEmployeeSalaryDetailQuery } from '../../../../authentication/api/employeeEntryApiSlice';
-
+import { useSelector } from 'react-redux';
 const classNames = (...classes) => {
 	return classes.filter(Boolean).join(' ');
 };
@@ -35,6 +35,7 @@ const AttendanceFooter = React.memo(
 			totalOvertime: 0,
 			totalLate: 0,
 		});
+		const auth = useSelector((state) => state.auth);
 		const {
 			data: employeeSalaryDetails,
 			isLoading: isLoadingEmployeeSalaryDetails,
@@ -166,10 +167,10 @@ const AttendanceFooter = React.memo(
 					<span className="font-bold">
 						{Math.max(
 							attendanceFooterData.totalOvertime -
-								(employeeSalaryDetails?.lateDeduction == false
-									? 0
-									: Math.floor(attendanceFooterData.totalLate / 30) * 30 +
-									  (attendanceFooterData.totalLate % 30 >= 20 ? 30 : 0)),
+								(employeeSalaryDetails?.lateDeduction == true && auth.account.role == 'OWNER'
+									? Math.floor(attendanceFooterData.totalLate / 30) * 30 +
+									  (attendanceFooterData.totalLate % 30 >= 20 ? 30 : 0)
+									: 0),
 							0
 						) / 60}
 						{/* {`${String(

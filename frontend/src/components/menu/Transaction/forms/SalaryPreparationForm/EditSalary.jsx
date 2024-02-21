@@ -18,7 +18,7 @@ import { useGetCalculationsQuery } from '../../../../authentication/api/calculat
 import ReactModal from 'react-modal';
 import ConfirmationModal from '../../../../UI/ConfirmationModal';
 import { ConfirmationModalSchema } from './SalaryPreperationSchema';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { alertActions } from '../../../../authentication/store/slices/alertSlice';
 
 ReactModal.setAppElement('#root');
@@ -42,6 +42,7 @@ const EditSalary = ({
 	isValid,
 	handleSubmit,
 }) => {
+	const auth = useSelector((state) => state.auth);
 	const months = [
 		'January',
 		'February',
@@ -205,12 +206,19 @@ const EditSalary = ({
 						return accumulator + Number(item.value || 0); // Use 0 as a default value if earnedAmount is undefined or falsy
 					}, 0)
 				);
-				const overtimeRateMultiplier = new BigNumber(currentEmployeeSalaryDetails?.overtimeRate == 'D' ? 2 : 1);
+				let overtimeRateMultiplier = new BigNumber(2);
+				if (auth.account.role == 'OWNER') {
+					overtimeRateMultiplier = new BigNumber(currentEmployeeSalaryDetails?.overtimeRate == 'D' ? 2 : 1);
+				}
 				let overtimeDivisor = new BigNumber(26);
-				if (companyCalculations?.otCalculation == 'month_days') {
-					overtimeDivisor = new BigNumber(new Date(values.year, values.month, 0).getDate());
-				} else {
-					overtimeDivisor = new BigNumber(companyCalculations?.otCalculation);
+
+				// OT Calculation Days
+				if (auth.account.role == 'OWNER') {
+					if (companyCalculations?.otCalculation == 'month_days') {
+						overtimeDivisor = new BigNumber(new Date(values.year, values.month, 0).getDate());
+					} else {
+						overtimeDivisor = new BigNumber(companyCalculations?.otCalculation);
+					}
 				}
 
 				const netOtAmountMonthly = totalSalaryRate
@@ -455,31 +463,34 @@ const EditSalary = ({
 								</tr>
 							</thead>
 							<tbody className="max-h-20 divide-y divide-black divide-opacity-50 overflow-y-auto border-t border-black border-opacity-50 ">
-								{values?.earnedAmount?.map((earning, index) => {
-									return (
-										<tr
-											key={index}
-											className=" hover:bg-zinc-200 dark:hover:bg-zinc-800 dark:focus:bg-teal-800 dark:focus:bg-opacity-50"
-										>
-											<td className="relative border border-slate-400 border-opacity-60 px-4 py-2 font-normal">
-												{earning.earningsHead.name}
-											</td>
-											<td className="relative border border-slate-400 border-opacity-60 px-4 py-2 font-normal">
-												{earning.rate}
-											</td>
-											<td className="relative border border-slate-400 border-opacity-60 bg-opacity-50 p-0 font-normal dark:bg-zinc-800">
-												<Field
-													className="custom-number-input h-8 w-32 bg-zinc-50 bg-transparent p-1 outline-none transition focus:border-opacity-100  dark:focus:border-opacity-75"
-													type="number"
-													name={`earnedAmount.${index}.arearAmount`}
-												/>
-											</td>
-											<td className="relative border border-slate-400 border-opacity-60 px-4 py-2 font-normal dark:text-green-600">
-												{earning.earnedAmount}
-											</td>
-										</tr>
-									);
-								})}
+								{values?.earnedAmount
+									?.sort((a, b) => a.earningsHead.id - b.earningsHead.id)
+									?.map((earning, index) => {
+										console.log(values?.earnedAmount);
+										return (
+											<tr
+												key={index}
+												className=" hover:bg-zinc-200 dark:hover:bg-zinc-800 dark:focus:bg-teal-800 dark:focus:bg-opacity-50"
+											>
+												<td className="relative border border-slate-400 border-opacity-60 px-4 py-2 font-normal">
+													{earning.earningsHead.name}
+												</td>
+												<td className="relative border border-slate-400 border-opacity-60 px-4 py-2 font-normal">
+													{earning.rate}
+												</td>
+												<td className="relative border border-slate-400 border-opacity-60 bg-opacity-50 p-0 font-normal dark:bg-zinc-800">
+													<Field
+														className="custom-number-input h-8 w-32 bg-zinc-50 bg-transparent p-1 outline-none transition focus:border-opacity-100  dark:focus:border-opacity-75"
+														type="number"
+														name={`earnedAmount.${index}.arearAmount`}
+													/>
+												</td>
+												<td className="relative border border-slate-400 border-opacity-60 px-4 py-2 font-normal dark:text-green-600">
+													{earning.earnedAmount}
+												</td>
+											</tr>
+										);
+									})}
 							</tbody>
 						</table>
 					</div>

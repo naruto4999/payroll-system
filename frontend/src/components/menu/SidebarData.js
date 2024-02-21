@@ -230,6 +230,11 @@ const menuItems = [
 				icon: FaCogs,
 				path: '/admin-controls/sub-user-misc-settings',
 			},
+			{
+				title: 'Transfer Attendance',
+				icon: FaCogs,
+				path: '/admin-controls/transfer-attendance',
+			},
 		],
 	},
 ];

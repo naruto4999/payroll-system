@@ -1172,7 +1172,7 @@ class EmployeeAttendance(models.Model):
 
         ]
         constraints = [
-            models.UniqueConstraint(fields=['employee', 'date'], name='unique_employee_attendance_date_wise'),
+            models.UniqueConstraint(fields=['employee', 'date', 'user'], name='unique_employee_attendance_date_wise'),
         ]
 
     def save(self, *args, **kwargs):
@@ -1187,9 +1187,9 @@ class EmployeeAttendance(models.Model):
 
 class EmployeeGenerativeLeaveRecordManager(models.Manager):
     def generate_update_monthly_record(self, user, year, month, employee_id, company_id):
-        leave_grades_queryset = LeaveGrade.objects.filter(user=user, company_id=company_id, paid=True, generate_frequency__isnull=False)
+        leave_grades_queryset = LeaveGrade.objects.filter(user=user if user.role=="OWNER" else user.regular_to_owner.owner, company_id=company_id, paid=True, generate_frequency__isnull=False)
         leave_grade_dict = {leave_grade.id: {'leave_count': 0, 'name': leave_grade.name} for leave_grade in leave_grades_queryset}
-        employee_professional_detail = EmployeeProfessionalDetail.objects.get(user=user, employee_id=employee_id, company_id=company_id)
+        employee_professional_detail = EmployeeProfessionalDetail.objects.get(user=user if user.role=="OWNER" else user.regular_to_owner.owner, employee_id=employee_id, company_id=company_id)
 
         if year > employee_professional_detail.date_of_joining.year or (month > employee_professional_detail.date_of_joining.month and year == employee_professional_detail.date_of_joining.year):
             from_date = datetime(year, month, 1).date()
@@ -1213,6 +1213,7 @@ class EmployeeGenerativeLeaveRecordManager(models.Manager):
 
         employee_attendance_queryset = EmployeeAttendance.objects.filter(user=user, employee_id=employee_id, company_id=company_id, date__gte=from_date, date__lte=to_date)
 
+        print(f'Yes Creating or updating generative leave, USER_ID: {user.id}')
         for employee_attendance in employee_attendance_queryset:
             # Present Count
             present_count += 1 if employee_attendance.first_half.name == "P" else 0
@@ -1246,7 +1247,10 @@ class EmployeeGenerativeLeaveRecordManager(models.Manager):
                 if leave_id in leave_grade_dict:
                     leave_grade_dict[leave_id]['leave_count'] += 1
 
-        net_ot_minutes_monthly = max(total_ot_minutes_monthly - ((total_late_min // 30) * 30 + (30 if total_late_min % 30 >= 20 else 0)), 0)
+        if EmployeeSalaryDetail.objects.get(employee_id=employee_id).late_deduction == True and user.role=='OWNER':
+            net_ot_minutes_monthly = max(total_ot_minutes_monthly - ((total_late_min // 30) * 30 + (30 if total_late_min % 30 >= 20 else 0)), 0)
+        else:
+            net_ot_minutes_monthly = total_ot_minutes_monthly
 
 
         # For updating existing instance
@@ -1310,7 +1314,7 @@ class EmployeeGenerativeLeaveRecord(models.Model):
             models.Index(fields=['company_id']),
         ]
         constraints = [
-            models.UniqueConstraint(fields=['employee', 'date', 'company', 'leave'], name='unique_date_per_employee_per_company'),
+            models.UniqueConstraint(fields=['employee', 'date', 'company', 'leave', 'user'], name='unique_date_per_employee_per_company_per_user'),
         ]
 
 class EmployeeMonthlyAttendanceDetails(models.Model):
@@ -1348,7 +1352,7 @@ class EmployeeLeaveOpening(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['employee', 'year', 'company'], name='unique_year_per_employee_per_company'),
+            models.UniqueConstraint(fields=['employee', 'year', 'company', 'user'], name='unique_year_per_employee_per_company_per_user'),
         ]
 
 
@@ -1364,15 +1368,23 @@ class EmployeeAdvancePayment(models.Model):
     tenure_months_left = models.PositiveSmallIntegerField(null=False, blank=False)
     @property
     def repaid_amount(self):
-        # Filter the related objects
-        emi_repayments = EmployeeAdvanceEmiRepayment.objects.filter(employee_advance_payment=self.id)
+        emi_repayments = EmployeeAdvanceEmiRepayment.objects.filter(employee_advance_payment=self.id, user__role='OWNER')
 
         # Check if there are no related objects and set total_amount to 0 in that case
         if emi_repayments.exists():
             total_amount = emi_repayments.aggregate(total_amount=Sum('amount')).get('total_amount', 0)
         else:
             total_amount = 0
+        return total_amount
+    @property
+    def sub_user_repaid_amount(self):
+        emi_repayments = EmployeeAdvanceEmiRepayment.objects.filter(employee_advance_payment=self.id, user__role='REGULAR')
 
+        # Check if there are no related objects and set total_amount to 0 in that case
+        if emi_repayments.exists():
+            total_amount = emi_repayments.aggregate(total_amount=Sum('amount')).get('total_amount', 0)
+        else:
+            total_amount = 0
         return total_amount
 
 
@@ -1406,7 +1418,7 @@ class EmployeeSalaryPrepared(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['date', 'employee'], name='unique_salary_for_each_month'),
+            models.UniqueConstraint(fields=['date', 'employee', 'user'], name='unique_salary_for_each_month_per_employee_per_user'),
         ]
 
 
@@ -1483,10 +1495,8 @@ class SubUserOvertimeSettings(models.Model):
 class SubUserMiscSettings(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sub_user_misc_settings")
     company = models.OneToOneField(Company, on_delete=models.CASCADE, related_name="sub_user_misc_settings")
-    female_ot_allow = models.BooleanField(default=False, null=False, blank=False)
+    enable_female_max_punch_out = models.BooleanField(default=False, null=False, blank=False)
     max_female_punch_out = models.TimeField(default='19:00', null=False, blank=False)
-
-    
 
 
 

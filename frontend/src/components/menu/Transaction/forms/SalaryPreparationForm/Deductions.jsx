@@ -2,7 +2,7 @@ import React, { useMemo, useEffect } from 'react';
 // import { useGetAllEmployeePfEsiDetailsQuery } from '../../../../authentication/api/salaryPreparationApiSlice';
 import { useGetPfEsiSetupQuery } from '../../../../authentication/api/pfEsiSetupApiSlice';
 import { useGetEmployeeAdvancePaymentsQuery } from '../../../../authentication/api/advanceUpdationApiSlice';
-
+import { useSelector } from 'react-redux';
 import BigNumber from 'bignumber.js';
 import { Field, ErrorMessage, FieldArray } from 'formik';
 
@@ -15,6 +15,8 @@ const Deductions = React.memo(
 		currentEmployeeSalaryDetails,
 		currentEmployeePfEsiDetails,
 	}) => {
+		const auth = useSelector((state) => state.auth);
+		console.log(auth.account.role);
 		const {
 			data: { company, ...companyPfEsiSetup } = {},
 			isLoading,
@@ -25,20 +27,6 @@ const Deductions = React.memo(
 		} = useGetPfEsiSetupQuery(globalCompany.id, {
 			skip: globalCompany === null || globalCompany === '',
 		});
-
-		// const {
-		// 	data: allEmployeePfEsiDetails,
-		// 	isLoading: isLoadingAllEmployeePfEsiDetails,
-		// 	isSuccess: isAllEmployeePfEsiDetailsSuccess,
-		// 	isFetching: isFetchingAllEmployeePfEsiDetails,
-		// } = useGetAllEmployeePfEsiDetailsQuery(
-		// 	{
-		// 		company: globalCompany?.id,
-		// 	},
-		// 	{
-		// 		skip: globalCompany === null || globalCompany === '',
-		// 	}
-		// );
 
 		const {
 			data: employeeAdvancePayments,
@@ -54,11 +42,6 @@ const Deductions = React.memo(
 				skip: globalCompany === null || globalCompany === '' || !updateEmployeeId,
 			}
 		);
-
-		// const currentEmployeePfEsiDetails = useMemo(() => {
-		// 	const selectedEmployeeData = allEmployeePfEsiDetails?.filter((item) => item.employee === updateEmployeeId);
-		// 	return selectedEmployeeData;
-		// }, [allEmployeePfEsiDetails, updateEmployeeId]);
 
 		useEffect(() => {
 			if (employeeAdvancePayments?.length != 0 && employeeAdvancePayments) {
@@ -77,7 +60,6 @@ const Deductions = React.memo(
 							)
 						);
 					} else {
-						console.log('yes one item is smaller ');
 						return accumulator + 0;
 					} // Use 0 as a default value if emi is undefined or falsy
 				}, 0);
@@ -104,8 +86,6 @@ const Deductions = React.memo(
 				setFieldValue('employeeSalaryPrepared.tdsDeducted', 0);
 			}
 		}, [currentEmployeePfEsiDetails, updateEmployeeId]);
-
-		console.log(currentEmployeePfEsiDetails?.[0]);
 
 		useEffect(() => {
 			let timeoutId;
@@ -150,7 +130,7 @@ const Deductions = React.memo(
 					companyPfEsiSetup
 				) {
 					let totalEarnedForEsiDeduction = totalEarnedAmount;
-					if (currentEmployeePfEsiDetails?.[0]?.esiOnOt == true) {
+					if (currentEmployeePfEsiDetails?.[0]?.esiOnOt == true || auth.account.role == 'REGULAR') {
 						totalEarnedForEsiDeduction = totalEarnedForEsiDeduction.plus(
 							values.employeeSalaryPrepared.netOtAmountMonthly
 						);
