@@ -413,8 +413,8 @@ class EmployeeAttendanceManager(models.Manager):
                         elif existing_attendance.machine_in is not None:
                             punch_in_time = machine_punch_in
 
-                    #Punch in from machine if attendance does not exist already or if it exists then the manual_in and machine_in both are None then it will enter this condition
-                    if (existing_attendance==None or (existing_attendance.machine_in == None and existing_attendance.manual_in == None)) and not punch_in_row.empty and 'CHECKTIME' in punch_in_row:
+                    #Punch in from machine if attendance does not exist already or if it exists then the manual_in is None then it will enter this condition
+                    if (existing_attendance==None or existing_attendance.manual_in == None) and not punch_in_row.empty and 'CHECKTIME' in punch_in_row:
                         punch_in_time = datetime.combine(punch_in_row['CHECKTIME'].date(), punch_in_row['CHECKTIME'].time().replace(second=0))
                         if punch_in_time > shift_end_time-relativedelta(minutes=employee_shift_on_particular_date.shift.half_day_minimum_minutes):
                             punch_in_time=None
@@ -449,8 +449,8 @@ class EmployeeAttendanceManager(models.Manager):
                         elif existing_attendance.machine_out is not None:
                             punch_out_time = machine_punch_out
 
-                    #Punch out from machine if attendance does not exist already or if it exists then the manual_out and machine_out both are None then it will enter this condition
-                    if (existing_attendance==None or (existing_attendance.machine_out == None and existing_attendance.manual_out == None)) and not punch_out_row.empty and 'CHECKTIME' in punch_out_row:
+                    #Punch out from machine if attendance does not exist already or if it exists then the manual_out is None then it will enter this condition
+                    if (existing_attendance==None or existing_attendance.manual_out == None) and not punch_out_row.empty and 'CHECKTIME' in punch_out_row:
                         if not punch_out_row.empty and not punch_in_row.empty:
                             punch_out_time = datetime.combine(punch_out_row['CHECKTIME'].date() ,punch_out_row['CHECKTIME'].time().replace(second=0))
                             if punch_out_time == punch_in_time:
