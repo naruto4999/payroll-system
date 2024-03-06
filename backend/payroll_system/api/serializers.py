@@ -318,6 +318,7 @@ class FiltersSalaryOvertimeSheet(serializers.Serializer):
     sort_by = serializers.ChoiceField(choices=["paycode", "attendance_card_no", "employee_name"])
     language = serializers.ChoiceField(choices=["hindi", "english"])
     format = serializers.ChoiceField(choices=["xlsx", "pdf"])
+    overtime = serializers.ChoiceField(choices=["with_ot", "without_ot"])
 
 class SalaryOvertimeSheetSerializer(serializers.Serializer):
     employee_ids = serializers.ListField(child=serializers.IntegerField())

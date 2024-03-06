@@ -29,6 +29,25 @@ const FilterOptions = ({ handleChange, values, isValid, handleSubmit, isSubmitti
 					<option value="overtime_sheet">Over Time Sheet</option>
 				</Field>
 			</div>
+			{values.reportType == 'salary_sheet' && (
+				<div>
+					<label
+						htmlFor="filters.overtime"
+						className="mr-4 text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
+					>
+						Overtime :
+					</label>
+					<Field
+						as="select"
+						id="filters.overtime"
+						className="my-1 rounded-md bg-zinc-50 bg-opacity-50 p-1 dark:bg-zinc-700"
+						name="filters.overtime"
+					>
+						<option value="with_ot">With OT</option>
+						<option value="without_ot">Without OT</option>
+					</Field>
+				</div>
+			)}
 			{values.reportType == 'payment_sheet' && (
 				<div>
 					<label

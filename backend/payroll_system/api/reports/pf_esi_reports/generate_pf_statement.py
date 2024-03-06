@@ -13,7 +13,7 @@ def calculate_age(date_of_birth, reference_date):
     return age
 
 
-def generate_pf_statement(request_data, employees):
+def generate_pf_statement(user, request_data, employees):
     # Create a DataFrame from the employees data
     serial = []
     paycode = []
@@ -53,23 +53,23 @@ def generate_pf_statement(request_data, employees):
         employee_names.append(employee.name)
 
         #Wages
-        total_earnings_rate = 0
-        employee_salary_rates = EmployeeSalaryEarning.objects.filter(from_date__lte=date(request_data['year'], request_data['month'], 1), to_date__gte=date(request_data['year'], request_data['month'], 1), employee=employee).order_by('earnings_head__id')
-        if employee_salary_rates.exists():
-            for index, salary_rate in enumerate(employee_salary_rates):
-                total_earnings_rate += salary_rate.value
-        gross_wages.append(total_earnings_rate)
-        grand_total['gross_wages']+=total_earnings_rate
+        total_earned = 0
+        salary_prepared = employee.salaries_prepared.filter(user=user, date=date(request_data['year'], request_data['month'], 1)).first()
+        earned_amounts = EarnedAmount.objects.filter(user=user, salary_prepared = salary_prepared.id)
+        if earned_amounts.exists():
+            for index, earned_amount in enumerate(earned_amounts):
+                total_earned += earned_amount.earned_amount
+        gross_wages.append(total_earned)
+        grand_total['gross_wages']+=total_earned
 
         company_pf_esi_setup = employee.company.pf_esi_setup_details
         
         #EPF Wages
-        salary_prepared = None
+        # salary_prepared = None
         earned_basic_amount = None
         try: 
             pf_deducted = 0
-            salary_prepared = employee.salaries_prepared.filter(date=date(request_data['year'], request_data['month'], 1)).first()
-            earned_basic_amount = EarnedAmount.objects.filter(salary_prepared = salary_prepared.id, earnings_head__name='Basic').first()
+            earned_basic_amount = earned_amounts.filter(earnings_head__name='Basic').first()
             if employee.employee_pf_esi_detail.pf_limit_ignore_employee == False:
                 pfable_amount = min(company_pf_esi_setup.ac_1_epf_employee_limit, earned_basic_amount.earned_amount)
                 epf_wages.append(pfable_amount)
@@ -95,12 +95,14 @@ def generate_pf_statement(request_data, employees):
             epf_employee.append(0)
 
         #EPS Wages
-        if employee.dob:
-            print(f"Comparision Date: {date(request_data['year'], request_data['month'], 1)-relativedelta(days=1)}")
-            print(f"Age : {calculate_age(employee.dob, date(request_data['year'], request_data['month'], 1)-relativedelta(months=1))} Name: {employee.name}")
+        # if employee.dob:
+        #     # print(f"Comparision Date: {date(request_data['year'], request_data['month'], 1)-relativedelta(days=1)}")
+        #     print(f"Age : {calculate_age(employee.dob, date(request_data['year'], request_data['month'], 1)-relativedelta(months=1))} Name: {employee.name}")
         eps_deducted = 0
         epsable_amount = 0
+        print(f"Salary Prepared: {salary_prepared} Earned Basic Amt: {earned_basic_amount}, Employee DOB: {employee.dob} age: {calculate_age(employee.dob, date(request_data['year'], request_data['month'], 1)) if employee.dob else ''}")
         if salary_prepared and earned_basic_amount and (employee.dob==None or calculate_age(employee.dob, date(request_data['year'], request_data['month'], 1)-relativedelta(days=1))<60):
+            print('Yes Give EPS')
             if employee.employee_pf_esi_detail.pf_limit_ignore_employer == False:
                 epsable_amount = min(company_pf_esi_setup.ac_10_eps_employer_limit, earned_basic_amount.earned_amount)
                 eps_deducted += (Decimal(company_pf_esi_setup.ac_10_eps_employer_percentage)/Decimal(100)) * Decimal(epsable_amount)
@@ -135,7 +137,7 @@ def generate_pf_statement(request_data, employees):
         #NCP Days
         non_paid_days = None
         try:
-            monthly_details = employee.monthly_attendance_details.filter(date=date(request_data['year'], request_data['month'], 1)).first()
+            monthly_details = employee.monthly_attendance_details.filter(user=user, date=date(request_data['year'], request_data['month'], 1)).first()
             paid_days = monthly_details.paid_days_count
             num_days_in_month = calendar.monthrange(request_data['year'], request_data['month'])[1]
             non_paid_days = num_days_in_month - (paid_days/2)

@@ -15,7 +15,7 @@ from openpyxl.styles import Font, PatternFill
 #     return age
 
 
-def generate_payment_sheet_xlsx(request_data, employee_salaries):
+def generate_payment_sheet_xlsx(user, request_data, employee_salaries):
     employees_data = []
     total_row = {
     'S/N': '',

@@ -24,7 +24,12 @@ export const resignationApiSlice = apiSlice.injectEndpoints({
 				method: 'PATCH',
 				body: body,
 			}),
-			invalidatesTags: ['EmployeePersonalDetails', 'EmployeeProfessionalDetails'],
+			invalidatesTags: [
+				'EmployeePersonalDetails',
+				'EmployeeProfessionalDetails',
+				'AllEmployeeMonthlyAttendanceDetails',
+				'EarnedAmountPreparedSalary',
+			],
 		}),
 		unresign: builder.mutation({
 			query: (body) => ({

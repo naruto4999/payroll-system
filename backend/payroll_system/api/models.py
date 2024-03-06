@@ -1463,7 +1463,7 @@ class BonusPercentage(models.Model):
 
 class FullAndFinal(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_company_employees_full_and_final")
-    employee = models.OneToOneField(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="full_and_final")
+    employee = models.ForeignKey(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="full_and_final")
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="all_employees_full_and_final")
     full_and_final_date = models.DateField(null=False, blank=False)
     el_encashment_days = models.SmallIntegerField(null=False, blank=False, default=0)
@@ -1481,6 +1481,11 @@ class FullAndFinal(models.Model):
     deductions_notice_period_days = models.PositiveSmallIntegerField(null=False, blank=False, default=0)
     deductions_notice_period_amount = models.PositiveIntegerField(null=False, blank=False, default=0)
     deductions_others = models.PositiveIntegerField(null=False, blank=False, default=0)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'employee'], name='unique_full_and_final_per_employee_per_user'),
+        ]
 
 class SubUserOvertimeSettings(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_companies_sub_user_settings")

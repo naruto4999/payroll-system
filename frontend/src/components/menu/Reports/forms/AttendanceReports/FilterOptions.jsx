@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Field, ErrorMessage, FieldArray } from 'formik';
 import { FaCircleNotch } from 'react-icons/fa';
+import { useSelector } from 'react-redux';
 
 const classNames = (...classes) => {
 	return classes.filter(Boolean).join(' ');
@@ -11,6 +12,7 @@ const FilterOptions = ({ handleChange, values, isValid, handleSubmit, isSubmitti
 	// 	setFieldValue('filters.monthFromDate', 1);
 	// 	setFieldValue('filters.monthToDate', new Date(selectedDate.year, selectedDate.month, 0).getDate());
 	// }, [selectedDate.month]);
+	const auth = useSelector((state) => state.auth);
 
 	return (
 		<div className="flex flex-col gap-2">
@@ -29,7 +31,9 @@ const FilterOptions = ({ handleChange, values, isValid, handleSubmit, isSubmitti
 				>
 					<option value="attendance_register">Attendance Register</option>
 					<option value="present_report">Present Report</option>
-					<option value="overtime_sheet_daily">{'Over Time Sheet (Daily)'}</option>
+					{auth.account.role == 'OWNER' && (
+						<option value="overtime_sheet_daily">{'Over Time Sheet (Daily)'}</option>
+					)}
 					<option value="form_14">{'Form-14 (Leave Register)'}</option>
 					<option value="bonus_calculation_sheet">Bonus Calculation Sheet</option>
 					<option value="bonus_form_c">Bonus Form C</option>

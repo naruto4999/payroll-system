@@ -34,7 +34,7 @@ class FPDF(FPDF):
         
 
 # Create instance of FPDF class
-def generate_full_and_final_report(request_data, employee):
+def generate_full_and_final_report(user, request_data, employee):
     print('starting to create the attendance register')
     generative_leaves = LeaveGrade.objects.filter(company_id=request_data['company'], generate_frequency__isnull=False)
     default_cell_height = 5
@@ -43,6 +43,7 @@ def generate_full_and_final_report(request_data, employee):
     right_margin = 7
     top_margin = 6
     bottom_margin = 8
+    minimum_salary_table_rows = 7
 
     max_name_earning_head_name_length = 6
 
@@ -155,7 +156,7 @@ def generate_full_and_final_report(request_data, employee):
     full_and_final_report.set_font('noto-sans-devanagari', size=7, style='B')
     full_and_final_report.cell(w=width_of_columns['salary_wage_rate'], h=default_cell_height, text=f"Salary/Wage Rate", new_x="LMARGIN", new_y="NEXT",align='C', border=1)
     
-    full_and_final_report.rect(x=full_and_final_report.get_x(), y=full_and_final_report.get_y(), w=width_of_columns["salary_wage_rate"], h=(default_cell_height)*len(employee_salary_rates))
+    full_and_final_report.rect(x=full_and_final_report.get_x(), y=full_and_final_report.get_y(), w=width_of_columns["salary_wage_rate"], h=(default_cell_height)*minimum_salary_table_rows)
     full_and_final_report.set_font('noto-sans-devanagari', size=7)
     total_earnings_rate = 0
     for index, salary_rate in enumerate(employee_salary_rates):
@@ -163,6 +164,11 @@ def generate_full_and_final_report(request_data, employee):
         full_and_final_report.cell(w=width_of_columns['salary_wage_rate'], h=default_cell_height, text=f'{salary_rate.earnings_head.name[:max_name_earning_head_name_length]}', align='L', new_x="LEFT", new_y='TOP')
         full_and_final_report.cell(w=width_of_columns['salary_wage_rate'], h=default_cell_height, text=f'{salary_rate.value}', align='R', new_x="LEFT", new_y='NEXT')
         total_earnings_rate += salary_rate.value
+    
+    #Printing Blank lines if the earnings heads are less than min table rows
+    if len(employee_salary_rates)<minimum_salary_table_rows:
+        for blank_index in range(minimum_salary_table_rows-len(employee_salary_rates)):
+            full_and_final_report.set_xy(x=full_and_final_report.get_x(), y=full_and_final_report.get_y()+default_cell_height) #blank line
 
     # Printing Total
     full_and_final_report.set_xy(x=coordinates_before_table['x'], y=full_and_final_report.get_y())
@@ -176,9 +182,9 @@ def generate_full_and_final_report(request_data, employee):
     full_and_final_report.set_xy(x=coordinates_before_table['x']+width_of_columns['salary_wage_rate'], y=coordinates_before_table["y"])
     full_and_final_report.cell(w=width_of_columns['earnings'], h=default_cell_height, text=f"Earnings", new_x="LEFT", new_y="NEXT", align='C', border=1)
 
-    salary_prepared_resign_month = employee.employee.salaries_prepared.filter(date=resignation_date.replace(day=1)).first()
+    salary_prepared_resign_month = employee.employee.salaries_prepared.filter(user=user, date=resignation_date.replace(day=1)).first()
     earned_amounts = EarnedAmount.objects.filter(salary_prepared = salary_prepared_resign_month.id).order_by('earnings_head__id')
-    full_and_final_report.rect(x=full_and_final_report.get_x(), y=full_and_final_report.get_y(), w=width_of_columns["earnings"], h=(default_cell_height)*len(employee_salary_rates))
+    full_and_final_report.rect(x=full_and_final_report.get_x(), y=full_and_final_report.get_y(), w=width_of_columns["earnings"], h=(default_cell_height)*minimum_salary_table_rows)
     full_and_final_report.set_font('noto-sans-devanagari', size=7, style='')
     total_earned_amount = 0
     for index, earned in enumerate(earned_amounts):
@@ -186,6 +192,12 @@ def generate_full_and_final_report(request_data, employee):
         full_and_final_report.cell(w=width_of_columns['earnings'], h=default_cell_height, text=f'{earned.earned_amount-earned.arear_amount}', new_x="LEFT", new_y='NEXT', align='R')
         total_earned_amount += earned.earned_amount-earned.arear_amount
         print(earned.earned_amount-earned.arear_amount)
+
+    #Printing Blank lines if the earned amounts are less than min table rows
+    if len(earned_amounts)<minimum_salary_table_rows:
+        for blank_index in range(minimum_salary_table_rows-len(earned_amounts)):
+            full_and_final_report.set_xy(x=full_and_final_report.get_x(), y=full_and_final_report.get_y()+default_cell_height) #blank line
+
     
     # Printing Total
     full_and_final_report.set_font('noto-sans-devanagari', size=7, style='B')
@@ -198,7 +210,7 @@ def generate_full_and_final_report(request_data, employee):
     full_and_final_report.set_xy(x=coordinates_before_table['x']+width_of_columns['salary_wage_rate']+width_of_columns['earnings'], y=coordinates_before_table["y"])
     full_and_final_report.cell(w=width_of_columns['arrears'], h=default_cell_height, text=f"Arrears", new_x="LEFT", new_y="NEXT", align='C', border=1)
 
-    full_and_final_report.rect(x=full_and_final_report.get_x(), y=full_and_final_report.get_y(), w=width_of_columns["earnings"], h=(default_cell_height)*len(employee_salary_rates))
+    full_and_final_report.rect(x=full_and_final_report.get_x(), y=full_and_final_report.get_y(), w=width_of_columns["earnings"], h=(default_cell_height)*minimum_salary_table_rows)
     full_and_final_report.set_font('noto-sans-devanagari', size=7, style='')
     total_arrears_amount = 0
     for index, earned in enumerate(earned_amounts):
@@ -206,6 +218,12 @@ def generate_full_and_final_report(request_data, employee):
         full_and_final_report.cell(w=width_of_columns['arrears'], h=default_cell_height, text=f'{earned.arear_amount}', new_x="LEFT", new_y='NEXT', align='R')
         total_arrears_amount += earned.arear_amount
         print(earned.arear_amount)
+
+    #Printing Blank lines if the earned amounts are less than min table rows
+    if len(earned_amounts)<minimum_salary_table_rows:
+        for blank_index in range(minimum_salary_table_rows-len(earned_amounts)):
+            full_and_final_report.set_xy(x=full_and_final_report.get_x(), y=full_and_final_report.get_y()+default_cell_height) #blank line
+
     
     # Printing Total
     full_and_final_report.set_font('noto-sans-devanagari', size=7, style='B')
@@ -215,7 +233,7 @@ def generate_full_and_final_report(request_data, employee):
 
     ##Deductions Table
     full_and_final_report.set_xy(x=coordinates_before_table['x']+width_of_columns['salary_wage_rate']+width_of_columns['earnings']+width_of_columns['arrears'], y=coordinates_before_table['y'] + default_cell_height)
-    full_and_final_report.rect(x=full_and_final_report.get_x(), y=full_and_final_report.get_y(), w=width_of_columns["deductions"], h=default_cell_height*5)
+    full_and_final_report.rect(x=full_and_final_report.get_x(), y=full_and_final_report.get_y(), w=width_of_columns["deductions"], h=default_cell_height*7)
 
     full_and_final_report.set_font('noto-sans-devanagari', size=7)
     total_deductions = 0
@@ -230,6 +248,11 @@ def generate_full_and_final_report(request_data, employee):
     full_and_final_report.cell(w=width_of_columns['deductions'], h=default_cell_height, text=f'ESI', new_x="LEFT", new_y='TOP', align='L')
     full_and_final_report.cell(w=width_of_columns['deductions'], h=default_cell_height, text=f'{salary_prepared_resign_month.esi_deducted}', new_x="LEFT", new_y='NEXT', align='R')
     total_deductions += salary_prepared_resign_month.esi_deducted
+
+    #VPF
+    full_and_final_report.cell(w=width_of_columns['deductions'], h=default_cell_height, text=f'VPF', new_x="LEFT", new_y='TOP', align='L')
+    full_and_final_report.cell(w=width_of_columns['deductions'], h=default_cell_height, text=f'{salary_prepared_resign_month.vpf_deducted}', new_x="LEFT", new_y='NEXT', align='R')
+    total_deductions += salary_prepared_resign_month.vpf_deducted
 
     #Advance
     full_and_final_report.cell(w=width_of_columns['deductions'], h=default_cell_height, text=f'Advance', new_x="LEFT", new_y='TOP', align='L')
@@ -246,6 +269,11 @@ def generate_full_and_final_report(request_data, employee):
     full_and_final_report.cell(w=width_of_columns['deductions'], h=default_cell_height, text=f'{salary_prepared_resign_month.others_deducted}', new_x="LEFT", new_y='NEXT', align='R')
     total_deductions += salary_prepared_resign_month.others_deducted
 
+    #LWF
+    full_and_final_report.cell(w=width_of_columns['deductions'], h=default_cell_height, text=f"{'LWF' if salary_prepared_resign_month.company.pf_esi_setup_details.enable_labour_welfare_fund else ''}", new_x="LEFT", new_y='TOP', align='L')
+    full_and_final_report.cell(w=width_of_columns['deductions'], h=default_cell_height, text=f"{salary_prepared_resign_month.labour_welfare_fund_deducted if salary_prepared_resign_month.company.pf_esi_setup_details.enable_labour_welfare_fund else ''}", new_x="LEFT", new_y='NEXT', align='R')
+    total_deductions += salary_prepared_resign_month.labour_welfare_fund_deducted
+
     #Printing Total
     full_and_final_report.set_font('noto-sans-devanagari', size=7, style='B')
     full_and_final_report.cell(w=width_of_columns['deductions'], h=default_cell_height, text=f"{total_deductions}", new_x="RIGHT", new_y="TOP",align='R', border=1)
@@ -253,13 +281,14 @@ def generate_full_and_final_report(request_data, employee):
 
     ##Net Amount
     full_and_final_report.set_xy(x=full_and_final_report.get_x(), y=coordinates_before_table['y'] + default_cell_height)
-    full_and_final_report.cell(w=width_of_columns['net_amount'], h=default_cell_height*5, text=f'', new_x="LEFT", new_y='NEXT', align='R', border=1)
+    full_and_final_report.cell(w=width_of_columns['net_amount'], h=default_cell_height*7, text=f'', new_x="LEFT", new_y='NEXT', align='R', border=1)
     full_and_final_report.set_font('noto-sans-devanagari', size=7, style='B')
     full_and_final_report.cell(w=width_of_columns['net_amount'], h=default_cell_height, text=f'{total_earned_amount+total_arrears_amount-total_deductions}', new_x="LEFT", new_y='NEXT', align='R', border=1)
     full_and_final_report.set_font('noto-sans-devanagari', size=7, style='')
 
+
     coordinates_before_full_and_final_table = {"x": full_and_final_report.get_x(), "y": full_and_final_report.get_y()}
-    employee_full_and_final = employee.employee.full_and_final
+    employee_full_and_final = employee.employee.full_and_final.filter(user=user).first()
     ##Earnings in full and final
     full_and_final_earnings = 0
     full_and_final_report.set_xy(x=coordinates_before_table['x'], y=full_and_final_report.get_y())

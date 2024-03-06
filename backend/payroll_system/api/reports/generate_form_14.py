@@ -31,7 +31,7 @@ width_of_columns = {
        "remarks": 15
     }
 
-def generate_form_14(request_data, employees):
+def generate_form_14(user, request_data, employees):
     default_cell_height = 5
     default_cell_height_small = 4
     default_cell_height_extra_small = 3.5
@@ -251,9 +251,7 @@ def generate_form_14(request_data, employees):
             #Earned Amounts
             earned_amounts = None
             if current_month_salary:
-                print(current_month_salary, current_month_salary.date)
                 earned_amounts = current_month_salary.current_salary_earned_amounts.all()
-            # print(earned_amounts)
             
             #Total Earned
             total_earnings_amount = None
@@ -275,7 +273,7 @@ def generate_form_14(request_data, employees):
             #Work Days
             working_days_str = ''
             try: 
-                employee_monthly_attendance_details = employee.employee.monthly_attendance_details.filter(date=date(request_data['year'], month_index+1, 1)).first()
+                employee_monthly_attendance_details = employee.employee.monthly_attendance_details.filter(user=user, date=date(request_data['year'], month_index+1, 1)).first()
                 working_days = employee_monthly_attendance_details.present_count
                 total_work_days += working_days
                 working_days_str =  working_days/2
@@ -297,11 +295,9 @@ def generate_form_14(request_data, employees):
             el = leave_grades.filter(name="EL").first()
 
             try:
-                print(f"EL Leave: {el}")
-                montly_el = employee.employee.generative_leave_record.filter(date=date(request_data['year'], month_index+1, 1), leave=el).first()
-                print(f"Monthly EL: {montly_el}")
+                montly_el = employee.employee.generative_leave_record.filter(user=user, date=date(request_data['year'], month_index+1, 1), leave=el).first()
                 number_of_el = montly_el.leave_count
-                print(f"Number of EL: {number_of_el}")
+                leaves_dict['EL']['leave_availed'] +=(number_of_el/2)
                 if number_of_el>0:
                     current_year_current_emp_el_credit += number_of_el
                     el_days_str =  number_of_el/2
@@ -310,10 +306,11 @@ def generate_form_14(request_data, employees):
             form_14.cell(w=width_of_columns['no_of_days_worked']/4, h=height_of_table_row, text=f"{el_days_str}", align="C", new_x="RIGHT", new_y='TOP', border=1)
 
             #Updating leaves dict
-            try:
-                leaves_dict['EL']['leave_availed'] +=(number_of_el/2)
-            except:
-                pass
+            # try:
+            #     print(f"Number of EL: {number_of_el/2} Month: {month_index}")
+            #     leaves_dict['EL']['leave_availed'] +=(number_of_el/2)
+            # except:
+            #     pass
 
             #Total of columns
             work_days = 0
@@ -339,7 +336,6 @@ def generate_form_14(request_data, employees):
             first_day_of_month = date(request_data['year'], month_index+1, 1)
             num_days_in_month = calendar.monthrange(request_data['year'], month_index+1)[1]
             last_day_of_month = date(request_data['year'], month_index+1, num_days_in_month)
-            print(f"First Day: {first_day_of_month}, Last Day: {last_day_of_month}")
 
             dates_of_el_str = ''
             try:
@@ -347,14 +343,12 @@ def generate_form_14(request_data, employees):
                     Q(first_half=el) | Q(second_half=el),
                     date__gte=first_day_of_month,
                     date__lte=last_day_of_month,
+                    user=user
                 )
-                print(f"EL attendances objects: {employee_attendance_objects}")
                 for attendance in employee_attendance_objects:
-                    print(f"Attendance {attendance.date.day}")
                     if dates_of_el_str != '':
                         dates_of_el_str += ','
                     dates_of_el_str += str(attendance.date.day)
-                    print(f"El Str: {dates_of_el_str}")
             except:
                 pass
             
@@ -393,42 +387,38 @@ def generate_form_14(request_data, employees):
             cl_days_str = ''
             cl = leave_grades.filter(name="CL").first()
             try:
-                print(f"CL Leave: {cl}")
-                montly_cl = employee.employee.generative_leave_record.filter(date=date(request_data['year'], month_index+1, 1), leave=cl).first()
-                print(f"Monthly CL: {montly_cl}")
+                montly_cl = employee.employee.generative_leave_record.filter(user=user, date=date(request_data['year'], month_index+1, 1), leave=cl).first()
                 number_of_cl = montly_cl.leave_count
-                print(f"Number of CL: {number_of_cl}")
+                leaves_dict['CL']['leave_availed'] +=(number_of_cl/2)
                 if number_of_cl>0:
                     cl_days_str =  number_of_cl/2
             except:
                 pass
 
             #Updating leaves dict
-            try:
-                leaves_dict['CL']['leave_availed'] +=(number_of_cl/2)
-            except:
-                pass
+            # try:
+            #     leaves_dict['CL']['leave_availed'] +=(number_of_cl/2)
+            # except:
+            #     pass
             form_14.cell(w=width_of_columns['cl'], h=height_of_table_row, text=f"{cl_days_str}", align="C", new_x="RIGHT", new_y='TOP', border=1)
             
             #SL
             sl_days_str = ''
             sl = leave_grades.filter(name="SL").first()
             try:
-                print(f"SL Leave: {sl}")
-                montly_sl = employee.employee.generative_leave_record.filter(date=date(request_data['year'], month_index+1, 1), leave=sl).first()
-                print(f"Monthly SL: {montly_sl}")
+                montly_sl = employee.employee.generative_leave_record.filter(user=user, date=date(request_data['year'], month_index+1, 1), leave=sl).first()
                 number_of_sl = montly_sl.leave_count
-                print(f"Number of SL: {number_of_sl}")
+                leaves_dict['SL']['leave_availed'] +=(number_of_sl/2)
                 if number_of_sl>0:
                     sl_days_str =  number_of_sl/2
             except:
                 pass
 
             #Updating leaves dict
-            try:
-                leaves_dict['SL']['leave_availed'] +=(number_of_sl/2)
-            except:
-                pass
+            # try:
+            #     leaves_dict['SL']['leave_availed'] +=(number_of_sl/2)
+            # except:
+            #     pass
             form_14.cell(w=width_of_columns['sl'], h=height_of_table_row, text=f"{sl_days_str}", align="C", new_x="RIGHT", new_y='TOP', border=1)
 
             #Blank
@@ -501,7 +491,7 @@ def generate_form_14(request_data, employees):
         form_14.cell(width_of_columns['summary_header'], h=default_cell_height_extra_small, text=f'Balance Leave', align="L", new_x="RIGHT", new_y='TOP', border='LB')
         form_14.cell(width_of_columns['summary_value'], h=default_cell_height_extra_small, text=f"{leaves_dict['SL']['leave_earned']-leaves_dict['SL']['leave_availed']}", align="R", new_x="LMARGIN", new_y='NEXT', border='RB')
         
-        form_14.set_xy(x=form_14.get_x(), y=210-4-default_cell_height_extra_small)
+        form_14.set_xy(x=form_14.get_x(), y=210-bottom_margin-7)
         form_14.cell(w=0, h=default_cell_height_extra_small, text=f"Signature of Employee", align="L", new_x="LMARGIN", new_y='TOP', border=0)
 
         if index!=len(employees)-1:

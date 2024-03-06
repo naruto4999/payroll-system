@@ -47,9 +47,17 @@ def generate_form_no_16(report, default_cell_height, default_cell_height_for_hea
     report.cell(w=0, h=default_cell_height, text='I hereby declare that in the event of death before resuming work the balance of my pay due for the period of leave with wages', align="L", new_x="LMARGIN", new_y='NEXT', border=0)
     report.cell(w=0, h=default_cell_height, text='not availed of shall be paid to:', align="L", new_x="LMARGIN", new_y='NEXT', border=0)
 
+    #FA Nominee
+    fa_nominee = None
+    try: fa_nominee = employee.employee_family_nominee_detail.filter(is_fa_nominee=True).first()
+    except: pass
+    report.set_xy(x=report.get_x()+25, y=report.get_y()+default_cell_height) #blank line
+    report.cell(w=210-(25+left_margin+right_margin+25), h=default_cell_height, text=f"Shri/Smt/Km      {fa_nominee.name if fa_nominee else ''}", align="L", new_x="LEFT", new_y='TOP', border=0)
+    report.line(x1=report.get_x()+25, y1=report.get_y()+default_cell_height, x2=report.get_x()+210-(25+left_margin+right_margin+25), y2=report.get_y()+default_cell_height)
     report.set_xy(x=report.get_x(), y=report.get_y()+default_cell_height) #blank line
-    report.cell(w=0, h=default_cell_height, text='Shri/Smt/Km    _________________________________________________________________________________________________', align="C", new_x="LMARGIN", new_y='NEXT', border=0)
-    report.cell(w=0, h=default_cell_height, text='who is my         _________________________________________________________________________________________________', align="C", new_x="LMARGIN", new_y='NEXT', border=0)
+    report.cell(w=0, h=default_cell_height, text=f"who is my            {fa_nominee.relation if fa_nominee else ''}", align="L", new_x="LEFT", new_y='TOP', border=0)
+    report.line(x1=report.get_x()+25, y1=report.get_y()+default_cell_height, x2=report.get_x()+210-(25+left_margin+right_margin+25), y2=report.get_y()+default_cell_height)
+    report.set_xy(x=left_margin, y=report.get_y()+default_cell_height) #blank line
     
     report.set_xy(x=report.get_x(), y=report.get_y()+default_cell_height*5) #blank line
     report.set_xy(x=210-right_margin-width_of_columns['signature'], y=report.get_y())

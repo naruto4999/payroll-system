@@ -1779,18 +1779,11 @@ class EmployeeAttendanceUpdateAPIView(generics.UpdateAPIView):
     def update(self, request, *args, **kwargs):
         user = self.request.user
         employee_attendance = request.data['employee_attendance']
-        total_expected_instances= len(employee_attendance)
         date_for_one_instance = datetime.strptime(employee_attendance[0]['date'], "%Y-%m-%d").date()
-        print(f"Date: {date_for_one_instance} Type: {type(date_for_one_instance)}")
         employee_id = employee_attendance[0]['employee']
         company_id = employee_attendance[0]['company']
-        print(f"Employee: {employee_id} Company: {company_id}")
-        print(total_expected_instances)
         for day in employee_attendance:
-            print(f"Day id: {day['id']}")
             instance = self.get_queryset().filter(id=day['id'])
-            print("instance ", instance) 
-            print(day)
             if instance.exists():
                 serializer = self.get_serializer(instance.first(), data=day)
             else:
@@ -2064,28 +2057,16 @@ class EmployeeSalaryPreparedListAPIView(generics.ListAPIView):
         serializer = self.get_serializer(queryset, many=True)
         print(f'RUnning slaary prepared: {queryset}')
         return Response(serializer.data)
-    
-#### 2nd Account Done till above here ###
-    
+        
 class BulkPrepareSalariesView(APIView):
     def post(self, request, *args, **kwargs):
         user = self.request.user
         serializer = BulkPrepareSalariesSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        # print(serializer.validated_data)
         validated_data = serializer.validated_data
-        print(validated_data)
-        # num_days_in_month = calendar.monthrange(validated_data['year'], validated_data['month'])[1]
-        # if validated_data['month_to_date']>num_days_in_month:
-        #     validated_data['month_to_date'] = num_days_in_month
-        # from_date = date(validated_data['year'], validated_data['month'], validated_data['month_from_date'])
-        # to_date = date(validated_data['year'], validated_data['month'], validated_data['month_to_date'])
-
-        # # try:
         operation_result, message = EmployeeSalaryPrepared.objects.bulk_prepare_salaries(month=validated_data['month'], year=validated_data['year'], company_id=validated_data['company'], user=user)
         print(f"Operation result: {operation_result}, Message: {message}")
         return Response({"message": "Bulk Prepare Salaries successful"}, status=status.HTTP_200_OK)
-
 
 class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
@@ -2155,7 +2136,7 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
                 response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
                 return response
             elif len(employee_salaries) != 0 and validated_data['filters']['format']=='xlsx':
-                response = StreamingHttpResponse(generate_payment_sheet_xlsx(serializer.validated_data, employee_salaries), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                response = StreamingHttpResponse(generate_payment_sheet_xlsx(request.user, serializer.validated_data, employee_salaries), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
                 response["Content-Disposition"] = 'attachment; filename="myexcel.xlsx"'
                 return response
             else:
@@ -2191,7 +2172,7 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
                 order_by = ("employee__attendance_card_no",)
             elif validated_data['filters']['sort_by'] == "employee_name":
                 order_by = ('employee__name',)
-            employee_salaries = EmployeeSalaryPrepared.objects.filter(employee__id__in=employee_ids, date=overtime_sheet_date, net_ot_amount_monthly__gt=0)
+            employee_salaries = EmployeeSalaryPrepared.objects.filter(user=request.user, employee__id__in=employee_ids, date=overtime_sheet_date, net_ot_amount_monthly__gt=0)
 
             #Use python regular expression to orderby if the order by is using paycode because it is alpha numeric
             if validated_data['filters']['sort_by'] == "paycode":
@@ -2200,7 +2181,7 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
                 employee_salaries = employee_salaries.order_by(*order_by)
 
             if len(employee_salaries) != 0:
-                response = StreamingHttpResponse(generate_overtime_sheet(serializer.validated_data, employee_salaries), content_type="application/pdf")
+                response = StreamingHttpResponse(generate_overtime_sheet(request.user, serializer.validated_data, employee_salaries), content_type="application/pdf")
                 response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
                 return response
             else:
@@ -2208,7 +2189,6 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
 
         # return Response({"message": "Payslip successful"}, status=status.HTTP_200_OK)
         print('idk')
-
 
 class PersonnelFileReportsCreateAPIView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
@@ -2259,7 +2239,6 @@ class PersonnelFileReportsCreateAPIView(generics.CreateAPIView):
         return Response({"message": "Payslip successful"}, status=status.HTTP_200_OK)
         print('idk')
 
-
 class AttendanceReportsCreateAPIView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = AttendanceReportsSerializer
@@ -2279,7 +2258,7 @@ class AttendanceReportsCreateAPIView(generics.CreateAPIView):
             if validated_data['filters']['sort_by'] == "attendance_card_no":
                 order_by = ("employee__attendance_card_no",)
             elif validated_data['filters']['sort_by'] == "employee_name":
-                order_by = ('employee__name',)
+                order_by = ('name',)
             if validated_data['filters']['group_by'] != 'none':
                 if order_by != None:
                     order_by = ('employee__employee_professional_detail__department', *order_by)
@@ -2305,7 +2284,7 @@ class AttendanceReportsCreateAPIView(generics.CreateAPIView):
 
 
             if len(employees) != 0:
-                response = StreamingHttpResponse(generate_attendance_register(serializer.validated_data, employees), content_type="application/pdf")
+                response = StreamingHttpResponse(generate_attendance_register(request.user, serializer.validated_data, employees), content_type="application/pdf")
                 response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
                 print('returnining the report now ')
                 return response
@@ -2336,7 +2315,7 @@ class AttendanceReportsCreateAPIView(generics.CreateAPIView):
                 Q(machine_out__isnull=False)),
                 date=date(validated_data['year'], validated_data['month'], validated_data['filters']['date']),
                 company_id=validated_data['company'],
-                user=user
+                user=request.user
             )
             print(len(present_employees_attendances))
 
@@ -2364,6 +2343,8 @@ class AttendanceReportsCreateAPIView(generics.CreateAPIView):
 
 
         if validated_data['report_type'] == 'overtime_sheet_daily':
+            if request.user.role != 'OWNER':
+                return Response({'error': "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
             num_days_in_month = calendar.monthrange(validated_data['year'], validated_data['month'])[1]
             if validated_data['filters']['date']> num_days_in_month:
                 return Response({"detail": "Invalid Date"}, status=status.HTTP_400_BAD_REQUEST)
@@ -2384,7 +2365,7 @@ class AttendanceReportsCreateAPIView(generics.CreateAPIView):
                 Q(ot_min__isnull=False) & Q(ot_min__gt=0),
                 date=date(validated_data['year'], validated_data['month'], validated_data['filters']['date']),
                 company_id=validated_data['company'],
-                user=user
+                user=user #OWNER
             )
             print(len(employees_attendances_with_ot))
 
@@ -2431,7 +2412,7 @@ class AttendanceReportsCreateAPIView(generics.CreateAPIView):
                 employees = employees.order_by(*order_by)
 
             if len(employees) !=0:
-                response = StreamingHttpResponse(generate_form_14(serializer.validated_data, employees), content_type="application/pdf")
+                response = StreamingHttpResponse(generate_form_14(request.user, serializer.validated_data, employees), content_type="application/pdf")
                 response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
                 return response
             else:
@@ -2469,7 +2450,7 @@ class AttendanceReportsCreateAPIView(generics.CreateAPIView):
                 employees = employees.order_by(*order_by)
 
             if len(employees) !=0:
-                response = StreamingHttpResponse(generate_bonus_calculation_sheet(serializer.validated_data, employees), content_type="application/pdf")
+                response = StreamingHttpResponse(generate_bonus_calculation_sheet(request.user, serializer.validated_data, employees), content_type="application/pdf")
                 response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
                 return response
             else:
@@ -2507,7 +2488,7 @@ class AttendanceReportsCreateAPIView(generics.CreateAPIView):
                 employees = employees.order_by(*order_by)
 
             if len(employees) !=0:
-                response = StreamingHttpResponse(generate_bonus_form_c(serializer.validated_data, employees), content_type="application/pdf")
+                response = StreamingHttpResponse(generate_bonus_form_c(request.user, serializer.validated_data, employees), content_type="application/pdf")
                 response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
                 return response
             else:
@@ -2515,6 +2496,8 @@ class AttendanceReportsCreateAPIView(generics.CreateAPIView):
             
             # print(f"EMployees found: {employees}")
             # return Response({"detail": "Yo"}, status=status.HTTP_200_OK)
+
+#### 2nd Account Done till above here ###
 
 class PfEsiReportsCreateAPIView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
@@ -2552,12 +2535,12 @@ class PfEsiReportsCreateAPIView(generics.CreateAPIView):
 
 
             if len(employees) != 0 and validated_data['filters']['format']=='xlsx':
-                response = StreamingHttpResponse(generate_pf_statement(serializer.validated_data, employees), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                response = StreamingHttpResponse(generate_pf_statement(request.user, serializer.validated_data, employees), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
                 response["Content-Disposition"] = 'attachment; filename="myexcel.xlsx"'
                 return response
             
             elif len(employees) != 0 and validated_data['filters']['format']=='txt':
-                txt_content = generate_pf_statement_txt(serializer.validated_data, employees)
+                txt_content = generate_pf_statement_txt(request.user, serializer.validated_data, employees)
                 response = HttpResponse(content_type='text/plain')
                 response['Content-Disposition'] = 'attachment; filename="employee_data.txt"'
                 response.write(txt_content)
@@ -2589,7 +2572,7 @@ class PfEsiReportsCreateAPIView(generics.CreateAPIView):
 
 
             if len(employees) != 0:
-                response = StreamingHttpResponse(generate_esi_statement_xlsx(serializer.validated_data, employees), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                response = StreamingHttpResponse(generate_esi_statement_xlsx(request.user, serializer.validated_data, employees), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
                 response["Content-Disposition"] = 'attachment; filename="myexcel.xlsx"'
                 return response
 
@@ -2670,19 +2653,29 @@ class EmployeeResignationUpdateAPIView(generics.UpdateAPIView):
         EmployeeAttendance.objects.filter(
             Q(employee_id=employee_id) & Q(date__gt=resignation_date)
         ).delete()
+    
+    def delete_salary_after_resignation(self, employee_id, resignation_date):
+        # Assuming 'resignation_date' is in datetime format
+        EmployeeSalaryPrepared.objects.filter(
+            Q(employee_id=employee_id) & Q(date__gte=date(resignation_date.year, resignation_date.month, 1))
+        ).delete()
 
     def get_queryset(self, *args, **kwargs):
         company_id = self.kwargs.get('company_id')
         user = self.request.user
-        if user.role == "OWNER":
-            return user.all_companys_employee_professional_details.filter(company_id=company_id)
-        instance = OwnerToRegular.objects.get(user=user)
-        return instance.owner.all_companys_employee_professional_details.filter(company_id=company_id)
+        if user.role != "OWNER":
+            user = user.regular_to_owner.owner
+        return user.all_companys_employee_professional_details.filter(company_id=company_id)
+        # instance = OwnerToRegular.objects.get(user=user)
+        # return instance.owner.all_companys_employee_professional_details.filter(company_id=company_id)
     
     def update(self, request, *args, **kwargs):
-        # user = self.request.user
+        user = self.request.user
+        if user.role != "OWNER":
+            user = user.regular_to_owner.owner
         employee_id = kwargs.get('employee')
         instance = self.get_queryset().filter(employee_id=employee_id).first()
+        company_id = instance.company
 
         if instance:
             serializer = self.get_serializer(instance, data=request.data, partial=True)
@@ -2693,6 +2686,14 @@ class EmployeeResignationUpdateAPIView(generics.UpdateAPIView):
             resignation_date = serializer.validated_data.get('resignation_date')  # Change this to match your serializer field
             if resignation_date:
                 self.delete_attendance_records_after_resignation(employee_id, resignation_date)
+                EmployeeGenerativeLeaveRecord.objects.generate_update_monthly_record(user=user, year=resignation_date.year, month=resignation_date.month, employee_id=employee_id, company_id=company_id)
+                instance = OwnerToRegular.objects.filter(owner=user)
+                if instance.exists():
+                    regular = instance.first().user
+                    attendance_records_in_resignation_month = EmployeeAttendance.objects.filter(user=regular, employee_id=employee_id, date__gte=date(resignation_date.year, resignation_date.month, 1))
+                    if attendance_records_in_resignation_month.exists:
+                        EmployeeGenerativeLeaveRecord.objects.generate_update_monthly_record(user=regular, year=resignation_date.year, month=resignation_date.month, employee_id=employee_id, company_id=company_id)
+                self.delete_salary_after_resignation(employee_id, resignation_date)
 
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
@@ -2733,10 +2734,9 @@ class BonusCalculationListAPIView(generics.ListAPIView):
     def get_queryset(self, *args, **kwargs):
         company_id = self.kwargs.get('company_id')
         user = self.request.user
-        if user.role == "OWNER":
-            return user.all_company_bonus_calculation.filter(company=company_id)
-        instance = OwnerToRegular.objects.get(user=user)
-        return instance.owner.all_company_bonus_calculation.filter(company=company_id)
+        if user.role != "OWNER":
+            user = user.regular_to_owner.owner
+        return user.all_company_bonus_calculation.filter(company=company_id)
     
     def list(self, request, *args, **kwargs):
         start_date = datetime.strptime(self.kwargs.get('start_date'), "%Y-%m-%d").date()
@@ -2753,15 +2753,15 @@ class BonusPercentageListAPIView(generics.ListAPIView):
     def get_queryset(self, *args, **kwargs):
         company_id = self.kwargs.get('company_id')
         user = self.request.user
-        if user.role == "OWNER":
-            return user.all_company_bonus_percentage.filter(company=company_id)
-        instance = OwnerToRegular.objects.get(user=user)
-        return instance.owner.all_company_bonus_percentage.filter(company=company_id)
-
+        if user.role != "OWNER":
+            user = user.regular_to_owner.owner
+        return user.all_company_bonus_percentage.filter(company=company_id)
 
 class BonusCalculationAPIView(APIView):
     def post(self, request, *args, **kwargs):
         user = self.request.user
+        if user.role != "OWNER":
+            user = user.regular_to_owner.owner
         # print(request.data)
         for category, month_dict in request.data['calculations'].items():
             print(month_dict)
@@ -2822,10 +2822,11 @@ class EarnedAmountPreparedSalaryListAPIView(generics.ListAPIView):
         company_id = self.kwargs.get('company_id')
         employee_id = self.kwargs.get('employee_id')
         user = self.request.user
-        if user.role == "OWNER":
-            return user.all_company_employees_salaries_prepared.filter(company=company_id, employee=employee_id)
-        instance = OwnerToRegular.objects.get(user=user)
-        return instance.owner.all_company_employees_salaries_prepared.filter(company=company_id, employee=employee_id)
+        # if user.role != "OWNER":
+        #     user = user.regular_to_owner.owner
+        return user.all_company_employees_salaries_prepared.filter(company=company_id, employee=employee_id)
+        # instance = OwnerToRegular.objects.get(user=user)
+        # return instance.owner.all_company_employees_salaries_prepared.filter(company=company_id, employee=employee_id)
     
 
     def list(self, request, *args, **kwargs):
@@ -2848,8 +2849,8 @@ class FullAndFinalCreateAPIView(APIView):
     def get_queryset(self, *args, **kwargs):
         company_id = self.kwargs.get('company_id')
         user = self.request.user
-        if user.role != "OWNER":
-            user = OwnerToRegular.objects.get(user=user).owner
+        # if user.role != "OWNER":
+            # user = OwnerToRegular.objects.get(user=user).owner
         return user.all_company_employees_full_and_final.filter(company=company_id)
 
     def post(self, request, *args, **kwargs):
@@ -2878,8 +2879,8 @@ class FullAndFinalRetrieveAPIView(generics.RetrieveAPIView):
     def get_queryset(self, *args, **kwargs):
         company_id = self.kwargs.get('company_id')
         user = self.request.user
-        if user.role != "OWNER":
-            user = OwnerToRegular.objects.get(user=user).owner
+        # if user.role != "OWNER":
+            # user = OwnerToRegular.objects.get(user=user).owner
         return user.all_company_employees_full_and_final.filter(company=company_id)
     
 class FullAndFinalReportCreateAPIView(generics.CreateAPIView):
@@ -2889,46 +2890,15 @@ class FullAndFinalReportCreateAPIView(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         user = request.user
         if user.role != "OWNER":
-            user = OwnerToRegular.objects.get(user=user).owner
+            user = user.regular_to_owner.owner
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)        
         validated_data = serializer.validated_data
         employee_id = validated_data["employee"]
         employee = EmployeeProfessionalDetail.objects.filter(employee=employee_id, user=user, company_id=validated_data['company'])
 
-        # if validated_data['report_type'] == 'attendance_register':
-        #     date_range_query = Q(date__year=validated_data['year'], date__month=validated_data['month'])
-        #     order_by = None
-        #     if validated_data['filters']['sort_by'] == "attendance_card_no":
-        #         order_by = ("employee__attendance_card_no",)
-        #     elif validated_data['filters']['sort_by'] == "employee_name":
-        #         order_by = ('employee__name',)
-        #     if validated_data['filters']['group_by'] != 'none':
-        #         if order_by != None:
-        #             order_by = ('employee__employee_professional_detail__department', *order_by)
-        #         else:
-        #             order_by = ('employee__employee_professional_detail__department',)
-
-        #     employees = EmployeePersonalDetail.objects.filter(id__in=employee_ids, user=user, company_id=validated_data['company'])
-
-        #     print(len(employees))
-
-        #     #Use python regular expression to orderby if the order by is using paycode because it is alpha numeric
-        #     if validated_data['filters']['sort_by'] == "paycode":
-        #         employees = sorted(
-        #             employees, 
-        #             key=lambda x: (
-        #                 (getattr(x.employee_professional_detail.department, 'name', 'zzzzzzzz') if hasattr(x.employee_professional_detail, 'department') else 'zzzzzzzz') if validated_data['filters']['group_by'] != 'none' else '',
-        #                 re.sub(r'[^A-Za-z]', '', x.paycode), 
-        #                 int(re.sub(r'[^0-9]', '', x.paycode))
-        #             )
-        #         )
-        #     else:
-        #         employees = employees.order_by(*order_by)
-
-
         if len(employee) != 0:
-            response = StreamingHttpResponse(generate_full_and_final_report(serializer.validated_data, employee.first()), content_type="application/pdf")
+            response = StreamingHttpResponse(generate_full_and_final_report(request.user, serializer.validated_data, employee.first()), content_type="application/pdf")
             response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
             print('returnining the report now ')
             return response
@@ -2943,11 +2913,14 @@ class EmployeeELLeftRetrieveAPIView(generics.RetrieveAPIView):
     def get_queryset(self, *args, **kwargs):
         company_id = self.kwargs.get('company_id')
         user = self.request.user
-        if user.role == "OWNER":
-            return user.all_company_employees_monthly_attendance_details.filter(company=company_id)
+        # if user.role != "OWNER":
+        #     user = user.regular_to_owner.owner
+        return user.all_company_employees_monthly_attendance_details.filter(company=company_id)
         
     def retrieve(self, request, *args, **kwargs):
         user = self.request.user
+        if user.role != "OWNER":
+            user = user.regular_to_owner.owner
         employee_id = self.kwargs.get('employee_id')
         employee_professional_detail = EmployeeProfessionalDetail.objects.filter(employee_id=employee_id)
         if employee_professional_detail.exists:
@@ -2964,7 +2937,7 @@ class EmployeeELLeftRetrieveAPIView(generics.RetrieveAPIView):
                         present_count += monthly_attendance.present_count
                 else:
                     return Response({"message": "Failed"}, status=status.HTTP_404_NOT_FOUND)
-                generative_leave_queryset = EmployeeGenerativeLeaveRecord.objects.filter(employee=employee_id, date__year=resignation_date.year, user=user, leave__name='EL')
+                generative_leave_queryset = EmployeeGenerativeLeaveRecord.objects.filter(user=request.user, employee=employee_id, date__year=resignation_date.year, leave__name='EL')
                 print(generative_leave_queryset)
                 if generative_leave_queryset.exists():
                     for monthly_leave in generative_leave_queryset:
@@ -2986,8 +2959,9 @@ class EmployeeBonusAmountYearlyRetrieveAPIView(generics.RetrieveAPIView):
     def get_queryset(self, *args, **kwargs):
         company_id = self.kwargs.get('company_id')
         user = self.request.user
-        if user.role == "OWNER":
-            return user.all_companys_employee_professional_details.filter(company=company_id)
+        if user.role != "OWNER":
+            user = user.regular_to_owner.owner
+        return user.all_companys_employee_professional_details.filter(company=company_id)
         
     def retrieve(self, request, *args, **kwargs):
         user = self.request.user

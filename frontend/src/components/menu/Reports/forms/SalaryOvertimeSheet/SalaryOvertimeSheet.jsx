@@ -273,8 +273,10 @@ const SalaryOvertimeSheet = () => {
 					}
 				} else if (!response.ok) {
 					console.error('Request failed with status: ', response.status);
+					// console.error(response.);
 					response.json().then((data) => {
 						console.log('Error:', data.detail);
+
 						if (response.status == 404) {
 							dispatch(
 								alertActions.createAlert({
@@ -389,6 +391,7 @@ const SalaryOvertimeSheet = () => {
 				resignationFilter: 'all',
 				language: 'english',
 				format: 'pdf',
+				overtime: 'with_ot',
 			},
 			reportType: 'salary_sheet',
 		};

@@ -63,7 +63,7 @@ class FPDF(FPDF):
         self.cell(w=width_of_columns['remarks'], h=10, text='Remarks', align="C", new_x="LMARGIN", new_y='NEXT', border=1)
         self.set_line_width(0.2)
 
-def generate_bonus_calculation_sheet(request_data, employees):
+def generate_bonus_calculation_sheet(user, request_data, employees):
     default_cell_height = 4.5
     default_cell_height_large = 6
     # default_row_number_of_cells = 1
@@ -160,7 +160,7 @@ def generate_bonus_calculation_sheet(request_data, employees):
             #Paid Days
             paid_days = None
             try:
-                monthly_details = employee.employee.monthly_attendance_details.filter(date=start_month_year).first()
+                monthly_details = employee.employee.monthly_attendance_details.filter(user=user, date=start_month_year).first()
                 paid_days = monthly_details.paid_days_count
                 grand_total_employee['paid_days'] += paid_days
             except: 

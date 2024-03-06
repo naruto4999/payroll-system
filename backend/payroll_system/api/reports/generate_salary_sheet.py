@@ -3,7 +3,7 @@ from ..models import EmployeeSalaryPrepared, EmployeePersonalDetail, EmployeePro
 from datetime import date
 from django.db.models import Case, When, Value, CharField
 import math
-
+from decimal import Decimal, ROUND_HALF_UP, ROUND_CEILING
 
 
 width_of_columns = {
@@ -30,10 +30,11 @@ max_name_earning_head_name_length = 5
 
 
 class FPDF(FPDF):
-        def __init__(self, my_date, company_name, company_address, *args, **kwargs):
+        def __init__(self, my_date, company_name, company_address, request_data, *args, **kwargs):
             self.my_date = my_date
             self.company_name = company_name
             self.company_address = company_address
+            self.request_data = request_data
             super().__init__(*args, **kwargs)
 
         def header(self):
@@ -82,7 +83,7 @@ class FPDF(FPDF):
             self.set_xy(x=position_before_drawing_box_for_paycode["x"]+width_of_columns["paycode"]+width_of_columns["employee_name"]+width_of_columns["attendance_detail"]+width_of_columns["salary_wage_rate"]+width_of_columns["earnings"]+width_of_columns["arrears"], y=position_before_drawing_box_for_paycode["y"])
 
             # Add Ot/Incentives
-            self.multi_cell(w=width_of_columns["ot_incentive"], h=7.5, txt="O.T\nIncentive", align='C', border=1)
+            self.multi_cell(w=width_of_columns["ot_incentive"], h=7.5, txt=f"{'O.T' if self.request_data['filters']['overtime'] == 'with_ot' else ''}\nIncentive", align='C', border=1)
             self.set_xy(x=position_before_drawing_box_for_paycode["x"]+width_of_columns["paycode"]+width_of_columns["employee_name"]+width_of_columns["attendance_detail"]+width_of_columns["salary_wage_rate"]+width_of_columns["earnings"]+width_of_columns["arrears"]+width_of_columns["ot_incentive"], y=position_before_drawing_box_for_paycode["y"])
 
             # Add Total Earnings
@@ -109,6 +110,7 @@ def generate_salary_sheet(user, request_data, prepared_salaries):
     global default_cell_height
     global default_number_of_cells_in_row
     default_cell_height = 5
+    print(request_data)
 
 
     earnings_grand_total_dict = {}
@@ -119,7 +121,7 @@ def generate_salary_sheet(user, request_data, prepared_salaries):
 
     default_number_of_cells_in_row = max(len(generative_leaves)+2, 8, len(earnings_head)+1)
     company_details = CompanyDetails.objects.filter(company=generative_leaves[0].company.id)
-    salary_sheet_pdf = FPDF(my_date=date(request_data['year'], request_data['month'], 1),company_name=generative_leaves[0].company.name,company_address=company_details.first().address if company_details.exists() else '', orientation="L", unit="mm", format="A4")
+    salary_sheet_pdf = FPDF(my_date=date(request_data['year'], request_data['month'], 1), company_name=generative_leaves[0].company.name, company_address=company_details.first().address if company_details.exists() else '', request_data=request_data, orientation="L", unit="mm", format="A4")
     salary_sheet_pdf.set_margins(left=6, top=4, right=6)
 
     salary_sheet_pdf.set_font('Arial', '', 8)
@@ -378,7 +380,7 @@ def generate_salary_sheet(user, request_data, prepared_salaries):
 
             if column_name == "arrears":
                 salary_sheet_pdf.rect(salary_sheet_pdf.get_x(), salary_sheet_pdf.get_y(), w=column_width, h=default_cell_height*default_number_of_cells_in_row)
-
+                print(f"Earned AMounts: {earned_amounts}")
                 total_arrear_amount = 0
                 arrear_amounts_text = ""
                 for earned in earned_amounts:
@@ -399,9 +401,7 @@ def generate_salary_sheet(user, request_data, prepared_salaries):
 
                 #For epf and esic summary
                 if employee_pf_esi_details.esi_allow == True:
-                    if employee_pf_esi_details.esi_on_ot == True:
-                        grand_total_epf_esic_dict["esi_wages_total"] += salary.net_ot_amount_monthly
-                    grand_total_epf_esic_dict["esi_wages_total"] += min(total_earnings_amount+total_arrear_amount, company_pf_esi_setup.esi_employee_limit)
+                    grand_total_epf_esic_dict["esi_wages_total"] += min(total_earnings_amount+total_arrear_amount+(salary.net_ot_amount_monthly if request_data['filters']['overtime'] == 'with_ot' and (employee_pf_esi_details.esi_on_ot or user.role=='REGULAR') else 0), company_pf_esi_setup.esi_employee_limit)
                     grand_total_epf_esic_dict["esi_employees_number"] += 1
 
                 salary_sheet_pdf.multi_cell(w=column_width, h=default_cell_height, txt=f"{total_arrear_amount}\n", align='R', border=0)
@@ -410,9 +410,9 @@ def generate_salary_sheet(user, request_data, prepared_salaries):
 
             if column_name == "ot_incentive":
                 salary_sheet_pdf.rect(salary_sheet_pdf.get_x(), salary_sheet_pdf.get_y(), w=column_width, h=default_cell_height*default_number_of_cells_in_row)
-                salary_sheet_pdf.multi_cell(w=column_width/2, h=(default_cell_height*default_number_of_cells_in_row)/3, txt=f"O.T Hrs\nO.T Amt\nIncentive", align='L', border=0)
+                salary_sheet_pdf.multi_cell(w=column_width/2, h=(default_cell_height*default_number_of_cells_in_row)/3, txt=f"{'O.T Hrs' if request_data['filters']['overtime'] == 'with_ot' else ''}\n{'O.T Amt' if request_data['filters']['overtime'] == 'with_ot' else ''}\nIncentive", align='L', border=0)
                 salary_sheet_pdf.set_xy(x=initial_cursor_position_before_row["x"]+width_of_columns["paycode"]+width_of_columns["employee_name"]+width_of_columns["attendance_detail"]+width_of_columns["salary_wage_rate"]+width_of_columns["earnings"]+width_of_columns["arrears"]+(width_of_columns["ot_incentive"]/2), y=initial_cursor_position_before_row["y"])
-                salary_sheet_pdf.multi_cell(w=column_width/2, h=(default_cell_height*default_number_of_cells_in_row)/3, txt=f"{salary.net_ot_minutes_monthly/60}\n{salary.net_ot_amount_monthly}\n{salary.incentive_amount}", align='R', border=0)
+                salary_sheet_pdf.multi_cell(w=column_width/2, h=(default_cell_height*default_number_of_cells_in_row)/3, txt=f"{salary.net_ot_minutes_monthly/60 if request_data['filters']['overtime'] == 'with_ot' else ''}\n{salary.net_ot_amount_monthly if request_data['filters']['overtime'] == 'with_ot' else ''}\n{salary.incentive_amount}", align='R', border=0)
                 grand_total_ot_incentive["ot_amount"] += salary.net_ot_amount_monthly
                 grand_total_ot_incentive["incentive"] += salary.incentive_amount
                 salary_sheet_pdf.set_xy(x=initial_cursor_position_before_row["x"]+width_of_columns["paycode"]+width_of_columns["employee_name"]+width_of_columns["attendance_detail"]+width_of_columns["salary_wage_rate"]+width_of_columns["earnings"]+width_of_columns["arrears"]+width_of_columns["ot_incentive"], y=initial_cursor_position_before_row["y"])
@@ -428,7 +428,7 @@ def generate_salary_sheet(user, request_data, prepared_salaries):
                 salary_sheet_pdf.set_line_width(0.1)
                 salary_sheet_pdf.dashed_line(salary_sheet_pdf.get_x(), salary_sheet_pdf.get_y(), salary_sheet_pdf.get_x()+column_width, salary_sheet_pdf.get_y(), dash_length = 1, space_length = 1)
                 salary_sheet_pdf.set_line_width(0.3)
-                total_earnings_including_ot_arrrear = total_earnings_amount+total_arrear_amount+salary.net_ot_amount_monthly+salary.incentive_amount
+                total_earnings_including_ot_arrrear = total_earnings_amount+total_arrear_amount+(salary.net_ot_amount_monthly if request_data['filters']['overtime'] == 'with_ot' else 0)+salary.incentive_amount
                 grand_total_earnings_including_ot_arrear += total_earnings_including_ot_arrrear
                 salary_sheet_pdf.multi_cell(w=column_width, h=default_cell_height, txt=f"{total_earnings_including_ot_arrrear}", align='R', border=0)
                 salary_sheet_pdf.set_xy(x=initial_cursor_position_before_row["x"]+width_of_columns["paycode"]+width_of_columns["employee_name"]+width_of_columns["attendance_detail"]+width_of_columns["salary_wage_rate"]+width_of_columns["earnings"]+width_of_columns["arrears"]+width_of_columns["ot_incentive"]+width_of_columns["total_earnings"], y=initial_cursor_position_before_row["y"])
@@ -440,7 +440,14 @@ def generate_salary_sheet(user, request_data, prepared_salaries):
             if column_name == "deductions":
                 salary_sheet_pdf.rect(salary_sheet_pdf.get_x(), salary_sheet_pdf.get_y(), w=column_width, h=default_cell_height*default_number_of_cells_in_row)
                 deductions_name_text = f"PF\nESI\nVPF\nAdvance\nTDS"
-                deductions_amount_text = f"{salary.pf_deducted}\n{salary.esi_deducted}\n{salary.vpf_deducted}\n{salary.advance_deducted}\n{salary.tds_deducted}"
+                esi_deducted_based_on_overtime_filter = salary.esi_deducted
+                if request_data['filters']['overtime'] != 'with_ot' and employee_pf_esi_details.esi_allow and (employee_pf_esi_details.esi_on_ot or user.role == 'REGULAR'):
+                    total_earned_with_arrear = total_earnings_amount + total_arrear_amount
+                    esiable_amount = min(company_pf_esi_setup.esi_employee_limit, total_earned_with_arrear)
+                    esi_deducted = Decimal(esiable_amount) * Decimal(company_pf_esi_setup.esi_employee_percentage) / Decimal(100)
+                    esi_deducted_based_on_overtime_filter = esi_deducted.quantize(Decimal('1.'), rounding=ROUND_CEILING)
+                
+                deductions_amount_text = f"{salary.pf_deducted}\n{esi_deducted_based_on_overtime_filter }\n{salary.vpf_deducted}\n{salary.advance_deducted}\n{salary.tds_deducted}"
                 if company_pf_esi_setup.enable_labour_welfare_fund:
                     deductions_name_text += "\nLWF"
                     deductions_amount_text += f"\n{salary.labour_welfare_fund_deducted}"
@@ -455,9 +462,9 @@ def generate_salary_sheet(user, request_data, prepared_salaries):
                 salary_sheet_pdf.set_line_width(0.3)
 
                 #Total amount Deducted
-                total_deductions = salary.pf_deducted+salary.esi_deducted+salary.vpf_deducted+salary.advance_deducted+salary.tds_deducted
+                total_deductions = salary.pf_deducted+esi_deducted_based_on_overtime_filter+salary.vpf_deducted+salary.advance_deducted+salary.tds_deducted
                 grand_total_deductions["pf"] += salary.pf_deducted
-                grand_total_deductions["esi"] += salary.esi_deducted
+                grand_total_deductions["esi"] += esi_deducted_based_on_overtime_filter
                 grand_total_deductions["vpf"] += salary.vpf_deducted
                 grand_total_deductions["advance"] += salary.advance_deducted
                 grand_total_deductions["tds"] += salary.tds_deducted
@@ -480,7 +487,7 @@ def generate_salary_sheet(user, request_data, prepared_salaries):
                 salary_sheet_pdf.set_line_width(0.1)
                 salary_sheet_pdf.dashed_line(salary_sheet_pdf.get_x(), salary_sheet_pdf.get_y(), salary_sheet_pdf.get_x()+column_width, salary_sheet_pdf.get_y(), dash_length = 1, space_length = 1)
                 salary_sheet_pdf.set_line_width(0.3)
-                net_payable = (total_earnings_amount+total_arrear_amount+salary.net_ot_amount_monthly+salary.incentive_amount) - total_deductions
+                net_payable = (total_earnings_amount+total_arrear_amount+(salary.net_ot_amount_monthly if request_data['filters']['overtime'] == 'with_ot' else 0)+salary.incentive_amount) - total_deductions
                 grand_total_net_payable += net_payable
                 salary_sheet_pdf.set_font('Arial', 'B', 8)
                 salary_sheet_pdf.multi_cell(w=column_width, h=default_cell_height, txt=f"{net_payable}", align='R', border=0)
@@ -633,12 +640,12 @@ def generate_salary_sheet(user, request_data, prepared_salaries):
     salary_sheet_pdf.set_line_width(0.1)
     salary_sheet_pdf.rect(salary_sheet_pdf.get_x(), salary_sheet_pdf.get_y(), w=width_of_columns["ot_incentive"], h=grand_total_number_of_cells*default_cell_height)
     salary_sheet_pdf.set_line_width(0.3)
-    salary_sheet_pdf.multi_cell(w=width_of_columns["ot_incentive"]/2, h=((default_cell_height*grand_total_number_of_cells)/3), txt=f" \nO.T Amt\nIncentive", align='L', border=0)
+    salary_sheet_pdf.multi_cell(w=width_of_columns["ot_incentive"]/2, h=((default_cell_height*grand_total_number_of_cells)/3), txt=f" \n{'O.T Amt' if request_data['filters']['overtime'] == 'with_ot' else ''}\nIncentive", align='L', border=0)
     salary_sheet_pdf.set_xy(x=cursor_position_after_all_rows["x"]+width_of_columns["paycode"]+width_of_columns["employee_name"]+width_of_columns["attendance_detail"]+width_of_columns["salary_wage_rate"]+width_of_columns["earnings"]+width_of_columns["arrears"]+(width_of_columns["ot_incentive"]/2), y=cursor_position_after_all_rows["y"]+default_cell_height)
-    salary_sheet_pdf.multi_cell(w=width_of_columns["ot_incentive"]/2, h=((default_cell_height*grand_total_number_of_cells)/3), txt=f" \n{grand_total_ot_incentive['ot_amount']}\n{grand_total_ot_incentive['incentive']}", align='R', border=0)
+    salary_sheet_pdf.multi_cell(w=width_of_columns["ot_incentive"]/2, h=((default_cell_height*grand_total_number_of_cells)/3), txt=f" \n{grand_total_ot_incentive['ot_amount'] if request_data['filters']['overtime'] == 'with_ot' else ''}\n{grand_total_ot_incentive['incentive']}", align='R', border=0)
     salary_sheet_pdf.set_xy(x=cursor_position_after_all_rows["x"]+width_of_columns["paycode"]+width_of_columns["employee_name"]+width_of_columns["attendance_detail"]+width_of_columns["salary_wage_rate"]+width_of_columns["earnings"]+width_of_columns["arrears"]+(width_of_columns["ot_incentive"]/2), y=cursor_position_after_all_rows['y']+(default_cell_height*(grand_total_number_of_cells+1)))
     salary_sheet_pdf.set_font('Arial', 'B', 8)
-    salary_sheet_pdf.multi_cell(w=width_of_columns["ot_incentive"]/2, h=default_cell_height, txt=f"{grand_total_ot_incentive['incentive']+grand_total_ot_incentive['ot_amount']}", align='R', border=0)
+    salary_sheet_pdf.multi_cell(w=width_of_columns["ot_incentive"]/2, h=default_cell_height, txt=f"{grand_total_ot_incentive['incentive']+(grand_total_ot_incentive['ot_amount'] if request_data['filters']['overtime'] == 'with_ot' else 0)}", align='R', border=0)
     salary_sheet_pdf.set_font('Arial', '', 8)
 
     #Printing Grand Total Earnings Including OT and Arrear

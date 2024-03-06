@@ -7,6 +7,7 @@ const NetSalary = React.memo(({ values, updateEmployeeId }) => {
 	useEffect(() => {
 		if (updateEmployeeId) {
 			let netSalary = new BigNumber(0);
+			console.log(values);
 			const totalEarned = new BigNumber(
 				values?.earnedAmount?.reduce((accumulator, item) => {
 					return accumulator + Number(item.earnedAmount || 0);

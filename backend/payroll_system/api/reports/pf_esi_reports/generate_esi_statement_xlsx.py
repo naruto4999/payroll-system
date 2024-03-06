@@ -13,7 +13,7 @@ import calendar
 #     return age
 
 
-def generate_esi_statement_xlsx(request_data, employees):
+def generate_esi_statement_xlsx(user, request_data, employees):
     # Create a DataFrame from the employees data
     serial = []
     paycode = []
@@ -46,7 +46,7 @@ def generate_esi_statement_xlsx(request_data, employees):
         #Paid Days
         paid_days = 0
         try:
-            monthly_details = employee.monthly_attendance_details.filter(date=date(request_data['year'], request_data['month'], 1)).first()
+            monthly_details = employee.monthly_attendance_details.filter(user=user, date=date(request_data['year'], request_data['month'], 1)).first()
             paid_days = monthly_details.paid_days_count/2
         except: 
             pass
@@ -61,8 +61,8 @@ def generate_esi_statement_xlsx(request_data, employees):
         try:
             esi_deducted = 0
             esiable_amount = 0
-            salary_prepared = employee.salaries_prepared.filter(date=date(request_data['year'], request_data['month'], 1)).first()
-            earned_amounts = EarnedAmount.objects.filter(salary_prepared = salary_prepared.id).order_by('earnings_head__id')
+            salary_prepared = employee.salaries_prepared.filter(user=user, date=date(request_data['year'], request_data['month'], 1)).first()
+            earned_amounts = EarnedAmount.objects.filter(user=user, salary_prepared = salary_prepared.id).order_by('earnings_head__id')
             for index, earned in enumerate(earned_amounts):
                 total_earned_amount += earned.earned_amount
             total_earned_for_esi_deduction = total_earned_amount

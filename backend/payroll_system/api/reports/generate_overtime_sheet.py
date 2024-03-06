@@ -49,13 +49,14 @@ class FPDF(FPDF):
         self.set_line_width(0.2)
 
 
-def generate_overtime_sheet(request_data, employee_salaries):
+def generate_overtime_sheet(user, request_data, employee_salaries):
     
     default_cell_height = 5
     default_row_number_of_cells = 3
     left_margin = 6
     right_margin = 7
     bottom_margin = 8
+    
 
     company_details = CompanyDetails.objects.filter(company_id=request_data['company'])
     overtime_sheet = FPDF(my_date=date(request_data['year'], request_data['month'], 1),company_name=employee_salaries[0].company.name,company_address=company_details[0].address if company_details.exists() else '', orientation="P", unit="mm", format="A4")
@@ -113,7 +114,7 @@ def generate_overtime_sheet(request_data, employee_salaries):
         #ESI on OT
         company_pf_esi_details = salary.company.pf_esi_setup_details
         esiable_amount = 0
-        if salary.employee.employee_pf_esi_detail.esi_on_ot:
+        if salary.employee.employee_pf_esi_detail.esi_on_ot or user.role=='REGULAR':
             esiable_amount = min(company_pf_esi_details.esi_employee_limit, salary.net_ot_amount_monthly)
         esi_deducted = Decimal(esiable_amount) * Decimal(company_pf_esi_details.esi_employee_percentage) / Decimal(100)
         esi_deducted = esi_deducted.quantize(Decimal('1.'), rounding=ROUND_CEILING)

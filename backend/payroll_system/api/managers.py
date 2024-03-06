@@ -59,80 +59,82 @@ class EmployeeAttendanceManager(models.Manager):
         return random_time.replace(second=0)
     
     def mark_default_attendance(self, from_date, to_date, company_id, user):
-        try:
-            LeaveGrade = apps.get_model('api', 'LeaveGrade')
-            WeeklyOffHolidayOff = apps.get_model('api', 'WeeklyOffHolidayOff')
-            EmployeeGenerativeLeaveRecord = apps.get_model('api', 'EmployeeGenerativeLeaveRecord')
-            weekly_off_holiday_off = WeeklyOffHolidayOff.objects.get(user=user, company_id=company_id)
-            Holiday = apps.get_model('api', 'Holiday')
-            holiday_queryset = Holiday.objects.filter(user=user, company_id=company_id)
+        # try:
+        LeaveGrade = apps.get_model('api', 'LeaveGrade')
+        WeeklyOffHolidayOff = apps.get_model('api', 'WeeklyOffHolidayOff')
+        EmployeeGenerativeLeaveRecord = apps.get_model('api', 'EmployeeGenerativeLeaveRecord')
+        weekly_off_holiday_off = WeeklyOffHolidayOff.objects.get(user=user, company_id=company_id)
+        Holiday = apps.get_model('api', 'Holiday')
+        holiday_queryset = Holiday.objects.filter(user=user, company_id=company_id)
 
-            #Leaves
-            absent_leave = LeaveGrade.objects.get(company_id=company_id, user=user, name='A')
-            weekly_off = LeaveGrade.objects.get(company_id=company_id, user=user, name='WO')
-            weekly_off_skip = LeaveGrade.objects.get(company_id=company_id, user=user, name='WO*')
-            holiday_off = LeaveGrade.objects.get(company_id=company_id, user=user, name='HD')
-            holiday_off_skip = LeaveGrade.objects.get(company_id=company_id, user=user, name='HD*')
-            EmployeeProfessionalDetail = apps.get_model('api', 'EmployeeProfessionalDetail')
-            EmployeeAttendance = apps.get_model('api', 'EmployeeAttendance')
-            active_employees = EmployeeProfessionalDetail.objects.active_employees_between_dates(from_date=from_date, to_date=to_date, company_id=company_id, user=user)
-            print(f"Length of active employees: {len(active_employees)}")
-            if active_employees.exists():
-                for employee in active_employees:
-                    existing_attendance_dates = set(
-                        EmployeeAttendance.objects.filter(
-                            Q(employee=employee.employee) &
-                            Q(date__gte=from_date) &
-                            Q(date__lte=to_date)
-                        ).values_list('date', flat=True)
-                    )
+        #Leaves
+        absent_leave = LeaveGrade.objects.get(company_id=company_id, user=user, name='A')
+        weekly_off = LeaveGrade.objects.get(company_id=company_id, user=user, name='WO')
+        weekly_off_skip = LeaveGrade.objects.get(company_id=company_id, user=user, name='WO*')
+        holiday_off = LeaveGrade.objects.get(company_id=company_id, user=user, name='HD')
+        holiday_off_skip = LeaveGrade.objects.get(company_id=company_id, user=user, name='HD*')
+        EmployeeProfessionalDetail = apps.get_model('api', 'EmployeeProfessionalDetail')
+        EmployeeAttendance = apps.get_model('api', 'EmployeeAttendance')
+        active_employees = EmployeeProfessionalDetail.objects.active_employees_between_dates(from_date=from_date, to_date=to_date, company_id=company_id, user=user)
+        print(f"Length of active employees: {len(active_employees)}")
+        if active_employees.exists():
+            for employee in active_employees:
+                try: employee.employee.employee_salary_detail
+                except: continue
+                existing_attendance_dates = set(
+                    EmployeeAttendance.objects.filter(
+                        Q(employee=employee.employee) &
+                        Q(date__gte=from_date) &
+                        Q(date__lte=to_date)
+                    ).values_list('date', flat=True)
+                )
 
-                    date_range = [from_date + timedelta(days=x) for x in range((to_date - from_date).days + 1)]
-                    dates_without_attendance = [date for date in date_range if date not in existing_attendance_dates]
-                    print(f"Dates without attendances: {dates_without_attendance}")
+                date_range = [from_date + timedelta(days=x) for x in range((to_date - from_date).days + 1)]
+                dates_without_attendance = [date for date in date_range if date not in existing_attendance_dates]
+                print(f"Dates without attendances: {dates_without_attendance}")
 
-                    # Mark attendance for dates where attendance object doesn't exist
-                    attendance_records = []
-                    total_expected_instances = 0
-                    for current_date in dates_without_attendance:
-                        if current_date >= employee.date_of_joining and (employee.resigned == False or current_date<=employee.resignation_date):
-                            if current_date.strftime('%a').lower() == employee.weekly_off or (weekday_occurrence_in_month(date=current_date) == employee.extra_off):
-                                #If it's weekly off bulk create the employees of the list so that when "paid_days_count_for_past_six_days" called it uses the updated Attendances
-                                EmployeeAttendance.objects.bulk_create(attendance_records)
-                                attendance_records.clear()
-                                weekly_off_to_give = weekly_off_skip
-                                if paid_days_count_for_past_six_days(user=user, company_id=company_id, attendance_date=current_date, employee=employee.employee) >= (weekly_off_holiday_off.min_days_for_weekly_off * 2):
-                                    weekly_off_to_give = weekly_off
-                                pay_multiplier = 0
-                                if weekly_off_to_give.paid:
-                                    pay_multiplier = 1.0
-                                attendance_records.append(EmployeeAttendance(user=user, company_id=company_id, employee=employee.employee, first_half=weekly_off_to_give, second_half=weekly_off_to_give, manual_in=None, manual_out=None, machine_in=None, machine_out=None, date=current_date, ot_min=None, late_min=None, pay_multiplier=pay_multiplier))
-                                total_expected_instances +=1
+                # Mark attendance for dates where attendance object doesn't exist
+                attendance_records = []
+                total_expected_instances = 0
+                for current_date in dates_without_attendance:
+                    if current_date >= employee.date_of_joining and (employee.resigned == False or current_date<=employee.resignation_date):
+                        if current_date.strftime('%a').lower() == employee.weekly_off or (weekday_occurrence_in_month(date=current_date) == employee.extra_off):
+                            #If it's weekly off bulk create the employees of the list so that when "paid_days_count_for_past_six_days" called it uses the updated Attendances
+                            EmployeeAttendance.objects.bulk_create(attendance_records)
+                            attendance_records.clear()
+                            weekly_off_to_give = weekly_off_skip
+                            if paid_days_count_for_past_six_days(user=user, company_id=company_id, attendance_date=current_date, employee=employee.employee) >= (weekly_off_holiday_off.min_days_for_weekly_off * 2):
+                                weekly_off_to_give = weekly_off
+                            pay_multiplier = 0
+                            if weekly_off_to_give.paid:
+                                pay_multiplier = 1.0
+                            attendance_records.append(EmployeeAttendance(user=user, company_id=company_id, employee=employee.employee, first_half=weekly_off_to_give, second_half=weekly_off_to_give, manual_in=None, manual_out=None, machine_in=None, machine_out=None, date=current_date, ot_min=None, late_min=None, pay_multiplier=pay_multiplier))
+                            total_expected_instances +=1
 
-                            elif holiday_queryset.filter(date=current_date).exists():
-                                #If it's weekly off bulk create the employees of the list so that when "paid_days_count_for_past_six_days" called it uses the updated Attendances
-                                EmployeeAttendance.objects.bulk_create(attendance_records)
-                                attendance_records.clear()
-                                holiday_off_to_give = holiday_off_skip
-                                if paid_days_count_for_past_six_days(user=user, company_id=company_id, attendance_date=current_date, employee=employee.employee) >= (weekly_off_holiday_off.min_days_for_holiday_off * 2):
-                                    holiday_off_to_give = holiday_off
-                                pay_multiplier = 0
-                                if holiday_off_to_give.paid:
-                                    pay_multiplier = 1.0
-                                attendance_records.append(EmployeeAttendance(user=user, company_id=company_id, employee=employee.employee, first_half=holiday_off_to_give, second_half=holiday_off_to_give, manual_in=None, manual_out=None, machine_in=None, machine_out=None, date=current_date, ot_min=None, late_min=None, pay_multiplier=pay_multiplier))
-                                total_expected_instances +=1
+                        elif holiday_queryset.filter(date=current_date).exists():
+                            #If it's weekly off bulk create the employees of the list so that when "paid_days_count_for_past_six_days" called it uses the updated Attendances
+                            EmployeeAttendance.objects.bulk_create(attendance_records)
+                            attendance_records.clear()
+                            holiday_off_to_give = holiday_off_skip
+                            if paid_days_count_for_past_six_days(user=user, company_id=company_id, attendance_date=current_date, employee=employee.employee) >= (weekly_off_holiday_off.min_days_for_holiday_off * 2):
+                                holiday_off_to_give = holiday_off
+                            pay_multiplier = 0
+                            if holiday_off_to_give.paid:
+                                pay_multiplier = 1.0
+                            attendance_records.append(EmployeeAttendance(user=user, company_id=company_id, employee=employee.employee, first_half=holiday_off_to_give, second_half=holiday_off_to_give, manual_in=None, manual_out=None, machine_in=None, machine_out=None, date=current_date, ot_min=None, late_min=None, pay_multiplier=pay_multiplier))
+                            total_expected_instances +=1
 
-                            else:
-                                attendance_records.append(EmployeeAttendance(user=user, company_id=company_id, employee=employee.employee, first_half=absent_leave, second_half=absent_leave, manual_in=None, manual_out=None, machine_in=None, machine_out=None, date=current_date, ot_min=None, late_min=None, pay_multiplier=0))
-                                total_expected_instances +=1
-                        current_date += relativedelta(days=1)
-                        print(attendance_records)
-                    
-                    EmployeeAttendance.objects.bulk_create(attendance_records)
-                    EmployeeGenerativeLeaveRecord.objects.generate_update_monthly_record(user=user, year=from_date.year, month=from_date.month, employee_id=employee.employee.id, company_id=employee.company.id)
-            return True, "Operation successful"
-        except:
-            return False, "Operation Failed"
+                        else:
+                            attendance_records.append(EmployeeAttendance(user=user, company_id=company_id, employee=employee.employee, first_half=absent_leave, second_half=absent_leave, manual_in=None, manual_out=None, machine_in=None, machine_out=None, date=current_date, ot_min=None, late_min=None, pay_multiplier=0))
+                            total_expected_instances +=1
+                    current_date += relativedelta(days=1)
+                    print(attendance_records)
+                
+                EmployeeAttendance.objects.bulk_create(attendance_records)
+                EmployeeGenerativeLeaveRecord.objects.generate_update_monthly_record(user=user, year=from_date.year, month=from_date.month, employee_id=employee.employee.id, company_id=employee.company.id)
+        return True, "Operation successful"
+        # except:
+        #     return False, "Operation Failed"
     
     # def get_employee_shift_on_date(self, user, company_id, employee, date_to_find):
     #     EmployeeShifts = apps.get_model('api', 'EmployeeShifts')
@@ -281,7 +283,6 @@ class EmployeeAttendanceManager(models.Manager):
 
             #Leaves
             present_leave = LeaveGrade.objects.get(company_id=company_id, user=user, name='P')
-            print(present_leave)
             miss_punch = LeaveGrade.objects.get(company_id=company_id, user=user, name='MS')
             absent_leave = LeaveGrade.objects.get(company_id=company_id, user=user, name='A')
             weekly_off = LeaveGrade.objects.get(company_id=company_id, user=user, name='WO')
@@ -313,7 +314,6 @@ class EmployeeAttendanceManager(models.Manager):
                 #current_employee user_id in machine db
                 user_info_df = mdb.read_table(temp_file.name, 'USERINFO')
                 # print(user_info_df.tail(50))
-                print(type(user_info_df['Badgenumber'].iloc[0]))
                 print(f'Current Employee ACN: {current_employee.employee.attendance_card_no}')
                 filtered_user_info = user_info_df[user_info_df['Badgenumber'] == str(current_employee.employee.attendance_card_no)]
                 user_id = None
@@ -346,7 +346,7 @@ class EmployeeAttendanceManager(models.Manager):
                 # print(attendance_by_date)
 
                 while current_date <= to_date:
-                    print(f"Current Date of loop{current_date}")
+                    print(f"Current Date of loop {current_date}")
                     if current_date.date() < current_employee.date_of_joining:
                         current_date += timedelta(days=1)
                         continue
@@ -355,7 +355,6 @@ class EmployeeAttendanceManager(models.Manager):
                     # existing_attendance = self.filter(user=user, company_id=company_id, date=current_date, employee=current_employee.employee)
                     existing_attendance = attendance_by_date.get(current_date.date(), None)
                     if existing_attendance != None:
-                        print(f"Existing attendance of {current_employee.employee.name}: {existing_attendance}, Machine in: {existing_attendance.machine_in} Machine Out: {existing_attendance.machine_out}")
                         if existing_attendance.manual_in != None and existing_attendance.manual_out != None:
                             skip_calculating_attendances = True
                     # print(current_date.strftime("%Y-%m-%d"))  # or do something with the date
@@ -493,13 +492,9 @@ class EmployeeAttendanceManager(models.Manager):
                     late_minutes = timedelta(minutes=0)
                     # print(f"skip attendance?: {skip_calculating_attendances}")
                     if current_date.strftime('%a').lower() != current_employee.weekly_off and (weekday_occurrence_in_month(date=current_date) != current_employee.extra_off) and (not holiday_queryset.filter(date=current_date).exists()) and not skip_calculating_attendances:
-                        print(f'Date: {current_date} Yes Late')
-                        print(f'Punch in time: {punch_in_time}')
                         if punch_in_time != None:
-                            print('Yes Not None')
                             if punch_in_time > (shift_beginning_time + relativedelta(minutes=employee_shift_on_particular_date.shift.late_grace)):
                                 late_minutes += (punch_in_time - shift_beginning_time)
-                                # print(f'In Time: {punch_in_row["CHECKTIME"]} Late: {late_minutes}')
                     late_minutes_integer = int(late_minutes.total_seconds() / 60) #Set to None while saving if late minutes are 0
 
                     # print(f'OT Integer Minutes: {overtime_minutes_integer} Late Minutes: {late_minutes_integer}')
@@ -766,7 +761,7 @@ class EmployeeAttendanceManager(models.Manager):
 
             ot_min_sub_user = None
             #Compare the out time to the shift end time with the ot begin after because if manual mode is enabled ot won't be shown but the punch out can be after the shift end time (like 2 hrs after the shift ends)
-            if machine_in_sub_user and machine_out_sub_user and (attendance.ot_min or machine_out_sub_user>(shift_end_time_with_current_date + timedelta(minutes=current_employee_current_date_shift.shift.ot_begin_after))):
+            if machine_in_sub_user and machine_out_sub_user and ((attendance.ot_min and employee_weekly_off_holiday_off_extra_off) or machine_out_sub_user>(shift_end_time_with_current_date + timedelta(minutes=current_employee_current_date_shift.shift.ot_begin_after))):
                 reference_datetime=shift_end_time_with_current_date if not employee_weekly_off_holiday_off_extra_off else None
                 # print(f"Reference Datetime: {reference_datetime}, Machine Out Sub User: {machine_out_sub_user}, Date: {attendance.date}")
 
@@ -989,16 +984,18 @@ class EmployeeSalaryPreparedManager(models.Manager):
         #Querysets
         from_date=date(year, month, 1)
         to_date = from_date + relativedelta(months=1) - relativedelta(days=1)
-        company_pf_esi_setup = PfEsiSetup.objects.get(user=user, company_id=company_id)
-        basic_earning_head_id = EarningsHead.objects.get(user=user, company_id=company_id, name='Basic').id
-        company_calculations = Calculations.objects.get(user=user, company_id=company_id)
-        active_employees = EmployeeProfessionalDetail.objects.active_employees_between_dates(from_date=from_date, to_date=to_date, company_id=company_id, user=user)
+        company_pf_esi_setup = PfEsiSetup.objects.get(user=user if user.role=="OWNER" else user.regular_to_owner.owner, company_id=company_id)
+        basic_earning_head_id = EarningsHead.objects.get(user=user if user.role=="OWNER" else user.regular_to_owner.owner, company_id=company_id, name='Basic').id
+        company_calculations = Calculations.objects.get(user=user if user.role=="OWNER" else user.regular_to_owner.owner, company_id=company_id)
+        active_employees = EmployeeProfessionalDetail.objects.active_employees_between_dates(user=user if user.role=="OWNER" else user.regular_to_owner.owner, from_date=from_date, to_date=to_date, company_id=company_id)
+        if user.role=='REGULAR':
+            active_employees.filter(employee__visible=True)
 
         if active_employees.exists():
             for current_employee in active_employees:
                 employee_pf_esi_detail = EmployeePfEsiDetail.objects.filter(company_id=company_id, employee=current_employee.employee)
                 employee_salary_detail = EmployeeSalaryDetail.objects.filter(company_id=company_id, employee=current_employee.employee)
-                employee_monthly_attendance_detail = EmployeeMonthlyAttendanceDetails.objects.filter(company_id=company_id, employee=current_employee.employee, date=from_date)
+                employee_monthly_attendance_detail = EmployeeMonthlyAttendanceDetails.objects.filter(user=user, company_id=company_id, employee=current_employee.employee, date=from_date)
                 employee_salary_earnings_for_each_head = EmployeeSalaryEarning.objects.filter(company_id=company_id, from_date__lte=from_date, to_date__gte=from_date, employee=current_employee.employee
                 )
 
@@ -1047,12 +1044,13 @@ class EmployeeSalaryPreparedManager(models.Manager):
                 if employee_salary_detail.first().overtime_type != 'no_overtime':
                     net_ot_minutes_monthly = employee_monthly_attendance_detail.first().net_ot_minutes_monthly
                     net_ot_hrs = Decimal(net_ot_minutes_monthly) / Decimal(60)
-                    overtime_rate_multiplier = 2 if employee_salary_detail.first().overtime_rate == 'D' else 1
+                    overtime_rate_multiplier = 2 if employee_salary_detail.first().overtime_rate == 'D' or user.role=='REGULAR' else 1
                     overtime_divisor = Decimal(26)
-                    if company_calculations.ot_calculation == 'month_days':
-                        overtime_divisor = Decimal(days_in_month)
-                    else:
-                        overtime_divisor = Decimal(company_calculations.ot_calculation)
+                    if user.role=='OWNER':
+                        if company_calculations.ot_calculation == 'month_days':
+                            overtime_divisor = Decimal(days_in_month)
+                        else:
+                            overtime_divisor = Decimal(company_calculations.ot_calculation)
                     net_ot_amount_monthly = Decimal(total_salary_rate) / overtime_divisor / Decimal(8) * net_ot_hrs * Decimal(overtime_rate_multiplier)
                     net_ot_amount_monthly = net_ot_amount_monthly.quantize(Decimal('1.'), rounding=ROUND_HALF_UP)
 
@@ -1061,7 +1059,7 @@ class EmployeeSalaryPreparedManager(models.Manager):
                 esi_deducted = 0
                 if employee_pf_esi_detail.first().esi_allow == True:
                     total_earned_for_esi_deduction = total_earned_amount
-                    if employee_pf_esi_detail.first().esi_on_ot == True:
+                    if user.role=='REGULAR' or employee_pf_esi_detail.first().esi_on_ot == True:
                         total_earned_for_esi_deduction +=net_ot_amount_monthly
                     esiable_amount = min(company_pf_esi_setup.esi_employee_limit, total_earned_for_esi_deduction)
                     esi_deducted = Decimal(esiable_amount) * Decimal(company_pf_esi_setup.esi_employee_percentage) / Decimal(100)
@@ -1083,13 +1081,13 @@ class EmployeeSalaryPreparedManager(models.Manager):
                     labour_welfare_fund_deducted = labour_welfare_fund_deducted.quantize(Decimal('1.'), rounding=ROUND_HALF_UP)
 
                 #Deleting Advances associated with the salary prepared
-                old_prepared_salary = EmployeeSalaryPrepared.objects.filter(user=user, employee=current_employee.employee, date=from_date)
+                old_prepared_salary = EmployeeSalaryPrepared.objects.filter(user=user if user.role=="OWNER" else user.regular_to_owner.owner, employee=current_employee.employee, date=from_date)
                 if old_prepared_salary.exists():
                     EmployeeAdvanceEmiRepayment.objects.filter(salary_prepared=old_prepared_salary.first().id).delete()
 
                 #Calculating Advance to be deducted
                 monthly_advance_repayment = 0
-                employee_advances = EmployeeAdvancePayment.objects.filter(user=user, employee=current_employee.employee, company_id=company_id, date__lt=(from_date + relativedelta(months=1))).order_by('date')
+                employee_advances = EmployeeAdvancePayment.objects.filter(user=user if user.role=="OWNER" else user.regular_to_owner.owner, employee=current_employee.employee, company_id=company_id, date__lt=(from_date + relativedelta(months=1))).order_by('date')
                 if employee_advances.exists():
                     monthly_advance_repayment = 0
                     max_advance_repayment_left = 0

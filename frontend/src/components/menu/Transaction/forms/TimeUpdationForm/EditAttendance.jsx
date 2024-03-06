@@ -1371,36 +1371,40 @@ const EditAttendance = memo(
 										Clear
 									</button>
 								</div>
-								<Field
-									type="file"
-									name="machineAttendanceUpload"
-									id="machineAttendanceUpload"
-									value={undefined}
-									className="block w-full cursor-pointer rounded border border-gray-300 bg-gray-50 text-sm file:border-0 file:bg-zinc-600 file:py-1 file:px-4 file:text-sm file:font-semibold file:text-white hover:file:cursor-pointer hover:file:bg-zinc-700 focus:outline-none dark:border-gray-600 dark:bg-zinc-900 dark:placeholder-gray-400"
-								/>
-								<div className="flex w-full flex-row justify-around gap-4">
-									<label className="my-auto block text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70">
-										All employees:
-										<Field
-											type="checkbox"
-											name="allEmployeesMachineAttendance"
-											className="ml-2.5 h-4 w-4 translate-y-0.5 rounded accent-teal-600"
-										/>
-									</label>
-									<button
-										type="button"
-										className="h-8 w-56 rounded bg-blueAccent-400 p-1 text-base font-medium hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:hover:bg-blueAccent-600"
-										onClick={
-											values.allEmployeesMachineAttendance == true
-												? () => {
-														setShowConfirmModalMachineAttendance(true);
-												  }
-												: machineAttendance
-										}
-									>
-										Machine Attendance
-									</button>
-								</div>
+								{auth.account.role === 'OWNER' && (
+									<Field
+										type="file"
+										name="machineAttendanceUpload"
+										id="machineAttendanceUpload"
+										value={undefined}
+										className="block w-full cursor-pointer rounded border border-gray-300 bg-gray-50 text-sm file:border-0 file:bg-zinc-600 file:py-1 file:px-4 file:text-sm file:font-semibold file:text-white hover:file:cursor-pointer hover:file:bg-zinc-700 focus:outline-none dark:border-gray-600 dark:bg-zinc-900 dark:placeholder-gray-400"
+									/>
+								)}
+								{auth.account.role === 'OWNER' && (
+									<div className="flex w-full flex-row justify-around gap-4">
+										<label className="my-auto block text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70">
+											All employees:
+											<Field
+												type="checkbox"
+												name="allEmployeesMachineAttendance"
+												className="ml-2.5 h-4 w-4 translate-y-0.5 rounded accent-teal-600"
+											/>
+										</label>
+										<button
+											type="button"
+											className="h-8 w-56 rounded bg-blueAccent-400 p-1 text-base font-medium hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:hover:bg-blueAccent-600"
+											onClick={
+												values.allEmployeesMachineAttendance == true
+													? () => {
+															setShowConfirmModalMachineAttendance(true);
+													  }
+													: machineAttendance
+											}
+										>
+											Machine Attendance
+										</button>
+									</div>
+								)}
 
 								{table && (
 									<div className=" max-w-full">

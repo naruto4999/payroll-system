@@ -46,7 +46,7 @@ class FPDF(FPDF):
             #Drawing the column header for all the date columns
             x_tracker = self.get_x()
             num_days_in_month = calendar.monthrange(self.my_date.year, self.my_date.month)[1]
-            for date in range(max_days_in_month):
+            for date in range(num_days_in_month):
                 if date+1 <= num_days_in_month: 
                     date_obj = self.my_date + relativedelta(days=date)
                     self.multi_cell(w=width_of_columns['date'], h=self.default_cell_height, txt=f'{date+1}\n{date_obj.strftime("%a")}', align="C", new_x='RIGHT', new_y='TOP', border=1)
@@ -68,7 +68,7 @@ class FPDF(FPDF):
 
 
 # Create instance of FPDF class
-def generate_attendance_register(request_data, employees):
+def generate_attendance_register(user, request_data, employees):
     print('starting to create the attendance register')
     generative_leaves = LeaveGrade.objects.filter(company_id=request_data['company'], generate_frequency__isnull=False)
     default_cell_height = 3
@@ -116,7 +116,7 @@ def generate_attendance_register(request_data, employees):
         if not salary_detail.exists():
             continue
         row_number += 1
-        attendance_records = EmployeeAttendance.objects.filter(employee=employee, date__range=[date(request_data['year'], request_data['month'], 1), date(request_data['year'], request_data['month'], num_days_in_month)])
+        attendance_records = EmployeeAttendance.objects.filter(user=user, employee=employee, date__range=[date(request_data['year'], request_data['month'], 1), date(request_data['year'], request_data['month'], num_days_in_month)])
         totals = {
             'total_working_hrs': 0,
             'total_late': 0
@@ -148,7 +148,7 @@ def generate_attendance_register(request_data, employees):
         holiday_days_count = ''
         employee_monthly_details = None
         try:
-            employee_monthly_details = employee.monthly_attendance_details.filter(date=date(request_data['year'], request_data['month'], 1)).first()
+            employee_monthly_details = employee.monthly_attendance_details.filter(user=user, date=date(request_data['year'], request_data['month'], 1)).first()
             paid_days_count = int(employee_monthly_details.paid_days_count/2) if employee_monthly_details.paid_days_count/2%1==0 else employee_monthly_details.paid_days_count/2
             present_count = int(employee_monthly_details.present_count/2) if employee_monthly_details.present_count/2%1==0 else employee_monthly_details.present_count/2
             weekly_off_days_count = int(employee_monthly_details.weekly_off_days_count/2) if employee_monthly_details.weekly_off_days_count/2%1==0 else employee_monthly_details.weekly_off_days_count/2
@@ -159,7 +159,7 @@ def generate_attendance_register(request_data, employees):
         generative_leave_text = ''
         employee_generative_leaves = None
         try:
-            employee_generative_leaves = EmployeeGenerativeLeaveRecord.objects.filter(employee=employee, date=date(request_data['year'], request_data['month'], 1)).order_by('leave__name')
+            employee_generative_leaves = EmployeeGenerativeLeaveRecord.objects.filter(user=user, employee=employee, date=date(request_data['year'], request_data['month'], 1)).order_by('leave__name')
             generative_leave_text = "\n".join(f"{leave.leave.name} : {int(leave.leave_count/2) if leave.leave_count/2%1==0 else leave.leave_count/2}" for leave in employee_generative_leaves)
         except:
             pass
