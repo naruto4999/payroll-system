@@ -63,19 +63,19 @@ class EmployeeAttendanceManager(models.Manager):
         LeaveGrade = apps.get_model('api', 'LeaveGrade')
         WeeklyOffHolidayOff = apps.get_model('api', 'WeeklyOffHolidayOff')
         EmployeeGenerativeLeaveRecord = apps.get_model('api', 'EmployeeGenerativeLeaveRecord')
-        weekly_off_holiday_off = WeeklyOffHolidayOff.objects.get(user=user, company_id=company_id)
+        weekly_off_holiday_off = WeeklyOffHolidayOff.objects.get(user=user if user.role=='OWNER' else user.regular_to_owner.owner, company_id=company_id)
         Holiday = apps.get_model('api', 'Holiday')
-        holiday_queryset = Holiday.objects.filter(user=user, company_id=company_id)
+        holiday_queryset = Holiday.objects.filter(user=user if user.role=='OWNER' else user.regular_to_owner.owner, company_id=company_id)
 
         #Leaves
-        absent_leave = LeaveGrade.objects.get(company_id=company_id, user=user, name='A')
-        weekly_off = LeaveGrade.objects.get(company_id=company_id, user=user, name='WO')
-        weekly_off_skip = LeaveGrade.objects.get(company_id=company_id, user=user, name='WO*')
-        holiday_off = LeaveGrade.objects.get(company_id=company_id, user=user, name='HD')
-        holiday_off_skip = LeaveGrade.objects.get(company_id=company_id, user=user, name='HD*')
+        absent_leave = LeaveGrade.objects.get(company_id=company_id, user=user if user.role=='OWNER' else user.regular_to_owner.owner, name='A')
+        weekly_off = LeaveGrade.objects.get(company_id=company_id, user=user if user.role=='OWNER' else user.regular_to_owner.owner, name='WO')
+        weekly_off_skip = LeaveGrade.objects.get(company_id=company_id, user=user if user.role=='OWNER' else user.regular_to_owner.owner, name='WO*')
+        holiday_off = LeaveGrade.objects.get(company_id=company_id, user=user if user.role=='OWNER' else user.regular_to_owner.owner, name='HD')
+        holiday_off_skip = LeaveGrade.objects.get(company_id=company_id, user=user if user.role=='OWNER' else user.regular_to_owner.owner, name='HD*')
         EmployeeProfessionalDetail = apps.get_model('api', 'EmployeeProfessionalDetail')
         EmployeeAttendance = apps.get_model('api', 'EmployeeAttendance')
-        active_employees = EmployeeProfessionalDetail.objects.active_employees_between_dates(from_date=from_date, to_date=to_date, company_id=company_id, user=user)
+        active_employees = EmployeeProfessionalDetail.objects.active_employees_between_dates(from_date=from_date, to_date=to_date, company_id=company_id, user=user if user.role=='OWNER' else user.regular_to_owner.owner)
         print(f"Length of active employees: {len(active_employees)}")
         if active_employees.exists():
             for employee in active_employees:
@@ -83,12 +83,12 @@ class EmployeeAttendanceManager(models.Manager):
                 except: continue
                 existing_attendance_dates = set(
                     EmployeeAttendance.objects.filter(
+                        Q(user=user) &
                         Q(employee=employee.employee) &
                         Q(date__gte=from_date) &
                         Q(date__lte=to_date)
                     ).values_list('date', flat=True)
                 )
-
                 date_range = [from_date + timedelta(days=x) for x in range((to_date - from_date).days + 1)]
                 dates_without_attendance = [date for date in date_range if date not in existing_attendance_dates]
                 print(f"Dates without attendances: {dates_without_attendance}")
