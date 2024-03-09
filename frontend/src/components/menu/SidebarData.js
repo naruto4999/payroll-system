@@ -193,6 +193,11 @@ const menuItems = [
 				icon: FaFilePdf,
 				path: '/home/reports/pf-esi-reports',
 			},
+			{
+				title: 'Employee Strength Reports',
+				icon: FaFilePdf,
+				path: '/home/reports/employee-strength-reports',
+			},
 		],
 	},
 

@@ -1,6 +1,4 @@
 from dataclasses import field
-from rest_framework import serializers
-
 from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning, EmployeeSalaryDetail, EmployeeFamilyNomineeDetial, EmployeePfEsiDetail, WeeklyOffHolidayOff, PfEsiSetup, Calculations, EmployeeShifts, EmployeeAttendance, EmployeeGenerativeLeaveRecord, EmployeeLeaveOpening, EmployeeMonthlyAttendanceDetails, EmployeeAdvancePayment, EmployeeSalaryPrepared, EarnedAmount, BonusCalculation, BonusPercentage, FullAndFinal, SubUserOvertimeSettings, SubUserMiscSettings
 from rest_framework import serializers
 
@@ -484,6 +482,22 @@ class TransferAttendanceFromOwnerToRegularSerializer(serializers.Serializer):
     month = serializers.IntegerField()
     company = serializers.IntegerField()
     year = serializers.IntegerField()
+
+class FiltersEmployeeStrengthReportsSerializer(serializers.Serializer):
+    group_by = serializers.ChoiceField(choices=["none", "department"])
+    resignation_filter = serializers.ChoiceField(choices=["with_resigned", "without_resigned"])
+    sort_by = serializers.ChoiceField(choices=["paycode", "attendance_card_no", "employee_name"])
+    salary_rate = serializers.ChoiceField(choices=["with_salary_rate", "without_salary_rate"])
+
+class EmployeeStrengthReportsSerializer(serializers.Serializer):
+    employee_ids = serializers.ListField(child=serializers.IntegerField())
+    filters = FiltersEmployeeStrengthReportsSerializer()
+    company = serializers.IntegerField()
+    from_date = serializers.DateField()
+    to_date = serializers.DateField()
+    report_type = serializers.ChoiceField(choices=["strength_report"])
+    class Meta:
+        fields = ['employee_ids', "filters"]
 
 
 # class CompanyEmployeeStatisticsSerializer(serializers.ModelSerializer):

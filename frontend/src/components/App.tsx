@@ -38,6 +38,7 @@ import VisibleEmployeesForm from './menu/AdminControlsForm/VisibleEmployeesForm/
 import OverTimeSettingsForm from './menu/AdminControlsForm/OverTimeSettingsForm/OverTimeSettingsForm';
 import SubUserMiscSettingsForm from './menu/AdminControlsForm/SubUserMiscSettingsForm/SubUserMiscSettingsForm';
 import TransferAttendanceForm from './menu/AdminControlsForm/TransferAttendaceForm/TransferAttendanceForm';
+import EmployeeStrengthReports from './menu/Reports/forms/EmployeeStrengthReports/EmployeeStrengthReports';
 // import store, { persistor } from "./authentication/store/index"
 // import { PersistGate } from "redux-persist/integration/react";
 // import { Provider } from "react-redux";
@@ -128,6 +129,7 @@ function App() {
 						<Route path="salary-overtime-sheet" element={<SalaryOvertimeSheet />} />
 						<Route path="attendance-reports" element={<AttendanceReports />} />
 						<Route path="pf-esi-reports" element={<PfEsiReports />} />
+						<Route path="employee-strength-reports" element={<EmployeeStrengthReports />} />
 					</Route>
 
 					{/* <Route path="bank-entry" element={<BankEntryForm />} />
