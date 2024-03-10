@@ -495,7 +495,7 @@ class EmployeeStrengthReportsSerializer(serializers.Serializer):
     company = serializers.IntegerField()
     from_date = serializers.DateField()
     to_date = serializers.DateField()
-    report_type = serializers.ChoiceField(choices=["strength_report"])
+    report_type = serializers.ChoiceField(choices=["strength_report", "resign_report"])
     class Meta:
         fields = ['employee_ids', "filters"]
 

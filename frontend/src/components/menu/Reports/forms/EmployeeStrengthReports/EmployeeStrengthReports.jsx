@@ -33,6 +33,7 @@ const formatDate = (date) => {
 const EmployeeStrengthReports = () => {
 	const [fromDate, setFromDate] = useState(new Date(new Date().setUTCDate(new Date().getUTCDate())));
 	const [toDate, setToDate] = useState(new Date(new Date().setUTCDate(new Date().getUTCDate())));
+	const [reportType, setReportType] = useState('strength_report');
 	const globalCompany = useSelector((state) => state.globalCompany);
 	const auth = useSelector((state) => state.auth);
 	const dispatch = useDispatch();
@@ -146,6 +147,14 @@ const EmployeeStrengthReports = () => {
 					if (resignationDateObj < fromDateObj) {
 						return false;
 					}
+					if (reportType == 'resign_report') {
+						const toDateObj = new Date(Date.UTC(toDate.getFullYear(), toDate.getMonth(), toDate.getDate()));
+						if (resignationDateObj > toDateObj) {
+							return false;
+						}
+					}
+				} else if (reportType == 'resign_report' && employee.resignationDate == null) {
+					return false;
 				}
 				return toDate >= employeeDateOfJoining;
 			} else {
@@ -154,7 +163,7 @@ const EmployeeStrengthReports = () => {
 		});
 
 		return filteredData;
-	}, [employeePersonalDetails, fromDate, toDate]);
+	}, [employeePersonalDetails, fromDate, toDate, reportType]);
 
 	const table = useReactTable({
 		data,
@@ -330,7 +339,18 @@ const EmployeeStrengthReports = () => {
 		};
 
 		// Call the generatePersonnelFileForms function to initiate the request
-		generatePersonnelFileForms();
+		if (fromDate > toDate) {
+			dispatch(
+				alertActions.createAlert({
+					message: 'To Date cannot be samaller than From Date',
+					type: 'Error',
+					duration: 8000,
+				})
+			);
+			setShowLoadingBar(false);
+		} else {
+			generatePersonnelFileForms();
+		}
 	};
 
 	return (
@@ -362,6 +382,11 @@ const EmployeeStrengthReports = () => {
 								To :
 							</label>
 							<DateSelector date={toDate} setDate={setToDate} id={'toDate'} name={'toDate'} />
+							{toDate < fromDate && (
+								<div className="mx-auto mt-1 w-40 text-xs font-bold text-red-500 dark:text-red-700">
+									Cannot be smaller than From Date
+								</div>
+							)}
 						</div>
 					</div>
 					<EmployeeTable table={table} flexRender={flexRender} />
@@ -371,7 +396,7 @@ const EmployeeStrengthReports = () => {
 						initialValues={initialValues}
 						validationSchema={''}
 						onSubmit={generateButtonClicked}
-						component={(props) => <FilterOptions {...props} />}
+						component={(props) => <FilterOptions {...props} setReportType={setReportType} />}
 					/>
 				</div>
 			</div>

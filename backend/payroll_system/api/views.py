@@ -35,6 +35,7 @@ from .reports.generate_bonus_calculation_sheet import generate_bonus_calculation
 from .reports.generate_bonus_form_c import generate_bonus_form_c
 from .reports.pf_esi_reports.generate_pf_statement import generate_pf_statement
 from .reports.employee_strength_reports.generate_strength_report import generate_strength_report
+from .reports.employee_strength_reports.generate_resign_report import generate_resign_report
 from .reports.pf_esi_reports.generate_esi_statement_xlsx import generate_esi_statement_xlsx
 from .reports.pf_esi_reports.generate_pf_statement_txt import generate_pf_statement_txt
 from .reports.generate_form_14 import generate_form_14
@@ -2597,14 +2598,14 @@ class EmployeeStrengthReportsCreateAPIView(generics.CreateAPIView):
             # date_range_query = Q(date__year=validated_data['year'], date__month=validated_data['month'])
             order_by = None
             if validated_data['filters']['sort_by'] == "attendance_card_no":
-                order_by = ("employee__attendance_card_no",)
+                order_by = ("attendance_card_no",)
             elif validated_data['filters']['sort_by'] == "employee_name":
                 order_by = ('name',)
             if validated_data['filters']['group_by'] != 'none':
                 if order_by != None:
-                    order_by = ('employee__employee_professional_detail__department', *order_by)
+                    order_by = ('employee_professional_detail__department', *order_by)
                 else:
-                    order_by = ('employee__employee_professional_detail__department',)
+                    order_by = ('employee_professional_detail__department',)
 
             employees = EmployeePersonalDetail.objects.filter(id__in=employee_ids, user=user, company_id=validated_data['company'])
 
@@ -2632,7 +2633,44 @@ class EmployeeStrengthReportsCreateAPIView(generics.CreateAPIView):
                 print('returnining the report now ')
                 return response
             else:
-                return Response({"detail": "No Attendances Found for the given month"}, status=status.HTTP_404_NOT_FOUND)
+                return Response({"detail": "No Active Employees in given period"}, status=status.HTTP_404_NOT_FOUND)
+            
+        if validated_data['report_type'] == 'resign_report':
+            # date_range_query = Q(date__year=validated_data['year'], date__month=validated_data['month'])
+            order_by = None
+            if validated_data['filters']['sort_by'] == "attendance_card_no":
+                order_by = ("attendance_card_no",)
+            elif validated_data['filters']['sort_by'] == "employee_name":
+                order_by = ('name',)
+            if validated_data['filters']['group_by'] != 'none':
+                if order_by != None:
+                    order_by = ('employee_professional_detail__department', *order_by)
+                else:
+                    order_by = ('employee_professional_detail__department',)
+
+            employees = EmployeePersonalDetail.objects.filter(id__in=employee_ids, user=user, company_id=validated_data['company'])
+
+            #Use python regular expression to orderby if the order by is using paycode because it is alpha numeric
+            if validated_data['filters']['sort_by'] == "paycode":
+                employees = sorted(
+                    employees, 
+                    key=lambda x: (
+                        (getattr(x.employee_professional_detail.department, 'name', 'zzzzzzzz') if hasattr(x.employee_professional_detail, 'department') else 'zzzzzzzz') if validated_data['filters']['group_by'] != 'none' else '',
+                        re.sub(r'[^A-Za-z]', '', x.paycode), 
+                        int(re.sub(r'[^0-9]', '', x.paycode))
+                    )
+                )
+            else:
+                employees = employees.order_by(*order_by)
+
+
+            if len(employees) != 0:
+                response = StreamingHttpResponse(generate_resign_report(request.user, serializer.validated_data, employees), content_type="application/pdf")
+                response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
+                print('returnining the report now ')
+                return response
+            else:
+                return Response({"detail": "No Resigned Employees in given period"}, status=status.HTTP_404_NOT_FOUND)
 
 
 #### 2nd Account Done till above here ###

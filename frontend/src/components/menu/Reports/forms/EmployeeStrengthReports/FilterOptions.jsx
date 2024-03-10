@@ -1,11 +1,15 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Field, ErrorMessage, FieldArray } from 'formik';
 import { FaCircleNotch } from 'react-icons/fa';
 
 const classNames = (...classes) => {
 	return classes.filter(Boolean).join(' ');
 };
-const FilterOptions = ({ handleChange, values, isValid, handleSubmit, isSubmitting }) => {
+const FilterOptions = ({ handleChange, values, isValid, handleSubmit, isSubmitting, setReportType }) => {
+	useEffect(() => {
+		setReportType(values.reportType);
+	}, [values.reportType]);
+
 	return (
 		<div className="flex flex-col gap-2">
 			<div>
@@ -22,6 +26,7 @@ const FilterOptions = ({ handleChange, values, isValid, handleSubmit, isSubmitti
 					name="reportType"
 				>
 					<option value="strength_report">Strength Report</option>
+					<option value="resign_report">Resign Report</option>
 				</Field>
 			</div>
 			<div>
@@ -42,23 +47,25 @@ const FilterOptions = ({ handleChange, values, isValid, handleSubmit, isSubmitti
 					<option value="employee_name">Employee Name</option>
 				</Field>
 			</div>
-			<div>
-				<label
-					htmlFor="salaryRate"
-					className="mr-4 text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
-				>
-					Salary Rate :
-				</label>
-				<Field
-					as="select"
-					id="salaryRate"
-					className="my-1 rounded-md bg-zinc-50 bg-opacity-50 p-1 dark:bg-zinc-700"
-					name="filters.salaryRate"
-				>
-					<option value="with_salary_rate">With Salary Rate</option>
-					<option value="without_salary_rate">Without Salary Rate</option>
-				</Field>
-			</div>
+			{values.reportType == 'strength_report' && (
+				<div>
+					<label
+						htmlFor="salaryRate"
+						className="mr-4 text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
+					>
+						Salary Rate :
+					</label>
+					<Field
+						as="select"
+						id="salaryRate"
+						className="my-1 rounded-md bg-zinc-50 bg-opacity-50 p-1 dark:bg-zinc-700"
+						name="filters.salaryRate"
+					>
+						<option value="with_salary_rate">With Salary Rate</option>
+						<option value="without_salary_rate">Without Salary Rate</option>
+					</Field>
+				</div>
+			)}
 			<div>
 				<label
 					htmlFor="groupBy"
@@ -76,23 +83,25 @@ const FilterOptions = ({ handleChange, values, isValid, handleSubmit, isSubmitti
 					<option value="department">Department</option>
 				</Field>
 			</div>
-			<div>
-				<label
-					htmlFor="resignationFilter"
-					className="mr-4 text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
-				>
-					Resignation Filter :
-				</label>
-				<Field
-					as="select"
-					id="resignationFilter"
-					className="my-1 rounded-md bg-zinc-50 bg-opacity-50 p-1 dark:bg-zinc-700"
-					name="filters.resignationFilter"
-				>
-					<option value="with_resigned">With Resigned Employees</option>
-					<option value="without_resigned">Without Resigned Employees</option>
-				</Field>
-			</div>
+			{values.reportType == 'strength_report' && (
+				<div>
+					<label
+						htmlFor="resignationFilter"
+						className="mr-4 text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
+					>
+						Resignation Filter :
+					</label>
+					<Field
+						as="select"
+						id="resignationFilter"
+						className="my-1 rounded-md bg-zinc-50 bg-opacity-50 p-1 dark:bg-zinc-700"
+						name="filters.resignationFilter"
+					>
+						<option value="with_resigned">With Resigned Employees</option>
+						<option value="without_resigned">Without Resigned Employees</option>
+					</Field>
+				</div>
+			)}
 			<section>
 				<div className="mt-4 mb-2 flex w-fit flex-row gap-4">
 					<button
