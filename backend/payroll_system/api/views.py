@@ -15,7 +15,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from djangorestframework_camel_case.parser import CamelCaseFormParser, CamelCaseMultiPartParser
 from django.db import IntegrityError, transaction
 from django.db.models import Q
-from datetime import datetime, date
+from datetime import datetime, timedelta, date
 from dateutil.relativedelta import relativedelta
 import pytz
 import calendar
@@ -977,26 +977,46 @@ class EmployeeProfessionalDetailRetrieveUpdateDestroyAPIView(generics.RetrieveUp
         if user.role != "OWNER":
             user = user.regular_to_owner.owner
         instance = self.get_object()
+        old_doj = instance.date_of_joining
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         validated_data = serializer.validated_data
         if 'date_of_joining' in validated_data:
             instance = self.get_queryset().filter(employee=validated_data['employee'])
-            if instance[0].date_of_joining != validated_data['date_of_joining']:
-                earning_instances = EmployeeSalaryEarning.objects.filter(user=user, employee=validated_data['employee'], from_date=instance[0].date_of_joining.replace(day=1))
-                shift_instances = EmployeeShifts.objects.filter(user=user, employee=validated_data['employee'], from_date=instance[0].date_of_joining)
+            if old_doj != validated_data['date_of_joining']:
+                earning_instances = EmployeeSalaryEarning.objects.filter(user=user, employee=validated_data['employee'], from_date=old_doj.replace(day=1))
+                shift_instances = EmployeeShifts.objects.filter(user=user, employee=validated_data['employee'], from_date=old_doj)
                 if len(shift_instances)>0:
                     shift = shift_instances[0]
                     shift.from_date=validated_data['date_of_joining']
                     shift.save()
                 if len(earning_instances) > 0:
                     for earning in earning_instances:
-                        # print(earning)
                         earning.from_date=validated_data['date_of_joining'].replace(day=1)
                         earning.save()
+                
+                #Deleting Old Attendances if present
+                employee_old_attendances = EmployeeAttendance.objects.filter(employee=validated_data['employee'], date__lt=validated_data['date_of_joining'])
+                if employee_old_attendances.exists():
+                    employee_old_attendances.delete()
 
-        print(validated_data)
+                print(f"New DOJ: {validated_data['date_of_joining']} ")
+                #Re-evaluating Weekly and Holiday Off
+                if validated_data['date_of_joining']>old_doj:
+                    EmployeeAttendance.objects.reevaluate_first_weekly_holiday_off_after_doj(user=request.user, employee=validated_data['employee'], date_of_joining=validated_data['date_of_joining'])
+                    if OwnerToRegular.objects.filter(owner=user).exists():
+                        EmployeeAttendance.objects.reevaluate_first_weekly_holiday_off_after_doj(user=user.owner_to_regular.user, employee=validated_data['employee'], date_of_joining=validated_data['date_of_joining'])
+                
         serializer.save(user=user)
+        print(f"Validated Data: {validated_data}, Instance: {old_doj}")
+        if 'date_of_joining' in validated_data and validated_data['date_of_joining']<old_doj:
+            num_days_in_month = calendar.monthrange(validated_data['date_of_joining'].year, validated_data['date_of_joining'].month)[1]
+            from_date = date(validated_data['date_of_joining'].year, validated_data['date_of_joining'].month, 1)
+            to_date = date(validated_data['date_of_joining'].year, validated_data['date_of_joining'].month, num_days_in_month)
+            print(f"From Date: {from_date} To Date: {to_date}")
+            operation_result, message = EmployeeAttendance.objects.mark_default_attendance(from_date=from_date, to_date=to_date, company_id=validated_data['employee'].company.id, user=user)
+            if OwnerToRegular.objects.filter(owner=user).exists():
+                operation_result, message = EmployeeAttendance.objects.mark_default_attendance(from_date=from_date, to_date=to_date, company_id=validated_data['employee'].company.id, user=user.owner_to_regular.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
 class EmployeeProfessionalDetailRetrieveAPIView(generics.RetrieveAPIView): #used in resignationApiSlice

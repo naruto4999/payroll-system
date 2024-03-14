@@ -51,6 +51,77 @@ class ActiveEmployeeManager(models.Manager):
         )
 
 class EmployeeAttendanceManager(models.Manager):
+
+    def reevaluate_first_weekly_holiday_off_after_doj(self, user, employee, date_of_joining):
+        #Importing models 
+        EmployeeAttendance = apps.get_model('api', 'EmployeeAttendance')
+        LeaveGrade = apps.get_model('api', 'LeaveGrade')
+        EmployeeProfessionalDetail = apps.get_model('api', 'EmployeeProfessionalDetail')
+        WeeklyOffHolidayOff = apps.get_model('api', 'WeeklyOffHolidayOff')
+
+        employee = EmployeeProfessionalDetail.objects.get(employee=employee)        
+        weekly_off_holiday_off = WeeklyOffHolidayOff.objects.get(user=user if user.role=='OWNER' else user.regular_to_owner.owner, company_id=employee.company.id)
+        weekly_off = LeaveGrade.objects.get(company_id=employee.company.id, user=user if user.role=='OWNER' else user.regular_to_owner.owner, name='WO')
+        weekly_off_skip = LeaveGrade.objects.get(company_id=employee.company.id, user=user if user.role=='OWNER' else user.regular_to_owner.owner, name='WO*')
+        holiday_off = LeaveGrade.objects.get(company_id=employee.company.id, user=user if user.role=='OWNER' else user.regular_to_owner.owner, name='HD')
+        holiday_off_skip = LeaveGrade.objects.get(company_id=employee.company.id, user=user if user.role=='OWNER' else user.regular_to_owner.owner, name='HD*')
+
+        one_week_later = date_of_joining + relativedelta(weeks=1)
+        employee_first_weekly_off = EmployeeAttendance.objects.filter(
+            Q(first_half=weekly_off) | Q(first_half=weekly_off_skip),
+            Q(second_half=weekly_off) | Q(second_half=weekly_off_skip),
+            user=user,  # This is user
+            employee=employee.employee,
+            date__gte=date_of_joining,
+            date__lte=one_week_later,
+        ).order_by('date')
+
+        if employee_first_weekly_off.exists():
+            employee_first_weekly_off = employee_first_weekly_off.first()
+            days_to_first_weekly_off = (employee_first_weekly_off.date-date_of_joining).days
+            print(f"First Weekly Off: {employee_first_weekly_off.date}")
+            print(f"Days to first weekly off: {days_to_first_weekly_off} Weekly Off Min Days: {weekly_off_holiday_off.min_days_for_weekly_off}")
+            #If first weekly off arrived earlier than the minimum weekly off days
+            if days_to_first_weekly_off<weekly_off_holiday_off.min_days_for_weekly_off:
+                attendance_between_first_weekly_off_and_doj = EmployeeAttendance.objects.filter(
+                    user=user,  # This is user
+                    employee=employee.employee,
+                    date__gte=date_of_joining,
+                    date__lt=employee_first_weekly_off.date,
+                ).order_by('date')
+                present_all_days_before_weekly_off = True
+                for attendance in attendance_between_first_weekly_off_and_doj:
+                    if attendance.first_half.paid==False or attendance.second_half.paid==False:
+                        present_all_days_before_weekly_off = False
+                        break
+                employee_first_weekly_off.first_half=weekly_off if present_all_days_before_weekly_off else weekly_off_skip
+                employee_first_weekly_off.second_half=weekly_off if present_all_days_before_weekly_off else weekly_off_skip
+                employee_first_weekly_off.save()
+                        
+            else:
+                if paid_days_count_for_past_six_days(user=user, company_id=employee.company.id, attendance_date=employee_first_weekly_off.date, employee=employee.employee) >= (weekly_off_holiday_off.min_days_for_weekly_off * 2):
+                    employee_first_weekly_off.first_half=weekly_off
+                    employee_first_weekly_off.second_half=weekly_off
+                    employee_first_weekly_off.save()
+                else:
+                    employee_first_weekly_off.first_half=weekly_off_skip
+                    employee_first_weekly_off.first_half=weekly_off_skip
+                    employee_first_weekly_off.save()
+
+            
+        #Just code the post save receiver now for both the users and check
+
+
+                    
+
+
+
+
+    
+
+
+
+    
     def generate_random_time(self, reference_time, start_buffer, end_buffer):
         reference_datetime = datetime.combine(datetime.today(), reference_time)
         reference_datetime -= relativedelta(minutes=start_buffer)

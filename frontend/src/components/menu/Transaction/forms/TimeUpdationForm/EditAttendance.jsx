@@ -652,12 +652,15 @@ const EditAttendance = memo(
 		const calculateFirstHalfSecondHalfForWeeklyAndHolidayOff = (day, type) => {
 			// if (type=='weeklyoff')
 			let presentCount = 0;
+			const dojObj = new Date(currentEmployeeProfessionalDetail.dateOfJoining);
 			for (let i = 1; i <= 6; i++) {
 				const previousDate = new Date(Date.UTC(values.year, values.month - 1, parseInt(day) - i));
 				// Ask if the first Weekly off and holiday of the employee after joining do we have to put WO/HD or WO*/HD* if it has been less than 6 days
 				if (previousDate < new Date(currentEmployeeProfessionalDetail.dateOfJoining)) {
 					continue;
 				}
+				console.log(new Date(currentEmployeeProfessionalDetail.dateOfJoining).getFullYear());
+				console.log(values.year);
 				if (previousDate.getMonth() === values.month - 1) {
 					const previousDay = previousDate.getDate();
 					const attendance = values.attendance[previousDay];
@@ -681,6 +684,15 @@ const EditAttendance = memo(
 					}
 				}
 				// Since present count would be twice considering we are counting the first and the second half, we can multiply the min days by 2 as well to compensate
+				if (dojObj.getFullYear() == values.year && dojObj.getMonth() == values.month - 1) {
+					const parameterDay = new Date(Date.UTC(values.year, values.month - 1, parseInt(day)));
+					const differenceInMilliseconds = parameterDay.getTime() - dojObj.getTime();
+					const differenceInDays = differenceInMilliseconds / (1000 * 3600 * 24);
+					console.log('Month of the Joining ', 'Days difference :', ' ', differenceInDays);
+					if (presentCount >= differenceInDays * 2) {
+						return true;
+					}
+				}
 				if (
 					(type === 'weeklyOff' && presentCount >= parseInt(weeklyOffHolidayOff.minDaysForWeeklyOff * 2)) ||
 					(type === 'holidayOff' && presentCount >= parseInt(weeklyOffHolidayOff.minDaysForHolidayOff * 2)) ||
