@@ -30,6 +30,7 @@ from .reports.generate_attendance_register import generate_attendance_register
 from .reports.generate_full_and_final_report import generate_full_and_final_report
 from .reports.generate_payslip import generate_payslip
 from .reports.generate_overtime_sheet import generate_overtime_sheet
+from .reports.generate_advance_report import generate_advance_report
 from .reports.generate_present_report import generate_present_report
 from .reports.generate_bonus_calculation_sheet import generate_bonus_calculation_sheet
 from .reports.generate_bonus_form_c import generate_bonus_form_c
@@ -2208,6 +2209,38 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
                 return response
             else:
                 return Response({"detail": "No Overtime for any Employee in the given month"}, status=status.HTTP_404_NOT_FOUND)
+            
+        if validated_data['report_type'] == 'advance_report':
+            advance_report_date = date(validated_data["year"], validated_data["month"], 1)
+            order_by = None
+            if validated_data['filters']['sort_by'] == "attendance_card_no":
+                order_by = ("employee__attendance_card_no",)
+            elif validated_data['filters']['sort_by'] == "employee_name":
+                order_by = ('employee__name',)
+            if validated_data['filters']['group_by'] != 'none':
+                if order_by != None:
+                    order_by = ('employee__employee_professional_detail__department', *order_by)
+                else:
+                    order_by = ('employee__employee_professional_detail__department',)
+
+            employee_salaries = EmployeeSalaryPrepared.objects.filter(user=request.user, employee__id__in=employee_ids, date=advance_report_date, advance_deducted__gt=0)
+
+            #Use python regular expression to orderby if the order by is using paycode because it is alpha numeric
+            if validated_data['filters']['sort_by'] == "paycode":
+                employee_salaries = sorted(employee_salaries, key=lambda x: (
+                    (getattr(x.employee.employee_professional_detail.department, 'name', 'zzzzzzzz') if hasattr(x.employee.employee_professional_detail, 'department') else 'zzzzzzzz') if validated_data['filters']['group_by'] != 'none' else '',
+                    re.sub(r'[^A-Za-z]', '', x.employee.paycode), 
+                    int(re.sub(r'[^0-9]', '', x.employee.paycode))))
+            else:
+                employee_salaries = employee_salaries.order_by(*order_by)
+
+            if len(employee_salaries) != 0:
+                response = StreamingHttpResponse(generate_advance_report(request.user, serializer.validated_data, employee_salaries), content_type="application/pdf")
+                response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
+                return response
+            else:
+                return Response({"detail": "No Overtime for any Employee in the given month"}, status=status.HTTP_404_NOT_FOUND)
+
 
         # return Response({"message": "Payslip successful"}, status=status.HTTP_200_OK)
         print('idk')
