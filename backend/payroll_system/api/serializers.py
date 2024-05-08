@@ -287,6 +287,40 @@ class EmployeeLeaveOpeningSerializer(serializers.ModelSerializer):
         model = EmployeeLeaveOpening
         fields = ['id', 'employee', 'company', 'leave', 'leave_count', 'year']
 
+# class FiltersAttendanceReportsSerializer(serializers.Serializer):
+#     group_by = serializers.ChoiceField(choices=["none", "department"])
+#     month_from_date = serializers.IntegerField(allow_null=True)
+#     month_to_date = serializers.IntegerField(allow_null=True)
+#     resignation_filter = serializers.ChoiceField(choices=["all", "without_resigned", "only_resigned"])
+#     sort_by = serializers.ChoiceField(choices=["paycode", "attendance_card_no", "employee_name"])
+#     date = serializers.IntegerField(allow_null=True)
+#
+# class AttendanceReportsSerializer(serializers.Serializer):
+    # employee_ids = serializers.ListField(child=serializers.IntegerField())
+    # filters = FiltersAttendanceReportsSerializer()
+    # company = serializers.IntegerField()
+    # month = serializers.IntegerField()
+    # year = serializers.IntegerField()
+    # report_type = serializers.ChoiceField(choices=["present_report", "attendance_register", "form_14", "overtime_sheet_daily", "bonus_calculation_sheet", "bonus_form_c"])
+    # class Meta:
+    #     fields = ['employee_ids', "filters"]
+    #
+#
+class EmployeeLeaveOpeningElementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmployeeLeaveOpening
+        fields = ['employee', 'leave', 'leave_count']
+    
+
+
+class EmployeeLeaveOpeningCreateUpdateSerializer(serializers.Serializer):
+    leave_openings = serializers.ListField(child=EmployeeLeaveOpeningElementSerializer())
+    year = serializers.IntegerField()
+    company = serializers.IntegerField()
+    class Meta:
+        fields = ["leave_openings", "year", "company"]
+
+
 class EmployeeAdvancePaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployeeAdvancePayment

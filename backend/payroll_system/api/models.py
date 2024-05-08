@@ -1344,7 +1344,7 @@ class EmployeeLeaveOpening(models.Model):
     employee = models.ForeignKey(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="leave_opening")
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="all_employees_leave_openings")
     leave = models.ForeignKey(LeaveGrade, on_delete=models.CASCADE, related_name="all_leave_openings")
-    leave_count = models.PositiveSmallIntegerField(null=False, blank=False, default=0)
+    leave_count = models.PositiveSmallIntegerField(null=False, blank=False)
     year = models.PositiveSmallIntegerField(null=False, blank=False, validators=[
             MinValueValidator(1900, message="Year cannot be less than 1900."),
             MaxValueValidator(2100, message="Year cannot be more than 2100."),
@@ -1352,9 +1352,14 @@ class EmployeeLeaveOpening(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['employee', 'year', 'company', 'user'], name='unique_year_per_employee_per_company_per_user'),
+            models.UniqueConstraint(fields=['employee', 'year', 'user', 'leave'], name='unique_leave_per_year_per_employee_per_company_per_user'),
         ]
-
+    def clean(self):
+        if self.leave_count == 0:
+            raise ValidationError('Leave count cannot be 0')
+    def save(self, *args, **kwargs):
+        self.full_clean()  # Run full validation
+        super().save(*args, **kwargs)
 
 class EmployeeAdvancePayment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_company_employees_advance_payments")

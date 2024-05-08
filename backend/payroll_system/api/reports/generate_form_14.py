@@ -1,6 +1,6 @@
 from fpdf import FPDF
 import os
-from ..models import CompanyDetails, EmployeeGenerativeLeaveRecord, LeaveGrade, EmployeeSalaryEarning, EarnedAmount, LeaveGrade, EarningsHead
+from ..models import CompanyDetails, EmployeeGenerativeLeaveRecord, LeaveGrade, EmployeeSalaryEarning, EarnedAmount, LeaveGrade, EarningsHead, EmployeeLeaveOpening
 from datetime import date
 import calendar
 from django.db.models import Q
@@ -226,16 +226,49 @@ def generate_form_14(user, request_data, employees):
         form_14.set_line_width(width=0.3)
 
         current_year_current_emp_el_credit = 0
+        leave_grades = LeaveGrade.objects.filter(user=employee.user, company_id=request_data['company'])
+        #EL
+        el = leave_grades.filter(name="EL").first()
+        #CL
+        cl = leave_grades.filter(name="CL").first()
+        #SL
+        sl = leave_grades.filter(name="SL").first()
+
+        el_leave_opening = 0
+        try:
+            el_leave_opening = EmployeeLeaveOpening.objects.filter(user=user, employee=employee.employee, year=request_data['year'], company=request_data['company'], leave=el).first().leave_count/2
+            print(f"EL Leave Opening: {el_leave_opening}")
+        except:
+            pass
+
+        cl_leave_opening = 0
+        try:
+            cl_leave_opening = EmployeeLeaveOpening.objects.filter(user=user, employee=employee.employee, year=request_data['year'], company=request_data['company'], leave=cl).first().leave_count/2
+            print(f"CL Leave Opening: {cl_leave_opening}")
+        except:
+            pass
+        
+        sl_leave_opening = 0
+        try:
+            sl_leave_opening = EmployeeLeaveOpening.objects.filter(user=user, employee=employee.employee, year=request_data['year'], company=request_data['company'], leave=sl).first().leave_count/2
+            print(f"CL Leave Opening: {sl_leave_opening}")
+        except:
+            pass
+
+
         leaves_dict = {
             'EL': {
+                'leave_opening': el_leave_opening,
                 'leave_earned': 0,
                 'leave_availed': 0
             },
             'CL': {
+                'leave_opening': cl_leave_opening,
                 'leave_earned': 0,
                 'leave_availed': 0
             },
             'SL': {
+                'leave_opening': sl_leave_opening,
                 'leave_earned': 0,
                 'leave_availed': 0
             }
@@ -289,10 +322,7 @@ def generate_form_14(user, request_data, employees):
             form_14.cell(w=width_of_columns['no_of_days_worked']/4, h=height_of_table_row, text=f"", align="C", new_x="RIGHT", new_y='TOP', border=1)
         
             #EL days/leave enjoyed
-            leave_grades = LeaveGrade.objects.filter(user=employee.user, company_id=request_data['company'])
-
             el_days_str = ''
-            el = leave_grades.filter(name="EL").first()
 
             try:
                 montly_el = employee.employee.generative_leave_record.filter(user=user, date=date(request_data['year'], month_index+1, 1), leave=el).first()
@@ -385,7 +415,6 @@ def generate_form_14(user, request_data, employees):
 
             #CL
             cl_days_str = ''
-            cl = leave_grades.filter(name="CL").first()
             try:
                 montly_cl = employee.employee.generative_leave_record.filter(user=user, date=date(request_data['year'], month_index+1, 1), leave=cl).first()
                 number_of_cl = montly_cl.leave_count
@@ -404,7 +433,6 @@ def generate_form_14(user, request_data, employees):
             
             #SL
             sl_days_str = ''
-            sl = leave_grades.filter(name="SL").first()
             try:
                 montly_sl = employee.employee.generative_leave_record.filter(user=user, date=date(request_data['year'], month_index+1, 1), leave=sl).first()
                 number_of_sl = montly_sl.leave_count
@@ -441,13 +469,13 @@ def generate_form_14(user, request_data, employees):
         form_14.cell(width_of_columns['summary_header']+width_of_columns['summary_value'], h=default_cell_height_extra_small, text=f'EL', align="C", new_x="LMARGIN", new_y='NEXT', border='TLR')
         form_14.set_font("Helvetica", size=6.5, style='')
         form_14.cell(width_of_columns['summary_header'], h=default_cell_height_extra_small, text=f'Leave Due (Prv. Yr.)', align="L", new_x="RIGHT", new_y='TOP', border='L')
-        form_14.cell(width_of_columns['summary_value'], h=default_cell_height_extra_small, text=f"", align="R", new_x="LMARGIN", new_y='NEXT', border='R')
+        form_14.cell(width_of_columns['summary_value'], h=default_cell_height_extra_small, text=f"{leaves_dict['EL']['leave_opening']}", align="R", new_x="LMARGIN", new_y='NEXT', border='R')
         form_14.cell(width_of_columns['summary_header'], h=default_cell_height_extra_small, text=f'Leave Earned', align="L", new_x="RIGHT", new_y='TOP', border='L')
         form_14.cell(width_of_columns['summary_value'], h=default_cell_height_extra_small, text=f"{leaves_dict['EL']['leave_earned']}", align="R", new_x="LMARGIN", new_y='NEXT', border='R')
         form_14.cell(width_of_columns['summary_header'], h=default_cell_height_extra_small, text=f'Leave Availed', align="L", new_x="RIGHT", new_y='TOP', border='L')
         form_14.cell(width_of_columns['summary_value'], h=default_cell_height_extra_small, text=f"{leaves_dict['EL']['leave_availed']}", align="R", new_x="LMARGIN", new_y='NEXT', border='R')
         form_14.cell(width_of_columns['summary_header'], h=default_cell_height_extra_small, text=f'Balance Leave', align="L", new_x="RIGHT", new_y='TOP', border='LB')
-        form_14.cell(width_of_columns['summary_value'], h=default_cell_height_extra_small, text=f"{leaves_dict['EL']['leave_earned']-leaves_dict['EL']['leave_availed']}", align="R", new_x="RIGHT", new_y='TOP', border='RB')
+        form_14.cell(width_of_columns['summary_value'], h=default_cell_height_extra_small, text=f"{(leaves_dict['EL']['leave_opening']+leaves_dict['EL']['leave_earned'])-leaves_dict['EL']['leave_availed']}", align="R", new_x="RIGHT", new_y='TOP', border='RB')
         
         #CL days
         form_14.set_xy(x=form_14.get_x() + width_of_columns['summary_gap'], y=initial_coordinates_before_summary['y'])
@@ -459,7 +487,7 @@ def generate_form_14(user, request_data, employees):
         form_14.cell(width_of_columns['summary_header']+width_of_columns['summary_value'], h=default_cell_height_extra_small, text=f'CL', align="C", new_x="LEFT", new_y='NEXT', border='TLR')
         form_14.set_font("Helvetica", size=6.5, style='')
         form_14.cell(width_of_columns['summary_header'], h=default_cell_height_extra_small, text=f'Leave Due (Prv. Yr.)', align="L", new_x="RIGHT", new_y='TOP', border='L')
-        form_14.cell(width_of_columns['summary_value'], h=default_cell_height_extra_small, text=f"", align="R", new_x="LMARGIN", new_y='NEXT', border='R')
+        form_14.cell(width_of_columns['summary_value'], h=default_cell_height_extra_small, text=f"{leaves_dict['CL']['leave_opening']}", align="R", new_x="LMARGIN", new_y='NEXT', border='R')
         form_14.set_xy(x=form_14.get_x()+width_of_columns['summary_header']+width_of_columns['summary_value']+width_of_columns['summary_gap'], y= form_14.get_y())
         form_14.cell(width_of_columns['summary_header'], h=default_cell_height_extra_small, text=f'Leave Earned', align="L", new_x="RIGHT", new_y='TOP', border='L')
         form_14.cell(width_of_columns['summary_value'], h=default_cell_height_extra_small, text=f"{leaves_dict['CL']['leave_earned']}", align="R", new_x="LMARGIN", new_y='NEXT', border='R')
@@ -468,7 +496,7 @@ def generate_form_14(user, request_data, employees):
         form_14.cell(width_of_columns['summary_value'], h=default_cell_height_extra_small, text=f"{leaves_dict['CL']['leave_availed']}", align="R", new_x="LMARGIN", new_y='NEXT', border='R')
         form_14.set_xy(x=form_14.get_x()+width_of_columns['summary_header']+width_of_columns['summary_value']+width_of_columns['summary_gap'], y= form_14.get_y())
         form_14.cell(width_of_columns['summary_header'], h=default_cell_height_extra_small, text=f'Balance Leave', align="L", new_x="RIGHT", new_y='TOP', border='LB')
-        form_14.cell(width_of_columns['summary_value'], h=default_cell_height_extra_small, text=f"{leaves_dict['CL']['leave_earned']-leaves_dict['CL']['leave_availed']}", align="R", new_x="RIGHT", new_y='TOP', border='RB')
+        form_14.cell(width_of_columns['summary_value'], h=default_cell_height_extra_small, text=f"{(leaves_dict['CL']['leave_opening']+leaves_dict['CL']['leave_earned'])-leaves_dict['CL']['leave_availed']}", align="R", new_x="RIGHT", new_y='TOP', border='RB')
         
         #SL days
         form_14.set_xy(x=form_14.get_x() + width_of_columns['summary_gap'], y=initial_coordinates_before_summary['y'])
@@ -480,7 +508,7 @@ def generate_form_14(user, request_data, employees):
         form_14.cell(width_of_columns['summary_header']+width_of_columns['summary_value'], h=default_cell_height_extra_small, text=f'SL', align="C", new_x="LEFT", new_y='NEXT', border='TLR')
         form_14.set_font("Helvetica", size=6.5, style='')
         form_14.cell(width_of_columns['summary_header'], h=default_cell_height_extra_small, text=f'Leave Due (Prv. Yr.)', align="L", new_x="RIGHT", new_y='TOP', border='L')
-        form_14.cell(width_of_columns['summary_value'], h=default_cell_height_extra_small, text=f"", align="R", new_x="LMARGIN", new_y='NEXT', border='R')
+        form_14.cell(width_of_columns['summary_value'], h=default_cell_height_extra_small, text=f"{leaves_dict['SL']['leave_opening']}", align="R", new_x="LMARGIN", new_y='NEXT', border='R')
         form_14.set_xy(x=form_14.get_x()+(width_of_columns['summary_header']+width_of_columns['summary_value']+width_of_columns['summary_gap'])*2, y= form_14.get_y())
         form_14.cell(width_of_columns['summary_header'], h=default_cell_height_extra_small, text=f'Leave Earned', align="L", new_x="RIGHT", new_y='TOP', border='L')
         form_14.cell(width_of_columns['summary_value'], h=default_cell_height_extra_small, text=f"{leaves_dict['SL']['leave_earned']}", align="R", new_x="LMARGIN", new_y='NEXT', border='R')
@@ -489,7 +517,7 @@ def generate_form_14(user, request_data, employees):
         form_14.cell(width_of_columns['summary_value'], h=default_cell_height_extra_small, text=f"{leaves_dict['SL']['leave_availed']}", align="R", new_x="LMARGIN", new_y='NEXT', border='R')
         form_14.set_xy(x=form_14.get_x()+(width_of_columns['summary_header']+width_of_columns['summary_value']+width_of_columns['summary_gap'])*2, y= form_14.get_y())
         form_14.cell(width_of_columns['summary_header'], h=default_cell_height_extra_small, text=f'Balance Leave', align="L", new_x="RIGHT", new_y='TOP', border='LB')
-        form_14.cell(width_of_columns['summary_value'], h=default_cell_height_extra_small, text=f"{leaves_dict['SL']['leave_earned']-leaves_dict['SL']['leave_availed']}", align="R", new_x="LMARGIN", new_y='NEXT', border='RB')
+        form_14.cell(width_of_columns['summary_value'], h=default_cell_height_extra_small, text=f"{(leaves_dict['SL']['leave_opening']+leaves_dict['SL']['leave_earned'])-leaves_dict['SL']['leave_availed']}", align="R", new_x="LMARGIN", new_y='NEXT', border='RB')
         
         form_14.set_xy(x=form_14.get_x(), y=210-bottom_margin-7)
         form_14.cell(w=0, h=default_cell_height_extra_small, text=f"Signature of Employee", align="L", new_x="LMARGIN", new_y='TOP', border=0)
