@@ -353,7 +353,7 @@ def generate_form_14(user, request_data, employees):
             form_14.cell(w=width_of_columns['total_of_columns'], h=height_of_table_row, text=f"{total_of_columns if total_of_columns !=0 else ''}", align="C", new_x="RIGHT", new_y='TOP', border=1)
 
             #Leave of Credit
-            form_14.cell(w=width_of_columns['leave_of_credit']/2, h=height_of_table_row, text=f"", align="C", new_x="RIGHT", new_y='TOP', border=1)
+            form_14.cell(w=width_of_columns['leave_of_credit']/2, h=height_of_table_row, text=f"{leaves_dict['EL']['leave_opening'] if month_index==0 else ''}", align="C", new_x="RIGHT", new_y='TOP', border=1)
             form_14.cell(w=width_of_columns['leave_of_credit']/2, h=height_of_table_row, text=f"", align="C", new_x="RIGHT", new_y='TOP', border=1)
 
             #Total of columns
