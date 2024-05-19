@@ -45,4 +45,11 @@
       -webkit-appearance: none;
       margin: 0;
     }
+    
+
+    .custom-checkbox:checked ~ .check-1{
+      @apply text-opacity-100;
+    }
+
+
   }
