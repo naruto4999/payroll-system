@@ -316,7 +316,7 @@ const LeaveOpeningEntryForm = () => {
           toSend.leaveOpenings.push({
             employee: employee.id,
             leave: leaveId,
-            leave_count: leaveCount
+            leave_count: leaveCount * 2
           });
         });
       } else {
@@ -328,7 +328,7 @@ const LeaveOpeningEntryForm = () => {
             toSend.leaveOpenings.push({
               employee: employee.id,
               leave: leaveId,
-              leave_count: currentLeaveCount
+              leave_count: currentLeaveCount * 2
             });
           }
         });

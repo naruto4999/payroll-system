@@ -1896,8 +1896,8 @@ class EmployeeLeaveOpeningCreateUpdateAPIView(APIView):
                     employee=leave_opening['employee'],
                     year=validated_data['year'],
                     leave=leave_opening['leave'],
-                    defaults={"leave_count": leave_opening['leave_count']*2},
-                    create_defaults={"user": user, "employee": leave_opening['employee'], "year": validated_data['year'], "leave": leave_opening['leave'], "leave_count": leave_opening['leave_count']*2, "company_id": validated_data['company']},
+                    defaults={"leave_count": leave_opening['leave_count']},
+                    create_defaults={"user": user, "employee": leave_opening['employee'], "year": validated_data['year'], "leave": leave_opening['leave'], "leave_count": leave_opening['leave_count'], "company_id": validated_data['company']},
                 )
             else:
                 EmployeeLeaveOpening.objects.filter(user=user, employee=leave_opening['employee'], year=validated_data['year'], leave=leave_opening['leave']).delete()

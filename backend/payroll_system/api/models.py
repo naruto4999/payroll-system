@@ -1344,7 +1344,7 @@ class EmployeeLeaveOpening(models.Model):
     employee = models.ForeignKey(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="leave_opening")
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="all_employees_leave_openings")
     leave = models.ForeignKey(LeaveGrade, on_delete=models.CASCADE, related_name="all_leave_openings")
-    leave_count = models.PositiveSmallIntegerField(null=False, blank=False)
+    leave_count = models.SmallIntegerField(null=False, blank=False)
     year = models.PositiveSmallIntegerField(null=False, blank=False, validators=[
             MinValueValidator(1900, message="Year cannot be less than 1900."),
             MaxValueValidator(2100, message="Year cannot be more than 2100."),

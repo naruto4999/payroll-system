@@ -22,7 +22,7 @@ const LeaveOpeningCountCell = ({ getValue, row, column, table }) => {
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onBlur={onBlur}
-          className={classNames(value != undefined && value > 0 ? 'text-amber-400' : 'text-slate-400', 'inline w-10 cursor-text custom-number-input rounded border-[1px] border-gray-800 border-opacity-25 bg-zinc-50 bg-opacity-50 p-1 outline-none transition focus:border-opacity-100 dark:border-slate-100 dark:border-opacity-25 dark:bg-zinc-800 dark:focus:border-opacity-75')}
+          className={classNames(value != undefined && value != 0 ? 'text-amber-400' : 'text-slate-400', 'inline w-10 cursor-text custom-number-input rounded border-[1px] border-gray-800 border-opacity-25 bg-zinc-50 bg-opacity-50 p-1 outline-none transition focus:border-opacity-100 dark:border-slate-100 dark:border-opacity-25 dark:bg-zinc-800 dark:focus:border-opacity-75')}
 
           type={column.columnDef.meta?.type || 'text'}
         />
