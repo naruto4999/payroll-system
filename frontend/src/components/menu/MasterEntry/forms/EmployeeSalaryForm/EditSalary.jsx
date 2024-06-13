@@ -58,11 +58,8 @@ const EditSalary = React.memo(
     const currentDate = new Date();
     const futureYear = currentDate.getFullYear() + 1;
 
-    // console.log(values.year);
-    // console.log(monthOfJoining);
-    // console.log(yearOfJoining);
-    // console.log(values);
     console.log(errors)
+    console.log(values)
 
     const options = [];
 
@@ -101,7 +98,6 @@ const EditSalary = React.memo(
           : [],
       [singleEmployeeSalaryEarning]
     );
-    console.log(data);
 
     const prevSingleEmployeeSalaryEarningRef = useRef(
       firstRender ? null : singleEmployeeSalaryEarning
@@ -208,7 +204,6 @@ const EditSalary = React.memo(
     }, [singleEmployeeSalaryEarning]);
     // console.log(singleEmployeeSalaryEarning);
     // console.log(prevSingleEmployeeSalaryEarningRef);
-    console.log(values)
 
     useEffect(() => {
       for (const month in values.sameValue) {
@@ -369,7 +364,13 @@ const EditSalary = React.memo(
 
                               name={`sameValue.${month}`}
                               checked={values.sameValue?.[month]}
-                              onChange={handleChange}
+                              //onChange={handleChange}
+                              onChange={() => {
+                                const newSelected = values.filters.leavesSelected.includes(leaveGrade.id)
+                                  ? values.filters.leavesSelected.filter(id => id !== leaveGrade.id)
+                                  : [...values.filters.leavesSelected, leaveGrade.id];
+                                setFieldValue('filters.leavesSelected', newSelected);
+                              }}
                               checkColor="text-amber-600"
                               disabled={
                                 values.year == yearOfJoining &&

@@ -135,6 +135,11 @@ const menuItems = [
         title: 'Leave Opening Entry',
         icon: FaCalendarCheck,
         path: '/home/master-entry/leave-opening-entry',
+      },
+      {
+        title: 'Leave Closing Transfer',
+        icon: FaCalendarCheck,
+        path: '/home/master-entry/leave-closing-transfer',
       }
     ],
   },

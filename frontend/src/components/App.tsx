@@ -40,6 +40,7 @@ import SubUserMiscSettingsForm from './menu/AdminControlsForm/SubUserMiscSetting
 import TransferAttendanceForm from './menu/AdminControlsForm/TransferAttendaceForm/TransferAttendanceForm';
 import EmployeeStrengthReports from './menu/Reports/forms/EmployeeStrengthReports/EmployeeStrengthReports';
 import LeaveOpeningEntryForm from './menu/MasterEntry/forms/LeaveOpeningEntry/LeaveOpeningEntryForm';
+import LeaveClosingTransferForm from './menu/MasterEntry/forms/LeaveClosingTransferForm/LeaveClosingTransferForm';
 // import store, { persistor } from "./authentication/store/index"
 // import { PersistGate } from "redux-persist/integration/react";
 // import { Provider } from "react-redux";
@@ -117,6 +118,7 @@ function App() {
             <Route path="pf-esi-setup" element={<PfEsiSetupForm />} />
             <Route path="calculations" element={<CalculationsForm />} />
             <Route path="leave-opening-entry" element={<LeaveOpeningEntryForm />} />
+            <Route path="leave-closing-transfer" element={<LeaveClosingTransferForm />} />
 
 
           </Route>
@@ -163,7 +165,7 @@ function App() {
         <Route path="forgot-password" element={<ForgotPassform />} />
         <Route path="pass-confirm/:uid/:token" element={<PassConfirmForm />} />
       </Routes>
-    </div>
+    </div >
   );
 }
 

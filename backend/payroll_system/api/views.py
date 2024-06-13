@@ -1,8 +1,8 @@
 from django.forms import ValidationError
 from django.shortcuts import render
 from rest_framework import generics, status, mixins, serializers
-from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer, EmployeeGenerativeLeaveRecordSerializer, EmployeeLeaveOpeningSerializer, EmployeeMonthlyAttendancePresentDetailsSerializer, EmployeeAdvancePaymentSerializer, EmployeeMonthlyAttendanceDetailsSerializer, EmployeeSalaryPreparedSerializer, EarnedAmountSerializer, SalaryOvertimeSheetSerializer, AttendanceReportsSerializer, EmployeeAttendanceBulkAutofillSerializer, BulkPrepareSalariesSerializer, MachineAttendanceSerializer, PersonnelFileReportsSerializer, DefaultAttendanceSerializer, EmployeeResignationSerializer, EmployeeUnresignSerializer, BonusCalculationSerializer, BonusPercentageSerializer, EmployeeProfessionalDetailRetrieveSerializer, EarnedAmountSerializerPreparedSalary, FullAndFinalSerializer, EmployeeELLeftSerializer, EmployeeYearlyBonusAmountSerializer, FullAndFinalReportSerializer, PfEsiReportsSerializer, RegularRetrieveUpdateSerializer, EmployeeVisibilitySerializer, AllEmployeeCurrentMonthAttendanceSerializer, SubUserOvertimeSettingsSerializer, SubUserMiscSettingsSerializer, TransferAttendanceFromOwnerToRegularSerializer, EmployeeStrengthReportsSerializer, EmployeeLeaveOpeningCreateUpdateSerializer
-from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift, EmployeeSalaryEarning, EarningsHead, EmployeeShifts, EmployeeGenerativeLeaveRecord, EmployeeSalaryPrepared, EarnedAmount, EmployeeAdvanceEmiRepayment, EmployeeAdvancePayment, EmployeeAttendance, EmployeePersonalDetail, EmployeeProfessionalDetail, BonusCalculation, BonusPercentage, EmployeeSalaryDetail, FullAndFinal, Calculations, SubUserOvertimeSettings, EmployeeLeaveOpening
+from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer, EmployeeGenerativeLeaveRecordSerializer, EmployeeLeaveOpeningSerializer, EmployeeMonthlyAttendancePresentDetailsSerializer, EmployeeAdvancePaymentSerializer, EmployeeMonthlyAttendanceDetailsSerializer, EmployeeSalaryPreparedSerializer, EarnedAmountSerializer, SalaryOvertimeSheetSerializer, AttendanceReportsSerializer, EmployeeAttendanceBulkAutofillSerializer, BulkPrepareSalariesSerializer, MachineAttendanceSerializer, PersonnelFileReportsSerializer, DefaultAttendanceSerializer, EmployeeResignationSerializer, EmployeeUnresignSerializer, BonusCalculationSerializer, BonusPercentageSerializer, EmployeeProfessionalDetailRetrieveSerializer, EarnedAmountSerializerPreparedSalary, FullAndFinalSerializer, EmployeeELLeftSerializer, EmployeeYearlyBonusAmountSerializer, FullAndFinalReportSerializer, PfEsiReportsSerializer, RegularRetrieveUpdateSerializer, EmployeeVisibilitySerializer, AllEmployeeCurrentMonthAttendanceSerializer, SubUserOvertimeSettingsSerializer, SubUserMiscSettingsSerializer, TransferAttendanceFromOwnerToRegularSerializer, EmployeeStrengthReportsSerializer, EmployeeLeaveOpeningCreateUpdateSerializer, LeaveClosingTransferSerializer
+from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift, EmployeeSalaryEarning, EarningsHead, EmployeeShifts, EmployeeGenerativeLeaveRecord, EmployeeSalaryPrepared, EarnedAmount, EmployeeAdvanceEmiRepayment, EmployeeAdvancePayment, EmployeeAttendance, EmployeePersonalDetail, EmployeeProfessionalDetail, BonusCalculation, BonusPercentage, EmployeeSalaryDetail, FullAndFinal, Calculations, SubUserOvertimeSettings, EmployeeLeaveOpening, EmployeeMonthlyAttendanceDetails
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
@@ -1904,6 +1904,55 @@ class EmployeeLeaveOpeningCreateUpdateAPIView(APIView):
 
         return Response({"message": "successful"}, status=status.HTTP_200_OK)
 
+class LeaveClosingTransferCreateUpdateAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        user = self.request.user
+        print(request.data)
+        serializer = LeaveClosingTransferSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+        year = validated_data['from_year']
+        start_date = datetime(year, 1, 1)
+        end_date = datetime(year, 12, 31)
+        for employee_id in validated_data["employee_ids"]:
+            #Getting Yearly Present Count
+            monthly_attendance_details = EmployeeMonthlyAttendanceDetails.objects.filter(user=user, employee_id=employee_id, company_id=validated_data['company'], date__range=[start_date, end_date]).order_by('date') 
+            present_count = 0 
+            if monthly_attendance_details.exists():
+                for monthly_detail in monthly_attendance_details:
+                    present_count += monthly_detail.present_count
+
+            #Calculating leaves earned
+            for leave_id in validated_data['leave_ids']:
+                leave = LeaveGrade.objects.get(id=leave_id)
+                leaves_earned = present_count//leave.generate_frequency
+                leaves_availed = EmployeeGenerativeLeaveRecord.get_yearly_leave_count(user, validated_data['from_year'], leave_id, employee_id)
+                leave_opening = EmployeeLeaveOpening.objects.filter(user=user, employee_id=employee_id, company_id=validated_data['company'], leave=leave, year=validated_data['from_year'])
+                if not leave_opening.exists():
+                    leave_opening=0
+                else:
+                    print(f'Length of queryset: {len(leave_opening)}')
+                    leave_opening = leave_opening.first().leave_count
+                
+                next_year_leave_opening = leave_opening+leaves_earned-leaves_availed
+                if next_year_leave_opening != 0:
+                    print(leave_opening)
+                    obj, created = EmployeeLeaveOpening.objects.update_or_create(
+                        user=user,
+                        employee_id=employee_id,
+                        year=validated_data['from_year']+1,
+                        leave=leave,
+                        defaults={"leave_count": next_year_leave_opening},
+                        create_defaults={"user": user, "employee_id": employee_id, "year": validated_data['from_year']+1, "leave": leave, "leave_count": next_year_leave_opening, "company_id": validated_data['company']},
+                    )
+                else:
+                    EmployeeLeaveOpening.objects.filter(user=user, employee_id=employee_id, year=validated_data['from_year']+1, leave=leave).delete()
+
+
+                print(f'Leave Name: {leave.name} Leaves Earned: {leaves_earned} Present Count: {present_count} Leaves Availed: {leaves_availed} Leave Opening:{leave_opening}, Leave Opening Next Year:{leave_opening+leaves_earned-leaves_availed}')
+        print(validated_data)
+        return Response({"message": "Successful"}, status=status.HTTP_200_OK)
+
             
 class EmployeeAdvancePaymentListCreateAPIView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
@@ -2803,12 +2852,22 @@ class EmployeeResignationUpdateAPIView(generics.UpdateAPIView):
     serializer_class = EmployeeResignationSerializer
     lookup_field = 'employee'
 
+    # def delete_attendance_records_after_resignation(self, employee_id, resignation_date):
+    #     # Assuming 'resignation_date' is in datetime format
+    #     EmployeeAttendance.objects.filter(
+    #         Q(employee_id=employee_id) & Q(date__gt=resignation_date)
+    #     ).delete()
     def delete_attendance_records_after_resignation(self, employee_id, resignation_date):
-        # Assuming 'resignation_date' is in datetime format
+        # Delete daily attendance records after resignation date
         EmployeeAttendance.objects.filter(
             Q(employee_id=employee_id) & Q(date__gt=resignation_date)
         ).delete()
-    
+        
+        EmployeeMonthlyAttendanceDetails.objects.filter(
+            Q(employee_id=employee_id) & Q(date__gt=date(resignation_date.year, resignation_date.month, 1))
+        ).delete()
+
+
     def delete_salary_after_resignation(self, employee_id, resignation_date):
         # Assuming 'resignation_date' is in datetime format
         EmployeeSalaryPrepared.objects.filter(

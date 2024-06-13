@@ -125,14 +125,6 @@ const EmployeeSalaryForm = () => {
           const currentValue = values.earnings[earningHead][month];
 
           if (currentValue !== prevValue) {
-            console.log(
-              'current value',
-              currentValue,
-              ' prevValue',
-              prevValue
-            );
-            console.log(fromDate);
-            console.log(toDate);
             if (fromDate !== null && toDate !== null) {
               // A segment is complete, push it to the employeeEarnings array
 
@@ -165,9 +157,8 @@ const EmployeeSalaryForm = () => {
           });
         }
       }
-      console.log(employeeEarnings);
-      // console.log(yearOfJoining);
-      console.log(monthOfJoining);
+      console.log(employeeEarnings)
+
       try {
         const data = await updateEmployeeSalaryEarning({
           employeeEarnings,

@@ -336,6 +336,7 @@ const LeaveOpeningEntryForm = () => {
     });
 
     return toSend;
+
   };
 
   const saveButtonClicked = async () => {

@@ -287,6 +287,13 @@ class EmployeeLeaveOpeningSerializer(serializers.ModelSerializer):
         model = EmployeeLeaveOpening
         fields = ['id', 'employee', 'company', 'leave', 'leave_count', 'year']
 
+class LeaveClosingTransferSerializer(serializers.Serializer):
+    from_year = serializers.IntegerField(allow_null=False)
+    employee_ids = serializers.ListField(child=serializers.IntegerField())
+    leave_ids = serializers.ListField(child=serializers.IntegerField())
+    company = serializers.IntegerField()
+
+
 # class FiltersAttendanceReportsSerializer(serializers.Serializer):
 #     group_by = serializers.ChoiceField(choices=["none", "department"])
 #     month_from_date = serializers.IntegerField(allow_null=True)

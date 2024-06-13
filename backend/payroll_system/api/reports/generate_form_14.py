@@ -463,7 +463,7 @@ def generate_form_14(user, request_data, employees):
         #EL days
         form_14.set_font("Helvetica", size=6.5, style='B')
         try:
-            leaves_dict['EL']['leave_earned'] +=(total_work_days/2)//el.generate_frequency
+            leaves_dict['EL']['leave_earned'] +=(total_work_days//el.generate_frequency)/2
         except:
             pass
         form_14.cell(width_of_columns['summary_header']+width_of_columns['summary_value'], h=default_cell_height_extra_small, text=f'EL', align="C", new_x="LMARGIN", new_y='NEXT', border='TLR')
@@ -481,7 +481,7 @@ def generate_form_14(user, request_data, employees):
         form_14.set_xy(x=form_14.get_x() + width_of_columns['summary_gap'], y=initial_coordinates_before_summary['y'])
         form_14.set_font("Helvetica", size=6.5, style='B')
         try:
-            leaves_dict['CL']['leave_earned'] +=(total_work_days/2)//cl.generate_frequency
+            leaves_dict['CL']['leave_earned'] +=(total_work_days//cl.generate_frequency)/2
         except:
             pass
         form_14.cell(width_of_columns['summary_header']+width_of_columns['summary_value'], h=default_cell_height_extra_small, text=f'CL', align="C", new_x="LEFT", new_y='NEXT', border='TLR')
@@ -502,7 +502,7 @@ def generate_form_14(user, request_data, employees):
         form_14.set_xy(x=form_14.get_x() + width_of_columns['summary_gap'], y=initial_coordinates_before_summary['y'])
         form_14.set_font("Helvetica", size=6.5, style='B')
         try:
-            leaves_dict['SL']['leave_earned'] +=(total_work_days/2)//sl.generate_frequency
+            leaves_dict['SL']['leave_earned'] +=(total_work_days//sl.generate_frequency)/2
         except:
             pass
         form_14.cell(width_of_columns['summary_header']+width_of_columns['summary_value'], h=default_cell_height_extra_small, text=f'SL', align="C", new_x="LEFT", new_y='NEXT', border='TLR')

@@ -1317,6 +1317,21 @@ class EmployeeGenerativeLeaveRecord(models.Model):
             models.UniqueConstraint(fields=['employee', 'date', 'company', 'leave', 'user'], name='unique_date_per_employee_per_company_per_user'),
         ]
 
+    @classmethod
+    def get_yearly_leave_count(cls, user, year, leave_id, employee_id):
+        start_date = datetime(year, 1, 1)
+        end_date = datetime(year, 12, 31)
+
+        leave_count = cls.objects.filter(
+            user=user,
+            employee_id=employee_id,
+            date__range=[start_date, end_date],
+            leave_id=leave_id
+        ).aggregate(total_leave_count=Sum('leave_count'))['total_leave_count'] or 0
+
+        return leave_count
+
+
 class EmployeeMonthlyAttendanceDetails(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_company_employees_monthly_attendance_details")
     employee = models.ForeignKey(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="monthly_attendance_details")
