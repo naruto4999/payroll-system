@@ -364,13 +364,7 @@ const EditSalary = React.memo(
 
                               name={`sameValue.${month}`}
                               checked={values.sameValue?.[month]}
-                              //onChange={handleChange}
-                              onChange={() => {
-                                const newSelected = values.filters.leavesSelected.includes(leaveGrade.id)
-                                  ? values.filters.leavesSelected.filter(id => id !== leaveGrade.id)
-                                  : [...values.filters.leavesSelected, leaveGrade.id];
-                                setFieldValue('filters.leavesSelected', newSelected);
-                              }}
+                              onChange={handleChange}
                               checkColor="text-amber-600"
                               disabled={
                                 values.year == yearOfJoining &&
