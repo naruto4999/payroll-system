@@ -99,7 +99,7 @@ def generate_attendance_register(user, request_data, employees):
     company_details = None
     try: company_details = CompanyDetails.objects.filter(company_id=request_data['company']).first()
     except: pass
-    attendance_register = FPDF(my_date=date(request_data['year'], request_data['month'], 1),company_name=company_details.company.name if company_details else '',company_address=company_details.address if company_details else '',default_cell_height=default_cell_height, orientation="L", unit="mm", format="A4")
+    attendance_register = FPDF(my_date=date(request_data['year'], request_data['month'], 1),company_name=company_details.company.name if company_details else '',company_address=company_details.address if (company_details and company_details.address != None) else '     ',default_cell_height=default_cell_height, orientation="L", unit="mm", format="A4")
     
     #Page settings
     attendance_register.set_margins(left=6, top=4, right=6)

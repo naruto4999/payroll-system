@@ -1188,6 +1188,7 @@ const EditAttendance = memo(
                     const shiftForCurrentDate = getShift(values.year, values.month, day);
                     return (
                       <AttendanceMonthDays
+                        setFieldValue={setFieldValue}
                         day={day}
                         key={day}
                         year={values.year}
@@ -1229,6 +1230,7 @@ const EditAttendance = memo(
                     isSubmitting={isSubmitting}
                     updateEmployeeId={updateEmployeeId}
                     globalCompany={globalCompany}
+                    compensationOff={compensationOff}
                   />
                 )}
               </section>

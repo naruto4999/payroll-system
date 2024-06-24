@@ -6,7 +6,7 @@ import { useSelector } from 'react-redux';
 const classNames = (...classes) => {
   return classes.filter(Boolean).join(' ');
 };
-const FilterOptions = ({ handleChange, values, isValid, handleSubmit, isSubmitting, selectedDate, setIgnoreMonthField, setFieldValue }) => {
+const FilterOptions = ({ handleChange, values, isValid, handleSubmit, isSubmitting, selectedDate, setIgnoreMonthField, setFilterMissPunchEmployees, setFieldValue }) => {
   // console.log(values);
   // useEffect(() => {
   // 	setFieldValue('filters.monthFromDate', 1);
@@ -18,6 +18,11 @@ const FilterOptions = ({ handleChange, values, isValid, handleSubmit, isSubmitti
       setIgnoreMonthField(true);
     } else {
       setIgnoreMonthField(false);
+    }
+    if (values.reportType === 'miss_punch') {
+      setFilterMissPunchEmployees(true)
+    } else {
+      setFilterMissPunchEmployees(false)
     }
   }, [values.reportType, setIgnoreMonthField]);
 
@@ -44,6 +49,7 @@ const FilterOptions = ({ handleChange, values, isValid, handleSubmit, isSubmitti
           <option value="form_14">{'Form-14 (Leave Register)'}</option>
           <option value="bonus_calculation_sheet">Bonus Calculation Sheet</option>
           <option value="bonus_form_c">Bonus Form C</option>
+          <option value="miss_punch">Miss Punch</option>
         </Field>
       </div>
       {(values.reportType == 'present_report' || values.reportType == 'overtime_sheet_daily') && (

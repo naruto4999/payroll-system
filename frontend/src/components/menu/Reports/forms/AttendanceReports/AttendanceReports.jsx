@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useGetEmployeePersonalDetailsQuery } from '../../../../authentication/api/employeeEntryApiSlice';
+import { useAllEmployeeMissPunchesQuery } from '../../../../authentication/api/attendanceReportsApiSlice';
 import {
   // column,
   createColumnHelper,
@@ -33,13 +34,23 @@ const AttendanceReports = () => {
     isLoading: isLoadingEmployeePersonalDetails,
     isSuccess: isSuccessEmployeePersonalDetails,
   } = useGetEmployeePersonalDetailsQuery(globalCompany);
+
+
   // console.log(employeePersonalDetails);
   const [selectedDate, setSelectedDate] = useState({
     year: new Date().getFullYear(),
     month: new Date().getMonth() + 1,
   });
+
+
+  const {
+    data: allEmployeeMissPunches,
+    isLoading: isLoadingAllEmployeeMissPunches,
+    isSuccess: isSuccessAllEmployeeMissPunches,
+  } = useAllEmployeeMissPunchesQuery({ globalCompany: globalCompany, month: selectedDate.month, year: selectedDate.year });
+  console.log(allEmployeeMissPunches)
   const [ignoreMonthField, setIgnoreMonthField] = useState(false);
-  console.log(ignoreMonthField)
+  const [filterMissPunchEmployees, setFilterMissPunchEmployees] = useState(false)
 
   const IndeterminateCheckbox = React.forwardRef(({ indeterminate, ...rest }, ref) => {
     const defaultRef = React.useRef();
@@ -153,7 +164,19 @@ const AttendanceReports = () => {
         // Check if employee.id exists in the array
         if (ignoreMonthField == true) {
           return year <= selectedDate.year
-        } else {
+        }
+        else if (filterMissPunchEmployees == true) {
+          return dateOfJoiningOfEmployee <= comparisonDate &&
+            allEmployeeMissPunches.some(missPunch => {
+              if (employee.id === missPunch.employee) {
+                const [missPunchYear, missPunchMonth] = missPunch.date.split('-').map(Number);
+                if (missPunchYear === selectedDate.year && missPunchMonth === selectedDate.month) {
+                  return true
+                }
+              }
+            });
+        }
+        else {
           return dateOfJoiningOfEmployee <= comparisonDate;
         }
       } else {
@@ -162,7 +185,7 @@ const AttendanceReports = () => {
     });
 
     return filteredData;
-  }, [employeePersonalDetails, selectedDate, ignoreMonthField]);
+  }, [employeePersonalDetails, selectedDate, ignoreMonthField, filterMissPunchEmployees, allEmployeeMissPunches]);
 
   const earliestMonthAndYear = useMemo(() => {
     let earliestDate = Infinity; // Initialize earliestDate to a very large value
@@ -403,7 +426,7 @@ const AttendanceReports = () => {
               initialValues={initialValues}
               validationSchema={''}
               onSubmit={generateButtonClicked}
-              component={(props) => <FilterOptions {...props} selectedDate={selectedDate} setIgnoreMonthField={setIgnoreMonthField} />}
+              component={(props) => <FilterOptions {...props} selectedDate={selectedDate} setIgnoreMonthField={setIgnoreMonthField} setFilterMissPunchEmployees={setFilterMissPunchEmployees} />}
             />
           </div>
         </div>

@@ -61,7 +61,7 @@ def generate_present_report(request_data, present_employees_attendances):
     bottom_margin = 8
 
     company_details = CompanyDetails.objects.filter(company_id=request_data['company'])
-    present_report = FPDF(my_date=date(request_data['year'], request_data['month'], request_data['filters']['date']),company_name=present_employees_attendances[0].company.name,company_address=company_details[0].address if company_details.exists() else '', orientation="P", unit="mm", format="A4")
+    present_report = FPDF(my_date=date(request_data['year'], request_data['month'], request_data['filters']['date']),company_name=present_employees_attendances[0].company.name,company_address=company_details[0].address if (company_details.exists() and company_details[0].address != None) else '    ', orientation="P", unit="mm", format="A4")
 
     #Page settings
     present_report.set_margins(left=left_margin, top=6, right=right_margin)

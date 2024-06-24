@@ -22,6 +22,7 @@ const AttendanceFooter = React.memo(
     leaveGrades,
     updateEmployeeId,
     globalCompany,
+    compensationOff
   }) => {
     const [attendanceFooterData, setAttendanceFooterData] = useState({
       workingDays: 0,
@@ -68,7 +69,6 @@ const AttendanceFooter = React.memo(
       // Iterate over the attendance keys
       Object.keys(attendance).forEach((key) => {
         const entry = attendance[key];
-
         // Check for firstHalf
         if (
           entry.firstHalf === absent.id ||
@@ -85,6 +85,9 @@ const AttendanceFooter = React.memo(
           initialData.paidDays += 1;
         } else if (entry.firstHalf === holidayOff.id) {
           initialData.holiday += 1;
+          initialData.paidDays += 1;
+        } else if (entry.firstHalf === compensationOff.id) {
+          initialData.leave += 1;
           initialData.paidDays += 1;
         } else if (
           filteredLeaveGradesWithGenerateFrequency.some((grade) => grade.id === parseInt(entry.firstHalf))
@@ -112,6 +115,9 @@ const AttendanceFooter = React.memo(
         } else if (entry.secondHalf === holidayOff.id) {
           initialData.holiday += 1;
           initialData.paidDays += 1;
+        } else if (entry.secondHalf === compensationOff.id) {
+          initialData.leave += 1;
+          initialData.paidDays += 1;
         } else if (
           filteredLeaveGradesWithGenerateFrequency.some((grade) => grade.id === parseInt(entry.secondHalf))
         ) {
@@ -134,7 +140,6 @@ const AttendanceFooter = React.memo(
 
       return initialData;
     }, [attendance]);
-
     useEffect(() => {
       setAttendanceFooterData(calculateAttendanceFooter());
     }, [attendance]);

@@ -540,6 +540,11 @@ class EmployeeStrengthReportsSerializer(serializers.Serializer):
     class Meta:
         fields = ['employee_ids', "filters"]
 
+class EmployeeMonthlyMissPunchSerializer(serializers.Serializer):
+    company = serializers.IntegerField()
+    month = serializers.IntegerField()
+    year = serializers.IntegerField()
+
 
 # class CompanyEmployeeStatisticsSerializer(serializers.ModelSerializer):
 #     class Meta:
