@@ -2,9 +2,9 @@ import { apiSlice } from "./apiSlice";
 
 export const attendanceReportsApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    allEmployeeMissPunches: builder.query({
+    allEmployeeYearlyMissPunches: builder.query({
       query: (body) => ({
-        url: `/api/employee-monthly-misspunch/${body.globalCompany.id}/${body.year}/${body.month}`,
+        url: `/api/employee-monthly-misspunch/${body.globalCompany.id}/${body.year}`,
         method: "GET",
       }),
       keepUnusedDataFor: 500,
@@ -13,4 +13,4 @@ export const attendanceReportsApiSlice = apiSlice.injectEndpoints({
   }),
 });
 
-export const { useAllEmployeeMissPunchesQuery } = attendanceReportsApiSlice;
+export const { useAllEmployeeYearlyMissPunchesQuery } = attendanceReportsApiSlice;

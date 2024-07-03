@@ -116,7 +116,7 @@ urlpatterns = [
     path('sub-user-misc-settings-create', SubUserMiscSettingsCreateAPIView.as_view()),
     path('sub-user-misc-settings/<int:company_id>', SubUserMiscSettingsRetrieveUpdateDestroyAPIView.as_view()),
     path('attendance-transfer-owner-to-regular', TransferAttendanceFromOwnerToRegularAPIView.as_view()),
-    path('employee-monthly-misspunch/<int:company_id>/<int:year>/<int:month>', EmployeeYearlyMissPunchListAPIView.as_view()),
+    path('employee-monthly-misspunch/<int:company_id>/<int:year>', EmployeeYearlyMissPunchListAPIView.as_view()),
 
 
 

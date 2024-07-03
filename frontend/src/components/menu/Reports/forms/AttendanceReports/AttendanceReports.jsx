@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useGetEmployeePersonalDetailsQuery } from '../../../../authentication/api/employeeEntryApiSlice';
-import { useAllEmployeeMissPunchesQuery } from '../../../../authentication/api/attendanceReportsApiSlice';
+import { useAllEmployeeYearlyMissPunchesQuery } from '../../../../authentication/api/attendanceReportsApiSlice';
 import {
   // column,
   createColumnHelper,
@@ -44,11 +44,26 @@ const AttendanceReports = () => {
 
 
   const {
-    data: allEmployeeMissPunches,
+    data: allEmployeeYearlyMissPunches,
     isLoading: isLoadingAllEmployeeMissPunches,
     isSuccess: isSuccessAllEmployeeMissPunches,
-  } = useAllEmployeeMissPunchesQuery({ globalCompany: globalCompany, month: selectedDate.month, year: selectedDate.year });
-  console.log(allEmployeeMissPunches)
+  } = useAllEmployeeYearlyMissPunchesQuery({ globalCompany: globalCompany, year: selectedDate.year });
+
+  const monthlyMissPunches = useMemo(() => {
+    const months = {};
+
+    allEmployeeYearlyMissPunches?.forEach((punch) => {
+      const month = new Date(punch.date).getMonth() + 1; // getMonth() returns 0-based month, so add 1 to make it 1-based
+
+      if (!months[month]) {
+        months[month] = [];
+      }
+
+      months[month].push(punch);
+    });
+
+    return months;
+  }, [allEmployeeYearlyMissPunches]);
   const [ignoreMonthField, setIgnoreMonthField] = useState(false);
   const [filterMissPunchEmployees, setFilterMissPunchEmployees] = useState(false)
 
@@ -167,10 +182,10 @@ const AttendanceReports = () => {
         }
         else if (filterMissPunchEmployees == true) {
           return dateOfJoiningOfEmployee <= comparisonDate &&
-            allEmployeeMissPunches.some(missPunch => {
+            monthlyMissPunches?.[parseInt(selectedDate.month)]?.some(missPunch => {
               if (employee.id === missPunch.employee) {
                 const [missPunchYear, missPunchMonth] = missPunch.date.split('-').map(Number);
-                if (missPunchYear === selectedDate.year && missPunchMonth === selectedDate.month) {
+                if (missPunchYear === selectedDate.year && missPunchMonth === parseInt(selectedDate.month)) {
                   return true
                 }
               }
@@ -185,7 +200,7 @@ const AttendanceReports = () => {
     });
 
     return filteredData;
-  }, [employeePersonalDetails, selectedDate, ignoreMonthField, filterMissPunchEmployees, allEmployeeMissPunches]);
+  }, [employeePersonalDetails, selectedDate.month, selectedDate.year, ignoreMonthField, filterMissPunchEmployees, monthlyMissPunches]);
 
   const earliestMonthAndYear = useMemo(() => {
     let earliestDate = Infinity; // Initialize earliestDate to a very large value
@@ -351,6 +366,7 @@ const AttendanceReports = () => {
         } else if (response.status != 200) {
           console.error('Request failed with status: ', response.status);
           response.json().then((data) => {
+            console.log(data)
             console.log('Error:', data.detail);
             dispatch(
               alertActions.createAlert({
@@ -375,6 +391,7 @@ const AttendanceReports = () => {
           window.open(pdfUrl, '_blank');
         }
       } catch (error) {
+        console.log(error)
         console.error('Fetch error: ', error);
         dispatch(
           alertActions.createAlert({
