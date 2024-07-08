@@ -416,7 +416,7 @@ class PfEsiReportsSerializer(serializers.Serializer):
     company = serializers.IntegerField()
     month = serializers.IntegerField()
     year = serializers.IntegerField()
-    report_type = serializers.ChoiceField(choices=["pf_statement", "esi_statement"])
+    report_type = serializers.ChoiceField(choices=["pf_statement", "esi_statement", "pf_exempt"])
     class Meta:
         fields = ['employee_ids', "filters"]
 

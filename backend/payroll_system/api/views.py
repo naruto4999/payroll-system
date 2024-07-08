@@ -2216,7 +2216,7 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
                 order_by = ("employee__attendance_card_no",)
             elif validated_data['filters']['sort_by'] == "employee_name":
                 order_by = ('employee__name',)
-            if validated_data['filters']['group_by'] != 'none' and validated_data['filters']['format']!='xlsx':
+            if validated_data['filters']['group_by'] != 'none':
                 if order_by != None:
                     order_by = ('employee__employee_professional_detail__department', *order_by)
                 else:
@@ -2721,7 +2721,39 @@ class PfEsiReportsCreateAPIView(generics.CreateAPIView):
                 return response
 
             else:
-                return Response({"detail": "No Attendances Found for the given month"}, status=status.HTTP_404_NOT_FOUND)
+                return Response({"detail": "No Employee for PF Statement on this Month and Year"}, status=status.HTTP_404_NOT_FOUND)
+
+        if validated_data['report_type'] == 'pf_exempt':
+            order_by = None
+            if validated_data['filters']['sort_by'] == "attendance_card_no":
+                order_by = ("attendance_card_no",)
+            elif validated_data['filters']['sort_by'] == "employee_name":
+                order_by = ('name',)
+
+            employees = EmployeePersonalDetail.objects.filter(id__in=employee_ids, user=user, company_id=validated_data['company'])
+
+            #Use python regular expression to orderby if the order by is using paycode because it is alpha numeric
+            if validated_data['filters']['sort_by'] == "paycode":
+                employees = sorted(
+                    employees, 
+                    key=lambda x: (
+                        re.sub(r'[^A-Za-z]', '', x.paycode), 
+                        int(re.sub(r'[^0-9]', '', x.paycode))
+                    )
+                )
+            else:
+                employees = employees.order_by(*order_by)
+
+
+            if len(employees) != 0:
+                response = StreamingHttpResponse(generate_esi_statement_xlsx(request.user, serializer.validated_data, employees), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                response["Content-Disposition"] = 'attachment; filename="myexcel.xlsx"'
+                return response
+
+            else:
+                return Response({"detail": "No Employee for ESI Statement on this Month and Year"}, status=status.HTTP_404_NOT_FOUND)
+
+
             
         if validated_data['report_type'] == 'esi_statement':
             order_by = None
@@ -2751,7 +2783,7 @@ class PfEsiReportsCreateAPIView(generics.CreateAPIView):
                 return response
 
             else:
-                return Response({"detail": "No Attendances Found for the given month"}, status=status.HTTP_404_NOT_FOUND)
+                return Response({"detail": "No Employee for ESI Statement on this Month and Year"}, status=status.HTTP_404_NOT_FOUND)
 
         return Response({"detail": "Yo"}, status=status.HTTP_200_OK)
 
