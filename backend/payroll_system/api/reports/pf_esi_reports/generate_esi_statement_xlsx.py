@@ -6,6 +6,7 @@ from datetime import date, timedelta, datetime
 from dateutil.relativedelta import relativedelta
 from decimal import Decimal, ROUND_HALF_UP, ROUND_CEILING
 import calendar
+from openpyxl.styles import Font, PatternFill
 
 # def calculate_age(date_of_birth, reference_date):
 #     # Calculate age based on the provided date_of_birth and reference_date
@@ -98,6 +99,22 @@ def generate_esi_statement_xlsx(user, request_data, employees):
     excel_buffer = io.BytesIO()
     with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
         df.to_excel(writer, index=False, sheet_name='Sheet1')
+
+
+        workbook = writer.book
+        worksheet = writer.sheets['Sheet1']
+
+        # Adjust the width of all columns
+        for column in worksheet.columns:
+            max_length = max(len(str(cell.value)) for cell in column) + 2  # Adding a little extra padding
+            worksheet.column_dimensions[column[0].column_letter].width = max_length
+
+        # Make the last row bold and font color blue
+        last_row = len(df) + 1
+        font = Font(bold=True, color='0000FF')
+        for cell in worksheet[last_row]:
+            cell.font = font
+
 
     # Create a response with the Excel file content
     response = HttpResponse(content=excel_buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
