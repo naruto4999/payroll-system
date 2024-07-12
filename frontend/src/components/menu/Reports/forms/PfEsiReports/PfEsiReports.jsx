@@ -253,12 +253,26 @@ const PfEsiReports = () => {
       year: selectedDate.year,
     };
     console.log(toSend);
-    let fileName = 'pf_statement.xlsx';
+    let fileName = '';
 
-    if (values.reportType == 'pf_statement' && values.filters.format == 'txt') {
-      fileName = 'pf_statement.txt';
-    } else if (values.reportType == 'esi_statement') {
-      fileName = 'esi_statement.xlsx';
+    const reportTypeFormatMap = {
+      pf_statement: {
+        default: 'pf_statement.xlsx',
+        txt: 'pf_statement.txt',
+      },
+      esi_statement: 'esi_statement.xlsx',
+      pf_exempt: 'pf_exempt.xlsx',
+    };
+
+    const reportType = values.reportType;
+    const format = values.filters?.format;
+
+    if (reportType in reportTypeFormatMap) {
+      if (typeof reportTypeFormatMap[reportType] === 'object') {
+        fileName = reportTypeFormatMap[reportType][format] || reportTypeFormatMap[reportType].default;
+      } else {
+        fileName = reportTypeFormatMap[reportType];
+      }
     }
 
     // using fetch

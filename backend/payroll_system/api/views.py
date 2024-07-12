@@ -40,6 +40,7 @@ from .reports.employee_strength_reports.generate_strength_report import generate
 from .reports.employee_strength_reports.generate_resign_report import generate_resign_report
 from .reports.pf_esi_reports.generate_esi_statement_xlsx import generate_esi_statement_xlsx
 from .reports.pf_esi_reports.generate_pf_statement_txt import generate_pf_statement_txt
+from .reports.pf_esi_reports.generate_pf_exempt_xlsx import generate_pf_exempt_xlsx
 from .reports.generate_form_14 import generate_form_14
 from .reports.personnnel_file_forms.id_card.id_card_landscape import generate_id_card_landscape
 from .reports.generate_overtime_sheet_daily import generate_overtime_sheet_daily
@@ -2746,7 +2747,7 @@ class PfEsiReportsCreateAPIView(generics.CreateAPIView):
 
 
             if len(employees) != 0:
-                response = StreamingHttpResponse(generate_esi_statement_xlsx(request.user, serializer.validated_data, employees), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                response = StreamingHttpResponse(generate_pf_exempt_xlsx(request.user, serializer.validated_data, employees), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
                 response["Content-Disposition"] = 'attachment; filename="myexcel.xlsx"'
                 return response
 
