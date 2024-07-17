@@ -94,7 +94,11 @@ def generate_present_report(request_data, present_employees_attendances):
         present_report.multi_cell(w=width_of_columns['father_name'], h=default_cell_height*default_row_number_of_cells, text=f'{attendance.employee.father_or_husband_name or ""}', align="L", new_x="RIGHT", new_y='TOP', border=1)
         
         #Designation
-        present_report.multi_cell(w=width_of_columns['designation'], h=default_cell_height*default_row_number_of_cells, text=f'{attendance.employee.employee_professional_detail.designation.name if attendance.employee.employee_professional_detail.designation else ""}', align="L", new_x="RIGHT", new_y='TOP', border=1)
+        employee_designation = None
+        try:
+            employee_designation = attendance.employee.employee_professional_detail.designation
+        except: pass
+        present_report.multi_cell(w=width_of_columns['designation'], h=default_cell_height*default_row_number_of_cells, text=f'{employee_designation.name if employee_designation!=None else ""}', align="L", new_x="RIGHT", new_y='TOP', border=1)
 
         #In time
         in_time = attendance.machine_in.strftime('%H:%M') if attendance.machine_in else ''
@@ -108,7 +112,7 @@ def generate_present_report(request_data, present_employees_attendances):
             out_time = attendance.manual_out.strftime('%H:%M')
         present_report.multi_cell(w=width_of_columns['out_time'], h=default_cell_height*default_row_number_of_cells, text=f'{out_time}', align="C", new_x="RIGHT", new_y='TOP', border=1)
 
-        #Employee Name
+        #Status
         present_report.multi_cell(w=width_of_columns['status'], h=default_cell_height*default_row_number_of_cells, text=f'{attendance.first_half.name}-{attendance.second_half.name}', align="C", new_x="LMARGIN", new_y='NEXT', border=1)
 
 

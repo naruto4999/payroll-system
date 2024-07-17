@@ -43,6 +43,7 @@ const FilterOptions = ({ handleChange, values, isValid, handleSubmit, isSubmitti
         >
           <option value="attendance_register">Attendance Register</option>
           <option value="present_report">Present Report</option>
+          <option value="absent_report">Absent Report</option>
           {auth.account.role == 'OWNER' && (
             <option value="overtime_sheet_daily">{'Over Time Sheet (Daily)'}</option>
           )}
@@ -52,7 +53,7 @@ const FilterOptions = ({ handleChange, values, isValid, handleSubmit, isSubmitti
           <option value="miss_punch">Miss Punch</option>
         </Field>
       </div>
-      {(values.reportType == 'present_report' || values.reportType == 'overtime_sheet_daily') && (
+      {(values.reportType == 'present_report' || values.reportType == 'overtime_sheet_daily' || values.reportType == 'absent_report') && (
         <div>
           <label
             htmlFor="filters.date"

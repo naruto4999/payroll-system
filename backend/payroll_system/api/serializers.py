@@ -402,7 +402,7 @@ class AttendanceReportsSerializer(serializers.Serializer):
     company = serializers.IntegerField()
     month = serializers.IntegerField()
     year = serializers.IntegerField()
-    report_type = serializers.ChoiceField(choices=["present_report", "attendance_register", "form_14", "overtime_sheet_daily", "bonus_calculation_sheet", "bonus_form_c", "miss_punch"])
+    report_type = serializers.ChoiceField(choices=["present_report", "absent_report", "attendance_register", "form_14", "overtime_sheet_daily", "bonus_calculation_sheet", "bonus_form_c", "miss_punch"])
     class Meta:
         fields = ['employee_ids', "filters"]
 
