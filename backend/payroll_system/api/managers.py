@@ -384,7 +384,6 @@ class EmployeeAttendanceManager(models.Manager):
 
                 #current_employee user_id in machine db
                 user_info_df = mdb.read_table(temp_file.name, 'USERINFO')
-                # print(user_info_df.tail(50))
                 print(f'Current Employee ACN: {current_employee.employee.attendance_card_no}')
                 filtered_user_info = user_info_df[user_info_df['Badgenumber'] == str(current_employee.employee.attendance_card_no)]
                 user_id = None
@@ -398,7 +397,7 @@ class EmployeeAttendanceManager(models.Manager):
                 employee_rows = filtered_rows[filtered_rows['USERID'] == user_id]
                 employee_rows_asc_time = employee_rows.sort_values(by='CHECKTIME', ascending=True)
                 employee_rows_desc_time = employee_rows.sort_values(by='CHECKTIME', ascending=False)
-                # print(employee_rows_desc_time)
+                
                 #Getting Shift Before the start of the loop
                 employee_shift_on_particular_date=None
                 employee_shift_on_particular_date_queryset = EmployeeShifts.objects.filter(company_id=company_id, user=user, employee=current_employee.employee, from_date__lte=from_date, to_date__gte=from_date)
@@ -414,21 +413,21 @@ class EmployeeAttendanceManager(models.Manager):
                 # Fetch all existing attendance records within the date range for current employee
                 date_range = [from_date + timedelta(days=i) for i in range((to_date - from_date).days + 1)]
                 attendance_by_date = self.filter(user=user, company_id=company_id, employee=current_employee.employee, date__in=date_range).distinct("date").in_bulk(field_name='date')
-                # print(attendance_by_date)
 
                 while current_date <= to_date:
                     print(f"Current Date of loop {current_date}")
                     if current_date.date() < current_employee.date_of_joining:
                         current_date += timedelta(days=1)
                         continue
+
                     #Get current attendance if any
                     skip_calculating_attendances = False
-                    # existing_attendance = self.filter(user=user, company_id=company_id, date=current_date, employee=current_employee.employee)
                     existing_attendance = attendance_by_date.get(current_date.date(), None)
                     if existing_attendance != None:
-                        if existing_attendance.manual_in != None and existing_attendance.manual_out != None:
+                        #changed this
+                        if (existing_attendance.manual_in != None and existing_attendance.manual_out != None) or (existing_attendance.manual_mode == True):
                             skip_calculating_attendances = True
-                    # print(current_date.strftime("%Y-%m-%d"))  # or do something with the date
+                    
                     #Get the shift of the current employee
                     if employee_shift_on_particular_date==None or (current_date.date() < shift_from_date or current_date.date() > shift_to_date):
                                 print('Yes Refetching')
@@ -438,8 +437,6 @@ class EmployeeAttendanceManager(models.Manager):
                                     shift_from_date = employee_shift_on_particular_date.from_date
                                     shift_to_date = employee_shift_on_particular_date.to_date
 
-                    # employee_shift_on_particular_date = EmployeeShifts.objects.get(company_id=company_id, user=user, employee=current_employee.employee, from_date__lte=current_date, to_date__gte=current_date)
-                    
                     #Shift Beginnning time and End Time with current date
                     shift_beginning_time = datetime.combine(current_date.date(), employee_shift_on_particular_date.shift.beginning_time)
                     shift_end_time = datetime.combine(current_date.date() if employee_shift_on_particular_date.shift.end_time > employee_shift_on_particular_date.shift.beginning_time else current_date.date()+relativedelta(days=1), employee_shift_on_particular_date.shift.end_time)
