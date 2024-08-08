@@ -545,6 +545,12 @@ class EmployeeMonthlyMissPunchSerializer(serializers.Serializer):
     month = serializers.IntegerField()
     year = serializers.IntegerField()
 
+class EmployeeYearlyAdvanceTakenDeductedSerializer(serializers.Serializer):
+    employee_ids = serializers.ListField(child=serializers.IntegerField())
+
+
+
+
 
 # class CompanyEmployeeStatisticsSerializer(serializers.ModelSerializer):
 #     class Meta:
