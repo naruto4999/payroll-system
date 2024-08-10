@@ -14,6 +14,7 @@ from pathlib import Path
 from datetime import timedelta
 from corsheaders.defaults import default_headers
 import os
+from logging.handlers import RotatingFileHandler
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -28,6 +29,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = str(os.environ.get('DEBUG')) == '1'
+
 
 if not DEBUG:
     SESSION_COOKIE_SECURE = True
@@ -309,6 +311,33 @@ SIMPLE_JWT = {
 
 }
 
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False,
+#     'handlers': {
+#         'console': {
+#             'class': 'logging.StreamHandler',
+#         },
+#         'file': {
+#             'level': 'DEBUG',
+#             'class': 'logging.FileHandler',
+#             'filename': './django.log',
+#         },
+#     },
+#     'root': {
+#         'handlers': ['console', 'file'],
+#         'level': 'DEBUG',
+#     },
+# }
+#
+
+LOG_FILE_PATH = os.path.join(BASE_DIR, 'logs', 'django.log')
+# Ensure the directory exists
+if not os.path.exists(os.path.dirname(LOG_FILE_PATH)):
+    os.makedirs(os.path.dirname(LOG_FILE_PATH))
+
+
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -318,15 +347,34 @@ LOGGING = {
         },
         'file': {
             'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': './django.log',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOG_FILE_PATH,
+            'maxBytes': 1024 * 1024 * 10,  # 10 MB
+            'backupCount': 5,
         },
     },
     'root': {
         'handlers': ['console', 'file'],
         'level': 'DEBUG',
     },
+    'loggers': {
+        # 'django.db.backends': {
+        #     'level': 'DEBUG',
+        #     'handlers': ['file'],
+        # },
+    }
 }
+
+if DEBUG:
+    # LOGGING['loggers']['django.db.backends'] = {
+    #     'handlers': ['file'],
+    #     'level': 'DEBUG',
+    # }
+    pass
+
+
+
+
 
 
 CORS_ALLOW_ALL_ORIGINS = True

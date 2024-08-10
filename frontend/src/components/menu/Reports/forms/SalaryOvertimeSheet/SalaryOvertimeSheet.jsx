@@ -52,6 +52,7 @@ const SalaryOvertimeSheet = () => {
     isLoading: isLoadingEmployeesForYearlyAdvanceReport,
     isSuccess: isSuccessEmployeesForYearlyAdvanceReport,
   } = useGetEmployeesForYearlyAdvanceReportQuery({ company: globalCompany.id, year: selectedDate.year });
+  console.log(employeesForYearlyAdvanceReport)
 
   const {
     data: employeePreparedSalaries,
@@ -60,7 +61,6 @@ const SalaryOvertimeSheet = () => {
   } = useGetPreparedSalariesQuery({ company: globalCompany.id, month: selectedDate.month, year: selectedDate.year });
   //console.log(employeePreparedSalaries);
   //console.log(employeePersonalDetails);
-  console.log(employeesForYearlyAdvanceReport)
   // const [
   // 	generateSalaryOvertimeSheet,
   // 	{

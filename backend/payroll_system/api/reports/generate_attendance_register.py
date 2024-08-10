@@ -1,8 +1,9 @@
 from fpdf import FPDF
-from ..models import CompanyDetails, EmployeeGenerativeLeaveRecord, LeaveGrade, EmployeeAttendance, EmployeeSalaryDetail
+from ..models import CompanyDetails, EmployeeGenerativeLeaveRecord, LeaveGrade, EmployeeAttendance, EmployeeSalaryDetail, EmployeeMonthlyAttendanceDetails
 from datetime import date, timedelta, datetime
 from dateutil.relativedelta import relativedelta
 import calendar
+from django.db.models import Prefetch
 
 width_of_columns = {
         "serial_number": 4,
@@ -69,54 +70,69 @@ class FPDF(FPDF):
 
 # Create instance of FPDF class
 def generate_attendance_register(user, request_data, employees):
+    
     print('starting to create the attendance register')
-    generative_leaves = LeaveGrade.objects.filter(company_id=request_data['company'], generate_frequency__isnull=False)
+
+    # Pre-fetch all related data for employees in a single query
+    company_id = request_data['company']
+    year, month = request_data['year'], request_data['month']
+    num_days_in_month = calendar.monthrange(year, month)[1]
+    start_date = date(year, month, 1)
+    end_date = date(year, month, num_days_in_month)
+
+    generative_leaves = LeaveGrade.objects.filter(company_id=company_id, generate_frequency__isnull=False)
+    company_details = CompanyDetails.objects.filter(company_id=company_id).first()
+
+    employees = employees.prefetch_related(
+        Prefetch('employee_salary_detail', queryset=EmployeeSalaryDetail.objects.all()),
+        Prefetch('attendance', queryset=EmployeeAttendance.objects.filter(date__range=[start_date, end_date]).order_by('date')),
+        Prefetch('monthly_attendance_details', queryset=EmployeeMonthlyAttendanceDetails.objects.filter(date=start_date)),
+        Prefetch('generative_leave_record', queryset=EmployeeGenerativeLeaveRecord.objects.filter(date=start_date).order_by('leave__name'))
+    ).select_related('employee_professional_detail__designation', 'employee_professional_detail__department')
+    
+
     default_cell_height = 3
     employee_intro_cell_height = 4
     default_number_of_cells_in_row = max(6, len(generative_leaves)+2)
     group_by_department_cell_height = 5
-    #210-33-10 = 167 (33 is header height and 10 is total of top and bottom margin)
-    rows_per_page = 167//(employee_intro_cell_height+(default_number_of_cells_in_row*default_cell_height))
+    rows_per_page = 167 // (employee_intro_cell_height + (default_number_of_cells_in_row * default_cell_height))
 
     if request_data['filters']['group_by'] != 'none':
-        rows_per_page = 167//(employee_intro_cell_height+(default_number_of_cells_in_row*default_cell_height)+group_by_department_cell_height)
+        rows_per_page = 167 // (employee_intro_cell_height + (default_number_of_cells_in_row * default_cell_height) + group_by_department_cell_height)
     print(f"Rows Per Page: {rows_per_page}")
 
-
-    #Dimensions of A4 sheet is 210 x 297 mm and there is 6 mm margin on left and right leaving us with 285mm
     employee_intro_width = {
         'serial_number': 20,
         'paycode': 35,
         'acn': 20,
-        'name' : 70,
-        # 'shift' : 40,
-        'designation' : 50,
-        'paid_work_days' : 45
+        'name': 70,
+        'designation': 50,
+        'paid_work_days': 45
     }
 
+    attendance_register = FPDF(
+        my_date=date(request_data['year'], request_data['month'], 1),
+        company_name=company_details.company.name if company_details else '',
+        company_address=company_details.address if (company_details and company_details.address != None) else '     ',
+        default_cell_height=default_cell_height,
+        orientation="L",
+        unit="mm",
+        format="A4"
+    )
 
-    # default_number_of_cells_in_row = max(len(generative_leaves)+2, 8, len(earnings_head)+1)
-    company_details = None
-    try: company_details = CompanyDetails.objects.filter(company_id=request_data['company']).first()
-    except: pass
-    attendance_register = FPDF(my_date=date(request_data['year'], request_data['month'], 1),company_name=company_details.company.name if company_details else '',company_address=company_details.address if (company_details and company_details.address != None) else '     ',default_cell_height=default_cell_height, orientation="L", unit="mm", format="A4")
-    
-    #Page settings
     attendance_register.set_margins(left=6, top=4, right=6)
     attendance_register.add_page()
-    attendance_register.set_auto_page_break(auto=True, margin = 4)
+    attendance_register.set_auto_page_break(auto=True, margin=4)
     initial_coordinates_after_header = {"x": attendance_register.get_x(), "y": attendance_register.get_y()}
     print(attendance_register.get_y())
 
     row_number = 0
-    num_days_in_month = calendar.monthrange(request_data['year'], request_data['month'])[1]
     for employee_index, employee in enumerate(employees):
-        salary_detail = EmployeeSalaryDetail.objects.filter(employee=employee)
-        print(salary_detail)
-        if not salary_detail.exists():
+        salary_detail = employee.employee_salary_detail
+        if not salary_detail:
             continue
         row_number += 1
-        attendance_records = EmployeeAttendance.objects.filter(user=user, employee=employee, date__range=[date(request_data['year'], request_data['month'], 1), date(request_data['year'], request_data['month'], num_days_in_month)])
+        attendance_records = employee.attendance.all()
         totals = {
             'total_working_hrs': 0,
             'total_late': 0
@@ -125,13 +141,15 @@ def generate_attendance_register(user, request_data, employees):
         if request_data['filters']['group_by'] != 'none':
             try:
                 current_employee_department = employee.employee_professional_detail.department
-                previous_employee_department = employees[employee_index-1].employee_professional_detail.department if employee_index!=0 else None
+                previous_employee_department = employees[employee_index-1].employee_professional_detail.department if employee_index != 0 else None
                 if employee_index == 0 or current_employee_department != previous_employee_department:
                     attendance_register.set_font("Helvetica", size=10, style="B")
                     attendance_register.cell(w=0, h=group_by_department_cell_height, text=f'{current_employee_department.name if current_employee_department else "No Department"}', align="L", new_x="LMARGIN", new_y='NEXT', border=0)
             except:
                 pass
-        ##Employee Intro Details
+
+
+        #Employee Intro Details
         attendance_register.set_font('Helvetica', 'B', 7)
         designation = ''
         try: designation = employee.employee_professional_detail.designation.name
@@ -148,7 +166,7 @@ def generate_attendance_register(user, request_data, employees):
         holiday_days_count = ''
         employee_monthly_details = None
         try:
-            employee_monthly_details = employee.monthly_attendance_details.filter(user=user, date=date(request_data['year'], request_data['month'], 1)).first()
+            employee_monthly_details = employee.monthly_attendance_details.first()
             paid_days_count = int(employee_monthly_details.paid_days_count/2) if employee_monthly_details.paid_days_count/2%1==0 else employee_monthly_details.paid_days_count/2
             present_count = int(employee_monthly_details.present_count/2) if employee_monthly_details.present_count/2%1==0 else employee_monthly_details.present_count/2
             weekly_off_days_count = int(employee_monthly_details.weekly_off_days_count/2) if employee_monthly_details.weekly_off_days_count/2%1==0 else employee_monthly_details.weekly_off_days_count/2
@@ -159,7 +177,8 @@ def generate_attendance_register(user, request_data, employees):
         generative_leave_text = ''
         employee_generative_leaves = None
         try:
-            employee_generative_leaves = EmployeeGenerativeLeaveRecord.objects.filter(user=user, employee=employee, date=date(request_data['year'], request_data['month'], 1)).order_by('leave__name')
+            #employee_generative_leaves = EmployeeGenerativeLeaveRecord.objects.filter(user=user, employee=employee, date=date(request_data['year'], request_data['month'], 1)).order_by('leave__name')
+            employee_generative_leaves = employee.generative_leave_record.all()
             generative_leave_text = "\n".join(f"{leave.leave.name} : {int(leave.leave_count/2) if leave.leave_count/2%1==0 else leave.leave_count/2}" for leave in employee_generative_leaves)
         except:
             pass
@@ -174,7 +193,8 @@ def generate_attendance_register(user, request_data, employees):
             attendance_register.set_xy(x=attendance_register.get_x(), y=coordinates_after_intro['y'])
             current_date = date(request_data['year'], request_data['month'], day+1)
             specific_date_record = None
-            try: specific_date_record = attendance_records.filter(date=current_date).first()
+            #try: specific_date_record = attendance_records.filter(date=current_date).first()
+            try: specific_date_record = next((record for record in attendance_records if record.date == current_date), None)
             except: pass
             in_time_str = ''
             out_time_str = ''

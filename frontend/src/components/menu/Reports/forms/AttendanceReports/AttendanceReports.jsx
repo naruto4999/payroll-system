@@ -291,6 +291,7 @@ const AttendanceReports = () => {
 
     const generateSalarySheet = async () => {
       try {
+        const startTime = performance.now();
         const response = await fetch(
           `${import.meta.env.VITE_BACKEND_URL}api/generate-attendance-reports`,
           requestOptions
@@ -330,6 +331,11 @@ const AttendanceReports = () => {
               );
 
               if (refreshedResponse.status === 200) {
+
+                const pdfData = await refreshedResponse.arrayBuffer();
+                const pdfBlob = new Blob([pdfData], { type: 'application/pdf' });
+                const pdfUrl = URL.createObjectURL(pdfBlob);
+                window.open(pdfUrl, '_blank');
                 dispatch(
                   alertActions.createAlert({
                     message: 'Generated',
@@ -337,10 +343,6 @@ const AttendanceReports = () => {
                     duration: 8000,
                   })
                 );
-                const pdfData = await refreshedResponse.arrayBuffer();
-                const pdfBlob = new Blob([pdfData], { type: 'application/pdf' });
-                const pdfUrl = URL.createObjectURL(pdfBlob);
-                window.open(pdfUrl, '_blank');
               } else if (refreshedResponse.status === 404) {
                 dispatch(
                   alertActions.createAlert({
@@ -378,12 +380,16 @@ const AttendanceReports = () => {
           });
           // throw new Error('Request failed');
         } else if (response.status == 200) {
+
           const pdfData = await response.arrayBuffer();
           const pdfBlob = new Blob([pdfData], { type: 'application/pdf' });
           const pdfUrl = URL.createObjectURL(pdfBlob);
+          const endTime = performance.now(); // Record the end time
+          const responseTime = endTime - startTime;
+          const responseTimeInSeconds = (responseTime / 1000).toFixed(2);
           dispatch(
             alertActions.createAlert({
-              message: 'Generated',
+              message: `Generated, Time Taken: ${responseTimeInSeconds} seconds`,
               type: 'Success',
               duration: 8000,
             })

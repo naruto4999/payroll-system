@@ -57,6 +57,7 @@ from .permissions import isOwnerAndAdmin
 # import sys
 from django.db import connection, reset_queries 
 from rest_framework.exceptions import APIException
+from django.db.models import Case, When
 
 
 # from django.db import IntegrityError, transaction
@@ -2316,7 +2317,7 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
                 response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
                 return response
             else:
-                return Response({"detail": "No Overtime for any Employee in the given month"}, status=status.HTTP_404_NOT_FOUND)
+                return Response({"detail": "No advance was deducted for any Employee in the given month"}, status=status.HTTP_404_NOT_FOUND)
 
 
         # return Response({"message": "Payslip successful"}, status=status.HTTP_200_OK)
@@ -2388,14 +2389,14 @@ class AttendanceReportsCreateAPIView(generics.CreateAPIView):
             # date_range_query = Q(date__year=validated_data['year'], date__month=validated_data['month'])
             order_by = None
             if validated_data['filters']['sort_by'] == "attendance_card_no":
-                order_by = ("employee__attendance_card_no",)
+                order_by = ("attendance_card_no",)
             elif validated_data['filters']['sort_by'] == "employee_name":
                 order_by = ('name',)
             if validated_data['filters']['group_by'] != 'none':
                 if order_by != None:
-                    order_by = ('employee__employee_professional_detail__department', *order_by)
+                    order_by = ('employee_professional_detail__department', *order_by)
                 else:
-                    order_by = ('employee__employee_professional_detail__department',)
+                    order_by = ('employee_professional_detail__department',)
 
             employees = EmployeePersonalDetail.objects.filter(id__in=employee_ids, user=user, company_id=validated_data['company'])
 
@@ -2411,6 +2412,10 @@ class AttendanceReportsCreateAPIView(generics.CreateAPIView):
                         int(re.sub(r'[^0-9]', '', x.paycode))
                     )
                 )
+                sorted_employee_ids = [employee.id for employee in employees]
+                # Use the sorted IDs to get the queryset in the correct order
+                preserved = Case(*[When(id=pk, then=pos) for pos, pk in enumerate(sorted_employee_ids)])
+                employees = EmployeePersonalDetail.objects.filter(id__in=sorted_employee_ids).order_by(preserved)
             else:
                 employees = employees.order_by(*order_by)
 
