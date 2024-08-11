@@ -790,13 +790,14 @@ const EditAttendance = memo(
                     holidayDay
                   ) {
                     overtime = calculateWeeklyHolidayOvertime(day);
-                  } else if (
-                    !values.attendance[day].manualMode ||
-                    ((values.attendance[day].firstHalf == present.id ||
-                      values.attendance[day].firstHalf == onDuty.id) &&
-                      (values.attendance[day].secondHalf == present.id ||
-                        values.attendance[day].secondHalf == onDuty.id))
-                  ) {
+                    // } else if (
+                    //   !values.attendance[day].manualMode ||
+                    //   ((values.attendance[day].firstHalf == present.id ||
+                    //     values.attendance[day].firstHalf == onDuty.id) &&
+                    //     (values.attendance[day].secondHalf == present.id ||
+                    //       values.attendance[day].secondHalf == onDuty.id))
+                    // ) {
+                  } else {
                     overtime = calculateOvertime(day);
                   }
                   setFieldValue(
