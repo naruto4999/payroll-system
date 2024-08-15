@@ -294,6 +294,7 @@ const ResignationForm = () => {
     try {
       const data = await addFullAndFinal({
         ...values,
+        elEncashmentDays: values.elEncashmentDays * 2,
         company: globalCompany.id,
         employee: fullAndFinalEmployeeId,
       }).unwrap();

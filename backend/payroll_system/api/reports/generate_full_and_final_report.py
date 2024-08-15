@@ -294,7 +294,7 @@ def generate_full_and_final_report(user, request_data, employee):
     full_and_final_report.set_xy(x=coordinates_before_table['x'], y=full_and_final_report.get_y())
     
     #EL Encashment
-    full_and_final_report.cell(w=width_of_columns['salary_wage_rate']+width_of_columns['earnings']+width_of_columns['arrears'], h=default_cell_height, text=f'{employee_full_and_final.el_encashment_days} No. of EL Encashed', new_x="LEFT", new_y='TOP', align='L', border='L')
+    full_and_final_report.cell(w=width_of_columns['salary_wage_rate']+width_of_columns['earnings']+width_of_columns['arrears'], h=default_cell_height, text=f'{int(employee_full_and_final.el_encashment_days/2) if (employee_full_and_final.el_encashment_days/2)%1==0 else employee_full_and_final.el_encashment_days/2} No. of EL Encashed', new_x="LEFT", new_y='TOP', align='L', border='L')
     full_and_final_report.cell(w=width_of_columns['salary_wage_rate']+width_of_columns['earnings']+width_of_columns['arrears'], h=default_cell_height, text=f'{employee_full_and_final.el_encashment_amount}', new_x="LEFT", new_y='NEXT', align='R', border='R')
     full_and_final_earnings += employee_full_and_final.el_encashment_amount
     

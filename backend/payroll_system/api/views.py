@@ -3211,6 +3211,7 @@ class FullAndFinalCreateAPIView(APIView):
         employee_id = self.kwargs.get('employee_id')
 
         print(employee_id)
+        print(request.data)
         # Use select_for_update to ensure atomicity and avoid race conditions
         existing_instance = FullAndFinal.objects.filter(user=user, employee=employee_id)
         print(existing_instance)
