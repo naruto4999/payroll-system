@@ -33,7 +33,7 @@ const SalaryOvertimeSheet = () => {
   const auth = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const [showLoadingBar, setShowLoadingBar] = useOutletContext();
-  const [filterAdvanceEmployees, setFilterAdvanceEmployees] = useState();
+  const [filterYearlyAdvanceEmployees, setFilterYearlyAdvanceEmployees] = useState(false);
 
   const [selectedDate, setSelectedDate] = useState({
     year: new Date().getFullYear(),
@@ -50,6 +50,7 @@ const SalaryOvertimeSheet = () => {
   const {
     data: employeesForYearlyAdvanceReport,
     isLoading: isLoadingEmployeesForYearlyAdvanceReport,
+    isFetching: isFetchingEmployeesForYearlyAdvanceReport,
     isSuccess: isSuccessEmployeesForYearlyAdvanceReport,
   } = useGetEmployeesForYearlyAdvanceReportQuery({ company: globalCompany.id, year: selectedDate.year });
   console.log(employeesForYearlyAdvanceReport)
@@ -161,28 +162,34 @@ const SalaryOvertimeSheet = () => {
 
     const filteredData = employeePersonalDetails.filter((employee) => {
       if (employee.dateOfJoining) {
-        const comparisonDate = new Date(Date.UTC(selectedDate.year, parseInt(selectedDate.month) - 1, 1));
-        // Extract the year and month from the original dateOfJoining
-        const [year, month] = employee.dateOfJoining.split('-').map(Number);
-        if (employee.resignationDate) {
-          const [resignYear, resignMonth] = employee.resignationDate.split('-').map(Number);
-          const resignDate = new Date(Date.UTC(resignYear, resignMonth, 0));
-          if (resignDate < comparisonDate) {
-            return false;
-          }
+        if (filterYearlyAdvanceEmployees == true) {
+          const isYearlyAdvanceEmployee = employeesForYearlyAdvanceReport?.employeeIds?.some((id) => id === employee.id);
+          return isYearlyAdvanceEmployee
         }
-        const dateOfJoiningOfEmployee = new Date(Date.UTC(year, month - 1, 1));
-        // Check if employee.id exists in the array
-        const idExists = employeePreparedSalaries?.some((obj) => obj.employee === employee.id);
+        else {
+          const comparisonDate = new Date(Date.UTC(selectedDate.year, parseInt(selectedDate.month) - 1, 1));
+          // Extract the year and month from the original dateOfJoining
+          const [year, month] = employee.dateOfJoining.split('-').map(Number);
+          if (employee.resignationDate) {
+            const [resignYear, resignMonth] = employee.resignationDate.split('-').map(Number);
+            const resignDate = new Date(Date.UTC(resignYear, resignMonth, 0));
+            if (resignDate < comparisonDate) {
+              return false;
+            }
+          }
+          const dateOfJoiningOfEmployee = new Date(Date.UTC(year, month - 1, 1));
+          // Check if employee.id exists in the array
+          const idExists = employeePreparedSalaries?.some((obj) => obj.employee === employee.id);
 
-        return dateOfJoiningOfEmployee <= comparisonDate && idExists;
+          return dateOfJoiningOfEmployee <= comparisonDate && idExists;
+        }
       } else {
         return false;
       }
     });
 
     return filteredData;
-  }, [employeePersonalDetails, selectedDate, employeePreparedSalaries]);
+  }, [employeePersonalDetails, selectedDate, employeePreparedSalaries, filterYearlyAdvanceEmployees]);
 
   const generateButtonClicked = async (values, formikBag) => {
     setShowLoadingBar(true);
@@ -208,6 +215,7 @@ const SalaryOvertimeSheet = () => {
 
     const generateSalarySheet = async () => {
       try {
+        const startTime = performance.now();
         const response = await fetch(
           `${import.meta.env.VITE_BACKEND_URL}api/generate-salary-overtime-sheet`,
           requestOptions
@@ -247,6 +255,9 @@ const SalaryOvertimeSheet = () => {
               );
 
               if (refreshedResponse.status === 200) {
+                const pdfData = await refreshedResponse.arrayBuffer();
+                const pdfBlob = new Blob([pdfData], { type: 'application/pdf' });
+                const pdfUrl = URL.createObjectURL(pdfBlob);
                 dispatch(
                   alertActions.createAlert({
                     message: 'Generated',
@@ -254,9 +265,7 @@ const SalaryOvertimeSheet = () => {
                     duration: 8000,
                   })
                 );
-                const pdfData = await refreshedResponse.arrayBuffer();
-                const pdfBlob = new Blob([pdfData], { type: 'application/pdf' });
-                const pdfUrl = URL.createObjectURL(pdfBlob);
+
                 window.open(pdfUrl, '_blank');
               } else if (refreshedResponse.status === 404) {
                 dispatch(
@@ -321,13 +330,17 @@ const SalaryOvertimeSheet = () => {
             const pdfData = await response.arrayBuffer();
             const pdfBlob = new Blob([pdfData], { type: 'application/pdf' });
             const pdfUrl = URL.createObjectURL(pdfBlob);
+            const endTime = performance.now(); // Record the end time
+            const responseTime = endTime - startTime;
+            const responseTimeInSeconds = (responseTime / 1000).toFixed(2);
             dispatch(
               alertActions.createAlert({
-                message: 'Generated',
+                message: `Generated, Time Taken: ${responseTimeInSeconds} seconds`,
                 type: 'Success',
                 duration: 8000,
               })
             );
+
             window.open(pdfUrl, '_blank');
           }
         }
@@ -408,6 +421,17 @@ const SalaryOvertimeSheet = () => {
   };
   const initialValues = useMemo(() => generateInitialValues(), []);
 
+  useEffect(() => {
+    setShowLoadingBar(
+      isLoadingEmployeePersonalDetails ||
+      isLoadingEmployeesForYearlyAdvanceReport || isFetchingEmployeesForYearlyAdvanceReport
+    );
+  }, [isLoadingEmployeePersonalDetails,
+    isLoadingEmployeesForYearlyAdvanceReport, isFetchingEmployeesForYearlyAdvanceReport
+  ]);
+
+
+
   if (globalCompany.id == null) {
     return (
       <section className="flex flex-col items-center">
@@ -416,7 +440,7 @@ const SalaryOvertimeSheet = () => {
         </h4>
       </section>
     );
-  } else if (isLoadingEmployeePersonalDetails) {
+  } else if (isLoadingEmployeePersonalDetails, isLoadingEmployeesForYearlyAdvanceReport) {
     return <div></div>;
   } else {
     return (
@@ -443,7 +467,7 @@ const SalaryOvertimeSheet = () => {
               initialValues={initialValues}
               validationSchema={''}
               onSubmit={generateButtonClicked}
-              component={(props) => <FilterOptions {...props} />}
+              component={(props) => <FilterOptions {...props} setFilterYearlyAdvanceEmployees={setFilterYearlyAdvanceEmployees} />}
             />
           </div>
         </div>

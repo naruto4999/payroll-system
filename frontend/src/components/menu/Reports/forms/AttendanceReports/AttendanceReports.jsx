@@ -413,7 +413,6 @@ const AttendanceReports = () => {
     // Call the generateSalarySheet function to initiate the request
     generateSalarySheet();
   };
-
   if (globalCompany.id == null) {
     return (
       <section className="flex flex-col items-center">
