@@ -1488,6 +1488,7 @@ const EditAttendance = memo(
               style={{
                 overlay: {
                   backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                  zIndex: 20
                 },
               }}
             >
@@ -1505,7 +1506,7 @@ const EditAttendance = memo(
               />
             </ReactModal>
             <ReactModal
-              className="items-left fixed inset-0 z-20 mx-2 my-auto flex h-fit flex-col gap-4 rounded bg-zinc-300 p-4 shadow-xl dark:bg-zinc-800 sm:mx-auto sm:max-w-lg"
+              className="items-left fixed inset-0 z-100 mx-2 my-auto flex h-fit flex-col gap-4 rounded bg-zinc-300 p-4 shadow-xl dark:bg-zinc-800 sm:mx-auto sm:max-w-lg"
               isOpen={showConfirmModalMachineAttendance}
               onRequestClose={() =>
                 setShowConfirmModalMachineAttendance(false || isAddingMachineAttendance)
@@ -1513,6 +1514,7 @@ const EditAttendance = memo(
               style={{
                 overlay: {
                   backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                  zIndex: 20
                 },
               }}
             >
