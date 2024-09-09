@@ -189,7 +189,7 @@ const SalaryOvertimeSheet = () => {
     });
 
     return filteredData;
-  }, [employeePersonalDetails, selectedDate, employeePreparedSalaries, filterYearlyAdvanceEmployees]);
+  }, [employeePersonalDetails, selectedDate, employeePreparedSalaries, filterYearlyAdvanceEmployees, employeesForYearlyAdvanceReport]);
 
   const generateButtonClicked = async (values, formikBag) => {
     setShowLoadingBar(true);
