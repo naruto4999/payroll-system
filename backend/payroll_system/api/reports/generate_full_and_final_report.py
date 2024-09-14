@@ -133,7 +133,7 @@ def generate_full_and_final_report(user, request_data, employee):
     
     #Full And Final Date
     full_and_final_date = None
-    try: full_and_final_date = employee.employee.full_and_final.full_and_final_date
+    try: full_and_final_date = employee.employee.full_and_final.filter(user=user).first().full_and_final_date
     except: pass
     full_and_final_report.cell(w=width_of_columns['intro_header_date'], h=default_cell_height_large, text=f"Full & Final Date :", align="L", new_x="RIGHT", new_y='TOP', border=0)
     full_and_final_report.cell(w=width_of_columns['intro_value_date'], h=default_cell_height_large, text=f"{full_and_final_date.strftime('%d-%b-%Y') if full_and_final_date else ''}", align="L", new_x="LMARGIN", new_y='NEXT', border=0)
