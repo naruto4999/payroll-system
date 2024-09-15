@@ -134,6 +134,10 @@ def generate_bonus_form_c(user, request_data, employees):
     bonus_calculation_sheet.set_auto_page_break(auto=True, margin = bottom_margin)
     initial_coordinates_after_header = {"x": bonus_calculation_sheet.get_x(), "y": bonus_calculation_sheet.get_y()}
     bonus_calculation_sheet.set_font("Helvetica", size=5.5, style="")
+    all_grand_total = {
+            "bonus_wages_col_7": 0,
+            "bonus_amount_col_8_and_14": 0,
+    }
 
     for employee_index, employee in enumerate(employees):
         grand_total_employee = {
@@ -145,6 +149,7 @@ def generate_bonus_form_c(user, request_data, employees):
             "total_wages": 0,
 
         }
+        
         bonus_calculation_sheet.set_xy(x=initial_coordinates_after_header['x'], y=bonus_calculation_sheet.get_y())
         coordinates_current_employee = {"x": bonus_calculation_sheet.get_x(), "y": bonus_calculation_sheet.get_y()}
 
@@ -185,7 +190,9 @@ def generate_bonus_form_c(user, request_data, employees):
             #Bonus Wages
             bonus_wages = None
             try:
-                bonus_rate = employee.company.bonus_calculation.filter(date=start_month_year).first().amount
+                #bonus_rate = employee.company.bonus_calculation.filter(date=start_month_year).first().amount
+                bonus_rate = employee.employee.employee_professional_detail.category.same_category_bonus_calculation.filter(date=start_month_year).first().amount
+                print(f'Bonus Rate: {bonus_rate} Employee: {employee.employee.name}')
                 if company_calculations.bonus_calculation_days == 'month_days':
                     divisor = calendar.monthrange(start_month_year.year, start_month_year.month)[1]
                 else:
@@ -194,7 +201,7 @@ def generate_bonus_form_c(user, request_data, employees):
                 grand_total_employee['bonus_wages'] += bonus_wages
             except:
                 pass
-
+            #
             #Bonus Amount
             bonus_amount = None
             try:
@@ -214,9 +221,11 @@ def generate_bonus_form_c(user, request_data, employees):
 
         #Total Bonus Wages
         bonus_calculation_sheet.cell(w=width_of_columns['total_bonus_wages'], h=default_cell_height*2, text=f"{grand_total_employee['bonus_wages']}", align="R", new_x="RIGHT", new_y='TOP', border=1)
+        all_grand_total['bonus_wages_col_7'] += grand_total_employee['bonus_wages']
 
         #Total Bonus Amount
         bonus_calculation_sheet.cell(w=width_of_columns['total_bonus_amount'], h=default_cell_height*2, text=f"{grand_total_employee['bonus_amount']}", align="R", new_x="RIGHT", new_y='TOP', border=1)
+        all_grand_total['bonus_amount_col_8_and_14'] += grand_total_employee['bonus_amount']
 
         #Empty Rows
         bonus_calculation_sheet.cell(w=width_of_columns['deductions_puja'], h=default_cell_height*2, text=f"", align="R", new_x="RIGHT", new_y='TOP', border=1)
@@ -232,6 +241,30 @@ def generate_bonus_form_c(user, request_data, employees):
         #Date and Signature
         bonus_calculation_sheet.cell(w=width_of_columns['date_paid'], h=default_cell_height*2, text=f"", align="R", new_x="RIGHT", new_y='TOP', border=1)
         bonus_calculation_sheet.cell(w=width_of_columns['signature'], h=default_cell_height*2, text=f"", align="R", new_x="LMARGIN", new_y='NEXT', border=1)
+        if bonus_calculation_sheet.get_y()>195:
+            bonus_calculation_sheet.add_page()
+        print(f'Employee: {employee.employee.name} X: {bonus_calculation_sheet.get_x()} Y:{bonus_calculation_sheet.get_y()}')
+
+    #Printing Total of Everyone
+    bonus_calculation_sheet.set_xy(x=initial_coordinates_after_header['x'], y=bonus_calculation_sheet.get_y())
+    coordinates_current = {"x": bonus_calculation_sheet.get_x(), "y": bonus_calculation_sheet.get_y()}
+    bonus_calculation_sheet.set_line_width(0.5)
+    bonus_calculation_sheet.set_font("Helvetica", size=5.5, style="B")
+    bonus_calculation_sheet.cell(w=width_of_columns['serial_number']+width_of_columns['employee_name']+width_of_columns['father']+width_of_columns['15_years_of_age']+width_of_columns['designation']+width_of_columns['paid_days'], h=default_cell_height, text=f"Grand Total", align="L", new_x="RIGHT", new_y='TOP', border=1)
+    bonus_calculation_sheet.cell(w=width_of_columns['total_bonus_wages'], h=default_cell_height, text=f"{all_grand_total['bonus_wages_col_7']}", align="R", new_x="RIGHT", new_y='TOP', border=1)
+    bonus_calculation_sheet.cell(w=width_of_columns['total_bonus_amount'], h=default_cell_height, text=f"{all_grand_total['bonus_amount_col_8_and_14']}", align="R", new_x="RIGHT", new_y='TOP', border=1)
+    bonus_calculation_sheet.cell(w=width_of_columns['deductions_puja'], h=default_cell_height, text=f"", align="R", new_x="RIGHT", new_y='TOP', border=1)
+    bonus_calculation_sheet.cell(w=width_of_columns['deductions_interim'], h=default_cell_height, text=f"", align="R", new_x="RIGHT", new_y='TOP', border=1)
+    bonus_calculation_sheet.cell(w=width_of_columns['deductions_income_tax'], h=default_cell_height, text=f"", align="R", new_x="RIGHT", new_y='TOP', border=1)
+    bonus_calculation_sheet.cell(w=width_of_columns['deductions_financial_loss'], h=default_cell_height, text=f"", align="R", new_x="RIGHT", new_y='TOP', border=1)
+    bonus_calculation_sheet.cell(w=width_of_columns['deductions_total'], h=default_cell_height, text=f"", align="R", new_x="RIGHT", new_y='TOP', border=1)
+    bonus_calculation_sheet.cell(w=width_of_columns['net_payable'], h=default_cell_height, text=f"", align="R", new_x="RIGHT", new_y='TOP', border=1)
+    bonus_calculation_sheet.cell(w=width_of_columns['amount_actually_paid'], h=default_cell_height, text=f"{all_grand_total['bonus_amount_col_8_and_14']}", align="R", new_x="RIGHT", new_y='TOP', border=1)
+
+
+
+
+
 
 
 
