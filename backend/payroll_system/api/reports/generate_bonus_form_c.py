@@ -239,8 +239,15 @@ def generate_bonus_form_c(user, request_data, employees):
         bonus_calculation_sheet.cell(w=width_of_columns['amount_actually_paid'], h=default_cell_height*2, text=f"{grand_total_employee['bonus_amount']}", align="R", new_x="RIGHT", new_y='TOP', border=1)
         
         #Date and Signature
+        is_resigned = False
+        full_and_final = None
+        try:
+            is_resigned = employee.employee.employee_professional_detail.resigned
+            full_and_final = employee.employee.full_and_final.filter(user=user).first()
+            print(f'Is Resigned?: {is_resigned} Full And Final Exists?: {full_and_final}')
+        except: pass
         bonus_calculation_sheet.cell(w=width_of_columns['date_paid'], h=default_cell_height*2, text=f"", align="R", new_x="RIGHT", new_y='TOP', border=1)
-        bonus_calculation_sheet.cell(w=width_of_columns['signature'], h=default_cell_height*2, text=f"", align="R", new_x="LMARGIN", new_y='NEXT', border=1)
+        bonus_calculation_sheet.cell(w=width_of_columns['signature'], h=default_cell_height*2, text=f"{'Full & Final' if is_resigned and full_and_final!=None else 'Resigned' if is_resigned and full_and_final==None else ''}", align="C", new_x="LMARGIN", new_y='NEXT', border=1)
         if bonus_calculation_sheet.get_y()>195:
             bonus_calculation_sheet.add_page()
         print(f'Employee: {employee.employee.name} X: {bonus_calculation_sheet.get_x()} Y:{bonus_calculation_sheet.get_y()}')

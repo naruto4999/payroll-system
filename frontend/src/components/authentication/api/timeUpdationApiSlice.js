@@ -128,12 +128,13 @@ export const timeUpdationApiSlice = apiSlice.injectEndpoints({
         method: 'PUT',
         body: body,
       }),
-      invalidatesTags: [
+      invalidatesTags: (result, error, body) => [
         'EmployeeAttendance',
         'AllEmployeePresentCount',
         'AllEmployeeGenerativeLeaveRecord',
         'AllEmployeeMonthlyAttendanceDetails',
         'AllEmployeeMissPunches',
+        { type: 'EmoloyeeYearlyBonus', id: body.employee },
       ],
     }),
     // deleteShift: builder.mutation({

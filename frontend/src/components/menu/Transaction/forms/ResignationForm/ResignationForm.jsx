@@ -255,7 +255,6 @@ const ResignationForm = () => {
 
   useEffect(() => {
     if (fetchedData != undefined) {
-      console.log('yes setting');
       setData(fetchedData);
     }
     // fetchedData != undefined ? setData(fetchedData) : '';
@@ -519,7 +518,6 @@ const ResignationForm = () => {
   };
 
   const fullAndFinalInitialValues = useMemo(() => generateFullAndFinalInitialValues(), []);
-  console.log(fullAndFinalInitialValues);
 
   const unresignButtonClicked = async (formikBag) => {
     try {

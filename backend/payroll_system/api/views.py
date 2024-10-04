@@ -3372,14 +3372,11 @@ class EmployeeBonusAmountYearlyRetrieveAPIView(generics.RetrieveAPIView):
                     "paid_days": 0,
                     "bonus_wages": 0,
                     "bonus_amount": 0,
-                    "ex_gratia_wages": 0,
-                    "ex_gratia_amount": 0,
-                    "total_wages": 0,
-
                 }
                 start_month_year = None
                 if company_calculations:
                     start_month_year = date(year, company_calculations.bonus_start_month, 1)
+                    print(start_month_year)
                 for month in range(12):
                     #Paid Days
                     paid_days = None
@@ -3389,7 +3386,8 @@ class EmployeeBonusAmountYearlyRetrieveAPIView(generics.RetrieveAPIView):
                         grand_total_employee['paid_days'] += paid_days
                     except: 
                         pass
-
+                    #print(f"Paid Days: {paid_days}, Month and Year: {start_month_year}")
+                    
                     #Bonus Wages
                     bonus_wages = None
                     try:
@@ -3412,10 +3410,13 @@ class EmployeeBonusAmountYearlyRetrieveAPIView(generics.RetrieveAPIView):
                     except:
                         pass
 
-                    print(f"Month: {start_month_year}")
                     #Next Month
                     if start_month_year:
                         start_month_year = start_month_year + relativedelta(months=1)
+                print(f"Total Paid Days: {grand_total_employee['paid_days']}")
+                if (grand_total_employee['paid_days']/2)<30:
+                    grand_total_employee['bonus_amount'] = 0
+                    grand_total_employee['paid_days'] = 0
                 print(f"Bonus Amount: {grand_total_employee['bonus_amount']}")
                 serializer = self.get_serializer({'bonus_amount': grand_total_employee['bonus_amount'], 'employee': employee_id})
                 # print(serializer.data)

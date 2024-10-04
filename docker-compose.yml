@@ -27,6 +27,14 @@ services:
             - frontend
         command: certonly --webroot --webroot-path=/var/www/certbot --email kk.singh4999@gmail.com --agree-tos --no-eff-email -d pay-per.me  -d www.pay-per.me
 
+    certbot-validity:
+        image: certbot/certbot
+        volumes:
+            - ./data/certbot/conf:/etc/letsencrypt
+            - ./data/certbot/www:/var/www/certbot
+        command: certificates
+        restart: "no"
+
     backend:
         build:
             context: ./backend # Replace with the actual path to your backend code

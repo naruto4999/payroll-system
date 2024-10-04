@@ -87,6 +87,7 @@ const FullAndFinal = ({
     isError: isCompanyCalculationsError,
   } = useGetCalculationsQuery(globalCompany.id);
 
+
   const {
     data: earnedAmountWithPreparedSalary,
     isLoading: isLoadingEarnedAmountWithPreparedSalary,
@@ -118,7 +119,6 @@ const FullAndFinal = ({
     isEmployeeFullAndFinalError,
     errorEmployeeFullAndFinal,
   } = useGetFullAndFinalQuery({ company: globalCompany.id, employee: fullAndFinalEmployeeId });
-  console.log(employeeFullAndFinal);
 
   const {
     data: employeeProfessionalDetail,
@@ -128,6 +128,37 @@ const FullAndFinal = ({
     errorEmployeeProfessionalDetail,
   } = useGetSingleEmployeeProfessionalDetailPrefetchQuery({ company: globalCompany.id, id: fullAndFinalEmployeeId });
 
+  //Current Year for bonus
+  const currentYearForBonus = useMemo(() => {
+    if (!employeeProfessionalDetail?.resignationDate || !companyCalculations?.bonusStartMonth) {
+      return null; // or any default value you prefer
+    }
+
+    const resignationDate = new Date(employeeProfessionalDetail.resignationDate);
+    const bonusStartMonth = companyCalculations.bonusStartMonth;
+
+    return bonusStartMonth === 1
+      ? resignationDate.getFullYear()
+      : resignationDate.getMonth() + 1 < bonusStartMonth
+        ? resignationDate.getFullYear() - 1
+        : resignationDate.getFullYear();
+  }, [employeeProfessionalDetail?.resignationDate, companyCalculations?.bonusStartMonth]);
+
+  //Previous Year For Bonus
+  const previousYearForBonus = useMemo(() => {
+    if (!employeeProfessionalDetail?.resignationDate || !companyCalculations?.bonusStartMonth) {
+      return null; // or any default value you prefer
+    }
+
+    const resignationDate = new Date(employeeProfessionalDetail.resignationDate);
+    const bonusStartMonth = companyCalculations.bonusStartMonth;
+
+    return bonusStartMonth === 1
+      ? resignationDate.getFullYear() - 1
+      : resignationDate.getMonth() + 1 < bonusStartMonth
+        ? resignationDate.getFullYear() - 2
+        : resignationDate.getFullYear() - 1;
+  }, [employeeProfessionalDetail?.resignationDate, companyCalculations?.bonusStartMonth]);
   // Current Year Bonus Amount
   const {
     data: currentYearBonusAmount,
@@ -138,11 +169,11 @@ const FullAndFinal = ({
     {
       company: globalCompany.id,
       employee: fullAndFinalEmployeeId,
-      year: new Date(employeeProfessionalDetail?.resignationDate).getFullYear() - 1,
+      //year: new Date(employeeProfessionalDetail?.resignationDate).getFullYear() - 1,
+      year: currentYearForBonus
     },
-    { skip: globalCompany === null || globalCompany === '' || employeeProfessionalDetail == undefined }
+    { skip: globalCompany === null || globalCompany === '' || employeeProfessionalDetail == undefined || currentYearForBonus == null }
   );
-
   // Prev Year Bonus Amount
   const {
     data: previousYearBonusAmount,
@@ -153,9 +184,9 @@ const FullAndFinal = ({
     {
       company: globalCompany.id,
       employee: fullAndFinalEmployeeId,
-      year: new Date(employeeProfessionalDetail?.resignationDate).getFullYear() - 2,
+      year: previousYearForBonus
     },
-    { skip: globalCompany === null || globalCompany === '' || employeeProfessionalDetail == undefined }
+    { skip: globalCompany === null || globalCompany === '' || employeeProfessionalDetail == undefined || previousYearForBonus == null }
   );
   // if (employeePersonalDetail && employeeProfessionalDetail) {
   // 	console.log(
@@ -334,7 +365,7 @@ const FullAndFinal = ({
     }
   };
 
-  if (isLoadingEmployeePersonalDetail || isLoadingEmployeeProfessionalDetail) {
+  if (isLoadingEmployeePersonalDetail || isLoadingEmployeeProfessionalDetail || isLoadingPreviousYearBonusAmount || isLoadingCurrentYearBonusAmount || isLoadingCompanyCalculations || isLoadingEarnedAmountWithPreparedSalary || isLoadingElLeft || isLoadingEmployeeFullAndFinal || currentYearBonusAmount == undefined || previousYearBonusAmount == undefined) {
     return (
       <div className="fixed inset-0 z-50 mx-auto my-auto flex h-fit w-fit items-center rounded bg-indigo-600 p-2 font-medium">
         <FaCircleNotch className="mr-2 animate-spin text-white" />
@@ -530,9 +561,7 @@ const FullAndFinal = ({
                 <div className="flex w-2/3 flex-row justify-between text-sm font-medium text-slate-200">
                   <div>
                     {employeeProfessionalDetail &&
-                      `Bonus ${new Date(employeeProfessionalDetail?.resignationDate).getFullYear() - 2
-                      }-${new Date(employeeProfessionalDetail?.resignationDate).getFullYear() - 1
-                      }`}
+                      `Bonus ${previousYearForBonus != null ? previousYearForBonus : ''}-${previousYearForBonus != null ? previousYearForBonus + 1 : ''}`}
                   </div>
                   <div className="">
                     <button
@@ -564,8 +593,7 @@ const FullAndFinal = ({
                 <div className="flex w-2/3 flex-row justify-between text-sm font-medium text-slate-200">
                   <div>
                     {employeeProfessionalDetail &&
-                      `Bonus ${new Date(employeeProfessionalDetail?.resignationDate).getFullYear() - 1
-                      }-${new Date(employeeProfessionalDetail?.resignationDate).getFullYear()}`}
+                      `Bonus ${currentYearForBonus != null ? currentYearForBonus : ''}-${currentYearForBonus != null ? currentYearForBonus + 1 : ''}`}
                   </div>
                   <div className="">
                     <button
