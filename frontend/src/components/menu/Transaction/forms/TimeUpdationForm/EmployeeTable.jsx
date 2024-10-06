@@ -85,8 +85,8 @@ const EmployeeTable = ({
             {table.getRowModel().rows.map((row) => (
               <tr
                 className=" hover:bg-zinc-200 dark:hover:bg-zinc-800 dark:focus:bg-teal-800 dark:focus:bg-opacity-50"
-                key={row.id}
-                id={row.id}
+                key={row.original.id}
+                id={row.original.id}
                 onKeyDown={(e) => handleKeyDown(e, row)}
                 tabIndex={-1}
                 data-row-id={row.original.id}
@@ -96,13 +96,20 @@ const EmployeeTable = ({
               >
                 {row.getVisibleCells().map((cell) => (
                   <td className="relative px-4 py-2 font-normal" key={cell.id}>
+                    {/* {row.original.id == */}
+                    {/*   tbodyRef.current?.children */}
+                    {/*     .namedItem(focusedRowRef.current) */}
+                    {/*     ?.getAttribute('data-row-id') && */}
+                    {/*   cell.id.includes('paycode') && ( */}
+                    {/*     <div className="absolute "> */}
+                    {/*       <FaCircleCheck className="absolute scale-150 text-blueAccent-600" /> */}
+                    {/*     </div> */}
+                    {/*   )} */}
                     {row.original.id ==
-                      tbodyRef.current?.children
-                        .namedItem(focusedRowRef.current)
-                        ?.getAttribute('data-row-id') &&
+                      focusedRowRef.current &&
                       cell.id.includes('paycode') && (
-                        <div className="absolute ">
-                          <FaCircleCheck className="absolute scale-150 text-blueAccent-600" />
+                        <div className="absolute left-2">
+                          <FaCircleCheck className="scale-150 text-blueAccent-600" />
                         </div>
                       )}
                     <div className="text-xs">
