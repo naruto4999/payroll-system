@@ -214,7 +214,13 @@ const menuItems = [
   {
     title: 'Settings',
     icon: FaCogs,
-    children: [],
+    children: [
+      {
+        title: 'Attendance Machine Config',
+        icon: FaCogs,
+        path: '/home/settings/attendance-machine-config',
+      }
+    ],
   },
   {
     title: 'Admin Controls',

@@ -53,6 +53,7 @@ import { useState, useEffect } from 'react';
 import SwitchToggle from './UI/ToggleSwitch';
 import Alert from './UI/Alert';
 import PfEsiReports from './menu/Reports/forms/PfEsiReports/PfEsiReports';
+import AttendanceMachineConfigForm from './menu/Settings/forms/AttendanceMachineConfigForm/AttendanceMachineConfigForm';
 
 function App() {
   document.documentElement.classList.add('scrollbar');
@@ -136,6 +137,9 @@ function App() {
             <Route path="attendance-reports" element={<AttendanceReports />} />
             <Route path="pf-esi-reports" element={<PfEsiReports />} />
             <Route path="employee-strength-reports" element={<EmployeeStrengthReports />} />
+          </Route>
+          <Route path="settings">
+            <Route path="attendance-machine-config" element={<AttendanceMachineConfigForm />} />
           </Route>
 
           {/* <Route path="bank-entry" element={<BankEntryForm />} />

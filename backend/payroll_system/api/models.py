@@ -1523,6 +1523,10 @@ class SubUserMiscSettings(models.Model):
     enable_female_max_punch_out = models.BooleanField(default=False, null=False, blank=False)
     max_female_punch_out = models.TimeField(default='19:00', null=False, blank=False)
 
+class AttendanceMachineConfig(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="attendance_machine_configuration")
+    company = models.OneToOneField(Company, on_delete=models.CASCADE, related_name="attendance_machine_configuration")
+    machine_ip = models.GenericIPAddressField(protocol='IPv4', null=False, blank=False)
 
 
     

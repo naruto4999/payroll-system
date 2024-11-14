@@ -150,6 +150,10 @@ const EditSalary = ({
     }
   );
 
+  useEffect(() => {
+    console.log('me am rendering')
+  }, [])
+
   const currentEmployeeMonthlyAttendanceDetails = useMemo(() => {
     if (allEmployeeMonthlyAttendanceDetails && updateEmployeeId) {
       const selectedEmployeeData = allEmployeeMonthlyAttendanceDetails.filter((item) => {

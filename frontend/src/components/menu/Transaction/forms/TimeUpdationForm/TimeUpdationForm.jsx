@@ -12,7 +12,9 @@ import {
   // filterFns,
 } from '@tanstack/react-table';
 // import EmployeeTable from './EmployeeTable';
-
+import TableFilterInput from './TableFilterInput';
+import EmployeeTable from './EmployeeTable';
+import GenerativeLeaveTable from './GenerativeLeaveTable';
 import { rankItem } from '@tanstack/match-sorter-utils';
 import { FaRegTrashAlt, FaPen, FaAngleUp, FaAngleDown, FaEye } from 'react-icons/fa';
 import { useGetEmployeePersonalDetailsQuery } from '../../../../authentication/api/employeeEntryApiSlice';
@@ -89,6 +91,8 @@ const TimeUpdationForm = () => {
       isSuccess: isAddEmployeeAttendanceSuccess,
     },
   ] = useAddEmployeeAttendanceMutation();
+
+  console.log(updateEmployeeId)
   const [
     updateEmployeeAttendance,
     {
@@ -107,42 +111,108 @@ const TimeUpdationForm = () => {
 
   const [globalFilter, setGlobalFilter] = useState('');
 
-  const updateButtonClicked = async (values, formikBag) => {
+  // const updateButtonClicked = async (values, formikBag) => {
+  //   const employee_attendance = [];
+  //   for (const day in values.attendance) {
+  //     if (values.attendance.hasOwnProperty(day)) {
+  //       employee_attendance.push({ ...values.attendance[day] });
+  //     }
+  //   }
+  //   employee_attendance.map((each_attendance) => {
+  //     each_attendance.company = globalCompany.id;
+  //     each_attendance.employee = updateEmployeeId;
+  //     if (each_attendance.machineIn == '') {
+  //       each_attendance.machineIn = null;
+  //     }
+  //     if (each_attendance.otMin == '') {
+  //       each_attendance.otMin = null;
+  //     }
+  //     if (each_attendance.lateMin == '') {
+  //       each_attendance.lateMin = null;
+  //     }
+  //     if (each_attendance.machineOut == '') {
+  //       each_attendance.machineOut = null;
+  //     }
+  //     if (each_attendance.manualIn == '') {
+  //       each_attendance.manualIn = null;
+  //     }
+  //     if (each_attendance.manualOut == '') {
+  //       each_attendance.manualOut = null;
+  //     }
+  //   });
+  //   let toSend = {};
+  //   toSend.employee_attendance = employee_attendance;
+  //   toSend.employee = updateEmployeeId;
+  //   toSend.company = globalCompany.id;
+  //
+  //   try {
+  //     if (employee_attendance[0].hasOwnProperty('id')) {
+  //       const data = await updateEmployeeAttendance(toSend).unwrap();
+  //     } else {
+  //       const data = await addEmployeeAttendance(toSend).unwrap();
+  //     }
+  //
+  //     dispatch(
+  //       alertActions.createAlert({
+  //         message: 'Saved',
+  //         type: 'Success',
+  //         duration: 3000,
+  //       })
+  //     );
+  //   } catch (err) {
+  //     console.log(err);
+  //     dispatch(
+  //       alertActions.createAlert({
+  //         message: 'Error Occurred',
+  //         type: 'Error',
+  //         duration: 5000,
+  //       })
+  //     );
+  //   }
+  // };
+  //
+  //
+  const updateButtonClicked = useCallback(async (values, formikBag) => {
     const employee_attendance = [];
     for (const day in values.attendance) {
       if (values.attendance.hasOwnProperty(day)) {
         employee_attendance.push({ ...values.attendance[day] });
       }
     }
-    employee_attendance.map((each_attendance) => {
+
+    // Process employee_attendance
+    employee_attendance.forEach((each_attendance) => {
       each_attendance.company = globalCompany.id;
       each_attendance.employee = updateEmployeeId;
-      if (each_attendance.machineIn == '') {
+
+      if (each_attendance.machineIn === '') {
         each_attendance.machineIn = null;
       }
-      if (each_attendance.otMin == '') {
+      if (each_attendance.otMin === '') {
         each_attendance.otMin = null;
       }
-      if (each_attendance.lateMin == '') {
+      if (each_attendance.lateMin === '') {
         each_attendance.lateMin = null;
       }
-      if (each_attendance.machineOut == '') {
+      if (each_attendance.machineOut === '') {
         each_attendance.machineOut = null;
       }
-      if (each_attendance.manualIn == '') {
+      if (each_attendance.manualIn === '') {
         each_attendance.manualIn = null;
       }
-      if (each_attendance.manualOut == '') {
+      if (each_attendance.manualOut === '') {
         each_attendance.manualOut = null;
       }
     });
-    let toSend = {};
-    toSend.employee_attendance = employee_attendance;
-    toSend.employee = updateEmployeeId;
-    toSend.company = globalCompany.id;
+
+    let toSend = {
+      employee_attendance,
+      employee: updateEmployeeId,
+      company: globalCompany.id
+    };
 
     try {
-      if (employee_attendance[0].hasOwnProperty('id')) {
+      if (employee_attendance[0]?.hasOwnProperty('id')) {
         const data = await updateEmployeeAttendance(toSend).unwrap();
       } else {
         const data = await addEmployeeAttendance(toSend).unwrap();
@@ -156,7 +226,7 @@ const TimeUpdationForm = () => {
         })
       );
     } catch (err) {
-      console.log(err);
+      console.error(err);
       dispatch(
         alertActions.createAlert({
           message: 'Error Occurred',
@@ -165,7 +235,7 @@ const TimeUpdationForm = () => {
         })
       );
     }
-  };
+  }, [globalCompany, updateEmployeeId, dispatch, updateEmployeeAttendance, addEmployeeAttendance]);
 
   const [editTimeUpdationPopover, setEditTimeUpdationPopover] = useState(false);
 
@@ -184,8 +254,6 @@ const TimeUpdationForm = () => {
       manualFromDate: '',
       manualToDate: '',
       attendance: {},
-      machineAttendanceUpload: '',
-      allEmployeesMachineAttendance: false,
     };
 
     for (let day = 1; day <= daysInMonth; day++) {
@@ -360,6 +428,8 @@ const TimeUpdationForm = () => {
     }
   };
 
+
+
   if (globalCompany.id == null) {
     return (
       <section className="flex flex-col items-center">
@@ -380,34 +450,59 @@ const TimeUpdationForm = () => {
               <p className="my-2 text-sm">Manage Employees attendances here</p>
             </div>
           </div>
-          <div className="ml-14 max-w-full">
-            <Formik
-              initialValues={initialValues}
-              validationSchema={TimeUpdationSchema}
-              onSubmit={updateButtonClicked}
-              component={(props) => (
-                <EditAttendance
-                  {...props}
-                  errorMessage={errorMessage}
-                  setErrorMessage={setErrorMessage}
-                  globalCompany={globalCompany}
-                  updateEmployeeId={updateEmployeeId}
-                  // shifts={shifts}
-                  leaveGrades={leaveGrades}
-                  holidays={holidays}
-                  table={table}
-                  globalFilter={globalFilter}
+          <div className="ml-14 max-w-full flex flex-row gap-4">
+            <div className='max-w-1/2'>
+              <Formik
+                initialValues={initialValues}
+                validationSchema={TimeUpdationSchema}
+                onSubmit={updateButtonClicked}
+              >
+                {() => (
+                  <EditAttendance
+                    errorMessage={errorMessage}
+                    setErrorMessage={setErrorMessage}
+                    globalCompany={globalCompany}
+                    updateEmployeeId={updateEmployeeId}
+                    leaveGrades={leaveGrades}
+                    holidays={holidays}
+                    setSelectedDate={setSelectedDate}
+                  />
+                )}
+              </Formik>
+            </div>
+            {/* This div will be used as the portal destination for the buttons */}
+            <div className='w-1/2'>
+              <div id="buttons-portal-destination" className="flex w-full flex-col gap-4 p-6"></div>
+
+              <div className=" max-w-full">
+                <TableFilterInput
                   setGlobalFilter={setGlobalFilter}
-                  tbodyRef={tbodyRef}
-                  handleKeyDown={handleKeyDown}
-                  onRowClick={onRowClick}
-                  focusedRowRef={focusedRowRef}
+                  globalFilter={globalFilter}
                   isTableFilterInputFocused={isTableFilterInputFocused}
                   setIsTableFilterInputFocused={setIsTableFilterInputFocused}
-                  setSelectedDate={setSelectedDate}
                 />
-              )}
-            />
+                <EmployeeTable
+                  table={table}
+                  tbodyRef={tbodyRef}
+                  handleKeyDown={handleKeyDown}
+                  focusedRowRef={focusedRowRef}
+                  isTableFilterInputFocused={isTableFilterInputFocused}
+                  onRowClick={onRowClick}
+                />
+              </div>
+              < div >
+                <GenerativeLeaveTable
+                  globalCompany={globalCompany}
+                  year={selectedDate.year}
+                  updateEmployeeId={updateEmployeeId}
+                  month={selectedDate.month}
+                />
+              </div>
+              <div id="update-buttons-portal-destination" className="mt-4 mb-2 flex w-fit flex-row gap-4"></div>
+
+
+
+            </div>
           </div>
         </section>
       </>

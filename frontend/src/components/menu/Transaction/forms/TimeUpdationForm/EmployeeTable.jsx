@@ -12,20 +12,20 @@ const EmployeeTable = ({
   tbodyRef,
   handleKeyDown,
   focusedRowRef,
-  isTableFilterInputFocused,
+  // isTableFilterInputFocused,
   onRowClick,
   memoizedSelectedDate,
 }) => {
-  useEffect(() => {
-    if (focusedRowRef.current && !isTableFilterInputFocused) {
-      // focusedRowRef.current.focus();
-      const rowToFocus = tbodyRef.current?.children.namedItem(focusedRowRef.current);
-
-      if (rowToFocus) {
-        rowToFocus.focus();
-      }
-    }
-  }, []);
+  // useEffect(() => {
+  //   if (focusedRowRef.current && !isTableFilterInputFocused) {
+  //     // focusedRowRef.current.focus();
+  //     const rowToFocus = tbodyRef.current?.children.namedItem(focusedRowRef.current);
+  //
+  //     if (rowToFocus) {
+  //       rowToFocus.focus();
+  //     }
+  //   }
+  // }, [])
 
   return (
     <div className="py-2">
