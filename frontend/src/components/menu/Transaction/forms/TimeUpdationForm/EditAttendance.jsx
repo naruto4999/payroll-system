@@ -378,7 +378,7 @@ const EditAttendance = ({
 
       return foundShift ? foundShift.shift : null;
     },
-    [categorizedAllEmployeeShifts]
+    [categorizedAllEmployeeShifts, updateEmployeeId]
   );
   const sortedKeys = useMemo(
     () =>
@@ -1375,17 +1375,17 @@ const EditAttendance = ({
               />
             </section>
           </div>
-          <div className="flex w-full flex-row gap-4">
+          <div className="flex flex-row gap-2 justify-evenly flex-wrap">
             <button
               type="button"
-              className="h-8 w-20 rounded bg-blueAccent-400 p-1 text-base font-medium hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:hover:bg-blueAccent-600"
+              className="h-7 w-20 rounded bg-blueAccent-400 p-1 text-sm font-medium hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:hover:bg-blueAccent-600"
               onClick={AutoFillAttendance}
             >
               Auto
             </button>
             <button
               type="button"
-              className="h-8 w-32 rounded bg-blueAccent-400 p-1 text-base font-medium hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:hover:bg-blueAccent-600"
+              className="h-7 w-32 rounded bg-blueAccent-400 p-1 text-sm font-medium hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:hover:bg-blueAccent-600"
               onClick={() => {
                 setShowConfirmModal(true);
               }}
@@ -1400,7 +1400,7 @@ const EditAttendance = ({
             </button>
             <button
               type="button"
-              className="h-8 w-20 rounded bg-slate-600 bg-opacity-30 p-1 text-base font-medium hover:bg-opacity-60 dark:bg-slate-400 dark:bg-opacity-30 dark:hover:bg-opacity-60"
+              className="h-7 w-20 rounded bg-slate-600 bg-opacity-30 p-1 text-sm font-medium hover:bg-opacity-60 dark:bg-slate-400 dark:bg-opacity-30 dark:hover:bg-opacity-60"
               onClick={clearAttendance}
             >
               Clear
@@ -1409,7 +1409,7 @@ const EditAttendance = ({
               auth.account.role === 'OWNER' && (<>
                 <button
                   type="button"
-                  className="h-8 w-56 rounded bg-blueAccent-400 p-1 text-base font-medium hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:hover:bg-blueAccent-600"
+                  className="h-7 w-56 rounded bg-blueAccent-400 p-1 text-sm font-medium hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:hover:bg-blueAccent-600"
                   onClick={() => setShowMdbMachineAttendanceModal(true)}
                 >
                   Machine Attendance MDB
@@ -1417,7 +1417,7 @@ const EditAttendance = ({
                 <button
                   type="button"
                   disabled={true}
-                  className="h-8 w-56 rounded bg-blueAccent-400 p-1 text-base font-medium hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:hover:bg-blueAccent-600 dark:opacity-30 opacity:30"
+                  className="h-7 w-56 rounded bg-blueAccent-400 p-1 text-sm font-medium hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:hover:bg-blueAccent-600 dark:opacity-30 opacity:30"
                   onClick={() => setShowDirectMachineAttendanceModal(true)}
                 >
                   Machine Attendance Direct

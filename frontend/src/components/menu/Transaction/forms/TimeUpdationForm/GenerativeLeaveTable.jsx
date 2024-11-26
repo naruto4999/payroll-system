@@ -55,7 +55,10 @@ const GenerativeLeaveTable = memo(({ globalCompany, year, updateEmployeeId, mont
 
   const currentEmployeePresentCount = useMemo(() => {
     // First, filter the array to get objects that belong to the selected employee.
-    const selectedEmployeeData = allEmployeePresentCount?.filter((item) => item.employee === updateEmployeeId);
+    console.log("re-running currentEmployeePresentCount")
+    const selectedEmployeeData = allEmployeePresentCount?.filter((item) => item.employee == updateEmployeeId);
+    console.log(selectedEmployeeData)
+    console.log(allEmployeePresentCount)
 
     // Create an empty object to store the memoized data.
     const currentEmployeePresentCount = {
@@ -156,7 +159,21 @@ const GenerativeLeaveTable = memo(({ globalCompany, year, updateEmployeeId, mont
                   2 /
                   parseInt(currentEmployeeGenerativeLeaveCount?.[key]?.generateFrequency)
                 )}
+
               </td>
+              {
+                console.log(
+                  Math.floor(
+                    parseInt(currentEmployeePresentCount.yearly) /
+                    2 /
+                    parseInt(currentEmployeeGenerativeLeaveCount?.[key]?.generateFrequency)
+                  )
+
+                )
+
+              }
+              {console.log("Yearly Present Count ", currentEmployeePresentCount.yearly)}
+
               <td className="relative px-4 py-2 font-normal">
                 {currentEmployeeGenerativeLeaveCount?.[key]?.yearly / 2}
               </td>

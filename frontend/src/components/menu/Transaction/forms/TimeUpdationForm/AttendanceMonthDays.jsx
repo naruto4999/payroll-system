@@ -58,7 +58,7 @@ const AttendanceMonthDays = memo(
             name={`attendance.${day}.machineIn`}
             id={`attendance.${day}.machineIn`}
             disabled={true}
-            className="h-full w-fit cursor-not-allowed rounded-sm  bg-transparent pl-2 pr-2 text-xs outline-none transition-colors duration-300 sm:text-base"
+            className="h-full w-[88px] cursor-not-allowed rounded-sm  bg-transparent pl-2 pr-2 text-xs outline-none transition-colors duration-300 sm:text-base"
           />
           {/* <div></div> */}
 
@@ -67,21 +67,21 @@ const AttendanceMonthDays = memo(
             name={`attendance.${day}.machineOut`}
             id={`attendance.${day}.machineOut`}
             disabled={true}
-            className="h-full w-fit cursor-not-allowed rounded-sm bg-transparent pl-2 pr-2 text-xs outline-none transition-colors duration-300  sm:text-base"
+            className="h-full w-[88px] cursor-not-allowed rounded-sm bg-transparent pl-2 pr-2 text-xs outline-none transition-colors duration-300  sm:text-base"
           />
 
           <Field
             type="time"
             name={`attendance.${day}.manualIn`}
             id={`attendance.${day}.manualIn`}
-            className="h-full w-fit rounded-sm bg-transparent pl-2 pr-2 text-xs outline-none transition-colors duration-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 focus:dark:bg-zinc-700 sm:text-base"
+            className="h-full w-[88px] rounded-sm bg-transparent pl-2 pr-2 text-xs outline-none transition-colors duration-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 focus:dark:bg-zinc-700 sm:text-base"
           />
 
           <Field
             type="time"
             name={`attendance.${day}.manualOut`}
             id={`attendance.${day}.manualOut`}
-            className="h-full w-fit rounded-sm bg-transparent pl-2 pr-2 text-xs outline-none transition-colors duration-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 focus:dark:bg-zinc-700 sm:text-base"
+            className="h-full w-[88px] rounded-sm bg-transparent pl-2 pr-2 text-xs outline-none transition-colors duration-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 focus:dark:bg-zinc-700 sm:text-base"
           />
           <div className="my-auto w-24 pl-2 pr-2">
             <h6 className="mx-auto w-fit cursor-default  text-xs">{shift}</h6>

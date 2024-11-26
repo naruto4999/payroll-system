@@ -2,61 +2,61 @@ import { Field, ErrorMessage } from 'formik';
 import { memo } from 'react';
 
 const classNames = (...classes) => {
-	return classes.filter(Boolean).join(' ');
+  return classes.filter(Boolean).join(' ');
 };
 
 const AttendanceHeader = memo(() => {
-	return (
-		<div className="relative h-6 rounded-sm border border-b-0  dark:border-slate-400 dark:border-opacity-30 dark:bg-zinc-900 dark:bg-opacity-70">
-			<section className="flex h-full flex-row divide-x divide-dashed divide-blueAccent-600/80">
-				<div className="my-auto w-[91.797px] pl-2 pr-2">
-					<h6 className="mx-auto w-fit cursor-default text-xs">
-						Machine In
-					</h6>
-				</div>
-				<div className="my-auto w-[92.797px] pl-2 pr-2">
-					<h6 className="mx-auto w-fit cursor-default  text-xs">
-						Machine Out
-					</h6>
-				</div>
-				<div className="my-auto w-[92.797px] pl-2 pr-2">
-					<h6 className="mx-auto w-fit cursor-default  text-xs">
-						Manual In
-					</h6>
-				</div>
-				<div className="my-auto w-[92.797px] pl-2 pr-2">
-					<h6 className="mx-auto w-fit cursor-default  text-xs">
-						Manual Out
-					</h6>
-				</div>
-				<div className="my-auto w-24 pl-2 pr-2">
-					<h6 className="mx-auto w-fit cursor-default  text-xs">
-						Shift
-					</h6>
-				</div>
-				<div className="my-auto w-20 pl-2 pr-2">
-					<h6 className="mx-auto w-fit cursor-default  text-xs">
-						1st Half
-					</h6>
-				</div>
-				<div className="my-auto w-20 pl-2 pr-2">
-					<h6 className="mx-auto w-fit cursor-default  text-xs">
-						2nd Half
-					</h6>
-				</div>
-				<div className="my-auto w-20 pl-2 pr-2">
-					<h6 className="mx-auto w-fit cursor-default  text-xs">
-						OT Hrs
-					</h6>
-				</div>
-				<div className="my-auto w-20 pl-2 pr-2">
-					<h6 className="mx-auto w-fit cursor-default  text-xs">
-						Late Hrs
-					</h6>
-				</div>
-				{/* <div></div> */}
+  return (
+    <div className="relative h-6 rounded-sm border border-b-0  dark:border-slate-400 dark:border-opacity-30 dark:bg-zinc-900 dark:bg-opacity-70">
+      <section className="flex h-full flex-row divide-x divide-dashed divide-blueAccent-600/80">
+        <div className="my-auto w-[88px] pl-2 pr-2">
+          <h6 className="mx-auto w-fit cursor-default text-xs font-semibold">
+            Machine In
+          </h6>
+        </div>
+        <div className="my-auto w-[88px] pl-2 pr-2">
+          <h6 className="mx-auto w-fit cursor-default  text-xs font-semibold">
+            Machine Out
+          </h6>
+        </div>
+        <div className="my-auto w-[88px] pl-2 pr-2">
+          <h6 className="mx-auto w-fit cursor-default  text-xs font-semibold">
+            Manual In
+          </h6>
+        </div>
+        <div className="my-auto w-[88px] pl-2 pr-2">
+          <h6 className="mx-auto w-fit cursor-default  text-xs font-semibold">
+            Manual Out
+          </h6>
+        </div>
+        <div className="my-auto w-24 pl-2 pr-2">
+          <h6 className="mx-auto w-fit cursor-default  text-xs font-semibold">
+            Shift
+          </h6>
+        </div>
+        <div className="my-auto w-20 pl-2 pr-2">
+          <h6 className="mx-auto w-fit cursor-default  text-xs font-semibold">
+            1st Half
+          </h6>
+        </div>
+        <div className="my-auto w-20 pl-2 pr-2">
+          <h6 className="mx-auto w-fit cursor-default  text-xs font-semibold">
+            2nd Half
+          </h6>
+        </div>
+        <div className="my-auto w-20 pl-2 pr-2">
+          <h6 className="mx-auto w-fit cursor-default  text-xs font-semibold">
+            OT Hrs
+          </h6>
+        </div>
+        <div className="my-auto w-20 pl-2 pr-2">
+          <h6 className="mx-auto w-fit cursor-default  text-xs font-semibold">
+            Late Hrs
+          </h6>
+        </div>
+        {/* <div></div> */}
 
-				{/* <Field
+        {/* <Field
             type="time"
             name={`attendance.${day}.machineOut`}
             id={`attendance.${day}.machineOut`}
@@ -119,14 +119,14 @@ const AttendanceHeader = memo(() => {
         <h6 className="my-auto cursor-default pl-2 pr-2 text-xs">
             Late hrs
         </h6> */}
-			</section>
+      </section>
 
-			{/* </Field> */}
+      {/* </Field> */}
 
-			<div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
-				<ErrorMessage name={'salaryDetail.overtimeType'} />
-			</div>
-		</div>
-	);
+      <div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
+        <ErrorMessage name={'salaryDetail.overtimeType'} />
+      </div>
+    </div>
+  );
 });
 export default AttendanceHeader;

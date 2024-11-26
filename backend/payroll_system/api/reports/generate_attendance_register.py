@@ -85,10 +85,11 @@ def generate_attendance_register(user, request_data, employees):
 
     employees = employees.prefetch_related(
         Prefetch('employee_salary_detail', queryset=EmployeeSalaryDetail.objects.all()),
-        Prefetch('attendance', queryset=EmployeeAttendance.objects.filter(date__range=[start_date, end_date]).order_by('date')),
+        Prefetch('attendance', queryset=EmployeeAttendance.objects.filter(user=user, date__range=[start_date, end_date]).order_by('date')),
         Prefetch('monthly_attendance_details', queryset=EmployeeMonthlyAttendanceDetails.objects.filter(date=start_date)),
         Prefetch('generative_leave_record', queryset=EmployeeGenerativeLeaveRecord.objects.filter(date=start_date).order_by('leave__name'))
     ).select_related('employee_professional_detail__designation', 'employee_professional_detail__department')
+    print(f'Start Date: {start_date}, End Date: {end_date}')
     
 
     default_cell_height = 3
@@ -178,7 +179,8 @@ def generate_attendance_register(user, request_data, employees):
         employee_generative_leaves = None
         try:
             #employee_generative_leaves = EmployeeGenerativeLeaveRecord.objects.filter(user=user, employee=employee, date=date(request_data['year'], request_data['month'], 1)).order_by('leave__name')
-            employee_generative_leaves = employee.generative_leave_record.all()
+            #employee_generative_leaves = employee.generative_leave_record.all()
+            employee_generative_leaves = employee.generative_leave_record.filter(user=user)
             generative_leave_text = "\n".join(f"{leave.leave.name} : {int(leave.leave_count/2) if leave.leave_count/2%1==0 else leave.leave_count/2}" for leave in employee_generative_leaves)
         except:
             pass

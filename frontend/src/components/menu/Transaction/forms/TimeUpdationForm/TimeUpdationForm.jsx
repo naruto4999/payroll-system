@@ -450,7 +450,7 @@ const TimeUpdationForm = () => {
               <p className="my-2 text-sm">Manage Employees attendances here</p>
             </div>
           </div>
-          <div className="ml-14 max-w-full flex flex-row gap-4">
+          <div className="ml-14 max-w-full flex flex-row gap-4 justify-between">
             <div className='max-w-1/2'>
               <Formik
                 initialValues={initialValues}
@@ -471,10 +471,10 @@ const TimeUpdationForm = () => {
               </Formik>
             </div>
             {/* This div will be used as the portal destination for the buttons */}
-            <div className='w-1/2'>
-              <div id="buttons-portal-destination" className="flex w-full flex-col gap-4 p-6"></div>
+            <div className='flex-grow'>
+              <div id="buttons-portal-destination" className="flex flex-col gap-4 p-4 mb-2 border rounded dark:border-slate-300 dark:border-opacity-20"></div>
 
-              <div className=" max-w-full">
+              <div className="">
                 <TableFilterInput
                   setGlobalFilter={setGlobalFilter}
                   globalFilter={globalFilter}
