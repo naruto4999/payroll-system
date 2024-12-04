@@ -38,9 +38,9 @@ export const fullAndFinalApiSlice = apiSlice.injectEndpoints({
       keepUnusedDataFor: 500,
       providesTags: (result, error) => {
         console.log(result);
-        return [{ type: 'EmoloyeeYearlyBonus', id: result.employee }];
+        return [{ type: 'EmployeeYearlyBonus', id: result.employee }];
       },
-      // providesTags: ['EmoloyeeYearlyBonus'],
+      // providesTags: ['EmployeeYearlyBonus'],
     }),
     addFullAndFinal: builder.mutation({
       query: (body) => ({

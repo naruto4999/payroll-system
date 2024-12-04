@@ -108,7 +108,7 @@ export const apiSlice = createApi({
     'EarnedAmountPreparedSalary',
     'FullAndFinal',
     'ELLeft',
-    'EmoloyeeYearlyBonus',
+    'EmployeeYearlyBonus',
     'OverTimeSettings',
     'AllEmployeeLeaveOpening',
     'AllEmployeeMissPunches',

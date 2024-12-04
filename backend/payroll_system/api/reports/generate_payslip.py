@@ -343,6 +343,15 @@ def generate_payslip(user, request_data, employee_salaries):
         payslip.set_xy(x=current_payslip_initial_coordinates['x']+width_of_columns['attendance']+width_of_columns["salary_wage_rate"]+width_of_columns["earnings"]+width_of_columns['arrears'], y=current_payslip_initial_coordinates["y"]+intro_cell_height*8+(main_table_cell_height*6))
         payslip.cell(w=width_of_columns['deductions'], h=main_table_cell_height, text=f'{salary.others_deducted}', new_x="RIGHT", align='R')
         total_deductions += salary.others_deducted
+        #LWF
+        if salary.company.pf_esi_setup_details.enable_labour_welfare_fund==True:
+            payslip.set_xy(x=current_payslip_initial_coordinates['x']+width_of_columns['attendance']+width_of_columns["salary_wage_rate"]+width_of_columns["earnings"]+width_of_columns['arrears'], y=current_payslip_initial_coordinates["y"]+intro_cell_height*8+(main_table_cell_height*7))
+            payslip.cell(w=None, h=main_table_cell_height, text=f'LWF{" /" if language=="hindi" else ""}', new_x="RIGHT", align='L')
+            if language=="hindi":
+                payslip.cell(w=None, h=main_table_cell_height, text=f'एल डब्लू एफ')
+            payslip.set_xy(x=current_payslip_initial_coordinates['x']+width_of_columns['attendance']+width_of_columns["salary_wage_rate"]+width_of_columns["earnings"]+width_of_columns['arrears'], y=current_payslip_initial_coordinates["y"]+intro_cell_height*8+(main_table_cell_height*7))
+            payslip.cell(w=width_of_columns['deductions'], h=main_table_cell_height, text=f'{salary.labour_welfare_fund_deducted}', new_x="RIGHT", align='R')
+            total_deductions += salary.labour_welfare_fund_deducted
 
         #Printing Total
         payslip.set_xy(x=current_payslip_initial_coordinates['x']+width_of_columns['attendance']+width_of_columns['salary_wage_rate']+width_of_columns["earnings"]+width_of_columns['arrears'], y=current_payslip_initial_coordinates['y']+intro_cell_height*8+main_table_cell_height*default_number_of_cells_in_main_row)

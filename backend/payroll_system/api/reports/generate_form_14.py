@@ -463,7 +463,7 @@ def generate_form_14(user, request_data, employees):
         #EL days
         form_14.set_font("Helvetica", size=6.5, style='B')
         try:
-            leaves_dict['EL']['leave_earned'] +=(total_work_days//el.generate_frequency)/2
+            leaves_dict['EL']['leave_earned'] +=(total_work_days//el.generate_frequency)/2 #Dividing by 2 because working_days are multiplied by 2 since frist half and second_half of one day are treated as 2
         except:
             pass
         form_14.cell(width_of_columns['summary_header']+width_of_columns['summary_value'], h=default_cell_height_extra_small, text=f'EL', align="C", new_x="LMARGIN", new_y='NEXT', border='TLR')

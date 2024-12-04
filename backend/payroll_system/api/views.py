@@ -3340,7 +3340,8 @@ class EmployeeELLeftRetrieveAPIView(generics.RetrieveAPIView):
                 print(f"Present Count: {present_count}")
                 print(f"EL Count: {el_taken_count}")
                 print(f"Generate Frequency: {generate_frequency}")
-                el_left = ((present_count/2)//generate_frequency)-(el_taken_count/2)
+                el_left = ((present_count//generate_frequency) - el_taken_count)/2
+                print(f"EL Left: {el_left}")
                 serializer = self.get_serializer({'el_left': el_left})
                 print(serializer.data)
                 return Response(serializer.data)

@@ -78,6 +78,8 @@ export const timeUpdationApiSlice = apiSlice.injectEndpoints({
         'AllEmployeeGenerativeLeaveRecord',
         'AllEmployeeMonthlyAttendanceDetails',
         'AllEmployeeMissPunches',
+        'ELLeft',
+        { type: 'EmployeeYearlyBonus', id: body.employee },
       ],
     }),
     bulkAutoFillAttendanceAdd: builder.mutation({
@@ -134,7 +136,8 @@ export const timeUpdationApiSlice = apiSlice.injectEndpoints({
         'AllEmployeeGenerativeLeaveRecord',
         'AllEmployeeMonthlyAttendanceDetails',
         'AllEmployeeMissPunches',
-        { type: 'EmoloyeeYearlyBonus', id: body.employee },
+        'ELLeft',
+        { type: 'EmployeeYearlyBonus', id: body.employee },
       ],
     }),
     // deleteShift: builder.mutation({

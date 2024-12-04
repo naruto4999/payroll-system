@@ -714,6 +714,7 @@ class EmployeeAttendanceManager(models.Manager):
 
     def transfer_attendance_from_owner_to_regular(self, month, year, company_id, user):
         # try:
+        print("Start Transfer Attendance")
         SubUserOvertimeSettings = apps.get_model('api', 'SubUserOvertimeSettings')
         SubUserMiscSettings = apps.get_model('api', 'SubUserMiscSettings')
         EmployeeShifts = apps.get_model('api', 'EmployeeShifts')
@@ -777,6 +778,7 @@ class EmployeeAttendanceManager(models.Manager):
         #Looping Over Each Attendance
         for attendance in attendances_queryset:
             #Adding employee id to the unique list to create monthly records later
+            print("looping over attendance")
             if attendance.employee.id not in unique_employee_id_list:
                 unique_employee_id_list.append(attendance.employee.id)
 
@@ -828,11 +830,12 @@ class EmployeeAttendanceManager(models.Manager):
                     
 
             ot_min_sub_user = None
+            print("before step 1")
             #Compare the out time to the shift end time with the ot begin after because if manual mode is enabled ot won't be shown but the punch out can be after the shift end time (like 2 hrs after the shift ends)
-            if machine_in_sub_user and machine_out_sub_user and ((attendance.ot_min and employee_weekly_off_holiday_off_extra_off) or machine_out_sub_user>(shift_end_time_with_current_date + timedelta(minutes=current_employee_current_date_shift.shift.ot_begin_after))):
+            if machine_in_sub_user and machine_out_sub_user and attendance.employee.employee_salary_detail.overtime_type!="no_overtime" and ((attendance.ot_min and employee_weekly_off_holiday_off_extra_off) or (attendance.employee.employee_salary_detail.overtime_type!="holiday_weekly_off" and machine_out_sub_user>(shift_end_time_with_current_date + timedelta(minutes=current_employee_current_date_shift.shift.ot_begin_after)))):
                 reference_datetime=shift_end_time_with_current_date if not employee_weekly_off_holiday_off_extra_off else None
                 # print(f"Reference Datetime: {reference_datetime}, Machine Out Sub User: {machine_out_sub_user}, Date: {attendance.date}")
-
+                print("Step1")
                 if overtime_settings:
                     if employee_weekly_off_holiday_off_extra_off:
                         reference_datetime = min((max(shift_beginning_time_with_current_date, machine_in_sub_user) + timedelta(hours=overtime_settings.max_ot_hrs)), machine_out_sub_user)
@@ -841,6 +844,7 @@ class EmployeeAttendanceManager(models.Manager):
 
                     #Calculate OT from scratch if punch in is also different for the sub user
                     if punch_in_owner<(shift_beginning_time_with_current_date - timedelta(minutes=AUTO_SHIFT_BEGINNING_BUFFER_BEFORE)) and attendance.ot_min and (attendance.employee.gender!='F' or sub_user_misc_settings.enable_female_max_punch_out==True):
+                        print("Inside upper if")
                         if attendance.employee.employee_salary_detail.overtime_type != 'no_overtime':
                             overtime_minutes = timedelta(minutes=0)
                             # if not skip_calculating_attendances and (punch_in_time is not None and punch_out_time is not None):
@@ -864,6 +868,7 @@ class EmployeeAttendanceManager(models.Manager):
                         if employee_weekly_off_holiday_off_extra_off:
                             ot_min_sub_user-=current_employee_current_date_shift.shift.lunch_duration
                     else:
+                        print(f"Employee Name: {attendance.employee.name}, OT Minutes : {attendance.ot_min}, Overtime Settings: {overtime_settings.max_ot_hrs} Date: {attendance.date}")
                         ot_min_sub_user = min(attendance.ot_min, overtime_settings.max_ot_hrs*60)
                         print(f"Ot Before subtracting: {ot_min_sub_user}")
                         if employee_weekly_off_holiday_off_extra_off and ot_min_sub_user!=attendance.ot_min:

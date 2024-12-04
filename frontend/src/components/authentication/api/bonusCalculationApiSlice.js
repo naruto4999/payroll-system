@@ -8,7 +8,7 @@ export const bonusCalculationApiSlice = apiSlice.injectEndpoints({
         method: 'POST',
         body: body,
       }),
-      invalidatesTags: ['BonusCalculations', 'BonusPercentage', 'EmoloyeeYearlyBonus'],
+      invalidatesTags: ['BonusCalculations', 'BonusPercentage', 'EmployeeYearlyBonus'],
     }),
     getBonusCalculations: builder.query({
       query: (body) => ({
