@@ -128,7 +128,7 @@ def generate_payment_sheet_xlsx(user, request_data, employee_salaries):
         #Salary Rate
         try:
             total_earnings_rate = 0
-            earnings_heads = EarningsHead.objects.filter(company=employee_salary.company, user=employee_salary.user)
+            earnings_heads = EarningsHead.objects.filter(company=employee_salary.company, user=employee_salary.user if employee_salary.user.role == "OWNER" else employee_salary.user.regular_to_owner.owner)
             employee_salary_rates = EmployeeSalaryEarning.objects.filter(employee=employee_salary.employee, from_date__lte=employee_salary.date, to_date__gte=employee_salary.date)
             for head in earnings_heads:
                 salary_for_particular_earning_head = employee_salary_rates.filter(earnings_head=head)
