@@ -158,7 +158,8 @@ def generate_salary_sheet(user, request_data, prepared_salaries):
         "esi": 0,
         "vpf": 0,
         "advance": 0,
-        "tds": 0
+        "tds": 0,
+        "others": 0
     }
     grand_total_net_payable = 0
     if company_pf_esi_setup.enable_labour_welfare_fund:
@@ -439,7 +440,7 @@ def generate_salary_sheet(user, request_data, prepared_salaries):
 
             if column_name == "deductions":
                 salary_sheet_pdf.rect(salary_sheet_pdf.get_x(), salary_sheet_pdf.get_y(), w=column_width, h=default_cell_height*default_number_of_cells_in_row)
-                deductions_name_text = f"PF\nESI\nVPF\nAdvance\nTDS"
+                deductions_name_text = f"PF\nESI\nVPF\nAdvance\nTDS\nOther"
                 esi_deducted_based_on_overtime_filter = salary.esi_deducted
                 if request_data['filters']['overtime'] != 'with_ot' and employee_pf_esi_details.esi_allow and (employee_pf_esi_details.esi_on_ot or user.role == 'REGULAR'):
                     total_earned_with_arrear = total_earnings_amount + total_arrear_amount
@@ -447,7 +448,7 @@ def generate_salary_sheet(user, request_data, prepared_salaries):
                     esi_deducted = Decimal(esiable_amount) * Decimal(company_pf_esi_setup.esi_employee_percentage) / Decimal(100)
                     esi_deducted_based_on_overtime_filter = esi_deducted.quantize(Decimal('1.'), rounding=ROUND_CEILING)
                 
-                deductions_amount_text = f"{salary.pf_deducted}\n{esi_deducted_based_on_overtime_filter }\n{salary.vpf_deducted}\n{salary.advance_deducted}\n{salary.tds_deducted}"
+                deductions_amount_text = f"{salary.pf_deducted}\n{esi_deducted_based_on_overtime_filter }\n{salary.vpf_deducted}\n{salary.advance_deducted}\n{salary.tds_deducted}\n{salary.others_deducted}"
                 if company_pf_esi_setup.enable_labour_welfare_fund:
                     deductions_name_text += "\nLWF"
                     deductions_amount_text += f"\n{salary.labour_welfare_fund_deducted}"
@@ -462,9 +463,10 @@ def generate_salary_sheet(user, request_data, prepared_salaries):
                 salary_sheet_pdf.set_line_width(0.3)
 
                 #Total amount Deducted
-                total_deductions = salary.pf_deducted+esi_deducted_based_on_overtime_filter+salary.vpf_deducted+salary.advance_deducted+salary.tds_deducted
+                total_deductions = salary.pf_deducted+esi_deducted_based_on_overtime_filter+salary.vpf_deducted+salary.advance_deducted+salary.tds_deducted+salary.others_deducted
                 grand_total_deductions["pf"] += salary.pf_deducted
                 grand_total_deductions["esi"] += esi_deducted_based_on_overtime_filter
+                grand_total_deductions["others"] += salary.others_deducted
                 grand_total_deductions["vpf"] += salary.vpf_deducted
                 grand_total_deductions["advance"] += salary.advance_deducted
                 grand_total_deductions["tds"] += salary.tds_deducted
@@ -664,9 +666,9 @@ def generate_salary_sheet(user, request_data, prepared_salaries):
     salary_sheet_pdf.set_line_width(0.1)
     salary_sheet_pdf.rect(salary_sheet_pdf.get_x(), salary_sheet_pdf.get_y(), w=width_of_columns["deductions"], h=grand_total_number_of_cells*default_cell_height)
     salary_sheet_pdf.set_line_width(0.3)
-    grand_total_deductions_name_text = f"PF\nESI\nVPF\nAdvance\nTDS"
-    grand_total_deductions_amount_text = f"{grand_total_deductions['pf']}\n{grand_total_deductions['esi']}\n{grand_total_deductions['vpf']}\n{grand_total_deductions['advance']}\n{grand_total_deductions['tds']}"
-    grand_total_deductions_amount = grand_total_deductions['pf']+grand_total_deductions['esi']+grand_total_deductions['vpf']+grand_total_deductions['advance']+grand_total_deductions['tds']
+    grand_total_deductions_name_text = f"PF\nESI\nVPF\nAdvance\nTDS\nOther"
+    grand_total_deductions_amount_text = f"{grand_total_deductions['pf']}\n{grand_total_deductions['esi']}\n{grand_total_deductions['vpf']}\n{grand_total_deductions['advance']}\n{grand_total_deductions['tds']}\n{grand_total_deductions['others']}"
+    grand_total_deductions_amount = grand_total_deductions['pf']+grand_total_deductions['esi']+grand_total_deductions['vpf']+grand_total_deductions['advance']+grand_total_deductions['tds']+grand_total_deductions['others']
     if company_pf_esi_setup.enable_labour_welfare_fund:
         grand_total_deductions_name_text += "\nLWF"
         grand_total_deductions_amount_text += f"\n{grand_total_deductions['lwf']}"

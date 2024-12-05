@@ -195,7 +195,7 @@ def generate_payment_sheet(user, request_data, prepared_salaries):
         total_earnings_rate = None
         try:
             total_earnings_rate = 0
-            earnings_heads = EarningsHead.objects.filter(company=salary.company, user=salary.user)
+            earnings_heads = EarningsHead.objects.filter(company=salary.company, user=salary.user if salary.user.role == "OWNER" else salary.user.regular_to_owner.owner)
             employee_salary_rates = EmployeeSalaryEarning.objects.filter(employee=salary.employee, from_date__lte=salary.date, to_date__gte=salary.date)
             for head in earnings_heads:
                 salary_for_particular_earning_head = employee_salary_rates.filter(earnings_head=head)
