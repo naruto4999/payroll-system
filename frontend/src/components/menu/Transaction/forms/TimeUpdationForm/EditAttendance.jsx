@@ -447,13 +447,18 @@ const EditAttendance = ({
         let manualOutObj = getTimeInDateObj(manualOut, manualIn < manualOut ? day : parseInt(day) + 1);
 
         const shift = getShift(values.year, values.month, day);
+        let shiftLunchBeginningTimeObj = getTimeInDateObj(shift.lunchBeginningTime, day);
 
         const timeDifferenceInMilliseconds = manualOutObj - manualInObj;
         let timeDifferenceInMinutes = timeDifferenceInMilliseconds / (1000 * 60);
-        if (shift.lunchBeginningTime && shift.lunchDuration) {
-            timeDifferenceInMinutes -= shift.lunchDuration;
+        if (shift.lunchBeginningTime && shift.lunchDuration && manualOutObj > shiftLunchBeginningTimeObj) {
+            let lunchManualOutDifferenceInMinutes = (manualOutObj - shiftLunchBeginningTimeObj) / 1000 / 60;
+            if (parseInt(lunchManualOutDifferenceInMinutes) > parseInt(shift.lunchDuration / 2)) {
+                timeDifferenceInMinutes -= shift.lunchDuration;
+            }
         }
         overtime += timeDifferenceInMinutes;
+
         return overtime;
     };
 
