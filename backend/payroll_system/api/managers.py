@@ -872,7 +872,10 @@ class EmployeeAttendanceManager(models.Manager):
                                         if(time_difference_lunch_time_reference_datetime > (current_employee_current_date_shift.shift.lunch_duration/2)):
                                             print("yes subtract")
                                             #minutes_worked -= timedelta(minutes=current_employee_current_date_shift.shift.lunch_duration)
-                                            reference_datetime = reference_datetime + timedelta(minutes=current_employee_current_date_shift.shift.lunch_duration)
+                                            if (reference_datetime==machine_out_sub_user): #Then we can't change Timings since the reference datetime represents the actual time employee left at
+                                                minutes_worked -= timedelta(minutes=current_employee_current_date_shift.shift.lunch_duration)
+                                            else:
+                                                reference_datetime = reference_datetime + timedelta(minutes=current_employee_current_date_shift.shift.lunch_duration)
                                             print(f"Reference Datime Revised: {reference_datetime}")
                                     overtime_minutes += minutes_worked
                             elif attendance.employee.employee_salary_detail.overtime_type == 'all_days':
