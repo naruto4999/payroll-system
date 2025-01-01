@@ -1,4 +1,5 @@
 from dataclasses import field
+
 from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning, EmployeeSalaryDetail, EmployeeFamilyNomineeDetial, EmployeePfEsiDetail, WeeklyOffHolidayOff, PfEsiSetup, Calculations, EmployeeShifts, EmployeeAttendance, EmployeeGenerativeLeaveRecord, EmployeeLeaveOpening, EmployeeMonthlyAttendanceDetails, EmployeeAdvancePayment, EmployeeSalaryPrepared, EarnedAmount, BonusCalculation, BonusPercentage, FullAndFinal, SubUserOvertimeSettings, SubUserMiscSettings, AttendanceMachineConfig
 from rest_framework import serializers
 
@@ -375,6 +376,7 @@ class FiltersPersonnelFileReports(serializers.Serializer):
     sort_by = serializers.ChoiceField(choices=["paycode", "attendance_card_no", "employee_name"])
     language = serializers.ChoiceField(choices=["hindi", "english"])
     personnel_file_reports_selected = serializers.ListField(allow_empty=True)
+    orientation = serializers.ChoiceField(choices =["portrait", "landscape"])
 
 class PersonnelFileReportsSerializer(serializers.Serializer):
     employee_ids = serializers.ListField(child=serializers.IntegerField())

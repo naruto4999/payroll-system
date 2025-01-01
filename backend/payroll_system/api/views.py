@@ -45,6 +45,7 @@ from .reports.pf_esi_reports.generate_pf_statement_txt import generate_pf_statem
 from .reports.pf_esi_reports.generate_pf_exempt_xlsx import generate_pf_exempt_xlsx
 from .reports.generate_form_14 import generate_form_14
 from .reports.personnnel_file_forms.id_card.id_card_landscape import generate_id_card_landscape
+from .reports.personnnel_file_forms.id_card.id_card_portrait import generate_id_card_portrait
 from .reports.generate_overtime_sheet_daily import generate_overtime_sheet_daily
 from .reports.personnnel_file_forms.personnnel_file_reports.generate_personnel_file_reports import generate_personnel_file_reports
 from .reports.generate_payment_sheet_xlsx import generate_payment_sheet_xlsx
@@ -2376,6 +2377,7 @@ class PersonnelFileReportsCreateAPIView(generics.CreateAPIView):
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        print(request.data)
         validated_data = serializer.validated_data
         print(validated_data)
 
@@ -2407,12 +2409,16 @@ class PersonnelFileReportsCreateAPIView(generics.CreateAPIView):
                 
         if validated_data['report_type'] == 'id_card':
             employees = EmployeePersonalDetail.objects.filter(id__in=employee_ids)
-            response = StreamingHttpResponse(generate_id_card_landscape(serializer.validated_data, employees), content_type="application/pdf")
+            if validated_data["filters"]["orientation"] == "landscape":
+                response = StreamingHttpResponse(generate_id_card_landscape(serializer.validated_data, employees), content_type="application/pdf")
+            elif validated_data["filters"]["orientation"] == "portrait":
+                response = StreamingHttpResponse(generate_id_card_portrait(serializer.validated_data, employees), content_type="application/pdf")
+            else:
+                Response({"detail": "Wrong Orientation"}, status=status.HTTP_400_BAD_REQUEST)
             response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
             return response
 
         return Response({"message": "Payslip successful"}, status=status.HTTP_200_OK)
-        print('idk')
 
 class AttendanceReportsCreateAPIView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
