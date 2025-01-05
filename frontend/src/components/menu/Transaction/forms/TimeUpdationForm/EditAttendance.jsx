@@ -924,7 +924,7 @@ const EditAttendance = ({
         return () => {
             clearTimeout(timeoutId);
         };
-    }, [values.attendance, currentEmployeeProfessionalDetail, currentEmployeeSalaryDetail]);
+    }, [JSON.stringify(values.attendance), currentEmployeeProfessionalDetail, currentEmployeeSalaryDetail]);
 
     // Runs when fetch value of employeeAttendance changes
     useEffect(() => {
