@@ -734,6 +734,18 @@ const EditAttendance = ({
     useEffect(() => {
         let timeoutId;
 
+        const setFieldValueIfChanged = (fieldPath, newValue) => {
+            const currentValue = fieldPath.split('.').reduce((acc, key) => acc[key], values);
+            if (currentValue != newValue) {
+                console.log(
+                    'yes not equal: ' + 'Old: ' + currentValue + ' ' + 'New: ' + newValue,
+                    ' Field name: ',
+                    +fieldPath + ' ' + fieldPath.split('.')
+                );
+                setFieldValue(fieldPath, newValue);
+            }
+        };
+
         const performCalculations = () => {
             if (currentEmployeeProfessionalDetail && currentEmployeeSalaryDetail) {
                 // let extraOff = null;
@@ -750,39 +762,42 @@ const EditAttendance = ({
                     const weeklyOffIndex = weeklyOffValues.indexOf(currentEmployeeProfessionalDetail.weeklyOff);
                     const attendanceWeekday = attendanceDay.getDay();
                     if (!values.attendance[day].manualMode) {
-                        if (attendanceWeekday === weeklyOffIndex) {
-                            weeklyOffDay = true;
-                            if (calculateFirstHalfSecondHalfForWeeklyAndHolidayOff(day, 'weeklyOff')) {
-                                setFieldValue(`attendance.${day}.firstHalf`, weeklyOff.id);
-                                setFieldValue(`attendance.${day}.secondHalf`, weeklyOff.id);
-                            } else {
-                                setFieldValue(`attendance.${day}.firstHalf`, weeklyOffSkip.id);
-                                setFieldValue(`attendance.${day}.secondHalf`, weeklyOffSkip.id);
-                            }
-                        }
-                        if (memoizedExtraOffDate && parseInt(day) == memoizedExtraOffDate.getDate()) {
-                            weeklyOffDay = true;
-                            if (calculateFirstHalfSecondHalfForWeeklyAndHolidayOff(day, 'extraOff')) {
-                                setFieldValue(`attendance.${day}.firstHalf`, weeklyOff.id);
-                                setFieldValue(`attendance.${day}.secondHalf`, weeklyOff.id);
-                            } else {
-                                setFieldValue(`attendance.${day}.firstHalf`, weeklyOffSkip.id);
-                                setFieldValue(`attendance.${day}.secondHalf`, weeklyOffSkip.id);
-                            }
-                        }
-
                         for (const holiday of holidays) {
                             const holidayDate = new Date(holiday.date);
 
                             if (holidayDate.getTime() === attendanceDay.getTime()) {
                                 holidayDay = true;
                                 if (calculateFirstHalfSecondHalfForWeeklyAndHolidayOff(day, 'holidayOff')) {
-                                    setFieldValue(`attendance.${day}.firstHalf`, holidayOff.id);
-                                    setFieldValue(`attendance.${day}.secondHalf`, holidayOff.id);
+                                    setFieldValueIfChanged(`attendance.${day}.firstHalf`, holidayOff.id);
+                                    setFieldValueIfChanged(`attendance.${day}.secondHalf`, holidayOff.id);
                                 } else {
-                                    setFieldValue(`attendance.${day}.firstHalf`, holidayOffSkip.id);
-                                    setFieldValue(`attendance.${day}.secondHalf`, holidayOffSkip.id);
+                                    setFieldValueIfChanged(`attendance.${day}.firstHalf`, holidayOffSkip.id);
+                                    setFieldValueIfChanged(`attendance.${day}.secondHalf`, holidayOffSkip.id);
                                 }
+                            }
+                        }
+
+                        //Checking for weekly off
+                        if (!holidayDay && attendanceWeekday === weeklyOffIndex) {
+                            weeklyOffDay = true;
+                            if (calculateFirstHalfSecondHalfForWeeklyAndHolidayOff(day, 'weeklyOff')) {
+                                setFieldValueIfChanged(`attendance.${day}.firstHalf`, weeklyOff.id);
+                                setFieldValueIfChanged(`attendance.${day}.secondHalf`, weeklyOff.id);
+                            } else {
+                                setFieldValueIfChanged(`attendance.${day}.firstHalf`, weeklyOffSkip.id);
+                                setFieldValueIfChanged(`attendance.${day}.secondHalf`, weeklyOffSkip.id);
+                            }
+                        }
+
+                        //Cheking for extra off
+                        if (!holidayDay && memoizedExtraOffDate && parseInt(day) == memoizedExtraOffDate.getDate()) {
+                            weeklyOffDay = true;
+                            if (calculateFirstHalfSecondHalfForWeeklyAndHolidayOff(day, 'extraOff')) {
+                                setFieldValueIfChanged(`attendance.${day}.firstHalf`, weeklyOff.id);
+                                setFieldValueIfChanged(`attendance.${day}.secondHalf`, weeklyOff.id);
+                            } else {
+                                setFieldValueIfChanged(`attendance.${day}.firstHalf`, weeklyOffSkip.id);
+                                setFieldValueIfChanged(`attendance.${day}.secondHalf`, weeklyOffSkip.id);
                             }
                         }
                     }
@@ -826,7 +841,7 @@ const EditAttendance = ({
                                 } else {
                                     overtime = calculateOvertime(day);
                                 }
-                                setFieldValue(
+                                setFieldValueIfChanged(
                                     `attendance.${day}.otMin`,
                                     overtime > 0 ? Math.floor(overtime / 30) * 30 + (overtime % 30 > 15 ? 30 : 0) : ''
                                 );
@@ -847,18 +862,18 @@ const EditAttendance = ({
                                     holidayDay
                                 ) {
                                     overtime = calculateWeeklyHolidayOvertime(day);
-                                    setFieldValue(
+                                    setFieldValueIfChanged(
                                         `attendance.${day}.otMin`,
                                         overtime > 0
                                             ? Math.floor(overtime / 30) * 30 + (overtime % 30 > 15 ? 30 : 0)
                                             : ''
                                     );
                                 } else {
-                                    setFieldValue(`attendance.${day}.otMin`, ''); //not weeklyoff and not holiday and employee's Overtime is "Weekly/Holiday"
+                                    setFieldValueIfChanged(`attendance.${day}.otMin`, ''); //not weeklyoff and not holiday and employee's Overtime is "Weekly/Holiday"
                                 }
                             }
                         } else {
-                            setFieldValue(`attendance.${day}.otMin`, ''); //set otMin to '' if Overtime Type is "No Overtime"
+                            setFieldValueIfChanged(`attendance.${day}.otMin`, ''); //set otMin to '' if Overtime Type is "No Overtime"
                         }
 
                         // Conditions for calculating Late
@@ -889,7 +904,7 @@ const EditAttendance = ({
                             );
                         }
 
-                        setFieldValue(
+                        setFieldValueIfChanged(
                             `attendance.${day}.lateMin`,
                             lateHrs > 0 && lateHrs <= shift.maxLateAllowedMin ? lateHrs : ''
                         );
@@ -899,15 +914,15 @@ const EditAttendance = ({
                         !holidayDay &&
                         !values.attendance[day].manualMode
                     ) {
-                        setFieldValue(`attendance.${day}.firstHalf`, missPunch.id);
-                        setFieldValue(`attendance.${day}.secondHalf`, missPunch.id);
+                        setFieldValueIfChanged(`attendance.${day}.firstHalf`, missPunch.id);
+                        setFieldValueIfChanged(`attendance.${day}.secondHalf`, missPunch.id);
                     } else if (!hasPunchIn && !hasPunchOut) {
-                        setFieldValue(`attendance.${day}.otMin`, '');
-                        setFieldValue(`attendance.${day}.lateMin`, '');
+                        setFieldValueIfChanged(`attendance.${day}.otMin`, '');
+                        setFieldValueIfChanged(`attendance.${day}.lateMin`, '');
 
                         if (!holidayDay && !weeklyOffDay && !values.attendance[day].manualMode) {
-                            setFieldValue(`attendance.${day}.firstHalf`, absent.id);
-                            setFieldValue(`attendance.${day}.secondHalf`, absent.id);
+                            setFieldValueIfChanged(`attendance.${day}.firstHalf`, absent.id);
+                            setFieldValueIfChanged(`attendance.${day}.secondHalf`, absent.id);
                         }
                     }
                 }
@@ -924,7 +939,7 @@ const EditAttendance = ({
         return () => {
             clearTimeout(timeoutId);
         };
-    }, [JSON.stringify(values.attendance), currentEmployeeProfessionalDetail, currentEmployeeSalaryDetail]);
+    }, [values.attendance, currentEmployeeProfessionalDetail, currentEmployeeSalaryDetail]);
 
     // Runs when fetch value of employeeAttendance changes
     useEffect(() => {

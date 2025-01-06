@@ -286,18 +286,9 @@ class EmployeeAttendanceManager(models.Manager):
                 while current_date <= to_date:
                     
                     if current_date >= current_employee.date_of_joining and (current_employee.resigned == False or current_date<=current_employee.resignation_date):
-                        if current_date.strftime('%a').lower() == current_employee.weekly_off or (weekday_occurrence_in_month(date=current_date) == current_employee.extra_off):
-                            #If it's weekly off bulk create the employees of the list so that when "paid_days_count_for_past_six_days" called it uses the updated Attendances
-                            EmployeeAttendance.objects.bulk_create(attendance_records)
-                            attendance_records.clear()
-                            weekly_off_to_give = weekly_off_skip
-                            if paid_days_count_for_past_six_days(user=user, company_id=company_id, attendance_date=current_date, employee=current_employee.employee) >= (weekly_off_holiday_off.min_days_for_weekly_off * 2):
-                                weekly_off_to_give = weekly_off
-                            attendance_records.append(EmployeeAttendance(user=user, company_id=company_id, employee=current_employee.employee, first_half=weekly_off_to_give, second_half=weekly_off_to_give, manual_in=None, manual_out=None, machine_in=None, machine_out=None, date=current_date, ot_min=None, late_min=None, pay_multiplier=1.0))
-                            total_expected_instances +=1
-
+                        
                         #If Current date is a holdiday
-                        elif holiday_queryset.filter(date=current_date).exists():
+                        if holiday_queryset.filter(date=current_date).exists():
                             #If it's weekly off bulk create the employees of the list so that when "paid_days_count_for_past_six_days" called it uses the updated Attendances
                             EmployeeAttendance.objects.bulk_create(attendance_records)
                             attendance_records.clear()
@@ -307,6 +298,19 @@ class EmployeeAttendanceManager(models.Manager):
                             attendance_records.append(EmployeeAttendance(user=user, company_id=company_id, employee=current_employee.employee, first_half=holiday_off_to_give, second_half=holiday_off_to_give, manual_in=None, manual_out=None, machine_in=None, machine_out=None, date=current_date, ot_min=None, late_min=None, pay_multiplier=1.0))
                             total_expected_instances +=1
 
+
+                        #If Current Date is Weekly or Extra off
+                        elif current_date.strftime('%a').lower() == current_employee.weekly_off or (weekday_occurrence_in_month(date=current_date) == current_employee.extra_off):
+                            #If it's weekly off bulk create the employees of the list so that when "paid_days_count_for_past_six_days" called it uses the updated Attendances
+                            EmployeeAttendance.objects.bulk_create(attendance_records)
+                            attendance_records.clear()
+                            weekly_off_to_give = weekly_off_skip
+                            if paid_days_count_for_past_six_days(user=user, company_id=company_id, attendance_date=current_date, employee=current_employee.employee) >= (weekly_off_holiday_off.min_days_for_weekly_off * 2):
+                                weekly_off_to_give = weekly_off
+                            attendance_records.append(EmployeeAttendance(user=user, company_id=company_id, employee=current_employee.employee, first_half=weekly_off_to_give, second_half=weekly_off_to_give, manual_in=None, manual_out=None, machine_in=None, machine_out=None, date=current_date, ot_min=None, late_min=None, pay_multiplier=1.0))
+                            total_expected_instances +=1
+
+                        
                         #It's not weekly off nor holiday off
                         else:
                             if not shift_found or (current_date < shift_from_date or current_date > shift_to_date):
