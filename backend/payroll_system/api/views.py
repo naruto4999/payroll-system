@@ -2,7 +2,7 @@ from django.forms import ValidationError
 from django.shortcuts import render
 from rest_framework import generics, status, mixins, serializers
 from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer, EmployeeGenerativeLeaveRecordSerializer, EmployeeLeaveOpeningSerializer, EmployeeMonthlyAttendancePresentDetailsSerializer, EmployeeAdvancePaymentSerializer, EmployeeMonthlyAttendanceDetailsSerializer, EmployeeSalaryPreparedSerializer, EarnedAmountSerializer, SalaryOvertimeSheetSerializer, AttendanceReportsSerializer, EmployeeAttendanceBulkAutofillSerializer, BulkPrepareSalariesSerializer, MachineAttendanceSerializer, PersonnelFileReportsSerializer, DefaultAttendanceSerializer, EmployeeResignationSerializer, EmployeeUnresignSerializer, BonusCalculationSerializer, BonusPercentageSerializer, EmployeeProfessionalDetailRetrieveSerializer, EarnedAmountSerializerPreparedSalary, FullAndFinalSerializer, EmployeeELLeftSerializer, EmployeeYearlyBonusAmountSerializer, FullAndFinalReportSerializer, PfEsiReportsSerializer, RegularRetrieveUpdateSerializer, EmployeeVisibilitySerializer, AllEmployeeCurrentMonthAttendanceSerializer, SubUserOvertimeSettingsSerializer, SubUserMiscSettingsSerializer, TransferAttendanceFromOwnerToRegularSerializer, EmployeeStrengthReportsSerializer, EmployeeLeaveOpeningCreateUpdateSerializer, LeaveClosingTransferSerializer, EmployeeMonthlyMissPunchSerializer, EmployeeYearlyAdvanceTakenDeductedSerializer, AttendanceMachineConfigSerializer
-from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift, EmployeeSalaryEarning, EarningsHead, EmployeeShifts, EmployeeGenerativeLeaveRecord, EmployeeSalaryPrepared, EarnedAmount, EmployeeAdvanceEmiRepayment, EmployeeAdvancePayment, EmployeeAttendance, EmployeePersonalDetail, EmployeeProfessionalDetail, BonusCalculation, BonusPercentage, EmployeeSalaryDetail, FullAndFinal, Calculations, SubUserOvertimeSettings, EmployeeLeaveOpening, EmployeeMonthlyAttendanceDetails
+from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift, EmployeeSalaryEarning, EarningsHead, EmployeeShifts, EmployeeGenerativeLeaveRecord, EmployeeSalaryPrepared, EarnedAmount, EmployeeAdvanceEmiRepayment, EmployeeAdvancePayment, EmployeeAttendance, EmployeePersonalDetail, EmployeeProfessionalDetail, BonusCalculation, BonusPercentage, EmployeeSalaryDetail, FullAndFinal, Calculations, SubUserOvertimeSettings, EmployeeLeaveOpening, EmployeeMonthlyAttendanceDetails, employee_photo_handler
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
@@ -26,6 +26,7 @@ from fpdf import FPDF
 from django.http import HttpResponse, StreamingHttpResponse
 from .reports.generate_salary_sheet import generate_salary_sheet
 from .reports.generate_payment_sheet import generate_payment_sheet
+from .reports.generate_payment_sheet_as_per_compliance import generate_payment_sheet_as_per_compliance
 from .reports.generate_attendance_register import generate_attendance_register
 from .reports.generate_full_and_final_report import generate_full_and_final_report
 from .reports.generate_payslip import generate_payslip
@@ -54,13 +55,13 @@ from itertools import groupby
 from operator import attrgetter
 import re
 import time
-from django.db.models import F, Value, CharField, Func
+from django.db.models import F, Value, CharField, Func, Exists, OuterRef
 from .permissions import isOwnerAndAdmin
 # import sys
 from django.db import connection, reset_queries 
 from rest_framework.exceptions import APIException
 from django.db.models import Case, When
-
+from django.db.models import Prefetch
 
 # from django.db import IntegrityError, transaction
 
@@ -2245,6 +2246,76 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
             else:
                 return Response({"detail": "No Salary Prepared for the given month"}, status=status.HTTP_404_NOT_FOUND)
 
+        if validated_data['report_type'] == 'payment_sheet_as_per_compliance':
+            if request.user.role != 'OWNER':
+                return Response({"detail": "Not Allowed"}, status=status.HTTP_403_FORBIDDEN)
+            print(f"Validated Data: {validated_data['filters']['format']}")
+            salary_date = date(validated_data["year"], validated_data["month"], 1)
+            order_by = None
+            if validated_data['filters']['sort_by'] == "attendance_card_no":
+                order_by = ("attendance_card_no",)
+            elif validated_data['filters']['sort_by'] == "employee_name":
+                order_by = ('name',)
+            if validated_data['filters']['group_by'] != 'none':
+                if order_by != None:
+                    order_by = ('employee_professional_detail__department', *order_by)
+                else:
+                    order_by = ('employee_professional_detail__department',)
+
+
+            """
+            Query below filters the employee who have owner_salary (mandatory) and also retrieves their regular account salary
+            """
+            employees = EmployeePersonalDetail.objects.annotate(
+                has_owner_salary=Exists(
+                    EmployeeSalaryPrepared.objects.filter(
+                        employee=OuterRef('pk'),
+                        date=salary_date,
+                        user=request.user
+                    )
+                )
+            ).filter(
+                has_owner_salary=True,  # Only include employees with owner salary
+                id__in=employee_ids
+            ).prefetch_related(
+                Prefetch(
+                    'salaries_prepared',  # Related name from EmployeePersonalDetail to EmployeeSalaryPrepared
+                    queryset=EmployeeSalaryPrepared.objects.filter(
+                        date=salary_date, user=request.user  # Owner's salaries
+                    ),
+                    to_attr='owner_salary'  # Custom attribute for owner's salaries
+                ),
+                Prefetch(
+                    'salaries_prepared',  # Related name from EmployeePersonalDetail to EmployeeSalaryPrepared
+                    queryset=EmployeeSalaryPrepared.objects.filter(
+                        date=salary_date
+                    ).exclude(user=request.user),  # Regular account salaries
+                    to_attr='regular_account_salary'  # Custom attribute for regular account salaries
+                )
+            )
+
+            #Use python regular expression to orderby if the order by is using paycode because it is alpha numeric
+            if validated_data['filters']['sort_by'] == "paycode":
+                employees = sorted(employees, key=lambda x: (
+                    (getattr(x.employee_professional_detail.department, 'name', 'zzzzzzzz') if hasattr(x.employee_professional_detail, 'department') else 'zzzzzzzz') if validated_data['filters']['group_by'] != 'none' else '',
+                    re.sub(r'[^A-Za-z]', '', x.paycode), 
+                    int(re.sub(r'[^0-9]', '', x.paycode))))
+            else:
+                employees = employees.order_by(*order_by)
+
+            if len(employees) != 0: #Add this later "and validated_data['filters']['format']=='pdf'" when creating xlsx format too
+                response = StreamingHttpResponse(generate_payment_sheet_as_per_compliance(request.user, serializer.validated_data, employees), content_type="application/pdf")
+                response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
+                return response
+            # elif len(employee_salaries) != 0 and validated_data['filters']['format']=='xlsx':
+            #     response = StreamingHttpResponse(generate_payment_sheet_xlsx(request.user, serializer.validated_data, employee_salaries), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            #     response["Content-Disposition"] = 'attachment; filename="myexcel.xlsx"'
+            #     return response
+            else:
+                return Response({"detail": "Employee Selected does NOT have Salary Prepared."}, status=status.HTTP_404_NOT_FOUND)
+
+
+
         if validated_data['report_type'] == 'payslip':
             payslip_date = date(validated_data["year"], validated_data["month"], 1)
             order_by = None
@@ -2365,6 +2436,7 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
 
         # return Response({"message": "Payslip successful"}, status=status.HTTP_200_OK)
         print('idk')
+        return Response({"detail": "No Report was selected"}, status=status.HTTP_400_BAD_REQUEST)
 
 class PersonnelFileReportsCreateAPIView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
