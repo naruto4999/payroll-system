@@ -426,7 +426,7 @@ def generate_payment_sheet(user, request_data, prepared_salaries):
     payment_sheet.cell(w=width_of_columns['total_earnings'], h=default_cell_height, text=f"{grand_total_dict['total_earnings']}", align="R", new_x="RIGHT", new_y='TOP', border="TB")
     payment_sheet.cell(w=width_of_columns['advance'], h=default_cell_height, text=f"{grand_total_dict['total_advance']}", align="R", new_x="RIGHT", new_y='TOP', border="TB")
     payment_sheet.cell(w=width_of_columns['epf'], h=default_cell_height, text=f"{grand_total_dict['total_pf']}", align="R", new_x="RIGHT", new_y='TOP', border="TB")
-    payment_sheet.cell(w=width_of_columns['esi'], h=default_cell_height, text=f"{grand_total_dict['total_esi']}", align="R", new_x="RIGHT", new_y='TOP', border="TB")
+    payment_sheet.cell(w=width_of_columns['esi'] if company_pf_esi_setup.enable_labour_welfare_fund==True else width_of_columns['esi']+width_of_columns['lwf'], h=default_cell_height, text=f"{grand_total_dict['total_esi']}", align="R", new_x="RIGHT", new_y='TOP', border="TB")
     if company_pf_esi_setup.enable_labour_welfare_fund==True:
         payment_sheet.cell(w=width_of_columns['lwf'], h=default_cell_height, text=f"{grand_total_dict['total_lwf']}", align="R", new_x="RIGHT", new_y='TOP', border="TB")
     payment_sheet.cell(w=width_of_columns['others'], h=default_cell_height, text=f"{grand_total_dict['total_others']}", align="R", new_x="RIGHT", new_y='TOP', border="TB")

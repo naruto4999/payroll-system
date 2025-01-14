@@ -5,7 +5,7 @@ from datetime import date, timedelta, datetime
 from dateutil.relativedelta import relativedelta
 from decimal import Decimal, ROUND_HALF_UP, ROUND_CEILING
 import calendar
-from api.models import EarningsHead,EmployeeSalaryEarning
+from api.models import EarningsHead, EmployeeSalaryEarning, PfEsiSetup
 from openpyxl.styles import Font, PatternFill
 
 
@@ -16,6 +16,7 @@ from openpyxl.styles import Font, PatternFill
 
 
 def generate_payment_sheet_xlsx(user, request_data, employee_salaries):
+    company_pf_esi_setup = PfEsiSetup.objects.get(company=request_data['company'])
     employees_data = []
     total_row = {
     'S/N': 'Grand Total',
@@ -26,12 +27,15 @@ def generate_payment_sheet_xlsx(user, request_data, employee_salaries):
     'Salary Rate': 0,
     'PD': 0,
     'Earned Salary': 0,
+    'Incentive': 0,
     'OT Hrs': 0,
     'OT Amount': 0,
     'Total Earned': 0,
     'Advance': 0,
     'EPF': 0,
     'ESI': 0,
+    'LWF': 0,
+    'Others': 0,
     'TDS': 0,
     'Total Deduction': 0,
     'Net Payable': 0
@@ -43,14 +47,16 @@ def generate_payment_sheet_xlsx(user, request_data, employee_salaries):
         "earned_salary" : 0,
         "ot_amt": 0,
         "total_earnings": 0,
+        'total_incentive': 0,
         "total_advance": 0,
         "total_pf": 0,
         "total_esi": 0,
+        "total_lwf": 0,
+        "total_others": 0,
         "total_tds": 0,
         "total_deductions": 0,
         "net_payable": 0,
     }
-
          
     for salary_index, employee_salary in enumerate(employee_salaries):
         if request_data['filters']['group_by'] != 'none':
@@ -64,24 +70,28 @@ def generate_payment_sheet_xlsx(user, request_data, employee_salaries):
             #if salary_index == 0 or employee_salary.employee.employee_professional_detail.department.name != employee_salaries[salary_index-1].employee.employee_professional_detail.department.name:
                 current_employee_department_name = current_employee_department.name if current_employee_department != None else 'No Department'
                 departement_name_dict = {
-                'S/N': current_employee_department_name,
-                'ACN': current_employee_department_name,
-                'Employee Name': current_employee_department_name,
-                'Father/Husband Name': current_employee_department_name,
-                'Designation': current_employee_department_name,
-                'Salary Rate': current_employee_department_name,
-                'PD': current_employee_department_name,
-                'Earned Salary': current_employee_department_name,
-                'OT Hrs': current_employee_department_name,
-                'OT Amount': current_employee_department_name,
-                'Total Earned': current_employee_department_name,
-                'Advance': current_employee_department_name,
-                'EPF': current_employee_department_name,
-                'ESI': current_employee_department_name,
-                'TDS': current_employee_department_name,
-                'Total Deduction': current_employee_department_name,
-                'Net Payable': current_employee_department_name
+                'S/N': f"{current_employee_department_name} dept_name_finder",
+                'ACN': '',
+                'Employee Name': '',
+                'Father/Husband Name': '',
+                'Designation': '',
+                'Salary Rate': '',
+                'PD': '',
+                'Earned Salary': '',
+                'Incentive': '',
+                'OT Hrs': '',
+                'OT Amount': '',
+                'Total Earned': '',
+                'Advance': '',
+                'EPF': '',
+                'ESI': '',
+                'LWF': '',
+                'Others': '',
+                'TDS': '',
+                'Total Deduction': '',
+                'Net Payable': ''
                 }
+
                 employees_data.append(departement_name_dict)
 
 
@@ -90,11 +100,14 @@ def generate_payment_sheet_xlsx(user, request_data, employee_salaries):
                     "total_salary_rate": 0,
                     "ot_hrs": 0,
                     "earned_salary" : 0,
+                    "incentive": 0,
                     "ot_amt": 0,
                     "total_earnings": 0,
                     "total_advance": 0,
                     "total_pf": 0,
                     "total_esi": 0,
+                    "total_lwf": 0,
+                    "total_others": 0,
                     "total_tds": 0,
                     "total_deductions": 0,
                     "net_payable": 0,
@@ -111,12 +124,15 @@ def generate_payment_sheet_xlsx(user, request_data, employee_salaries):
             'Salary Rate': 0,
             'PD': 0,
             'Earned Salary': 0,
+            'Incentive': 0,
             'OT Hrs': 0,
             'OT Amount': 0,
             'Total Earned': 0,
             'Advance': 0,
             'EPF': 0,
             'ESI': 0,
+            'LWF': 0,
+            'Others': 0,
             'TDS': 0,
             'Total Deduction': 0,
             'Net Payable': 0
@@ -158,12 +174,20 @@ def generate_payment_sheet_xlsx(user, request_data, employee_salaries):
                 total_earnings_amount = 0
                 for earned in earned_amounts:
                     total_earnings_amount += (earned.earned_amount)
-            total_earnings_amount += employee_salary.incentive_amount
+            #total_earnings_amount += employee_salary.incentive_amount
             current_employee_dict['Earned Salary'] = total_earnings_amount
             total_row['Earned Salary'] += total_earnings_amount
             dept_total_dict['earned_salary'] += total_earnings_amount
-
         except: pass
+
+        #Incentive
+        try:
+            total_earnings_amount += employee_salary.incentive_amount
+            current_employee_dict['Incentive'] = employee_salary.incentive_amount
+            total_row['Incentive'] += employee_salary.incentive_amount
+            dept_total_dict['incentive'] += employee_salary.incentive_amount
+        except Exception as e:
+            print(f"Error occurred in generate_payment_sheet_xlsx in Incentive: {str(e)}")
 
         #OT
         ot_hrs = employee_salary.net_ot_minutes_monthly/60
@@ -192,15 +216,17 @@ def generate_payment_sheet_xlsx(user, request_data, employee_salaries):
             advance = employee_salary.advance_deducted
             current_employee_dict['Advance'] = advance
             total_row['Advance'] += advance
-            dept_total_dict['total_advance'] += total_advance
+            dept_total_dict['total_advance'] += advance
         except: pass
 
         #EPF
         try:
-            pf = employee_salary.pf_deducted
-            current_employee_dict['EPF'] = pf
-            total_row['EPF'] += pf
-            dept_total_dict['total_pf'] += pf
+            pf_vpf_deducted = 0
+            pf_vpf_deducted += employee_salary.pf_deducted if employee_salary.pf_deducted !=None else 0
+            pf_vpf_deducted += employee_salary.vpf_deducted if employee_salary.vpf_deducted !=None else 0
+            current_employee_dict['EPF'] = pf_vpf_deducted
+            total_row['EPF'] += pf_vpf_deducted
+            dept_total_dict['total_pf'] += pf_vpf_deducted
         except: pass
 
         #ESI
@@ -211,6 +237,14 @@ def generate_payment_sheet_xlsx(user, request_data, employee_salaries):
             dept_total_dict['total_esi'] += esi
         except: pass
 
+        #LWF
+        if company_pf_esi_setup.enable_labour_welfare_fund:
+            if employee_salary.labour_welfare_fund_deducted:
+                lwf_deducted = employee_salary.labour_welfare_fund_deducted
+                current_employee_dict['LWF'] = lwf_deducted
+                total_row['LWF'] += lwf_deducted
+                dept_total_dict['total_lwf'] += lwf_deducted
+
         #TDS
         try:
             tds = employee_salary.tds_deducted
@@ -219,9 +253,21 @@ def generate_payment_sheet_xlsx(user, request_data, employee_salaries):
             dept_total_dict['total_tds'] +=tds
         except: pass
 
+        #Others
+        try:
+            others_deducted = employee_salary.others_deducted
+            current_employee_dict['Others'] = others_deducted
+            total_row['Others'] += others_deducted
+            dept_total_dict['total_others'] += others_deducted
+        except: pass
+
+
         #Total Deductions
         try:
-            total_deductions = advance + pf + esi + tds
+            total_deductions = advance + pf_vpf_deducted + esi + tds + others_deducted
+            if company_pf_esi_setup.enable_labour_welfare_fund:
+                if employee_salary.labour_welfare_fund_deducted:
+                    total_deductions += lwf_deducted
             current_employee_dict['Total Deduction'] = total_deductions
             total_row['Total Deduction'] += total_deductions
             dept_total_dict['total_deductions'] += total_deductions
@@ -250,12 +296,15 @@ def generate_payment_sheet_xlsx(user, request_data, employee_salaries):
                     'Salary Rate': dept_total_dict['total_salary_rate'],
                     'PD': dept_total_dict['total_paid_days'],
                     'Earned Salary': dept_total_dict['earned_salary'],
+                    'Incentive': dept_total_dict['incentive'],
                     'OT Hrs': dept_total_dict['ot_hrs'],
                     'OT Amount': dept_total_dict['ot_amt'],
                     'Total Earned': dept_total_dict['total_earnings'],
                     'Advance': dept_total_dict['total_advance'],
                     'EPF': dept_total_dict['total_pf'],
                     'ESI': dept_total_dict['total_esi'],
+                    'LWF': dept_total_dict['total_lwf'],
+                    'Others': dept_total_dict['total_others'],
                     'TDS': dept_total_dict['total_tds'],
                     'Total Deduction': dept_total_dict['total_deductions'],
                     'Net Payable': dept_total_dict['net_payable']
@@ -272,12 +321,15 @@ def generate_payment_sheet_xlsx(user, request_data, employee_salaries):
                 'Salary Rate': '',
                 'PD': '',
                 'Earned Salary': '',
+                'Incentive': '',
                 'OT Hrs': '',
                 'OT Amount': '',
                 'Total Earned': '',
                 'Advance': '',
                 'EPF': '',
                 'ESI': '',
+                'LWF': '',
+                'Others': '',
                 'TDS': '',
                 'Total Deduction': '',
                 'Net Payable': ''
@@ -290,6 +342,9 @@ def generate_payment_sheet_xlsx(user, request_data, employee_salaries):
     employees_data.append(total_row)
 
     df = pd.DataFrame(employees_data)
+    if not company_pf_esi_setup.enable_labour_welfare_fund:
+        df.drop(columns=['LWF'], inplace=True)
+    df.rename(columns={'Earned Salary': 'Earned Salary (*incl of arrear)'}, inplace=True)
 
     # Create a BytesIO buffer
     excel_buffer = io.BytesIO()
@@ -302,13 +357,51 @@ def generate_payment_sheet_xlsx(user, request_data, employee_salaries):
         workbook = writer.book
         worksheet = writer.sheets['Sheet1']
 
+        # Define the light brown fill
+        light_blue_fill = PatternFill(start_color="92c7d4", end_color="92c7d4", fill_type="solid")  # Light blue
+        light_red_fill = PatternFill(start_color="f5bac1", end_color="f5bac1", fill_type="solid")  # Light red 
+
+        # Fill color for department name
+        if request_data['filters']['group_by'] != 'none':
+            department_total_row_numbers = []
+            for row_idx in range(2, len(df) + 2):  # Data rows start from the second row
+                first_col_value = worksheet.cell(row=row_idx, column=1).value  # Get the value in the first column
+                if first_col_value and isinstance(first_col_value, str):
+                    # Split the text by spaces
+                    words = first_col_value.split()
+                    # Check if the last word is "dept_name_finder"
+                    if len(words) > 1:
+                        if words[-1] == "dept_name_finder":
+                            # Apply light brown fill to the cell
+                            worksheet.cell(row=row_idx, column=1).fill = light_blue_fill
+                            # Replace the text in the cell (remove "dept_name_finder")
+                            new_text = " ".join(words[:-1])  # Remove the last word
+                            worksheet.cell(row=row_idx, column=1).value = new_text
+                        elif words[-1] == 'Total' and words[0] == 'Department':
+                            department_total_row_numbers.append(row_idx)
+
+        # Adjust the width of all columns
+        for column in worksheet.columns:
+            max_length = max(len(str(cell.value)) for cell in column) + 2  # Adding a little extra padding
+            worksheet.column_dimensions[column[0].column_letter].width = max_length
+
         # Get the last row number
         last_row = len(df) + 1
 
+        # Define the light green fill
+        header_fill = PatternFill(start_color="b8e3c5", end_color="b8e3c5", fill_type="solid")
+
         # Apply bold font and blue fill color to the last row
         for col in range(1, len(df.columns) + 1):
+            if request_data['filters']['group_by'] != 'none':
+                for dept_total_row_no in department_total_row_numbers:
+                    cell = worksheet.cell(row=dept_total_row_no, column=col)
+                    cell.fill = light_blue_fill
+            cell = worksheet.cell(row=1, column=col)  # Headers are in the first row
+            cell.fill = header_fill
             cell = worksheet.cell(row=last_row, column=col)
-            cell.font = Font(bold=True, color='FF0000FF')  # Set the font color to blue
+            cell.fill = light_red_fill
+            cell.font = Font(bold=True, color='080659')  # Set the font color to blue
 
     # Create a response with the Excel file content
     response = HttpResponse(content=excel_buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
