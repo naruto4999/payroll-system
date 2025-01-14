@@ -2230,8 +2230,10 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
             employee_salaries = EmployeeSalaryPrepared.objects.filter(user=request.user, employee__id__in=employee_ids, date=salary_date)
 
             #Use python regular expression to orderby if the order by is using paycode because it is alpha numeric
-            if validated_data['filters']['sort_by'] == "paycode" and validated_data['filters']['group_by'] == 'none':
-                employee_salaries = sorted(employee_salaries, key=lambda x: (re.sub(r'[^A-Za-z]', '', x.employee.paycode), int(re.sub(r'[^0-9]', '', x.employee.paycode))))
+            if validated_data['filters']['sort_by'] == "paycode":
+                employee_salaries = sorted(employee_salaries, key=lambda x: (
+                    (getattr(x.employee.employee_professional_detail.department, 'name', 'zzzzzzzz') if hasattr(x.employee.employee_professional_detail, 'department') else 'zzzzzzzz') if validated_data['filters']['group_by'] != 'none' else '',
+                    re.sub(r'[^A-Za-z]', '', x.employee.paycode), int(re.sub(r'[^0-9]', '', x.employee.paycode))))
             else:
                 employee_salaries = employee_salaries.order_by(*order_by)
 
