@@ -71,7 +71,7 @@ class FPDF(FPDF):
 # Create instance of FPDF class
 def generate_attendance_register(user, request_data, employees):
     
-    print('starting to create the attendance register')
+    print(f"Generating Attendance Register. User: {user}, No. of Employee: {len(employees)}")
 
     # Pre-fetch all related data for employees in a single query
     company_id = request_data['company']
@@ -86,7 +86,7 @@ def generate_attendance_register(user, request_data, employees):
     employees = employees.prefetch_related(
         Prefetch('employee_salary_detail', queryset=EmployeeSalaryDetail.objects.all()),
         Prefetch('attendance', queryset=EmployeeAttendance.objects.filter(user=user, date__range=[start_date, end_date]).order_by('date')),
-        Prefetch('monthly_attendance_details', queryset=EmployeeMonthlyAttendanceDetails.objects.filter(date=start_date)),
+        Prefetch('monthly_attendance_details', queryset=EmployeeMonthlyAttendanceDetails.objects.filter(user=user, date=start_date)),
         Prefetch('generative_leave_record', queryset=EmployeeGenerativeLeaveRecord.objects.filter(date=start_date).order_by('leave__name'))
     ).select_related('employee_professional_detail__designation', 'employee_professional_detail__department')
     print(f'Start Date: {start_date}, End Date: {end_date}')
@@ -100,7 +100,6 @@ def generate_attendance_register(user, request_data, employees):
 
     if request_data['filters']['group_by'] != 'none':
         rows_per_page = 167 // (employee_intro_cell_height + (default_number_of_cells_in_row * default_cell_height) + group_by_department_cell_height)
-    print(f"Rows Per Page: {rows_per_page}")
 
     employee_intro_width = {
         'serial_number': 20,
@@ -125,7 +124,6 @@ def generate_attendance_register(user, request_data, employees):
     attendance_register.add_page()
     attendance_register.set_auto_page_break(auto=True, margin=4)
     initial_coordinates_after_header = {"x": attendance_register.get_x(), "y": attendance_register.get_y()}
-    print(attendance_register.get_y())
 
     row_number = 0
     for employee_index, employee in enumerate(employees):
@@ -275,7 +273,6 @@ def generate_attendance_register(user, request_data, employees):
         total_late_hrs_text = ''
         if employee_monthly_details:
             #Total OT hrs text
-            print(f"Employee: {employee.name}")
             othours, otminutes = divmod(employee_monthly_details.net_ot_minutes_monthly, 60)
             tota_ot_hrs_text = f'{othours:02d}:{otminutes:02d}'
 

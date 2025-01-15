@@ -2522,8 +2522,6 @@ class AttendanceReportsCreateAPIView(generics.CreateAPIView):
 
             employees = EmployeePersonalDetail.objects.filter(id__in=employee_ids, user=user, company_id=validated_data['company'])
 
-            print(len(employees))
-
             #Use python regular expression to orderby if the order by is using paycode because it is alpha numeric
             if validated_data['filters']['sort_by'] == "paycode":
                 employees = sorted(
