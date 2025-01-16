@@ -1083,7 +1083,7 @@ const EditAttendance = ({
             setFieldValue(`attendance.${day}.manualIn`, getTimePart(randomBeginningDate));
             setFieldValue(`attendance.${day}.manualOut`, getTimePart(randomEndingDate));
         }
-    }, [values.manualToDate, values.manualFromDate, currentEmployeeProfessionalDetail]);
+    }, [values.manualToDate, values.manualFromDate, currentEmployeeProfessionalDetail, values.year, values.month]);
 
     const machineAttendance = async (formikBag) => {
         const fileInput = document.getElementById('machineAttendanceUpload'); // Replace with the actual ID of your file input element

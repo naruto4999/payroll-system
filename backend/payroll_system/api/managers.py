@@ -1187,7 +1187,7 @@ class EmployeeSalaryPreparedManager(models.Manager):
                     labour_welfare_fund_deducted = labour_welfare_fund_deducted.quantize(Decimal('1.'), rounding=ROUND_HALF_UP)
 
                 #Deleting Advances associated with the salary prepared
-                old_prepared_salary = EmployeeSalaryPrepared.objects.filter(user=user if user.role=="OWNER" else user.regular_to_owner.owner, employee=current_employee.employee, date=from_date)
+                old_prepared_salary = EmployeeSalaryPrepared.objects.filter(user=user, employee=current_employee.employee, date=from_date)
                 if old_prepared_salary.exists():
                     EmployeeAdvanceEmiRepayment.objects.filter(salary_prepared=old_prepared_salary.first().id).delete()
 
