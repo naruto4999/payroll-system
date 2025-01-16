@@ -339,14 +339,14 @@ def generate_payment_sheet_as_per_compliance(user, request_data, employees):
         Deductions start form Here
         """
         current_employee_total_deductions_regular_account = 0 if regular_account_salary!=None else None
-        #Advance
+        #Advance: This is to be taken from main account because employees who are on offroll their advance won't be considered since they won't be in subuser account.
         advance_deducted = None
         try:
-            if regular_account_salary!=None:
-                advance_deducted = regular_account_salary.advance_deducted
+            if salary!=None:
+                advance_deducted = salary.advance_deducted
                 current_employee_total_deductions_regular_account += advance_deducted
-                grand_total_dict['total_advance'] +=  regular_account_salary.advance_deducted
-                dept_total_dict['total_advance'] +=  regular_account_salary.advance_deducted
+                grand_total_dict['total_advance'] +=  advance_deducted
+                dept_total_dict['total_advance'] +=  advance_deducted
         except Exception as e: 
              print(f"Error occurred in generate_payment_sheet_as_per_compliance in Advance: {str(e)}")
         payment_sheet_as_per_compliance.cell(w=width_of_columns['total_earnings'], h=default_cell_height, text=f"{advance_deducted if advance_deducted!=None else ''}", align="R", new_x="RIGHT", new_y='TOP', border=1)
