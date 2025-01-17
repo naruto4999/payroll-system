@@ -1569,7 +1569,7 @@ const EmployeeEntryForm = () => {
 													employeeProfessionalDetail: checkNullUndefinedValues(
 														singleEmployeeProfessionalDetail
 													),
-											  }
+												}
 											: editEmployeeProfessionalDetailInitialValues
 									}
 									validationSchema={
@@ -1615,12 +1615,12 @@ const EmployeeEntryForm = () => {
 																singleEmployeeProfessionalDetail.dateOfJoining.split(
 																	'-'
 																)[0]
-														  )
+															)
 														: null,
 													salaryDetail: {
 														...singleEmployeeSalaryDetail,
 													},
-											  }
+												}
 											: {
 													earningsHead: {
 														...earningHeadInitialValues,
@@ -1630,7 +1630,7 @@ const EmployeeEntryForm = () => {
 																singleEmployeeProfessionalDetail.dateOfJoining.split(
 																	'-'
 																)[0]
-														  )
+															)
 														: '',
 													salaryDetail: {
 														overtimeType: 'no_overtime',
@@ -1645,7 +1645,7 @@ const EmployeeEntryForm = () => {
 														bonusAllow: false,
 														bonusExg: false,
 													},
-											  }
+												}
 									}
 									validationSchema={generateEmployeeSalaryDetailSchema(null)}
 									onSubmit={
