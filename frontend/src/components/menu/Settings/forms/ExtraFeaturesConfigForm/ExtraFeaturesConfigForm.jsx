@@ -6,52 +6,51 @@ import { Field, ErrorMessage } from 'formik';
 import { alertActions } from '../../../../authentication/store/slices/alertSlice';
 import { FaCircleNotch } from 'react-icons/fa';
 import {
-    useGetAttendanceMachineConfigQuery,
-    useAddAttendanceMachineConfigMutation,
-    useUpdateAttendanceMachineConfigMutation,
-} from '../../../../authentication/api/attenadanceMachineConfigApiSlice';
-import { AttendanceMachineConfigSchema } from './AttendanceMachineConfigSchema';
+    useGetExtraFeaturesConfigQuery,
+    useAddExtraFeaturesConfigMutation,
+    useUpdateExtraFeaturesConfigMutation,
+} from '../../../../authentication/api/extraFeaturesConfigApiSlice';
+// import { AttendanceMachineConfigSchema } from './AttendanceMachineConfigSchema';
 
 const classNames = (...classes) => {
     return classes.filter(Boolean).join(' ');
 };
-const AttendanceMachineConfigForm = () => {
+
+const ExtraFeaturesConfigForm = () => {
     const dispatch = useDispatch();
     const globalCompany = useSelector((state) => state.globalCompany);
     console.log(globalCompany);
     const [showLoadingBar, setShowLoadingBar] = useOutletContext();
     const {
-        data: { company, ...attendanceMachineConfig } = {},
-        isLoading: isLoadingAttendanceMachineConfig,
-        isSuccess: isAttendanceMachineConfigSuccess,
-        isError: isAttendanceMachineConfigError,
-        isFetching: isFetchingAttendanceMachineConfig,
-    } = useGetAttendanceMachineConfigQuery(globalCompany.id);
-    console.log(attendanceMachineConfig);
-    console.log(isAttendanceMachineConfigSuccess);
+        data: { company, ...extraFeaturesConfig } = {},
+        isLoading: isLoadingExtraFeaturesConfig,
+        isSuccess: isExtraFeaturesConfigSuccess,
+        isError: isExtraFeaturesConfigError,
+        isFetching: isFetchingExtraFeaturesConfig,
+    } = useGetExtraFeaturesConfigQuery(globalCompany.id);
 
     const [
-        addAttendanceMachineConfig,
+        addExtraFeaturesConfig,
         {
-            isLoading: isAddingAttendanceMachineConfig,
+            isLoading: isAddingExtraFeaturesConfig,
             // isError: errorRegisteringRegular,
-            isSuccess: isAddAttendanceMachineConfigSuccess,
+            isSuccess: isAddExtraFeaturesConfigSuccess,
         },
-    ] = useAddAttendanceMachineConfigMutation();
+    ] = useAddExtraFeaturesConfigMutation();
     const [
-        updateAttendanceMachineConfig,
+        updateExtraFeaturesConfig,
         {
-            isLoading: isUpdatingAttendanceMachineConfig,
+            isLoading: isUpdatingExtraFeaturesConfig,
             // isError: errorRegisteringRegular,
-            isSuccess: isUpdateAttendanceMachineConfigSuccess,
+            isSuccess: isUpdateExtraFeaturesConfigSuccess,
         },
-    ] = useUpdateAttendanceMachineConfigMutation();
+    ] = useUpdateExtraFeaturesConfigMutation();
 
     const updateButtonClicked = async (values, formikBag) => {
         console.log(values);
-        if (isAttendanceMachineConfigSuccess) {
+        if (isExtraFeaturesConfigSuccess) {
             try {
-                const data = await updateAttendanceMachineConfig({
+                const data = await updateExtraFeaturesConfig({
                     ...values,
                     company: globalCompany.id,
                 }).unwrap();
@@ -73,9 +72,9 @@ const AttendanceMachineConfigForm = () => {
                     })
                 );
             }
-        } else if (!isAttendanceMachineConfigSuccess) {
+        } else if (!isExtraFeaturesConfigSuccess) {
             try {
-                const data = await addAttendanceMachineConfig({
+                const data = await addExtraFeaturesConfig({
                     ...values,
                     company: globalCompany.id,
                 }).unwrap();
@@ -101,12 +100,10 @@ const AttendanceMachineConfigForm = () => {
     };
 
     useEffect(() => {
-        setShowLoadingBar(
-            isLoadingAttendanceMachineConfig || isAddingAttendanceMachineConfig || isUpdatingAttendanceMachineConfig
-        );
-    }, [isLoadingAttendanceMachineConfig, isAddingAttendanceMachineConfig, isUpdatingAttendanceMachineConfig]);
+        setShowLoadingBar(isLoadingExtraFeaturesConfig || isAddingExtraFeaturesConfig || isUpdatingExtraFeaturesConfig);
+    }, [isLoadingExtraFeaturesConfig, isAddingExtraFeaturesConfig, isUpdatingExtraFeaturesConfig]);
 
-    if (isLoadingAttendanceMachineConfig) {
+    if (isLoadingExtraFeaturesConfig) {
         return (
             <div className="fixed inset-0 z-50 mx-auto my-auto flex h-fit w-fit items-center rounded bg-indigo-600 p-2 font-medium">
                 <FaCircleNotch className="mr-2 animate-spin text-white" />
@@ -126,46 +123,42 @@ const AttendanceMachineConfigForm = () => {
             <section className="mx-5 mt-2">
                 <div className="flex flex-row flex-wrap place-content-between">
                     <div className="mr-4">
-                        <h1 className="text-3xl font-medium">Attendance Machine Configuration</h1>
-                        <p className="my-2 text-sm">Configure Attendance (Biometric) Machine here.</p>
+                        <h1 className="text-3xl font-medium">Extra Features Configuration</h1>
+                        <p className="my-2 text-sm">Enable or Disable Extra Features here.</p>
                     </div>
                 </div>
 
                 {/* Formik Implementation */}
                 <Formik
                     initialValues={
-                        isAttendanceMachineConfigSuccess
+                        isExtraFeaturesConfigSuccess
                             ? {
-                                ...attendanceMachineConfig,
+                                ...extraFeaturesConfig,
                             }
                             : {
-                                machineIp: '192.168.0.100',
+                                enableCalculateOtAttendanceUsingEarnedSalary: false,
                             }
                     }
-                    validationSchema={AttendanceMachineConfigSchema}
+                    validationSchema={''}
                     onSubmit={updateButtonClicked}
                 >
                     {({ handleSubmit, errors, touched, values, isValid }) => (
                         <form id="" className="mt-2" onSubmit={handleSubmit}>
                             <div className="flex w-full flex-col gap-2">
                                 <div>
-                                    <label
-                                        htmlFor="machineIp"
-                                        className="my-auto block font-medium text-blueAccent-700 dark:text-blueAccent-400"
-                                    >
-                                        Machine IP Address
-                                    </label>
-                                    <Field
-                                        type="text"
-                                        name={`machineIp`}
-                                        id={`machineIp`}
-                                        className="h-full w-fit rounded border border-slate-100 border-opacity-50 bg-zinc-800 pl-2 pr-2 text-xs duration-300 sm:text-base"
-                                    // placeholder="Enter IPv4 address (e.g., 192.168.0.1)"
-                                    />
+                                    <div className="my-auto w-full font-medium text-amber-600 dark:text-amber-600">
+                                        {'Enable Calculate Overtime And Attendance using Earned Salary'}
 
-                                    <div className="my-1 text-xs font-bold text-red-500 dark:text-red-700">
-                                        <ErrorMessage name={`machineIp`} />
+                                        <Field
+                                            type="checkbox"
+                                            name={`enableCalculateOtAttendanceUsingEarnedSalary`}
+                                            className="my-auto ml-4 inline h-4 w-4 rounded accent-teal-600"
+                                        />
                                     </div>
+                                </div>
+
+                                <div className="my-1 text-xs font-bold text-red-500 dark:text-red-700">
+                                    <ErrorMessage name={`enableCalculateOtAttendanceUsingEarnedSalary`} />
                                 </div>
                                 <div>
                                     <button
@@ -176,7 +169,7 @@ const AttendanceMachineConfigForm = () => {
                                         type="submit"
                                         disabled={!isValid}
                                     >
-                                        {isAttendanceMachineConfigSuccess ? 'Update' : 'Create'}
+                                        {isExtraFeaturesConfigSuccess ? 'Update' : 'Create'}
                                     </button>
                                 </div>
                             </div>
@@ -189,4 +182,4 @@ const AttendanceMachineConfigForm = () => {
     }
 };
 
-export default AttendanceMachineConfigForm;
+export default ExtraFeaturesConfigForm;

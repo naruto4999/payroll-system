@@ -1,7 +1,7 @@
 from django.forms import ValidationError
 from django.shortcuts import render
 from rest_framework import generics, status, mixins, serializers
-from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer, EmployeeGenerativeLeaveRecordSerializer, EmployeeLeaveOpeningSerializer, EmployeeMonthlyAttendancePresentDetailsSerializer, EmployeeAdvancePaymentSerializer, EmployeeMonthlyAttendanceDetailsSerializer, EmployeeSalaryPreparedSerializer, EarnedAmountSerializer, SalaryOvertimeSheetSerializer, AttendanceReportsSerializer, EmployeeAttendanceBulkAutofillSerializer, BulkPrepareSalariesSerializer, MachineAttendanceSerializer, PersonnelFileReportsSerializer, DefaultAttendanceSerializer, EmployeeResignationSerializer, EmployeeUnresignSerializer, BonusCalculationSerializer, BonusPercentageSerializer, EmployeeProfessionalDetailRetrieveSerializer, EarnedAmountSerializerPreparedSalary, FullAndFinalSerializer, EmployeeELLeftSerializer, EmployeeYearlyBonusAmountSerializer, FullAndFinalReportSerializer, PfEsiReportsSerializer, RegularRetrieveUpdateSerializer, EmployeeVisibilitySerializer, AllEmployeeCurrentMonthAttendanceSerializer, SubUserOvertimeSettingsSerializer, SubUserMiscSettingsSerializer, TransferAttendanceFromOwnerToRegularSerializer, EmployeeStrengthReportsSerializer, EmployeeLeaveOpeningCreateUpdateSerializer, LeaveClosingTransferSerializer, EmployeeMonthlyMissPunchSerializer, EmployeeYearlyAdvanceTakenDeductedSerializer, AttendanceMachineConfigSerializer
+from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer, EmployeeGenerativeLeaveRecordSerializer, EmployeeLeaveOpeningSerializer, EmployeeMonthlyAttendancePresentDetailsSerializer, EmployeeAdvancePaymentSerializer, EmployeeMonthlyAttendanceDetailsSerializer, EmployeeSalaryPreparedSerializer, EarnedAmountSerializer, SalaryOvertimeSheetSerializer, AttendanceReportsSerializer, EmployeeAttendanceBulkAutofillSerializer, BulkPrepareSalariesSerializer, MachineAttendanceSerializer, PersonnelFileReportsSerializer, DefaultAttendanceSerializer, EmployeeResignationSerializer, EmployeeUnresignSerializer, BonusCalculationSerializer, BonusPercentageSerializer, EmployeeProfessionalDetailRetrieveSerializer, EarnedAmountSerializerPreparedSalary, FullAndFinalSerializer, EmployeeELLeftSerializer, EmployeeYearlyBonusAmountSerializer, FullAndFinalReportSerializer, PfEsiReportsSerializer, RegularRetrieveUpdateSerializer, EmployeeVisibilitySerializer, AllEmployeeCurrentMonthAttendanceSerializer, SubUserOvertimeSettingsSerializer, SubUserMiscSettingsSerializer, TransferAttendanceFromOwnerToRegularSerializer, EmployeeStrengthReportsSerializer, EmployeeLeaveOpeningCreateUpdateSerializer, LeaveClosingTransferSerializer, EmployeeMonthlyMissPunchSerializer, EmployeeYearlyAdvanceTakenDeductedSerializer, AttendanceMachineConfigSerializer, ExtraFeaturesConfigSerializer, CalculateOtAttendanceUsingTotalEarnedSerializer, EmployeeSalaryPreparedWithEarnedAmountSerializer
 from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift, EmployeeSalaryEarning, EarningsHead, EmployeeShifts, EmployeeGenerativeLeaveRecord, EmployeeSalaryPrepared, EarnedAmount, EmployeeAdvanceEmiRepayment, EmployeeAdvancePayment, EmployeeAttendance, EmployeePersonalDetail, EmployeeProfessionalDetail, BonusCalculation, BonusPercentage, EmployeeSalaryDetail, FullAndFinal, Calculations, SubUserOvertimeSettings, EmployeeLeaveOpening, EmployeeMonthlyAttendanceDetails, employee_photo_handler
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -50,6 +50,8 @@ from .reports.personnnel_file_forms.id_card.id_card_portrait import generate_id_
 from .reports.generate_overtime_sheet_daily import generate_overtime_sheet_daily
 from .reports.personnnel_file_forms.personnnel_file_reports.generate_personnel_file_reports import generate_personnel_file_reports
 from .reports.generate_payment_sheet_xlsx import generate_payment_sheet_xlsx
+from .templates.master_entry.generate_add_edit_employee_using_excel_template import generate_add_edit_employee_using_excel_template
+from .services.calculate_ot_attendance_using_earned_salary import calculate_ot_attendance_using_total_earned
 # from .reports.personnnel_file_reports.generate_application_form import generate_application_form
 from itertools import groupby
 from operator import attrgetter
@@ -2161,6 +2163,39 @@ class EmployeeSalaryPreparedListAPIView(generics.ListAPIView):
         serializer = self.get_serializer(queryset, many=True)
         print(f'RUnning slaary prepared: {queryset}')
         return Response(serializer.data)
+
+
+class EmployeeSalaryPreparedRetrieveAPIView(generics.RetrieveAPIView): #Add entry in urls.py for this
+    permission_classes = [IsAuthenticated]
+    serializer_class = EmployeeSalaryPreparedWithEarnedAmountSerializer
+
+    def get_queryset(self):
+        """Base queryset filtered by company and user permissions"""
+        company_id = self.kwargs['company_id']
+        return self.request.user.all_company_employees_salaries_prepared.filter(company_id=company_id)
+
+    def get_object(self):
+        """Retrieve specific salary record using URL parameters"""
+        queryset = self.get_queryset()
+        
+        try:
+            employee_id = self.kwargs['employee_id']
+            month = self.kwargs['month']
+            year = self.kwargs['year']
+            date_filter = date(year, month, 1)
+        except (ValueError, KeyError) as e:
+            raise NotFound("Invalid URL parameters") from e
+
+        obj = queryset.filter(
+            employee_id=employee_id,
+            date__month=month,
+            date__year=year
+        ).first()
+
+        if not obj:
+            raise NotFound("No salary record found for the given parameters")
+            
+        return obj
         
 class BulkPrepareSalariesView(APIView):
     def post(self, request, *args, **kwargs):
@@ -3286,7 +3321,7 @@ class EmployeeShiftsListAPIView(generics.ListAPIView):
         print(serializer.data)
         return Response(serializer.data)
     
-class EarnedAmountPreparedSalaryListAPIView(generics.ListAPIView):
+class EarnedAmountPreparedSalaryListAPIView(generics.ListAPIView): #rename this later
     permission_classes = [IsAuthenticated]
     serializer_class = EarnedAmountSerializerPreparedSalary
 
@@ -3623,7 +3658,18 @@ class EmployeeYearlyMissPunchListAPIView(generics.ListAPIView):
         )       # if user.role == "OWNER":
        # return user.all_employees_attendance.filter(company=company_id, date__year=year, date__month=month)
     #
- 
+
+class DownloadAddEditEmployeeUsingExcelTemplateAPIView(generics.CreateAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        # Call the function to generate the Excel template
+        response = StreamingHttpResponse(generate_add_edit_employee_using_excel_template(request.user), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        response["Content-Disposition"] = 'attachment; filename="myexcel.xlsx"'
+        return response
+
+        return generate_add_edit_employee_using_excel_template()
+
 class EmployeeYearlyAdvanceTakenDeductedAPIView(APIView):
     '''
     This api accepts a company Id and year (as query params) and returns a list of employee_id of the employees who have taken an advance in that year
@@ -3690,6 +3736,59 @@ class AttendanceMachineConfigRetrieveUpdateDestroyAPIView(generics.RetrieveUpdat
         serializer.is_valid(raise_exception=True)
         serializer.save(user=user)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+class ExtraFeaturesConfigCreateAPIView(generics.CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = ExtraFeaturesConfigSerializer 
+    def perform_create(self, serializer):
+        user = self.request.user
+        if user.role != "OWNER":
+            return Response({'error': "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
+        return serializer.save(user=user)
+    
+class ExtraFeaturesConfigRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes= [IsAuthenticated]
+    serializer_class = ExtraFeaturesConfigSerializer
+    lookup_field = 'company_id'
+
+    def get_queryset(self, *args, **kwargs):
+        user = self.request.user
+        if user.role != "OWNER":
+            return Response({'error': "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
+        company_id = self.kwargs.get('company_id')
+        return user.extra_features_configuration.filter(company_id=company_id)
+    
+    def update(self, request, *args, **kwargs):
+        user = self.request.user
+        if user.role != "OWNER":
+            return Response({'error': "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data)
+        print(request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(user=user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class CalculateOtAttendanceUsingTotalEarnedApiView(APIView):
+    def post(self, request, *args, **kwargs):
+        user = self.request.user
+        serializer = CalculateOtAttendanceUsingTotalEarnedSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        print(serializer.validated_data)
+        validated_data = serializer.validated_data
+        num_days_in_month = calendar.monthrange(validated_data['year'], validated_data['month'])[1]
+        # if validated_data['month_to_date']>num_days_in_month:
+        #     validated_data['month_to_date'] = num_days_in_month
+        from_date = date(validated_data['year'], validated_data['month'], 1)
+        to_date = date(validated_data['year'], validated_data['month'], num_days_in_month)
+        #
+        # # try:
+        operation_result, message = calculate_ot_attendance_using_total_earned(user=user, company_id=validated_data['company'], employee_ids=validated_data['employee_ids'], from_date=from_date, to_date=to_date, year=validated_data['year'], month=validated_data['month'], manually_inserted_total_earned=validated_data['manually_inserted_total_earned'])
+        if operation_result==False:
+            return Response({"message": message}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"message": message}, status=status.HTTP_200_OK)
+
+
 
 
 '''

@@ -697,10 +697,11 @@ const EditAttendance = ({
                 if (paidIds.includes(parseInt(attendance.secondHalf))) {
                     presentCount += 1;
                 }
-            } else if (previousDate.getMonth() === values.month - 2) {
+            } else if (previousDate.getMonth() === (values.month - 2 + 12) % 12) {
+                // else if (previousDate.getMonth() == values.month - 2) {
                 for (const entry of employeeAttendance) {
                     const entryDate = new Date(entry.date);
-                    if (previousDate.getTime() === entryDate.getTime()) {
+                    if (previousDate.getTime() == entryDate.getTime()) {
                         if (paidIds.includes(parseInt(entry.firstHalf))) {
                             presentCount += 1;
                         }

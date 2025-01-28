@@ -1,6 +1,6 @@
 from dataclasses import field
 
-from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning, EmployeeSalaryDetail, EmployeeFamilyNomineeDetial, EmployeePfEsiDetail, WeeklyOffHolidayOff, PfEsiSetup, Calculations, EmployeeShifts, EmployeeAttendance, EmployeeGenerativeLeaveRecord, EmployeeLeaveOpening, EmployeeMonthlyAttendanceDetails, EmployeeAdvancePayment, EmployeeSalaryPrepared, EarnedAmount, BonusCalculation, BonusPercentage, FullAndFinal, SubUserOvertimeSettings, SubUserMiscSettings, AttendanceMachineConfig
+from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning, EmployeeSalaryDetail, EmployeeFamilyNomineeDetial, EmployeePfEsiDetail, WeeklyOffHolidayOff, PfEsiSetup, Calculations, EmployeeShifts, EmployeeAttendance, EmployeeGenerativeLeaveRecord, EmployeeLeaveOpening, EmployeeMonthlyAttendanceDetails, EmployeeAdvancePayment, EmployeeSalaryPrepared, EarnedAmount, BonusCalculation, BonusPercentage, FullAndFinal, SubUserOvertimeSettings, SubUserMiscSettings, AttendanceMachineConfig, ExtraFeaturesConfig
 from rest_framework import serializers
 
 class UserSerializer(serializers.ModelSerializer):
@@ -340,6 +340,31 @@ class EmployeeSalaryPreparedSerializer(serializers.ModelSerializer):
         model = EmployeeSalaryPrepared
         fields = ('id', 'employee', 'company', 'date', 'incentive_amount', 'pf_deducted', 'esi_deducted', 'vpf_deducted', 'advance_deducted', 'tds_deducted', 'labour_welfare_fund_deducted', 'others_deducted', 'net_ot_minutes_monthly', 'net_ot_amount_monthly', 'payment_mode')
 
+class EmployeeSalaryPreparedWithEarnedAmountSerializer(serializers.ModelSerializer):
+    earned_amounts = serializers.SerializerMethodField()
+    id = serializers.IntegerField(read_only=True)
+    class Meta:
+        model = EmployeeSalaryPrepared
+        fields = ('id', 'employee', 'company', 'date', 'incentive_amount', 'pf_deducted', 'esi_deducted', 'vpf_deducted', 'advance_deducted', 'tds_deducted', 'labour_welfare_fund_deducted', 'others_deducted', 'net_ot_minutes_monthly', 'net_ot_amount_monthly', 'payment_mode', 'earned_amounts')
+    def get_earned_amounts(self, obj):
+        # Get all related EarnedAmount records through the reverse relation
+        earned_amounts = obj.current_salary_earned_amounts.all()
+        return EarnedAmountWithEarningsHeadSerializer(earned_amounts, many=True).data
+
+class EarnedAmountWithEarningsHeadSerializer(serializers.ModelSerializer):
+    # id = serializers.IntegerField(read_only=True)
+    earnings_head = EarningsHeadSerializer()
+    class Meta:
+        model = EarnedAmount
+        fields = (
+            'earnings_head',
+            'salary_prepared',
+            'rate',
+            'earned_amount',
+            'arear_amount',
+        )
+
+
 class EarnedAmountSerializer(serializers.ModelSerializer):
     # id = serializers.IntegerField(read_only=True)
     class Meta:
@@ -526,6 +551,11 @@ class AttendanceMachineConfigSerializer(serializers.ModelSerializer):
         model = AttendanceMachineConfig
         fields = ['company', 'machine_ip']
 
+class ExtraFeaturesConfigSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ExtraFeaturesConfig
+        fields = ['company', 'enable_calculate_ot_attendance_using_earned_salary']
+
 class TransferAttendanceFromOwnerToRegularSerializer(serializers.Serializer):
     month = serializers.IntegerField()
     company = serializers.IntegerField()
@@ -554,6 +584,15 @@ class EmployeeMonthlyMissPunchSerializer(serializers.Serializer):
 
 class EmployeeYearlyAdvanceTakenDeductedSerializer(serializers.Serializer):
     employee_ids = serializers.ListField(child=serializers.IntegerField())
+
+class CalculateOtAttendanceUsingTotalEarnedSerializer(serializers.Serializer):
+    employee_ids = serializers.ListField(child=serializers.IntegerField())
+    company = serializers.IntegerField()
+    month = serializers.IntegerField()
+    year = serializers.IntegerField()
+    manually_inserted_total_earned = serializers.IntegerField()
+    mark_attendance = serializers.BooleanField()
+
 
 
 

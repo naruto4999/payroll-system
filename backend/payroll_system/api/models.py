@@ -1528,6 +1528,10 @@ class AttendanceMachineConfig(models.Model):
     company = models.OneToOneField(Company, on_delete=models.CASCADE, related_name="attendance_machine_configuration")
     machine_ip = models.GenericIPAddressField(protocol='IPv4', null=False, blank=False)
 
+class ExtraFeaturesConfig(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="extra_features_configuration")
+    company = models.OneToOneField(Company, on_delete=models.CASCADE, related_name="extra_features_configuration")
+    enable_calculate_ot_attendance_using_earned_salary = models.BooleanField(null=False, blank=False, default=False)
 
     
 @receiver(post_save, sender=Company)

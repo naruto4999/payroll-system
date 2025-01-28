@@ -51,6 +51,7 @@ import * as yup from 'yup';
 import { useDispatch } from 'react-redux';
 import { alertActions } from '../../../../authentication/store/slices/alertSlice';
 import { useAddEmployeeShiftsMutation } from '../../../../authentication/api/employeeShiftsApiSlice';
+import AddEditEmployeeUsingExcel from './AddEditEmployeeUsingExcel';
 import ConfirmationModal from '../../../../UI/ConfirmationModal';
 import { ConfirmationModalSchema } from '../../../Transaction/forms/TimeUpdationForm/TimeUpdationSchema';
 
@@ -206,6 +207,7 @@ const EmployeeEntryForm = () => {
 		refetch,
 	} = useGetEmployeePersonalDetailsQuery(globalCompany);
 	// console.log(fetchedData);
+	const [showAddEditEmployeeUsingExcel, setShowAddEditEmployeeUsingExcel] = useState(false);
 
 	const [addEmployeePersonalDetail, { isLoading: isAddingEmployeePersonalDetail }] =
 		useAddEmployeePersonalDetailMutation();
@@ -1040,6 +1042,31 @@ const EmployeeEntryForm = () => {
 		isUpdateEmployeePersonalDetailSuccess
 	);
 
+	const downloadTemplate = async () => {
+		// Call the backend API to download the template
+		const response = await fetch('/api/download-template'); // Adjust the endpoint as needed
+		const blob = await response.blob();
+		const url = window.URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = 'EmployeeTemplate.xlsx'; // Adjust the filename as needed
+		document.body.appendChild(a);
+		a.click();
+		a.remove();
+	};
+
+	const handleFileUpload = (event) => {
+		const file = event.target.files[0];
+		if (file) {
+			// Process the file as needed
+			console.log(file);
+		}
+	};
+
+	const uploadEmployees = async () => {
+		// Implement the logic to upload the file to the backend
+	};
+
 	const columnHelper = createColumnHelper();
 
 	const columns = [
@@ -1189,12 +1216,26 @@ const EmployeeEntryForm = () => {
 							<h1 className="text-3xl font-medium">Employees</h1>
 							<p className="my-2 text-sm">Add and manage employees here</p>
 						</div>
-						<button
-							className="my-auto whitespace-nowrap rounded bg-teal-500 p-2 text-base font-medium hover:bg-teal-600 dark:bg-teal-700 dark:hover:bg-teal-600"
-							onClick={() => addEmployeePopoverHandler('addEmployeePersonalDetail')}
-						>
-							Add Employee
-						</button>
+						{/* <button */}
+						{/* 	className="my-auto whitespace-nowrap rounded bg-teal-500 p-2 text-base font-medium hover:bg-teal-600 dark:bg-teal-700 dark:hover:bg-teal-600" */}
+						{/* 	onClick={() => addEmployeePopoverHandler('addEmployeePersonalDetail')} */}
+						{/* > */}
+						{/* 	Add Employee */}
+						{/* </button> */}
+						<div className="flex items-center">
+							<button
+								className="my-auto whitespace-nowrap rounded bg-teal-500 p-2 text-base font-medium hover:bg-teal-600 dark:bg-teal-700 dark:hover:bg-teal-600"
+								onClick={() => addEmployeePopoverHandler('addEmployeePersonalDetail')}
+							>
+								Add Employee
+							</button>
+							<button
+								className="ml-4 whitespace-nowrap rounded bg-blueAccent-400 p-2 text-base font-medium hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:hover:bg-blueAccent-600"
+								onClick={() => setShowAddEditEmployeeUsingExcel(true)}
+							>
+								Bulk Upload Employees
+							</button>
+						</div>
 					</div>
 					<div className="scrollbar mx-auto max-h-[80dvh] max-w-6xl overflow-y-auto rounded border border-black border-opacity-50 shadow-md lg:max-h-[84dvh]">
 						<table className="w-full border-collapse text-center text-sm">
@@ -1785,6 +1826,44 @@ const EmployeeEntryForm = () => {
 							)}
 						/>
 					</ReactModal>
+
+					<AddEditEmployeeUsingExcel
+						showAddEditEmployeeUsingExcel={showAddEditEmployeeUsingExcel}
+						setShowAddEditEmployeeUsingExcel={setShowAddEditEmployeeUsingExcel}
+						downloadTemplate={downloadTemplate}
+						handleFileUpload={handleFileUpload}
+						uploadEmployees={uploadEmployees}
+					/>
+
+					{/* <ReactModal */}
+					{/* 	className="items-left z-100 fixed inset-0 mx-2 my-auto flex h-fit flex-col gap-4 rounded bg-zinc-300 p-4 shadow-xl dark:bg-zinc-800 sm:mx-auto sm:max-w-lg" */}
+					{/* 	isOpen={showMdbMachineAttendanceModal} */}
+					{/* 	onRequestClose={() => setShowAddEditEmployeeUsingExcel(false)} // || isAddingMachineAttendance)} */}
+					{/* 	style={{ */}
+					{/* 		overlay: { */}
+					{/* 			backgroundColor: 'rgba(0, 0, 0, 0.75)', */}
+					{/* 			zIndex: 20, */}
+					{/* 		}, */}
+					{/* 	}} */}
+					{/* > */}
+					{/* 	<Formik */}
+					{/* 		initialValues={{ */}
+					{/* 			machineAttendanceUpload: '', */}
+					{/* 			allEmployeesMachineAttendance: false, */}
+					{/* 			userInput: '', */}
+					{/* 		}} */}
+					{/* 		validationSchema={MdbMachineAttendanceSchema} */}
+					{/* 		onSubmit={machineAttendance} */}
+					{/* 	> */}
+					{/* 		<AddEditEmployeeUsingExcel */}
+					{/* 			showAddEditEmployeeUsingExcel={showAddEditEmployeeUsingExcel} */}
+					{/* 			setShowAddEditEmployeeUsingExcel={setShowAddEditEmployeeUsingExcel} */}
+					{/* 			downloadTemplate={downloadTemplate} */}
+					{/* 			handleFileUpload={handleFileUpload} */}
+					{/* 			uploadEmployees={uploadEmployees} */}
+					{/* 		/> */}
+					{/* 	</Formik> */}
+					{/* </ReactModal> */}
 				</section>
 			</>
 		);

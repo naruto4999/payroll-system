@@ -14,6 +14,7 @@ from io import BytesIO
 import tempfile
 import os
 import pandas as pd
+from django.db import transaction
 
 
 
@@ -211,7 +212,7 @@ class EmployeeAttendanceManager(models.Manager):
     #     EmployeeShifts = apps.get_model('api', 'EmployeeShifts')
     #     employee_shift_on_particular_date = EmployeeShifts.objects.filter(company_id=company_id, user=user, employee=current_employee.employee, from_date__lte=current_date, to_date__gte=current_date).first()
 
-    def bulk_autofill(self, from_date, to_date, company_id, user):
+    def bulk_autofill(self, from_date, to_date, company_id, user, employee_ids=[]):
         AUTO_SHIFT_BEGINNING_BUFFER_BEFORE = 10
         AUTO_SHIFT_ENDING_BUFFER_BEFORE = 10
         AUTO_SHIFT_ENDING_BUFFER_AFTER = 10
@@ -227,7 +228,11 @@ class EmployeeAttendanceManager(models.Manager):
         holiday_queryset = Holiday.objects.filter(user=user if user.role=="OWNER" else user.regular_to_owner.owner, company_id=company_id)
         weekly_off_holiday_off = WeeklyOffHolidayOff.objects.get(user=user if user.role=="OWNER" else user.regular_to_owner.owner, company_id=company_id)
         EmployeeProfessionalDetail = apps.get_model('api', 'EmployeeProfessionalDetail')
-        active_employees = EmployeeProfessionalDetail.objects.active_employees_between_dates(from_date, to_date, company_id=company_id, user=user if user.role=="OWNER" else user.regular_to_owner.owner)
+        if len(employee_ids)==0:
+            active_employees = EmployeeProfessionalDetail.objects.active_employees_between_dates(from_date, to_date, company_id=company_id, user=user if user.role=="OWNER" else user.regular_to_owner.owner)
+        else:
+            #if employee resigns mid way handle that case here
+            active_employees = EmployeeProfessionalDetail.objects.filter(employee__id__in=employee_ids, company_id=company_id, user=user if user.role=="OWNER" else user.regular_to_owner.owner)
 
         #Leaves
         present_leave = LeaveGrade.objects.get(company_id=company_id, user=user if user.role=="OWNER" else user.regular_to_owner.owner, name='P')
@@ -1072,190 +1077,192 @@ class EmployeeAttendanceManager(models.Manager):
 
 class EmployeeSalaryPreparedManager(models.Manager):
 
-    def bulk_prepare_salaries(self, month, year, company_id, user):
-        #Importing Models
-        EmployeeMonthlyAttendanceDetails = apps.get_model('api', 'EmployeeMonthlyAttendanceDetails')
-        EmployeeAdvancePayment = apps.get_model('api', 'EmployeeAdvancePayment')
-        EmployeeAdvanceEmiRepayment = apps.get_model('api', 'EmployeeAdvanceEmiRepayment')
-        EmployeeSalaryPrepared = apps.get_model('api', 'EmployeeSalaryPrepared')
-        EmployeeSalaryEarning = apps.get_model('api', 'EmployeeSalaryEarning')
-        EmployeeSalaryDetail = apps.get_model('api', 'EmployeeSalaryDetail')
-        EmployeeProfessionalDetail = apps.get_model('api', 'EmployeeProfessionalDetail')
-        Calculations = apps.get_model('api', 'Calculations')
-        PfEsiSetup = apps.get_model('api', 'PfEsiSetup')
-        EarnedAmount = apps.get_model('api', 'EarnedAmount')
-        EmployeePfEsiDetail = apps.get_model('api', 'EmployeePfEsiDetail')
-        EarningsHead = apps.get_model('api', 'EarningsHead')
+    def bulk_prepare_salaries(self, month, year, company_id, user, employee_ids=[]):
+        with transaction.atomic():
+            #Importing Models
+            EmployeeMonthlyAttendanceDetails = apps.get_model('api', 'EmployeeMonthlyAttendanceDetails')
+            EmployeeAdvancePayment = apps.get_model('api', 'EmployeeAdvancePayment')
+            EmployeeAdvanceEmiRepayment = apps.get_model('api', 'EmployeeAdvanceEmiRepayment')
+            EmployeeSalaryPrepared = apps.get_model('api', 'EmployeeSalaryPrepared')
+            EmployeeSalaryEarning = apps.get_model('api', 'EmployeeSalaryEarning')
+            EmployeeSalaryDetail = apps.get_model('api', 'EmployeeSalaryDetail')
+            EmployeeProfessionalDetail = apps.get_model('api', 'EmployeeProfessionalDetail')
+            Calculations = apps.get_model('api', 'Calculations')
+            PfEsiSetup = apps.get_model('api', 'PfEsiSetup')
+            EarnedAmount = apps.get_model('api', 'EarnedAmount')
+            EmployeePfEsiDetail = apps.get_model('api', 'EmployeePfEsiDetail')
+            EarningsHead = apps.get_model('api', 'EarningsHead')
 
-        #Querysets
-        from_date=date(year, month, 1)
-        to_date = from_date + relativedelta(months=1) - relativedelta(days=1)
-        company_pf_esi_setup = PfEsiSetup.objects.get(user=user if user.role=="OWNER" else user.regular_to_owner.owner, company_id=company_id)
-        basic_earning_head_id = EarningsHead.objects.get(user=user if user.role=="OWNER" else user.regular_to_owner.owner, company_id=company_id, name='Basic').id
-        company_calculations = Calculations.objects.get(user=user if user.role=="OWNER" else user.regular_to_owner.owner, company_id=company_id)
-        active_employees = EmployeeProfessionalDetail.objects.active_employees_between_dates(user=user if user.role=="OWNER" else user.regular_to_owner.owner, from_date=from_date, to_date=to_date, company_id=company_id)
-        if user.role=='REGULAR':
-            active_employees.filter(employee__visible=True)
+            #Querysets
+            from_date=date(year, month, 1)
+            to_date = from_date + relativedelta(months=1) - relativedelta(days=1)
+            company_pf_esi_setup = PfEsiSetup.objects.get(user=user if user.role=="OWNER" else user.regular_to_owner.owner, company_id=company_id)
+            basic_earning_head_id = EarningsHead.objects.get(user=user if user.role=="OWNER" else user.regular_to_owner.owner, company_id=company_id, name='Basic').id
+            company_calculations = Calculations.objects.get(user=user if user.role=="OWNER" else user.regular_to_owner.owner, company_id=company_id)
+            active_employees = EmployeeProfessionalDetail.objects.active_employees_between_dates(user=user if user.role=="OWNER" else user.regular_to_owner.owner, from_date=from_date, to_date=to_date, company_id=company_id)
+            if len(employee_ids)==0:
+                active_employees = EmployeeProfessionalDetail.objects.active_employees_between_dates(user=user if user.role=="OWNER" else user.regular_to_owner.owner, from_date=from_date, to_date=to_date, company_id=company_id)
+            else:
+                #if employee resigns mid way handle that case here
+                active_employees = EmployeeProfessionalDetail.objects.filter(employee__id__in=employee_ids, company_id=company_id, user=user if user.role=="OWNER" else user.regular_to_owner.owner)
 
-        if active_employees.exists():
-            for current_employee in active_employees:
-                employee_pf_esi_detail = EmployeePfEsiDetail.objects.filter(company_id=company_id, employee=current_employee.employee)
-                employee_salary_detail = EmployeeSalaryDetail.objects.filter(company_id=company_id, employee=current_employee.employee)
-                employee_monthly_attendance_detail = EmployeeMonthlyAttendanceDetails.objects.filter(user=user, company_id=company_id, employee=current_employee.employee, date=from_date)
-                employee_salary_earnings_for_each_head = EmployeeSalaryEarning.objects.filter(company_id=company_id, from_date__lte=from_date, to_date__gte=from_date, employee=current_employee.employee
-                )
+            if user.role=='REGULAR':
+                active_employees.filter(employee__visible=True)
 
-                if not employee_pf_esi_detail.exists() or not employee_salary_detail.exists() or not employee_monthly_attendance_detail.exists() or not employee_salary_earnings_for_each_head.exists():
-                    continue
-                # print(employee_monthly_attendance_detail, employee_pf_esi_detail, employee_salary_detail)
-                days_in_month = calendar.monthrange(year, month)[1]
-                total_salary_rate = 0
-                total_earned_amount = 0
-                earned_amount_dict = {}
-                for salary_earning in employee_salary_earnings_for_each_head:
-                    current_earning_earned_amount = (Decimal(salary_earning.value)*(Decimal(employee_monthly_attendance_detail.first().paid_days_count)/Decimal(2)))/Decimal(days_in_month)
-                    # rounded_earning = math.ceil(current_earning_earned_amount) if current_earning_earned_amount >= 0.5 else math.floor(current_earning_earned_amount)
-                    rounded_earning = current_earning_earned_amount.quantize(Decimal('1.'), rounding=ROUND_HALF_UP)
-                    total_earned_amount += rounded_earning
-                    total_salary_rate += salary_earning.value
-                    if current_employee.employee.attendance_card_no ==1:
-                        print(f'{salary_earning.earnings_head.name}: {rounded_earning}, actual: {current_earning_earned_amount}')
-                    earned_amount_dict[salary_earning.earnings_head.id] = {
-                        'rate' : salary_earning.value,
-                        'earned_amount' : rounded_earning,
-                        'arear_amount': 0,
-                    }
-                print(earned_amount_dict)
+            if active_employees.exists():
+                for current_employee in active_employees:
+                    employee_pf_esi_detail = EmployeePfEsiDetail.objects.filter(company_id=company_id, employee=current_employee.employee)
+                    employee_salary_detail = EmployeeSalaryDetail.objects.filter(company_id=company_id, employee=current_employee.employee)
+                    employee_monthly_attendance_detail = EmployeeMonthlyAttendanceDetails.objects.filter(user=user, company_id=company_id, employee=current_employee.employee, date=from_date)
+                    employee_salary_earnings_for_each_head = EmployeeSalaryEarning.objects.filter(company_id=company_id, from_date__lte=from_date, to_date__gte=from_date, employee=current_employee.employee
+                    )
 
-                #Pf Deductions
-                pf_deducted = 0
-                if employee_pf_esi_detail.first().pf_allow == True:
-                    if employee_pf_esi_detail.first().pf_limit_ignore_employee == False:
-                        pfable_amount = min(company_pf_esi_setup.ac_1_epf_employee_limit, earned_amount_dict[basic_earning_head_id]['earned_amount'])
-                        pf_deducted += (Decimal(company_pf_esi_setup.ac_1_epf_employee_percentage)/Decimal(100)) * Decimal(pfable_amount)
-                        # Round the result
-                        pf_deducted = pf_deducted.quantize(Decimal('1.'), rounding=ROUND_HALF_UP)
-                    elif employee_pf_esi_detail.first().pf_limit_ignore_employee == True:
-                        pfable_amount = earned_amount_dict[basic_earning_head_id]['earned_amount']
-                        if employee_pf_esi_detail.first().pf_limit_ignore_employee_value != None:
-                            pfable_amount = min(employee_pf_esi_detail.first().pf_limit_ignore_employee_value, earned_amount_dict[basic_earning_head_id]['earned_amount'])
-                        pf_deducted += (Decimal(company_pf_esi_setup.ac_1_epf_employee_percentage)/Decimal(100)) * Decimal(pfable_amount)
-                        # Round the result
-                        pf_deducted = pf_deducted.quantize(Decimal('1.'), rounding=ROUND_HALF_UP)
-                print(pf_deducted)
+                    if not employee_pf_esi_detail.exists() or not employee_salary_detail.exists() or not employee_monthly_attendance_detail.exists() or not employee_salary_earnings_for_each_head.exists():
+                        continue
+                    # print(employee_monthly_attendance_detail, employee_pf_esi_detail, employee_salary_detail)
+                    days_in_month = calendar.monthrange(year, month)[1]
+                    total_salary_rate = 0
+                    total_earned_amount = 0
+                    earned_amount_dict = {}
+                    for salary_earning in employee_salary_earnings_for_each_head:
+                        current_earning_earned_amount = (Decimal(salary_earning.value)*(Decimal(employee_monthly_attendance_detail.first().paid_days_count)/Decimal(2)))/Decimal(days_in_month)
+                        # rounded_earning = math.ceil(current_earning_earned_amount) if current_earning_earned_amount >= 0.5 else math.floor(current_earning_earned_amount)
+                        rounded_earning = current_earning_earned_amount.quantize(Decimal('1.'), rounding=ROUND_HALF_UP)
+                        total_earned_amount += rounded_earning
+                        total_salary_rate += salary_earning.value
+                        if current_employee.employee.attendance_card_no ==1:
+                            print(f'{salary_earning.earnings_head.name}: {rounded_earning}, actual: {current_earning_earned_amount}')
+                        earned_amount_dict[salary_earning.earnings_head.id] = {
+                            'rate' : salary_earning.value,
+                            'earned_amount' : rounded_earning,
+                            'arear_amount': 0,
+                        }
+                    print(earned_amount_dict)
 
-                #OT earned
-                net_ot_minutes_monthly = 0
-                net_ot_amount_monthly = 0
-                if employee_salary_detail.first().overtime_type != 'no_overtime':
-                    net_ot_minutes_monthly = employee_monthly_attendance_detail.first().net_ot_minutes_monthly
-                    net_ot_hrs = Decimal(net_ot_minutes_monthly) / Decimal(60)
-                    overtime_rate_multiplier = 2 if employee_salary_detail.first().overtime_rate == 'D' or user.role=='REGULAR' else 1
-                    overtime_divisor = Decimal(26)
-                    if user.role=='OWNER':
-                        if company_calculations.ot_calculation == 'month_days':
-                            overtime_divisor = Decimal(days_in_month)
-                        else:
-                            overtime_divisor = Decimal(company_calculations.ot_calculation)
-                    net_ot_amount_monthly = Decimal(total_salary_rate) / overtime_divisor / Decimal(8) * net_ot_hrs * Decimal(overtime_rate_multiplier)
-                    net_ot_amount_monthly = net_ot_amount_monthly.quantize(Decimal('1.'), rounding=ROUND_HALF_UP)
+                    #Pf Deductions
+                    pf_deducted = 0
+                    if employee_pf_esi_detail.first().pf_allow == True:
+                        if employee_pf_esi_detail.first().pf_limit_ignore_employee == False:
+                            pfable_amount = min(company_pf_esi_setup.ac_1_epf_employee_limit, earned_amount_dict[basic_earning_head_id]['earned_amount'])
+                            pf_deducted += (Decimal(company_pf_esi_setup.ac_1_epf_employee_percentage)/Decimal(100)) * Decimal(pfable_amount)
+                            # Round the result
+                            pf_deducted = pf_deducted.quantize(Decimal('1.'), rounding=ROUND_HALF_UP)
+                        elif employee_pf_esi_detail.first().pf_limit_ignore_employee == True:
+                            pfable_amount = earned_amount_dict[basic_earning_head_id]['earned_amount']
+                            if employee_pf_esi_detail.first().pf_limit_ignore_employee_value != None:
+                                pfable_amount = min(employee_pf_esi_detail.first().pf_limit_ignore_employee_value, earned_amount_dict[basic_earning_head_id]['earned_amount'])
+                            pf_deducted += (Decimal(company_pf_esi_setup.ac_1_epf_employee_percentage)/Decimal(100)) * Decimal(pfable_amount)
+                            # Round the result
+                            pf_deducted = pf_deducted.quantize(Decimal('1.'), rounding=ROUND_HALF_UP)
+                    print(pf_deducted)
+
+                    #OT earned
+                    net_ot_minutes_monthly = 0
+                    net_ot_amount_monthly = 0
+                    if employee_salary_detail.first().overtime_type != 'no_overtime':
+                        net_ot_minutes_monthly = employee_monthly_attendance_detail.first().net_ot_minutes_monthly
+                        net_ot_hrs = Decimal(net_ot_minutes_monthly) / Decimal(60)
+                        overtime_rate_multiplier = 2 if employee_salary_detail.first().overtime_rate == 'D' or user.role=='REGULAR' else 1
+                        overtime_divisor = Decimal(26)
+                        if user.role=='OWNER':
+                            if company_calculations.ot_calculation == 'month_days':
+                                overtime_divisor = Decimal(days_in_month)
+                            else:
+                                overtime_divisor = Decimal(company_calculations.ot_calculation)
+                        net_ot_amount_monthly = Decimal(total_salary_rate) / overtime_divisor / Decimal(8) * net_ot_hrs * Decimal(overtime_rate_multiplier)
+                        net_ot_amount_monthly = net_ot_amount_monthly.quantize(Decimal('1.'), rounding=ROUND_HALF_UP)
 
 
-                #ESI Deducted
-                esi_deducted = 0
-                if employee_pf_esi_detail.first().esi_allow == True:
-                    total_earned_for_esi_deduction = total_earned_amount
-                    if user.role=='REGULAR' or employee_pf_esi_detail.first().esi_on_ot == True:
-                        total_earned_for_esi_deduction +=net_ot_amount_monthly
-                    esiable_amount = min(company_pf_esi_setup.esi_employee_limit, total_earned_for_esi_deduction)
-                    esi_deducted = Decimal(esiable_amount) * Decimal(company_pf_esi_setup.esi_employee_percentage) / Decimal(100)
-                    esi_deducted = esi_deducted.quantize(Decimal('1.'), rounding=ROUND_CEILING)
+                    #ESI Deducted
+                    esi_deducted = 0
+                    if employee_pf_esi_detail.first().esi_allow == True:
+                        total_earned_for_esi_deduction = total_earned_amount
+                        if user.role=='REGULAR' or employee_pf_esi_detail.first().esi_on_ot == True:
+                            total_earned_for_esi_deduction +=net_ot_amount_monthly
+                        esiable_amount = min(company_pf_esi_setup.esi_employee_limit, total_earned_for_esi_deduction)
+                        esi_deducted = Decimal(esiable_amount) * Decimal(company_pf_esi_setup.esi_employee_percentage) / Decimal(100)
+                        esi_deducted = esi_deducted.quantize(Decimal('1.'), rounding=ROUND_CEILING)
 
-                #VPF Deducted
-                vpf_deducted = employee_pf_esi_detail.first().vpf_amount
+                    #VPF Deducted
+                    vpf_deducted = employee_pf_esi_detail.first().vpf_amount
 
-                #TDS Deducted
-                tds_deducted = employee_pf_esi_detail.first().tds_amount
+                    #TDS Deducted
+                    tds_deducted = employee_pf_esi_detail.first().tds_amount
 
-                payment_mode = employee_salary_detail.first().payment_mode
+                    payment_mode = employee_salary_detail.first().payment_mode
 
-                #Labour Wellfare Fund
-                labour_welfare_fund_deducted = 0
-                if company_pf_esi_setup.enable_labour_welfare_fund == True and employee_salary_detail.first().labour_wellfare_fund == True:
-                    max_lwf_deduction_allowed = company_pf_esi_setup.labour_welfare_fund_limit
-                    labour_welfare_fund_deducted = min(Decimal(max_lwf_deduction_allowed), Decimal(company_pf_esi_setup.labour_welfare_fund_percentage) / Decimal(100) * Decimal(total_earned_amount))
-                    labour_welfare_fund_deducted = labour_welfare_fund_deducted.quantize(Decimal('1.'), rounding=ROUND_HALF_UP)
+                    #Labour Wellfare Fund
+                    labour_welfare_fund_deducted = 0
+                    if company_pf_esi_setup.enable_labour_welfare_fund == True and employee_salary_detail.first().labour_wellfare_fund == True:
+                        max_lwf_deduction_allowed = company_pf_esi_setup.labour_welfare_fund_limit
+                        labour_welfare_fund_deducted = min(Decimal(max_lwf_deduction_allowed), Decimal(company_pf_esi_setup.labour_welfare_fund_percentage) / Decimal(100) * Decimal(total_earned_amount))
+                        labour_welfare_fund_deducted = labour_welfare_fund_deducted.quantize(Decimal('1.'), rounding=ROUND_HALF_UP)
 
-                #Deleting Advances associated with the salary prepared
-                old_prepared_salary = EmployeeSalaryPrepared.objects.filter(user=user, employee=current_employee.employee, date=from_date)
-                if old_prepared_salary.exists():
-                    EmployeeAdvanceEmiRepayment.objects.filter(salary_prepared=old_prepared_salary.first().id).delete()
+                    #Deleting Advances associated with the salary prepared
+                    old_prepared_salary = EmployeeSalaryPrepared.objects.filter(user=user, employee=current_employee.employee, date=from_date)
+                    if old_prepared_salary.exists():
+                        EmployeeAdvanceEmiRepayment.objects.filter(salary_prepared=old_prepared_salary.first().id).delete()
 
-                #Calculating Advance to be deducted
-                monthly_advance_repayment = 0
-                employee_advances = EmployeeAdvancePayment.objects.filter(user=user if user.role=="OWNER" else user.regular_to_owner.owner, employee=current_employee.employee, company_id=company_id, date__lt=(from_date + relativedelta(months=1))).order_by('date')
-                if employee_advances.exists():
+                    #Calculating Advance to be deducted
                     monthly_advance_repayment = 0
-                    max_advance_repayment_left = 0
-                    for advance in employee_advances:
-                        max_advance_repayment_left += advance.principal-advance.repaid_amount
-                        if advance.emi <= (advance.principal-advance.repaid_amount):
-                            monthly_advance_repayment += advance.emi
-                        elif (advance.principal-advance.repaid_amount) > 0:
-                            monthly_advance_repayment += (advance.principal-advance.repaid_amount)
-                    print(f"Advance to be paid: {monthly_advance_repayment}")
+                    employee_advances = EmployeeAdvancePayment.objects.filter(user=user if user.role=="OWNER" else user.regular_to_owner.owner, employee=current_employee.employee, company_id=company_id, date__lt=(from_date + relativedelta(months=1))).order_by('date')
+                    if employee_advances.exists():
+                        monthly_advance_repayment = 0
+                        max_advance_repayment_left = 0
+                        for advance in employee_advances:
+                            max_advance_repayment_left += advance.principal-advance.repaid_amount
+                            if advance.emi <= (advance.principal-advance.repaid_amount):
+                                monthly_advance_repayment += advance.emi
+                            elif (advance.principal-advance.repaid_amount) > 0:
+                                monthly_advance_repayment += (advance.principal-advance.repaid_amount)
+                        print(f"Advance to be paid: {monthly_advance_repayment}")
 
-                defaults = {
-                    "user": user,
-                    "employee": current_employee.employee,
-                    "company_id": company_id,  # Assuming employee_instance has a related Company instance
-                    "date": from_date,
-                    "incentive_amount": 0,
-                    "pf_deducted": pf_deducted,
-                    "esi_deducted": esi_deducted,
-                    "vpf_deducted": vpf_deducted,
-                    "advance_deducted": monthly_advance_repayment,
-                    "tds_deducted": tds_deducted,
-                    "labour_welfare_fund_deducted": labour_welfare_fund_deducted,
-                    "others_deducted": 0,
-                    "net_ot_minutes_monthly": net_ot_minutes_monthly,
-                    "net_ot_amount_monthly": net_ot_amount_monthly,
-                    "payment_mode": payment_mode,
-                }
-
-                salary_prepared_obj, created = EmployeeSalaryPrepared.objects.update_or_create(
-                    user=user,
-                    employee=current_employee.employee,
-                    date=from_date,
-                    defaults=defaults,
-                )
-                print(f"Created: {created} Object: {salary_prepared_obj.id}")
-
-                for earnings_head_id, earned_dict in earned_amount_dict.items():
                     defaults = {
                         "user": user,
-                        "earnings_head_id": earnings_head_id,
-                        "salary_prepared_id": salary_prepared_obj.id,
-                        "rate": earned_dict['rate'],
-                        "earned_amount": earned_dict['earned_amount'],
-                        "arear_amount": 0,
-                        }
-                    earned_amount_obj, created = EarnedAmount.objects.update_or_create(
+                        "employee": current_employee.employee,
+                        "company_id": company_id,  # Assuming employee_instance has a related Company instance
+                        "date": from_date,
+                        "incentive_amount": 0,
+                        "pf_deducted": pf_deducted,
+                        "esi_deducted": esi_deducted,
+                        "vpf_deducted": vpf_deducted,
+                        "advance_deducted": monthly_advance_repayment,
+                        "tds_deducted": tds_deducted,
+                        "labour_welfare_fund_deducted": labour_welfare_fund_deducted,
+                        "others_deducted": 0,
+                        "net_ot_minutes_monthly": net_ot_minutes_monthly,
+                        "net_ot_amount_monthly": net_ot_amount_monthly,
+                        "payment_mode": payment_mode,
+                    }
+
+                    salary_prepared_obj, created = EmployeeSalaryPrepared.objects.update_or_create(
                         user=user,
-                        salary_prepared_id=salary_prepared_obj.id,
-                        earnings_head_id=earnings_head_id,
-                        defaults=defaults
+                        employee=current_employee.employee,
+                        date=from_date,
+                        defaults=defaults,
                     )
-                
-                advance_deducted_left = salary_prepared_obj.advance_deducted
-                for advance in employee_advances:
-                    add_to_repaid = min(advance.principal-advance.repaid_amount, advance.emi)
-                    EmployeeAdvanceEmiRepayment.objects.create(user=user, amount=min(add_to_repaid, advance_deducted_left), employee_advance_payment_id=advance.id, salary_prepared_id=salary_prepared_obj.id)
-                    advance_deducted_left -= min(add_to_repaid, advance_deducted_left)
+                    print(f"Created: {created} Object: {salary_prepared_obj.id}")
 
-                
-                print(f'ESI Deducted: {esi_deducted} Employee Name: {current_employee.employee.name}')
-
-
-        print(month, year)
+                    for earnings_head_id, earned_dict in earned_amount_dict.items():
+                        defaults = {
+                            "user": user,
+                            "earnings_head_id": earnings_head_id,
+                            "salary_prepared_id": salary_prepared_obj.id,
+                            "rate": earned_dict['rate'],
+                            "earned_amount": earned_dict['earned_amount'],
+                            "arear_amount": 0,
+                            }
+                        earned_amount_obj, created = EarnedAmount.objects.update_or_create(
+                            user=user,
+                            salary_prepared_id=salary_prepared_obj.id,
+                            earnings_head_id=earnings_head_id,
+                            defaults=defaults
+                        )
+                    
+                    advance_deducted_left = salary_prepared_obj.advance_deducted
+                    for advance in employee_advances:
+                        add_to_repaid = min(advance.principal-advance.repaid_amount, advance.emi)
+                        EmployeeAdvanceEmiRepayment.objects.create(user=user, amount=min(add_to_repaid, advance_deducted_left), employee_advance_payment_id=advance.id, salary_prepared_id=salary_prepared_obj.id)
+                        advance_deducted_left -= min(add_to_repaid, advance_deducted_left)
+                    
         return True, "Operation successful"

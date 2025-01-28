@@ -54,123 +54,125 @@ import SwitchToggle from './UI/ToggleSwitch';
 import Alert from './UI/Alert';
 import PfEsiReports from './menu/Reports/forms/PfEsiReports/PfEsiReports';
 import AttendanceMachineConfigForm from './menu/Settings/forms/AttendanceMachineConfigForm/AttendanceMachineConfigForm';
+import ExtraFeaturesConfigForm from './menu/Settings/forms/ExtraFeaturesConfigForm/ExtraFeaturesConfigForm';
+import LandingPage from './LandingPage/LandingPage';
 
 function App() {
-  document.documentElement.classList.add('scrollbar');
-  document.documentElement.classList.add('dark');
-  // const [theme, setTheme] = useState("");
+    document.documentElement.classList.add('scrollbar');
+    document.documentElement.classList.add('dark');
+    // const [theme, setTheme] = useState("");
 
-  // useEffect(() => {
-  //     if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-  //         setTheme("dark");
-  //     } else {
-  //         setTheme("light");
-  //     }
-  // }, []);
+    // useEffect(() => {
+    //     if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+    //         setTheme("dark");
+    //     } else {
+    //         setTheme("light");
+    //     }
+    // }, []);
 
-  // useEffect(() => {
-  //     if (theme == "dark") {
-  //         document.documentElement.classList.add("dark");
+    // useEffect(() => {
+    //     if (theme == "dark") {
+    //         document.documentElement.classList.add("dark");
 
-  //     } else {
-  //         document.documentElement.classList.remove("dark");
-  //     }
-  // }, [theme]);
+    //     } else {
+    //         document.documentElement.classList.remove("dark");
+    //     }
+    // }, [theme]);
 
-  // const themeSwitch = () => {
-  //     setTheme(theme === "dark" ? "light" : "dark");
-  // };
+    // const themeSwitch = () => {
+    //     setTheme(theme === "dark" ? "light" : "dark");
+    // };
 
-  return (
-    <div className="scroll-pt-50 scrollbar max-h-[100dvh] min-h-[100dvh] overflow-y-auto bg-zinc-100 font-sans text-gray-900 dark:bg-zinc-900 dark:text-slate-100">
-      {/* <div className="absolute top-0 right-0 m-3 sm:m-4 dark:text-slate-100 dark:text-opacity-70 flex flex-row items-center text-xs sm:text-base gap-2 z-20">
+    return (
+        <div className="scroll-pt-50 scrollbar max-h-[100dvh] min-h-[100dvh] overflow-y-auto bg-zinc-100 font-sans text-gray-900 dark:bg-zinc-900 dark:text-slate-100">
+            {/* <div className="absolute top-0 right-0 m-3 sm:m-4 dark:text-slate-100 dark:text-opacity-70 flex flex-row items-center text-xs sm:text-base gap-2 z-20">
                 Dark
                 <SwitchToggle theme={theme} switch={themeSwitch} />
             </div> */}
-      <Alert />
+            <Alert />
 
-      <Routes>
-        <Route
-          path="home"
-          element={
-            <ProtectedRoute>
-              <Sidebar />
-            </ProtectedRoute>
-          }
-        >
-          <Route path="select-company" element={<SelectCompany />} />
-          <Route path="master-entry">
-            <Route path="new-company-entry" element={<NewCompanyEntryForm />} />
+            <Routes>
+                <Route
+                    path="home"
+                    element={
+                        <ProtectedRoute>
+                            <Sidebar />
+                        </ProtectedRoute>
+                    }
+                >
+                    <Route path="select-company" element={<SelectCompany />} />
+                    <Route path="master-entry">
+                        <Route path="new-company-entry" element={<NewCompanyEntryForm />} />
 
-            <Route path="company-entry" element={<CompanyEntryForm />} />
-            <Route path="department-entry" element={<DepartmentEntryForm />} />
-            <Route path="designation-entry" element={<DesignationEntryForm />} />
-            <Route path="salary-grade-entry" element={<SalaryGradeEntryForm />} />
-            <Route path="category-entry" element={<CategoryEntryForm />} />
-            <Route path="bank-entry" element={<BankEntryForm />} />
-            <Route path="leave-grade-entry" element={<LeaveGradeEntryForm />} />
-            <Route path="shift-entry" element={<ShiftEntryForm />} />
-            <Route path="holiday-entry" element={<HolidayEntryForm />} />
-            <Route path="earnings-heads-entry" element={<EarningsHeadEntry />} />
-            {/* <Route path="deductions-heads-entry" element={<DeductionsHeadEntryForm />} /> */}
-            <Route path="employee-entry" element={<EmployeeEntryForm />} />
-            <Route path="employee-salary" element={<EmployeeSalaryForm />} />
-            <Route path="weekly-off-holiday-off" element={<WeeklyOffHolidayOffForm />} />
-            <Route path="pf-esi-setup" element={<PfEsiSetupForm />} />
-            <Route path="calculations" element={<CalculationsForm />} />
-            <Route path="leave-opening-entry" element={<LeaveOpeningEntryForm />} />
-            <Route path="leave-closing-transfer" element={<LeaveClosingTransferForm />} />
+                        <Route path="company-entry" element={<CompanyEntryForm />} />
+                        <Route path="department-entry" element={<DepartmentEntryForm />} />
+                        <Route path="designation-entry" element={<DesignationEntryForm />} />
+                        <Route path="salary-grade-entry" element={<SalaryGradeEntryForm />} />
+                        <Route path="category-entry" element={<CategoryEntryForm />} />
+                        <Route path="bank-entry" element={<BankEntryForm />} />
+                        <Route path="leave-grade-entry" element={<LeaveGradeEntryForm />} />
+                        <Route path="shift-entry" element={<ShiftEntryForm />} />
+                        <Route path="holiday-entry" element={<HolidayEntryForm />} />
+                        <Route path="earnings-heads-entry" element={<EarningsHeadEntry />} />
+                        {/* <Route path="deductions-heads-entry" element={<DeductionsHeadEntryForm />} /> */}
+                        <Route path="employee-entry" element={<EmployeeEntryForm />} />
+                        <Route path="employee-salary" element={<EmployeeSalaryForm />} />
+                        <Route path="weekly-off-holiday-off" element={<WeeklyOffHolidayOffForm />} />
+                        <Route path="pf-esi-setup" element={<PfEsiSetupForm />} />
+                        <Route path="calculations" element={<CalculationsForm />} />
+                        <Route path="leave-opening-entry" element={<LeaveOpeningEntryForm />} />
+                        <Route path="leave-closing-transfer" element={<LeaveClosingTransferForm />} />
+                    </Route>
+                    <Route path="transaction">
+                        <Route path="employee-shifts" element={<EmployeeShiiftsEntryForm />} />
+                        <Route path="time-updation" element={<TimeUpdationForm />} />
+                        <Route path="advance-updation" element={<AdvanceUpdationForm />} />
+                        <Route path="salary-preparation" element={<SalaryPreparationForm />} />
+                        <Route path="bonus-calculation" element={<BonusCalculationForm />} />
+                        <Route path="/home/transaction/resignation" element={<ResignationForm />} />
+                    </Route>
+                    <Route path="reports">
+                        <Route path="personnel-file-forms" element={<PersonnelFileForms />} />
+                        <Route path="salary-overtime-sheet" element={<SalaryOvertimeSheet />} />
+                        <Route path="attendance-reports" element={<AttendanceReports />} />
+                        <Route path="pf-esi-reports" element={<PfEsiReports />} />
+                        <Route path="employee-strength-reports" element={<EmployeeStrengthReports />} />
+                    </Route>
+                    <Route path="settings">
+                        <Route path="attendance-machine-config" element={<AttendanceMachineConfigForm />} />
+                        <Route path="extra-features-config" element={<ExtraFeaturesConfigForm />} />
+                    </Route>
 
-
-          </Route>
-          <Route path="transaction">
-            <Route path="employee-shifts" element={<EmployeeShiiftsEntryForm />} />
-            <Route path="time-updation" element={<TimeUpdationForm />} />
-            <Route path="advance-updation" element={<AdvanceUpdationForm />} />
-            <Route path="salary-preparation" element={<SalaryPreparationForm />} />
-            <Route path="bonus-calculation" element={<BonusCalculationForm />} />
-            <Route path="/home/transaction/resignation" element={<ResignationForm />} />
-          </Route>
-          <Route path="reports">
-            <Route path="personnel-file-forms" element={<PersonnelFileForms />} />
-            <Route path="salary-overtime-sheet" element={<SalaryOvertimeSheet />} />
-            <Route path="attendance-reports" element={<AttendanceReports />} />
-            <Route path="pf-esi-reports" element={<PfEsiReports />} />
-            <Route path="employee-strength-reports" element={<EmployeeStrengthReports />} />
-          </Route>
-          <Route path="settings">
-            <Route path="attendance-machine-config" element={<AttendanceMachineConfigForm />} />
-          </Route>
-
-          {/* <Route path="bank-entry" element={<BankEntryForm />} />
+                    {/* <Route path="bank-entry" element={<BankEntryForm />} />
                     <Route path="category-entry" element={<CategoryEntryForm />} />
                     <Route path="employee-entry" element={<EmployeeEntryForm />} />
                     <Route path="holiday-entry" element={<HolidayEntryForm />} />
                     <Route path="shift-entry" element={<ShiftEntryForm />} /> */}
-        </Route>
+                </Route>
 
-        <Route
-          path="admin-controls"
-          element={
-            <ProtectedAndAdminRoute>
-              <Sidebar />
-            </ProtectedAndAdminRoute>
-          }
-        >
-          <Route path="regular-registration" element={<RegularRegisterForm />} />
-          <Route path="visible-companies" element={<VisibleCompaniesForm />} />
-          <Route path="visible-employees" element={<VisibleEmployeesForm />} />
-          <Route path="overtime-settings" element={<OverTimeSettingsForm />} />
-          <Route path="sub-user-misc-settings" element={<SubUserMiscSettingsForm />} />
-          <Route path="transfer-attendance" element={<TransferAttendanceForm />} />
-        </Route>
-        <Route path="login" element={<LoginForm />} />
-        <Route path="register" element={<RegisterForm />} />
-        <Route path="forgot-password" element={<ForgotPassform />} />
-        <Route path="pass-confirm/:uid/:token" element={<PassConfirmForm />} />
-      </Routes>
-    </div >
-  );
+                <Route
+                    path="admin-controls"
+                    element={
+                        <ProtectedAndAdminRoute>
+                            <Sidebar />
+                        </ProtectedAndAdminRoute>
+                    }
+                >
+                    <Route path="regular-registration" element={<RegularRegisterForm />} />
+                    <Route path="visible-companies" element={<VisibleCompaniesForm />} />
+                    <Route path="visible-employees" element={<VisibleEmployeesForm />} />
+                    <Route path="overtime-settings" element={<OverTimeSettingsForm />} />
+                    <Route path="sub-user-misc-settings" element={<SubUserMiscSettingsForm />} />
+                    <Route path="transfer-attendance" element={<TransferAttendanceForm />} />
+                </Route>
+                <Route path="" element={<LandingPage />} />
+                <Route path="login" element={<LoginForm />} />
+                <Route path="register" element={<RegisterForm />} />
+                <Route path="forgot-password" element={<ForgotPassform />} />
+                <Route path="pass-confirm/:uid/:token" element={<PassConfirmForm />} />
+            </Routes>
+        </div>
+    );
 }
 
 export default App;
