@@ -5,17 +5,15 @@ import random
 from django.db.models import Q
 from datetime import timedelta, datetime
 from dateutil.relativedelta import relativedelta
+from ..utils.paid_days_count_for_past_six_days import paid_days_count_for_past_six_days
+from ..utils.get_complete_working_days_queryset import get_complete_working_days_queryset 
+from ..utils.mark_whole_day_absent_with_wo_hd_skipping import mark_whole_day_absent_with_wo_hd_skipping
+from ..utils.mark_half_day_absent_with_wo_hd_skipping import mark_half_day_absent_with_wo_hd_skipping
+from ..utils.mark_whole_day_absent_without_wo_hd_skipping import mark_whole_day_absent_without_wo_hd_skipping
+from ..utils.mark_half_day_absent_without_wo_hd_skipping import mark_half_day_absent_without_wo_hd_skipping
+from ..utils.calculate_each_head_earnings_from_paid_days import calculate_each_head_earnings_from_paid_days
+from ..utils.mark_end_of_month_absent import mark_end_of_month_absent
 
-def get_list_of_complete_working_days(from_date, to_date, employee_id, company_id, user):
-    attendance_records = EmployeeAttendance.objects.filter(
-        Q(first_half__name='P') & Q(second_half__name='P'),
-        employee_id=employee_id,
-        date__gte=from_date,
-        date__lte=to_date,
-        company_id=company_id,
-        user=user
-    )
-    return attendance_records
 
 def get_list_of_working_days_including_partial(from_date, to_date, employee_id, company_id, user):
     attendance_records = EmployeeAttendance.objects.filter(
@@ -38,25 +36,15 @@ def get_list_of_working_days_including_partial(from_date, to_date, employee_id, 
 #         pay_multiplier__gt=0
 #     ).count()
 
-def paid_days_count_for_past_six_days(attendance_date, company_id, user, employee): #multi the weeklyoffholidayoff rules by 2 to use this
-    attendance_records = EmployeeAttendance.objects.filter(
-        Q(first_half__paid=True) | Q(second_half__paid=True),
-        employee=employee,
-        date__range=[attendance_date - relativedelta(days=6), attendance_date - timedelta(days=1)],
-        company_id=company_id,
-        user=user
-    )
-    #Counting number of present/on duty
-    paid_leave_count = 0
-    if attendance_records.exists():
-        for attendance in attendance_records:
-            paid_leave_count += 1 if attendance.first_half.paid == True else 0
-            paid_leave_count += 1 if attendance.second_half.paid == True else 0
-    # print(paid_leave_count)
-    return paid_leave_count
 
-def re_evaluate_weekly_holiday_off(from_date, to_date, employee, company_id, user, weekly_off, holiday_off, weekly_off_skip, holiday_off_skip, weekly_off_holiday_off):
+def re_evaluate_weekly_holiday_off(from_date, to_date, employee, company_id, user):
     # attendance_records = EmployeeAttendance.objects.filter(employee=employee, company_id=company_id, user=user, date__gte=from_date, date__lte=to_date)
+    weekly_off_holiday_off = WeeklyOffHolidayOff.objects.get(company_id=company_id, user=user)
+    weekly_off = LeaveGrade.objects.get(user=user, company_id=company_id, name='WO')
+    weekly_off_skip = LeaveGrade.objects.get(user=user, company_id=company_id, name='WO*')
+    holiday_off = LeaveGrade.objects.get(user=user, company_id=company_id, name='HD')
+    holiday_off_skip = LeaveGrade.objects.get(user=user, company_id=company_id, name='HD*')
+
     attendance_records = EmployeeAttendance.objects.filter(
         employee=employee,
         company_id=company_id,
@@ -89,135 +77,25 @@ def re_evaluate_weekly_holiday_off(from_date, to_date, employee, company_id, use
                 converted_halves_weekly_holiday+=2 if both_halves_updated==True else 1
     return converted_halves_weekly_holiday
 
-def mark_absents_during_unpaid_weekly_holiday_off(from_date, to_date, employee, company_id, user, weekly_off, holiday_off, weekly_off_skip, holiday_off_skip, absent, converted_aim):
-#use this if required_unpaid_halves-converted_halves == 2:
-#basically mark absents in the week where weekly off or holiday off is already unpaid
-    attendance_records = EmployeeAttendance.objects.filter(
-        employee=employee,
-        company_id=company_id,
-        user=user,
-        date__gte=from_date,
-        date__lte=to_date,
-    ).filter(
-        Q(first_half=weekly_off_skip) & Q(second_half=weekly_off_skip) |
-        Q(first_half=holiday_off_skip) & Q(second_half=holiday_off_skip)
-    )
-
-    converted_halves_weekly_holiday = 0
-    for day in attendance_records:
-        if day.first_half==weekly_off_skip and day.second_half==weekly_off_skip:
-            attendance_date_for_weekly_off_skip = day.date
-            for countdown in range(1,7):
-                query_date = attendance_date_for_weekly_off_skip - timedelta(days=countdown)
-                weekday = EmployeeAttendance.objects.get(user=user, employee=employee, date=query_date, company_id=company_id)
-                if weekday.date.month == day.date.month and weekday.date.year == day.date.year and weekday.first_half != weekly_off_skip and weekday.first_half != holiday_off_skip and weekday.first_half !=weekly_off and weekday.first_half != holiday_off and weekday.second_half != weekly_off_skip and weekday.second_half != holiday_off_skip and weekday.second_half != weekly_off and weekday.second_half != holiday_off and weekday.first_half != absent and weekday.second_half != absent:
-                    if weekday.first_half==absent or weekday.second_half==absent:
-                        continue #Employee is already absent in half of the attendance
-                    weekday.first_half = absent
-                    weekday.second_half = absent
-                    weekday.machine_in = None
-                    weekday.machine_out = None
-                    weekday.manual_in = None
-                    weekday.manual_out = None
-                    weekday.save()
-                    converted_halves_weekly_holiday += 2
-                    if(converted_aim==converted_halves_weekly_holiday):
-                        break
-        if converted_aim==converted_halves_weekly_holiday:
-            break
-
-    
-    return converted_halves_weekly_holiday
-
-def mark_absent_which_causes_weekly_off_skip_or_holiday_off_skip(from_date, to_date, employee, company_id, user, weekly_off, holiday_off, weekly_off_skip, holiday_off_skip, weekly_off_holiday_off, absent, aim):#aim should be multiple of 4
-    # attendance_records = EmployeeAttendance.objects.filter(employee=employee, company_id=company_id, user=user, date__gte=from_date, date__lte=to_date)
-    attendance_records = EmployeeAttendance.objects.filter(
-        employee=employee,
-        company_id=company_id,
-        user=user,
-        date__gte=from_date,
-        date__lte=to_date,
-    ).filter(
-        Q(first_half=weekly_off) & Q(second_half=weekly_off) |
-        Q(first_half=holiday_off) & Q(second_half=holiday_off)
-    )
-    converted_halves_to_cause_wo_skip_hd_skip = 0
-    for day in attendance_records:
-        if day.first_half==weekly_off and day.second_half==weekly_off:
-            if paid_days_count_for_past_six_days(day.date, company_id=company_id, user=user, employee=employee)==(weekly_off_holiday_off.min_days_for_weekly_off * 2):
-                attendance_records_to_mark_absent = EmployeeAttendance.objects.filter(
-                    Q(first_half__paid=True) & Q(second_half__paid=True),
-                    employee=employee,
-                    date__range=[day.date - relativedelta(days=6), day.date - timedelta(days=1)],
-                    company_id=company_id,
-                    user=user
-                )
-                if not attendance_records_to_mark_absent.exists():
-                    continue
-                attendance_records_to_mark_absent = attendance_records_to_mark_absent.first()
-                attendance_records_to_mark_absent.first_half = absent
-                attendance_records_to_mark_absent.second_half = absent
-                attendance_records_to_mark_absent.manual_in = None
-                attendance_records_to_mark_absent.manual_out = None
-                attendance_records_to_mark_absent.machine_in = None
-                attendance_records_to_mark_absent.machine_out = None
-                attendance_records_to_mark_absent.save()
-
-                day.first_half = weekly_off_skip
-                day.second_half = weekly_off_skip
-                day.save()
-                converted_halves_to_cause_wo_skip_hd_skip+=4         
-        elif day.first_half==holiday_off and day.second_half==holiday_off:
-            if paid_days_count_for_past_six_days(day.date, company_id=company_id, user=user, employee=employee)==(weekly_off_holiday_off.min_days_for_holiday_off * 2):
-                attendance_records_to_mark_absent = EmployeeAttendance.objects.filter(
-                    Q(first_half__paid=True) & Q(second_half__paid=True),
-                    employee=employee,
-                    date__range=[day.date - relativedelta(days=6), day.date - timedelta(days=1)],
-                    company_id=company_id,
-                    user=user
-                )
-                if not attendance_records_to_mark_absent.exists():
-                    continue
-                attendance_records_to_mark_absent = attendance_records_to_mark_absent.first()
-                attendance_records_to_mark_absent.first_half = absent
-                attendance_records_to_mark_absent.second_half = absent
-                attendance_records_to_mark_absent.manual_in = None
-                attendance_records_to_mark_absent.manual_out = None
-                attendance_records_to_mark_absent.machine_in = None
-                attendance_records_to_mark_absent.machine_out = None
-                attendance_records_to_mark_absent.save()
-
-                day.first_half = holiday_off_skip
-                day.second_half = holiday_off_skip
-                day.save()
-                converted_halves_to_cause_wo_skip_hd_skip+=4
-        if aim==converted_halves_to_cause_wo_skip_hd_skip:
-                break
-    return converted_halves_to_cause_wo_skip_hd_skip
-
-
-
-
-
-
 
 def calculate_ot_attendance_using_total_earned(user, company_id, employee_ids, manually_inserted_total_earned, from_date, to_date, year, month, mark_attendance=True):
     """
-    Mock function to calculate OT attendance based on total earned.
+    Function to calculate OT and attendance based on total earned. Deductions are subtracted from the manually_inserted_total_earned.
+    Overtime is not marked on weekly off or holidy off days.
+    Tweak the tweaking parameters later to modify the end result
+   """
+    #Tweaking parameters, Later get them from the frontend
+    upper_buffer_manually_inserted_total_earned = 100 
+    max_ot_in_a_single_working_day = 2
 
-    Args:
-        employee_id (int): The ID of the employee.
-        total_earned (float): Total earned amount for the employee.
-
-    Returns:
-        dict: A mock result with employee ID, total earned, and OT attendance hours.
-    """
     # Mock logic
     EmployeeAttendance.objects.bulk_autofill(from_date=from_date, to_date=to_date, company_id=company_id, user=user, employee_ids=employee_ids)
+    print(f"From Date: {from_date}")
+    print(f"To Date: {to_date}")
     employees = EmployeeProfessionalDetail.objects.filter(employee__id__in=employee_ids, company_id=company_id, user=user if user.role=="OWNER" else user.regular_to_owner.owner)
     print(f"Employee Ids: {employee_ids}, Manually Inserted Amount: {manually_inserted_total_earned}")
     if employees.exists():
-        for current_employee in employees: 
+        for current_employee in employees:
             employee_pf_esi_detail = EmployeePfEsiDetail.objects.filter(company_id=company_id, employee=current_employee.employee)
             employee_salary_detail = EmployeeSalaryDetail.objects.filter(company_id=company_id, employee=current_employee.employee)
             employee_monthly_attendance_detail = EmployeeMonthlyAttendanceDetails.objects.filter(user=user, company_id=company_id, employee=current_employee.employee, date=from_date)
@@ -233,16 +111,23 @@ def calculate_ot_attendance_using_total_earned(user, company_id, employee_ids, m
                     return False, "Employee's Overtime Type is 'No Overtime'"
                 else:
                     return False, "Employee's Overtime Type is Weekly/Holiday Off"
+            employee_monthly_attendance_detail = employee_monthly_attendance_detail.first()
             total_salary_rate = 0
             days_in_month = calendar.monthrange(year, month)[1]
             for salary_earning in employee_salary_earnings_for_each_head:
                 total_salary_rate += salary_earning.value
-            max_ot_in_a_single_working_day = 6 #ask this limit because there has to be an upper limit above which this employee can't earn with their current rate
-            if manually_inserted_total_earned > total_salary_rate:
+            max_earned_possible_without_ot = total_salary_rate
+            if employee_monthly_attendance_detail.not_paid_days_count != 0:
+                earned_amount_dict = calculate_each_head_earnings_from_paid_days(month=month, year=year, employee=current_employee.employee, company_id=company_id, user=user, paid_days_count=(employee_monthly_attendance_detail.paid_days_count))
+                projected_total_earned_amount = sum(entry['earned_amount'] for entry in earned_amount_dict.values())
+                if projected_total_earned_amount < max_earned_possible_without_ot:
+                    max_earned_possible_without_ot = projected_total_earned_amount
+
+            if manually_inserted_total_earned > max_earned_possible_without_ot:
                 print(f"yes amount is greater, marking OT")
                 if employee_salary_detail.first().overtime_type != 'all_days':
                     return False, "Employee's overtime type is 'No Overtime'"
-                amount_to_fill_with_ot = manually_inserted_total_earned - total_salary_rate
+                amount_to_fill_with_ot = manually_inserted_total_earned - max_earned_possible_without_ot
 
                 overtime_rate_multiplier = 2 if employee_salary_detail.first().overtime_rate == 'D' or user.role=='REGULAR' else 1
                 overtime_divisor = Decimal(26)
@@ -264,7 +149,7 @@ def calculate_ot_attendance_using_total_earned(user, company_id, employee_ids, m
                     total_ot_hrs_to_fill = Decimal(integer_part)
 
                 #List of Complete Working Days
-                queryset_of_complete_working_days = get_list_of_complete_working_days(from_date=from_date, to_date=to_date, employee_id=current_employee.employee, company_id=company_id, user=user if user.role=='OWNER' else user.regular_to_owner.owner).order_by('?')
+                queryset_of_complete_working_days = get_complete_working_days_queryset(from_date=from_date, to_date=to_date, employee_id=current_employee.employee, company_id=company_id, user=user if user.role=='OWNER' else user.regular_to_owner.owner).order_by('?')
                 if not queryset_of_complete_working_days.exists():
                     return False, "Employee has no complete Working Day"
                 list_of_complete_working_days = list(queryset_of_complete_working_days)
@@ -277,12 +162,6 @@ def calculate_ot_attendance_using_total_earned(user, company_id, employee_ids, m
                 if total_ot_hrs_tmp > max_possible_ot:
                     return False, f"Not enough working days. Max possible OT: {max_possible_ot}hrs, Requested: {total_ot_hrs_tmp}hrs"
 
-
-                # while total_ot_hrs_tmp>0 and len(list_of_ot_hrs_for_each_day)<available_days:
-                #     random_ot_hrs = random.randint(1, max_ot_in_a_single_working_day)
-                #     hrs_to_append = min(random_ot_hrs, total_ot_hrs_tmp)
-                #     list_of_ot_hrs_for_each_day.append(hrs_to_append)
-                #     total_ot_hrs_tmp -= hrs_to_append
                 remaining_hours = total_ot_hrs_tmp
 
                 while remaining_hours > 0 and len(list_of_ot_hrs_for_each_day) < available_days:
@@ -321,124 +200,101 @@ def calculate_ot_attendance_using_total_earned(user, company_id, employee_ids, m
                     random_day_to_fill_ot = list_of_complete_working_days.pop()
                     random_day_to_fill_ot.ot_min = ot_hr*60
                     existing_manual_out_datetime = datetime.combine(random_day_to_fill_ot.date, random_day_to_fill_ot.manual_out) #This does not take into account if the employee is leave the next day
-                    random_day_to_fill_ot.manual_out = (existing_manual_out_datetime + timedelta(hours=round(ot_hr))).time() if (ot_hr*60)%60==0 else  (existing_manual_out_datetime + timedelta(minutes=round(ot_hr*60))).time()
+                    print(ot_hr)
+                    if ot_hr==0.5:
+                        """
+                        Handling the case when the punch out time is 10-15 min beofore the shift end time due to buffer but 
+                        adding ot to that results in no overtime in time updation so adding  to the shift end time instead.
+                        """
+                        employee_shift_on_current_date = EmployeeShifts.objects.filter(company_id=company_id, user=user if user.role=="OWNER" else user.regular_to_owner.owner, employee=current_employee.employee, from_date__lte=random_day_to_fill_ot.date, to_date__gte=random_day_to_fill_ot.date)
+                        if not employee_shift_on_current_date.exists():
+                            raise ValueError(f'Shift Not Found on {random_day_to_fill_ot.date.strftime("%Y-%m-%d")}')
+                        else:
+                            employee_shift_on_current_date = employee_shift_on_current_date.first()
+                        shift = employee_shift_on_current_date.shift
+                        shift_end_datetime = datetime.combine(random_day_to_fill_ot.date, shift.end_time)
+                        random_day_to_fill_ot.manual_out = max(((existing_manual_out_datetime + timedelta(minutes=round(ot_hr*60)))), shift_end_datetime + timedelta(minutes=round(ot_hr*60))).time()
+                        random_day_to_fill_ot.save()
+                        continue
+                    random_day_to_fill_ot.manual_out = (existing_manual_out_datetime + timedelta(hours=round(ot_hr))).time() if (ot_hr*60)%60==0 else (existing_manual_out_datetime + timedelta(minutes=round(ot_hr*60))).time()
                     random_day_to_fill_ot.save()
 
                 #Updating monthly attendance record
                 EmployeeGenerativeLeaveRecord.objects.generate_update_monthly_record(user=user, year=from_date.year, month=from_date.month, employee_id=current_employee.employee.id, company_id=current_employee.company.id)
         
-            else:
+            elif manually_inserted_total_earned < max_earned_possible_without_ot: #Creating Less Salary then Salary Rate
                 amount_to_deduct = total_salary_rate - manually_inserted_total_earned
                 month_days = calendar.monthrange(year, month)[1]
-                required_unpaid_halves = (amount_to_deduct * Decimal(month_days * 2) / total_salary_rate).quantize(Decimal('1.'), rounding=ROUND_CEILING)
+                print(f"Amount To Deduct: {amount_to_deduct}, Month Days: {month_days}")
+                #required_unpaid_halves = (amount_to_deduct * Decimal(month_days * 2) / total_salary_rate).quantize(Decimal('1.'), rounding=ROUND_CEILING)
+
+                required_unpaid_halves = (amount_to_deduct * Decimal(month_days * 2) / total_salary_rate).quantize(Decimal('1.'), rounding=ROUND_HALF_UP)
+                if employee_monthly_attendance_detail.not_paid_days_count != 0:
+                    required_unpaid_halves-=employee_monthly_attendance_detail.not_paid_days_count
+                earned_amount_dict = calculate_each_head_earnings_from_paid_days(month=month, year=year, employee=current_employee.employee, company_id=company_id, user=user, paid_days_count=(employee_monthly_attendance_detail.paid_days_count)-required_unpaid_halves)
+                projected_total_earned_amount = sum(entry['earned_amount'] for entry in earned_amount_dict.values())
+                if projected_total_earned_amount > (manually_inserted_total_earned+upper_buffer_manually_inserted_total_earned):
+                    required_unpaid_halves+=1
+
                 print(f"Required Halves: {required_unpaid_halves}")
                 
-                #Already randomly arranged
-                queryset_of_working_days_including_partial = get_list_of_working_days_including_partial(from_date=from_date, to_date=to_date, employee_id=current_employee.employee, company_id=company_id, user=user if user.role=='OWNER' else user.regular_to_owner.owner).order_by('?')
-                
-                # Get company's weekly/holiday off rules
-                weekly_off_holiday_off = WeeklyOffHolidayOff.objects.get(company_id=company_id, user=user)
-
-                # Get leave grade instances
-                weekly_off = LeaveGrade.objects.get(user=user, company_id=company_id, name='WO')
-                weekly_off_skip = LeaveGrade.objects.get(user=user, company_id=company_id, name='WO*')
-                holiday_off = LeaveGrade.objects.get(user=user, company_id=company_id, name='HD')
-                holiday_off_skip = LeaveGrade.objects.get(user=user, company_id=company_id, name='HD*')
-                absent= LeaveGrade.objects.get(user=user, company_id=company_id, name='A')
-
+                #Add parameter for random absentes
                 # Track converted halves
                 converted_halves = 0
-                
-                # while required_unpaid_halves>converted_halves:
-                for att in queryset_of_working_days_including_partial:
-                    if required_unpaid_halves<=converted_halves:
+                print(required_unpaid_halves)
+                loop_count = 0
+                """
+                Start New Method From Here
+                """
+                while required_unpaid_halves>converted_halves and loop_count<=200:
+                    loop_count +=1
+                    print(f"Loop Count: {loop_count}, required_unpaid_halves: {required_unpaid_halves}, Converted Halves: {converted_halves}")
+                    status, marked_count = "not_marked", 0
+                    if required_unpaid_halves-converted_halves>=4:
+                        status, marked_count = mark_whole_day_absent_with_wo_hd_skipping(from_date=from_date, to_date=to_date, employee=current_employee.employee, company_id=company_id, user=user)
+                        # print(f"Method mark_whole_day_absent_with_wo_hd_skipping returned: {status}, marked_count, {marked_count}")
+                        if status=="marked":
+                            converted_halves+=marked_count
+                            continue
+                    if required_unpaid_halves-converted_halves==3:
+                        status, marked_count = mark_half_day_absent_with_wo_hd_skipping(from_date=from_date, to_date=to_date, employee=current_employee.employee, company_id=company_id, user=user, mark_full_working_day_to_half_working_day=True)
+                        # print(f"Method mark_half_day_absent_with_wo_hd_skipping returned: {status}, marked_count, {marked_count}")
+                        if status=="marked":
+                            converted_halves+=marked_count
+                            continue
+                    if required_unpaid_halves-converted_halves>=2:
+                        status, marked_count = mark_whole_day_absent_without_wo_hd_skipping(from_date=from_date, to_date=to_date, employee=current_employee.employee, company_id=company_id, user=user)
+                        # print(f"Method mark_whole_day_absent_without_wo_hd_skipping returned: {status}, marked_count, {marked_count}")
+                        if status=="marked":
+                            converted_halves+=marked_count
+                            continue
+                    if required_unpaid_halves-converted_halves==1:
+                        status, marked_count = mark_half_day_absent_without_wo_hd_skipping(from_date=from_date, to_date=to_date, employee=current_employee.employee, company_id=company_id, user=user, mark_full_working_day_to_half_working_day=True)
+                        # print(f"Method mark_half_day_absent_without_wo_hd_skipping returned: {status}, marked_count, {marked_count}")
+
+                        if status=="marked":
+                            converted_halves+=marked_count
+                            continue
+                    if required_unpaid_halves-converted_halves!=0:
+                        status, marked_count = mark_end_of_month_absent(from_date=from_date, to_date=to_date, employee=current_employee.employee, company_id=company_id, user=user, halves_to_convert=required_unpaid_halves-converted_halves, mark_full_working_day_to_half_working_day=True)
+                        print(f"Method mark_end_of_month_absent returned: {status}, marked_count, {marked_count}, required haves passed: {required_unpaid_halves-converted_halves}")
+                        if status=="marked":
+                            converted_halves+=marked_count
+                            continue
+                    if (loop_count>200):
                         break
 
-                    if required_unpaid_halves-converted_halves<=10:
-                        print(f"Top weekly reevaluation")
-                        converted_halves_in_reevaluation = 0
-                        converted_halves_in_reevaluation = re_evaluate_weekly_holiday_off(from_date=from_date, to_date=to_date, employee=current_employee.employee, company_id=company_id, user=user, weekly_off=weekly_off, holiday_off=holiday_off, weekly_off_skip=weekly_off_skip, holiday_off_skip=holiday_off_skip, weekly_off_holiday_off=weekly_off_holiday_off)
-                        converted_halves += converted_halves_in_reevaluation
-                    week_start = att.date - timedelta(days=att.date.weekday())
-
-                    if (required_unpaid_halves-converted_halves)%2==1: #or (required_unpaid_halves-converted_halves)%2>0:
-                        print(f"Marking Half day absent")
-                        employee_shift_on_current_date = EmployeeShifts.objects.filter(company_id=company_id, user=user if user.role=="OWNER" else user.regular_to_owner.owner, employee=current_employee.employee, from_date__lte=att.date, to_date__gte=att.date)
-                        if not employee_shift_on_current_date.exists():
-                            return False, f'Shift Not Found on {att.date.strftime("%Y-%m-%d")}'
-                        else:
-                            employee_shift_on_current_date = employee_shift_on_current_date.first()
-                        shift = employee_shift_on_current_date.shift
-                        if att.machine_in != None:
-                            machine_in_old_datetime = datetime.combine(att.date, att.machine_in)
-                            att.machine_in = (machine_in_old_datetime + timedelta(minutes=shift.max_late_allowed_min + 20)).time()
-                        else:
-                            manual_in_old_datetime = datetime.combine(att.date, att.manual_in)
-                            att.manual_in = (manual_in_old_datetime + timedelta(minutes=shift.max_late_allowed_min + 20)).time()
-
-                        att.first_half = absent
-                        att.save()
-                        converted_halves+=1
-                        continue
-                    if required_unpaid_halves>4 and ((required_unpaid_halves-converted_halves)==2 or (required_unpaid_halves-converted_halves)==4 or (required_unpaid_halves-converted_halves)==3) :
-                        print(f"Marking absents within WO skip and HD skip week")
-                        converted_halves_weekly_holiday_skip = mark_absents_during_unpaid_weekly_holiday_off(from_date=from_date, to_date=to_date, employee=current_employee.employee, company_id=company_id, user=user, weekly_off=weekly_off, holiday_off=holiday_off, weekly_off_skip=weekly_off_skip, holiday_off_skip=holiday_off_skip, absent=absent, converted_aim=2)
-                        converted_halves += converted_halves_weekly_holiday_skip
-                    if required_unpaid_halves-converted_halves>4:
-                        print(f"Marking Absent")
-                        att.first_half = absent
-                        att.second_half = absent
-                        att.manual_in = None
-                        att.manual_out = None
-                        att.machine_in = None
-                        att.machine_out = None
-                        att.save()
-                        converted_halves+=2
-                        print(f"Converted Halves after marking absent: {converted_halves}")
-                    # if required_unpaid_halves-converted_halves==4:
-                    #     print(f"Making a WO Skip by marking one absent")
-                    #     converted_halves_to_cause_wo_skip_hd_skip = mark_absent_which_causes_weekly_off_skip_or_holiday_off_skip(from_date=from_date, to_date=to_date, employee=current_employee.employee, company_id=company_id, user=user, weekly_off=weekly_off, holiday_off=holiday_off, weekly_off_skip=weekly_off_skip, holiday_off_skip=holiday_off_skip, weekly_off_holiday_off=weekly_off_holiday_off, absent=absent, aim=4)
-                    #     converted_halves += converted_halves_to_cause_wo_skip_hd_skip
-
-                    # elif required_unpaid_halves-converted_halves==1:
-                    #     employee_shift_on_current_date = EmployeeShifts.objects.filter(company_id=company_id, user=user if user.role=="OWNER" else user.regular_to_owner.owner, employee=current_employee.employee, from_date__lte=att.date, to_date__gte=att.date)
-                    #     if not employee_shift_on_current_date.exists():
-                    #         return False, f'Shift Not Found on {att.date.strftime("%Y-%m-%d")}'
-                    #     else:
-                    #         employee_shift_on_current_date = employee_shift_on_current_date.first()
-                    #     shift = employee_shift_on_current_date.shift
-                    #     if att.machine_in != None:
-                    #         machine_in_old_datetime = datetime.combine(att.date, att.machine_in)
-                    #         att.machine_in = (machine_in_old_datetime + timedelta(minutes=shift.max_late_allowed_min + 20)).time()
-                    #     else:
-                    #         manual_in_old_datetime = datetime.combine(att.date, att.manual_in)
-                    #         att.manual_in = (manual_in_old_datetime + timedelta(minutes=shift.max_late_allowed_min + 20)).time()
-                    #
-                    #     att.first_half = absent
-                    #     att.save()
-                    #     converted_halves+=1
-                    if required_unpaid_halves-converted_halves<=10:
-                        #Re evaluating WeeklyOffHolidayOff for safety
-                        converted_halves_in_reevaluation = 0
-                        converted_halves_in_reevaluation = re_evaluate_weekly_holiday_off(from_date=from_date, to_date=to_date, employee=current_employee.employee, company_id=company_id, user=user, weekly_off=weekly_off, holiday_off=holiday_off, weekly_off_skip=weekly_off_skip, holiday_off_skip=holiday_off_skip, weekly_off_holiday_off=weekly_off_holiday_off)
-                        converted_halves += converted_halves_in_reevaluation
-                    if required_unpaid_halves-converted_halves==4:
-                        print(f"Making a WO Skip by marking one absent")
-                        converted_halves_to_cause_wo_skip_hd_skip = mark_absent_which_causes_weekly_off_skip_or_holiday_off_skip(from_date=from_date, to_date=to_date, employee=current_employee.employee, company_id=company_id, user=user, weekly_off=weekly_off, holiday_off=holiday_off, weekly_off_skip=weekly_off_skip, holiday_off_skip=holiday_off_skip, weekly_off_holiday_off=weekly_off_holiday_off, absent=absent, aim=4)
-                        converted_halves += converted_halves_to_cause_wo_skip_hd_skip
-
-
-                    print(f"End Date: {att.date}, Converted Halves: {converted_halves}")
-
-
-                converted_halves_in_reevaluation = re_evaluate_weekly_holiday_off(from_date=from_date, to_date=to_date, employee=current_employee.employee, company_id=company_id, user=user, weekly_off=weekly_off, holiday_off=holiday_off, weekly_off_skip=weekly_off_skip, holiday_off_skip=holiday_off_skip, weekly_off_holiday_off=weekly_off_holiday_off)
+                converted_halves_in_reevaluation = re_evaluate_weekly_holiday_off(from_date=from_date, to_date=to_date, employee=current_employee.employee, company_id=company_id, user=user)
                 if converted_halves_in_reevaluation>0:
                     return False, "Attendance Miss-Match on Weekly Off and Holiday Off"
                 print(f"Final Converted halves: {converted_halves}")
                 EmployeeGenerativeLeaveRecord.objects.generate_update_monthly_record(user=user, year=from_date.year, month=from_date.month, employee_id=current_employee.employee.id, company_id=current_employee.company.id)
 
+            print(f"Preparing Salary")
 
             EmployeeSalaryPrepared.objects.bulk_prepare_salaries(user=user, month=month, year=year, company_id=company_id, employee_ids=employee_ids)
+            if manually_inserted_total_earned==total_salary_rate and employee_monthly_attendance_detail.not_paid_days_count!=0:
+                return True, "Full salary marked using OT due attendance in previous month"
 
         return True, "Operation successful"
 

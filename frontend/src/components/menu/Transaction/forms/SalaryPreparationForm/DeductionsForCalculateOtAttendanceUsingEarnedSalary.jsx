@@ -19,7 +19,6 @@ const DeductionsForCalculateOtAttendanceUsingEarnedSalary = ({
         skip: globalCompany === null || globalCompany === '',
     });
 
-    console.log(formValues);
     return (
         <table className="w-full border-collapse text-center text-xs">
             <thead className="sticky top-0 z-20 bg-red-500 dark:bg-red-500 dark:bg-opacity-40">

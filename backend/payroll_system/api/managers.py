@@ -1241,7 +1241,6 @@ class EmployeeSalaryPreparedManager(models.Manager):
                         date=from_date,
                         defaults=defaults,
                     )
-                    print(f"Created: {created} Object: {salary_prepared_obj.id}")
 
                     for earnings_head_id, earned_dict in earned_amount_dict.items():
                         defaults = {

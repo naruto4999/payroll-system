@@ -16,6 +16,7 @@ import { rankItem } from '@tanstack/match-sorter-utils';
 import { FaRegTrashAlt, FaPen, FaAngleUp, FaAngleDown, FaEye } from 'react-icons/fa';
 import { useGetEmployeePersonalDetailsQuery } from '../../../../authentication/api/employeeEntryApiSlice';
 import { useAddEmployeeSalaryPreparedMutation } from '../../../../authentication/api/salaryPreparationApiSlice';
+import { useGetExtraFeaturesConfigQuery } from '../../../../authentication/api/extraFeaturesConfigApiSlice';
 import { useOutletContext } from 'react-router-dom';
 import ReactModal from 'react-modal';
 import { Formik } from 'formik';
@@ -53,6 +54,15 @@ const SalaryPreparationForm = () => {
             isSuccess: isAddEmployeeSalaryPreparedSuccess,
         },
     ] = useAddEmployeeSalaryPreparedMutation();
+
+    const {
+        data: { company, ...extraFeaturesConfig } = {},
+        isLoading: isLoadingExtraFeaturesConfig,
+        isSuccess: isExtraFeaturesConfigSuccess,
+        isError: isExtraFeaturesConfigError,
+        isFetching: isFetchingExtraFeaturesConfig,
+    } = useGetExtraFeaturesConfigQuery(globalCompany.id);
+    console.log(extraFeaturesConfig);
 
     const [updateEmployeeId, setUpdateEmployeeId] = useState(null);
     const [globalFilter, setGlobalFilter] = useState('');
@@ -303,30 +313,49 @@ const SalaryPreparationForm = () => {
                         <p className="my-2 text-sm">Prepare employees salaries here</p>
                     </div>
                 </div>
-                <div>
-                    <h3>Salary Preparation Mode</h3>
-                    {/* Radio buttons to toggle between modes */}
-                    <div className="flex flex-col">
-                        <label>
-                            <input
-                                type="radio"
-                                value="default"
-                                checked={salaryPreperationMode === 'default'}
-                                onChange={handleModeChange}
-                            />
-                            Default Mode
-                        </label>
-                        <label>
-                            <input
-                                type="radio"
-                                value="calculateOtAttendanceUsingEarnedSalary"
-                                checked={salaryPreperationMode === 'calculateOtAttendanceUsingEarnedSalary'}
-                                onChange={handleModeChange}
-                            />
-                            Calculate OT And Attendance Using Earned Salary Mode
-                        </label>
-                    </div>
-                </div>
+                {isExtraFeaturesConfigSuccess &&
+                    extraFeaturesConfig?.enableCalculateOtAttendanceUsingEarnedSalary == true && (
+                        <div>
+                            <h3>Salary Preparation Mode</h3>
+                            {/* Radio buttons to toggle between modes */}
+                            <div className="flex w-1/2 flex-row gap-6 p-2">
+                                <label
+                                    className={classNames(
+                                        salaryPreperationMode === 'default'
+                                            ? 'scale-110 bg-teal-600 dark:bg-teal-700'
+                                            : 'bg-zinc-200 dark:bg-zinc-700  md:hover:scale-110',
+                                        'relative flex h-6 w-40 cursor-pointer items-center justify-center rounded text-sm font-semibold transition-transform'
+                                    )}
+                                >
+                                    <input
+                                        type="radio"
+                                        value="default"
+                                        checked={salaryPreperationMode === 'default'}
+                                        onChange={handleModeChange}
+                                        className="absolute inset-0 h-full w-full cursor-pointer appearance-none"
+                                    />
+                                    Default Mode
+                                </label>
+                                <label
+                                    className={classNames(
+                                        salaryPreperationMode === 'calculateOtAttendanceUsingEarnedSalary'
+                                            ? 'scale-110 bg-teal-600 dark:bg-teal-700'
+                                            : 'bg-zinc-200  dark:bg-zinc-700  md:hover:scale-110',
+                                        'relative flex h-6 w-72 cursor-pointer items-center justify-center rounded text-sm font-semibold transition-transform'
+                                    )}
+                                >
+                                    <input
+                                        type="radio"
+                                        value="calculateOtAttendanceUsingEarnedSalary"
+                                        checked={salaryPreperationMode === 'calculateOtAttendanceUsingEarnedSalary'}
+                                        onChange={handleModeChange}
+                                        className="absolute inset-0 h-full w-full cursor-pointer appearance-none"
+                                    />
+                                    {'Calculate OT & Att. from Total Earned'}
+                                </label>
+                            </div>
+                        </div>
+                    )}
                 <div className="flex w-full flex-row gap-8">
                     <div className="mt-4 ml-4 w-2/5">
                         <TableFilterInput

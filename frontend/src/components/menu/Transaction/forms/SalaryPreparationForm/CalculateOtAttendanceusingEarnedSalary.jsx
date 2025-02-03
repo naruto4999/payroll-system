@@ -17,6 +17,7 @@ import DeductionsForCalculateOtAttendanceUsingEarnedSalary from './DeductionsFor
 import NetSalary from './NetSalary';
 import ReactModal from 'react-modal';
 import InsertTotalEarnedModal from './InsertTotalEarnedModal';
+import LoadingSpinner from '../../../../UI/LoadingSpinner';
 
 const classNames = (...classes) => {
     return classes.filter(Boolean).join(' ');
@@ -70,25 +71,6 @@ const CalculateOtAttendanceusingEarnedSalary = ({
 
     const [formValues, setFormValues] = useState(initialFormValues);
 
-    // const [formValues, setFormValues] = useState({
-    // 	year: selectedDate.year,
-    // 	month: selectedDate.month,
-    // 	employeeSalaryPrepared: {
-    // 		incentiveAmount: 0,
-    // 		pfDeducted: 0,
-    // 		esiDeducted: 0,
-    // 		vpfDeducted: 0,
-    // 		advanceDeducted: 0,
-    // 		tdsDeducted: 0,
-    // 		labourWelfareFundDeducted: 0,
-    // 		othersDeducted: 0,
-    // 		netOtMinutesMonthly: 0,
-    // 		netOtAmountMonthly: 0,
-    // 		paymentMode: '',
-    // 	},
-    // 	earnedAmount: [],
-    // });
-
     const {
         data: employeePreparedSalary,
         isLoading: isLoadingEmployeePreparedSalary,
@@ -113,11 +95,9 @@ const CalculateOtAttendanceusingEarnedSalary = ({
                 selectedDate.year == undefined,
         }
     );
-    console.log(employeePreparedSalary);
 
     const isDateWithinRange = (fromDate, toDate) => {
         const dateSelected = new Date(Date.UTC(selectedDate.year, selectedDate.month - 1, 1));
-        // console.log('Selected Date', dateSelected);
         const fromDateObj = new Date(fromDate);
         const toDateObj = new Date(toDate);
         return dateSelected >= fromDateObj && dateSelected <= toDateObj;
@@ -128,6 +108,21 @@ const CalculateOtAttendanceusingEarnedSalary = ({
         isSuccess: isAllEmployeeSalaryEarningsSuccess,
         isFetching: isFetchingAllEmployeeSalaryEarnings,
     } = useGetAllEmployeeSalaryEarningsQuery(
+        {
+            company: globalCompany?.id,
+            year: selectedDate?.year,
+        },
+        {
+            skip: globalCompany === null || globalCompany === '' || selectedDate?.year == undefined,
+        }
+    );
+
+    const {
+        data: allEmployeeMonthlyAttendanceDetails,
+        isLoading: isLoadingAllEmployeeMonthlyAttendanceDetails,
+        isSuccess: isAllEmployeeMonthlyAttendanceDetailsSuccess,
+        isFetching: isFetchingAllEmployeeMonthlyAttendanceDetails,
+    } = useGetAllEmployeeMonthlyAttendanceDetailsQuery(
         {
             company: globalCompany?.id,
             year: selectedDate?.year,
@@ -191,6 +186,20 @@ const CalculateOtAttendanceusingEarnedSalary = ({
         const matchingItem = allEmployeeSalaryDetails?.find((item) => item.employee === updateEmployeeId);
         return matchingItem || null; // Return null (or another default value) when no match is found
     }, [allEmployeeSalaryDetails, updateEmployeeId]);
+
+    const currentEmployeeMonthlyAttendanceDetails = useMemo(() => {
+        if (allEmployeeMonthlyAttendanceDetails && updateEmployeeId) {
+            const selectedEmployeeData = allEmployeeMonthlyAttendanceDetails.filter((item) => {
+                const dateOfInstance = new Date(item.date);
+                const currentSelectedDate = new Date(Date.UTC(selectedDate.year, selectedDate.month - 1, 1));
+                return item.employee === updateEmployeeId && dateOfInstance.getTime() === currentSelectedDate.getTime();
+            });
+            return selectedEmployeeData;
+        }
+        // handleReset();
+        return [];
+    }, [allEmployeeMonthlyAttendanceDetails, updateEmployeeId]);
+
     const optionsForYear = useMemo(() => {
         if (earliestMonthAndYear) {
             const options = [];
@@ -214,23 +223,18 @@ const CalculateOtAttendanceusingEarnedSalary = ({
             month: selectedDate.month,
             year: selectedDate.year,
         };
-        console.log(toSend);
-        // toSend.employeeSalaryPrepared = { ...values.employeeSalaryPrepared };
-        // toSend.employeeSalaryPrepared.date = `${values.year}-${values.month}-1`;
-        // toSend.employeeSalaryPrepared.employee = parseInt(updateEmployeeId);
-        // toSend.employeeSalaryPrepared.company = globalCompany.id;
-        // toSend.allEarnedAmounts = [...values.earnedAmount];
 
         try {
             const data = await calculateOtAttendanceUsingTotalEarned(toSend).unwrap();
             console.log(data);
             dispatch(
                 alertActions.createAlert({
-                    message: 'Saved',
+                    message: data?.message,
                     type: 'Success',
                     duration: 3000,
                 })
             );
+            setShowInsertTotalEarnedModal(false);
         } catch (err) {
             console.log(err);
             let message = 'Error Occurred';
@@ -242,17 +246,15 @@ const CalculateOtAttendanceusingEarnedSalary = ({
                 alertActions.createAlert({
                     message: message,
                     type: 'Error',
-                    duration: 5000,
+                    duration: 6000,
                 })
             );
         }
     };
 
-    console.log(employeePreparedSalary);
     // Memoized API data transformation
     const apiFormValues = useMemo(() => {
         if (!isEmployeePreparedSalarySuccess || !employeePreparedSalary) return null;
-        console.log('not returning null');
 
         return {
             year: selectedDate.year,
@@ -290,7 +292,6 @@ const CalculateOtAttendanceusingEarnedSalary = ({
             arearAmount: 0,
         }));
     }, [currentEmployeeSalaryEarning]);
-    console.log(apiFormValues);
 
     // Combined effect for updating form values
     useEffect(() => {
@@ -308,27 +309,24 @@ const CalculateOtAttendanceusingEarnedSalary = ({
             setFormValues(initialFormValues);
         }
     }, [apiFormValues, defaultEarnedAmounts, initialFormValues]);
-    // useEffect(() => {
-    //     if (currentEmployeeSalaryEarning.length != 0) {
-    //         const earnedAmountArray = currentEmployeeSalaryEarning.map((item) => ({
-    //             earningsHead: item.earningsHead,
-    //             rate: item.value,
-    //             earnedAmount: 0,
-    //             arearAmount: 0,
-    //         }));
-    //         setFormValues((prevState) => ({
-    //             ...prevState,
-    //             earnedAmount: earnedAmountArray, // Update only earnedAmount field
-    //         }));
-    //     } else if (currentEmployeeSalaryEarning?.length == 0) {
-    //         setFormValues((prevState) => ({
-    //             ...prevState,
-    //             earnedAmount: [], // Update only earnedAmount field
-    //         }));
-    //     }
-    // }, [currentEmployeeSalaryEarning.map((item) => item.value).join(','), updateEmployeeId]);
-
     if (
+        isLoadingEmployeePreparedSalary ||
+        isFetchingEmployeePreparedSalary ||
+        isLoadingAllEmployeeSalaryEarnings ||
+        isFetchingAllEmployeeSalaryEarnings ||
+        isLoadingAllEmployeeMonthlyAttendanceDetails ||
+        isFetchingAllEmployeeMonthlyAttendanceDetails ||
+        isLoadingAllEmployeeSalaryDetails ||
+        isFetchingAllEmployeeSalaryDetails ||
+        isLoadingAllEmployeePfEsiDetails ||
+        isFetchingAllEmployeePfEsiDetails
+    ) {
+        return (
+            <div className="mx-auto">
+                <LoadingSpinner />
+            </div>
+        );
+    } else if (
         currentEmployeeSalaryEarning?.length == 0 ||
         currentEmployeeSalaryDetails == null ||
         currentEmployeePfEsiDetails?.length == 0
@@ -347,7 +345,6 @@ const CalculateOtAttendanceusingEarnedSalary = ({
                         id="month"
                         value={selectedDate.month}
                         onChange={(e) => {
-                            handleChange(e);
                             setSelectedDate((prevValue) => ({ ...prevValue, month: e.target.value }));
                         }}
                         className="my-1 mr-2 rounded-md bg-zinc-50 bg-opacity-50 p-1 dark:bg-zinc-700"
@@ -365,7 +362,6 @@ const CalculateOtAttendanceusingEarnedSalary = ({
                         name="year"
                         id="year"
                         onChange={(e) => {
-                            handleChange(e);
                             setSelectedDate((prevValue) => ({ ...prevValue, year: e.target.value }));
                         }}
                         value={selectedDate.year}
@@ -403,7 +399,6 @@ const CalculateOtAttendanceusingEarnedSalary = ({
                         id="month"
                         value={selectedDate.month}
                         onChange={(e) => {
-                            handleChange(e);
                             setSelectedDate((prevValue) => ({ ...prevValue, month: e.target.value }));
                         }}
                         className="my-1 mr-2 rounded-md bg-zinc-50 bg-opacity-50 p-1 dark:bg-zinc-700"
@@ -421,7 +416,6 @@ const CalculateOtAttendanceusingEarnedSalary = ({
                         name="year"
                         id="year"
                         onChange={(e) => {
-                            handleChange(e);
                             setSelectedDate((prevValue) => ({ ...prevValue, year: e.target.value }));
                         }}
                         value={selectedDate.year}
@@ -512,10 +506,10 @@ const CalculateOtAttendanceusingEarnedSalary = ({
                 <section className="mt-10 flex flex-row justify-between">
                     <div className="flex flex-col gap-4">
                         <div>
-                            {/* <h5 className="inline dark:text-slate-300">Paid Days: </h5> */}
-                            {/* <span className=" m-1 font-bold dark:text-green-600"> */}
-                            {/*     {currentEmployeeMonthlyAttendanceDetails?.[0]?.paidDaysCount / 2 || 0} */}
-                            {/* </span> */}
+                            <h5 className="inline dark:text-slate-300">Paid Days: </h5>
+                            <span className=" m-1 font-bold dark:text-green-600">
+                                {currentEmployeeMonthlyAttendanceDetails?.[0]?.paidDaysCount / 2 || 0}
+                            </span>
                         </div>
                         <div>
                             <label
@@ -524,19 +518,7 @@ const CalculateOtAttendanceusingEarnedSalary = ({
                             >
                                 Incentive:{' '}
                             </label>
-                            <input
-                                className={classNames(
-                                    'border-gray-800 border-opacity-25 dark:border-slate-100 dark:border-opacity-25',
-                                    'custom-number-input  ml-1 w-32 rounded border-2  bg-zinc-50   bg-opacity-50 p-1 outline-none transition focus:border-opacity-100 dark:bg-zinc-800 dark:focus:border-opacity-75'
-                                )}
-                                type="number"
-                                disabled={true}
-                                // name={`employeeSalaryPrepared.incentiveAmount`}
-                                value={formValues?.employeeSalaryPrepared?.incentiveAmount}
-                            />
-                            {/* <div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700"> */}
-                            {/*     <ErrorMessage name={`employeeSalaryPrepared.incentiveAmount`} /> */}
-                            {/* </div> */}
+                            {formValues?.employeeSalaryPrepared?.incentiveAmount}
                         </div>
                     </div>
 
@@ -580,8 +562,8 @@ const CalculateOtAttendanceusingEarnedSalary = ({
                     <div className="mt-4 mb-2 flex w-fit flex-row gap-4">
                         <button
                             className={classNames(
-                                'hover:bg-teal-600  dark:hover:bg-teal-600',
-                                'h-10 w-fit rounded bg-teal-500 p-2 px-4 text-base font-medium dark:bg-teal-700'
+                                ' bg-blueAccent-400 hover:bg-blueAccent-500  dark:bg-blueAccent-700 dark:hover:bg-blueAccent-600',
+                                'h-10 w-fit rounded p-2 px-4 text-base font-medium'
                             )}
                             type="submit"
                             // disabled={!isValid}
@@ -592,19 +574,6 @@ const CalculateOtAttendanceusingEarnedSalary = ({
                                 <FaCircleNotch className="my-auto ml-2 inline animate-spin text-xl text-amber-700 dark:text-amber-600 " />
                             )}
                         </button>
-                        {/* <button */}
-                        {/*     className="h-10 w-fit rounded  bg-blueAccent-400 p-2 px-4 text-base font-medium hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:hover:bg-blueAccent-600" */}
-                        {/*     type="submit" */}
-                        {/*     // disabled={!isValid} */}
-                        {/*     onClick={() => { */}
-                        {/*         setShowConfirmModal(true); */}
-                        {/*     }} */}
-                        {/* > */}
-                        {/*     Bulk Prepare Salaries */}
-                        {/*     {isSubmitting && ( */}
-                        {/*         <FaCircleNotch className="my-auto ml-2 inline animate-spin text-xl text-amber-700 dark:text-amber-600 " /> */}
-                        {/*     )} */}
-                        {/* </button> */}
                     </div>
                     <ReactModal
                         className="items-left fixed inset-0 mx-2 my-auto flex h-fit flex-col gap-4 rounded bg-zinc-300 p-4 shadow-xl dark:bg-zinc-800 sm:mx-auto sm:max-w-lg"
@@ -624,8 +593,6 @@ const CalculateOtAttendanceusingEarnedSalary = ({
                             component={(props) => (
                                 <InsertTotalEarnedModal
                                     {...props}
-                                    // displayHeading={'Bulk Prepare Salaries'}
-                                    // isBulkPreparingEmployeeSalaries={isBulkPreparingEmployeeSalaries}
                                     setShowInsertTotalEarnedModal={setShowInsertTotalEarnedModal}
                                 />
                             )}

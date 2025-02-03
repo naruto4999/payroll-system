@@ -74,7 +74,13 @@ const EmployeeTable = React.memo(({ table, flexRender, tbodyRef, handleKeyDown, 
                                 }}
                             >
                                 {row.getVisibleCells().map((cell) => (
-                                    <td className="relative px-4 py-2 font-normal" key={cell.id}>
+                                    <td
+                                        className={classNames(
+                                            cell.id.includes('paycode') ? 'pl-8' : '',
+                                            'relative px-4 py-2 font-normal'
+                                        )}
+                                        key={cell.id}
+                                    >
                                         {row.original.id == focusedRowRef.current && cell.id.includes('paycode') && (
                                             <div className="absolute left-2">
                                                 <FaCircleCheck className="scale-150 text-blueAccent-600" />

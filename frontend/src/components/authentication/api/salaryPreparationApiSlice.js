@@ -70,6 +70,7 @@ export const salaryPreparationApiSlice = apiSlice.injectEndpoints({
                 'EarnedAmountPreparedSalary',
                 'EmployeesForYearlyAdvanceReport',
                 'EmployeePreparedSalary',
+                'AllEmployeeMonthlyAttendanceDetails',
             ],
         }),
         getEmployeePreparedSalary: builder.query({
