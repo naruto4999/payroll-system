@@ -294,7 +294,7 @@ def calculate_ot_attendance_using_total_earned(user, company_id, employee_ids, m
 
             EmployeeSalaryPrepared.objects.bulk_prepare_salaries(user=user, month=month, year=year, company_id=company_id, employee_ids=employee_ids)
             if manually_inserted_total_earned==total_salary_rate and employee_monthly_attendance_detail.not_paid_days_count!=0:
-                return True, "Full salary marked using OT due attendance in previous month"
+                return True, "Full salary marked do not match salary rate because of non-paid days"
 
         return True, "Operation successful"
 
