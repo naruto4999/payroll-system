@@ -386,7 +386,19 @@ const CalculateOtAttendanceusingEarnedSalary = ({
         );
     } else {
         return (
-            <div>
+            <div className="mt-4">
+                <div>
+                    <h3 className="text-lg font-bold text-blueAccent-600">
+                        {'Calculate OT & Att. from Total Earned Mode'}
+                    </h3>
+                    <div className="my-2 text-xs text-slate-300">
+                        <p>
+                            1. All the amounts shown in this Mode represents the salary that has been prepared already.
+                        </p>
+                        <p> 2. Attendance is Marked automatically from the entered amount in this mode.</p>
+                    </div>
+                </div>
+
                 <section>
                     <label
                         htmlFor="year"

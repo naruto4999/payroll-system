@@ -3743,7 +3743,8 @@ class ExtraFeaturesConfigCreateAPIView(generics.CreateAPIView):
     def perform_create(self, serializer):
         user = self.request.user
         if user.role != "OWNER":
-            return Response({'error': "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
+            raise PermissionDenied("Not allowed")
+        print('yes owner')
         return serializer.save(user=user)
     
 class ExtraFeaturesConfigRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -3754,7 +3755,7 @@ class ExtraFeaturesConfigRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDes
     def get_queryset(self, *args, **kwargs):
         user = self.request.user
         if user.role != "OWNER":
-            return Response({'error': "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
+            raise PermissionDenied("Not allowed")
         company_id = self.kwargs.get('company_id')
         return user.extra_features_configuration.filter(company_id=company_id)
     
@@ -3764,7 +3765,6 @@ class ExtraFeaturesConfigRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDes
             return Response({'error': "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data)
-        print(request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save(user=user)
         return Response(serializer.data, status=status.HTTP_200_OK)

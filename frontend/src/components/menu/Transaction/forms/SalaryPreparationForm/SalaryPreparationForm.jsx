@@ -36,6 +36,7 @@ const classNames = (...classes) => {
 const SalaryPreparationForm = () => {
     const dispatch = useDispatch();
     const globalCompany = useSelector((state) => state.globalCompany);
+    const auth = useSelector((state) => state.auth);
 
     const [showLoadingBar, setShowLoadingBar] = useOutletContext();
     const {
@@ -112,6 +113,7 @@ const SalaryPreparationForm = () => {
         year: new Date().getFullYear(),
         month: new Date().getMonth() + 1,
     });
+    console.log(selectedDate);
     const data = useMemo(() => {
         if (!employeePersonalDetails) return [];
 
@@ -166,8 +168,8 @@ const SalaryPreparationForm = () => {
         // const daysInMonth = new Date(currentYear, currentMonthIndex + 1, 0).getDate();
 
         const initialValues = {
-            year: currentYear,
-            month: currentMonthIndex + 1,
+            year: selectedDate.year,
+            month: selectedDate.month,
             employeeSalaryPrepared: {
                 incentiveAmount: 0,
                 pfDeducted: 0,
@@ -185,7 +187,7 @@ const SalaryPreparationForm = () => {
         };
         return initialValues;
     };
-    const initialValues = useMemo(() => generateInitialValues(), []);
+    const initialValues = useMemo(() => generateInitialValues(), [selectedDate]);
 
     const table = useReactTable({
         data,
@@ -313,12 +315,13 @@ const SalaryPreparationForm = () => {
                         <p className="my-2 text-sm">Prepare employees salaries here</p>
                     </div>
                 </div>
-                {isExtraFeaturesConfigSuccess &&
+                {auth.account.role === 'OWNER' &&
+                    isExtraFeaturesConfigSuccess &&
                     extraFeaturesConfig?.enableCalculateOtAttendanceUsingEarnedSalary == true && (
                         <div>
                             <h3>Salary Preparation Mode</h3>
                             {/* Radio buttons to toggle between modes */}
-                            <div className="flex w-1/2 flex-row gap-6 p-2">
+                            <div className="flex w-2/5 flex-row gap-6 p-1">
                                 <label
                                     className={classNames(
                                         salaryPreperationMode === 'default'

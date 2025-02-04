@@ -117,11 +117,11 @@ def calculate_ot_attendance_using_total_earned(user, company_id, employee_ids, m
             for salary_earning in employee_salary_earnings_for_each_head:
                 total_salary_rate += salary_earning.value
             max_earned_possible_without_ot = total_salary_rate
-            if employee_monthly_attendance_detail.not_paid_days_count != 0:
-                earned_amount_dict = calculate_each_head_earnings_from_paid_days(month=month, year=year, employee=current_employee.employee, company_id=company_id, user=user, paid_days_count=(employee_monthly_attendance_detail.paid_days_count))
-                projected_total_earned_amount = sum(entry['earned_amount'] for entry in earned_amount_dict.values())
-                if projected_total_earned_amount < max_earned_possible_without_ot:
-                    max_earned_possible_without_ot = projected_total_earned_amount
+            # if employee_monthly_attendance_detail.not_paid_days_count != 0:
+            #     earned_amount_dict = calculate_each_head_earnings_from_paid_days(month=month, year=year, employee=current_employee.employee, company_id=company_id, user=user, paid_days_count=(employee_monthly_attendance_detail.paid_days_count))
+            #     projected_total_earned_amount = sum(entry['earned_amount'] for entry in earned_amount_dict.values())
+            #     if projected_total_earned_amount < max_earned_possible_without_ot:
+            #         max_earned_possible_without_ot = projected_total_earned_amount
 
             if manually_inserted_total_earned > max_earned_possible_without_ot:
                 print(f"yes amount is greater, marking OT")

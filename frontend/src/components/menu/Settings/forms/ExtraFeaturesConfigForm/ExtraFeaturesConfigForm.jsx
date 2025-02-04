@@ -19,7 +19,7 @@ const classNames = (...classes) => {
 const ExtraFeaturesConfigForm = () => {
     const dispatch = useDispatch();
     const globalCompany = useSelector((state) => state.globalCompany);
-    console.log(globalCompany);
+    const auth = useSelector((state) => state.auth);
     const [showLoadingBar, setShowLoadingBar] = useOutletContext();
     const {
         data: { company, ...extraFeaturesConfig } = {},
@@ -127,56 +127,59 @@ const ExtraFeaturesConfigForm = () => {
                         <p className="my-2 text-sm">Enable or Disable Extra Features here.</p>
                     </div>
                 </div>
-
                 {/* Formik Implementation */}
-                <Formik
-                    initialValues={
-                        isExtraFeaturesConfigSuccess
-                            ? {
-                                ...extraFeaturesConfig,
-                            }
-                            : {
-                                enableCalculateOtAttendanceUsingEarnedSalary: false,
-                            }
-                    }
-                    validationSchema={''}
-                    onSubmit={updateButtonClicked}
-                >
-                    {({ handleSubmit, errors, touched, values, isValid }) => (
-                        <form id="" className="mt-2" onSubmit={handleSubmit}>
-                            <div className="flex w-full flex-col gap-2">
-                                <div>
-                                    <div className="my-auto w-full font-medium text-amber-600 dark:text-amber-600">
-                                        {'Enable Calculate Overtime And Attendance using Earned Salary'}
+                {auth.account.role === 'OWNER' && (
+                    <Formik
+                        initialValues={
+                            isExtraFeaturesConfigSuccess
+                                ? {
+                                    ...extraFeaturesConfig,
+                                }
+                                : {
+                                    enableCalculateOtAttendanceUsingEarnedSalary: false,
+                                }
+                        }
+                        validationSchema={''}
+                        onSubmit={updateButtonClicked}
+                    >
+                        {({ handleSubmit, errors, touched, values, isValid }) => (
+                            <form id="" className="mt-2" onSubmit={handleSubmit}>
+                                <div className="flex w-full flex-col gap-2">
+                                    {auth.account.role === 'OWNER' && (
+                                        <div>
+                                            <div className="my-auto w-full font-medium text-amber-600 dark:text-amber-600">
+                                                {'Enable Calculate Overtime And Attendance using Earned Salary'}
 
-                                        <Field
-                                            type="checkbox"
-                                            name={`enableCalculateOtAttendanceUsingEarnedSalary`}
-                                            className="my-auto ml-4 inline h-4 w-4 rounded accent-teal-600"
-                                        />
+                                                <Field
+                                                    type="checkbox"
+                                                    name={`enableCalculateOtAttendanceUsingEarnedSalary`}
+                                                    className="my-auto ml-4 inline h-4 w-4 rounded accent-teal-600"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="my-1 text-xs font-bold text-red-500 dark:text-red-700">
+                                        <ErrorMessage name={`enableCalculateOtAttendanceUsingEarnedSalary`} />
+                                    </div>
+                                    <div>
+                                        <button
+                                            className={classNames(
+                                                isValid ? 'hover:bg-teal-600  dark:hover:bg-teal-600' : 'opacity-40',
+                                                'w-20 rounded bg-teal-500 p-2 text-base font-medium dark:bg-teal-700'
+                                            )}
+                                            type="submit"
+                                            disabled={!auth.account.role === 'OWNER' || !isValid}
+                                        >
+                                            {isExtraFeaturesConfigSuccess ? 'Update' : 'Create'}
+                                        </button>
                                     </div>
                                 </div>
-
-                                <div className="my-1 text-xs font-bold text-red-500 dark:text-red-700">
-                                    <ErrorMessage name={`enableCalculateOtAttendanceUsingEarnedSalary`} />
-                                </div>
-                                <div>
-                                    <button
-                                        className={classNames(
-                                            isValid ? 'hover:bg-teal-600  dark:hover:bg-teal-600' : 'opacity-40',
-                                            'w-20 rounded bg-teal-500 p-2 text-base font-medium dark:bg-teal-700'
-                                        )}
-                                        type="submit"
-                                        disabled={!isValid}
-                                    >
-                                        {isExtraFeaturesConfigSuccess ? 'Update' : 'Create'}
-                                    </button>
-                                </div>
-                            </div>
-                            {console.log(errors)}
-                        </form>
-                    )}
-                </Formik>
+                                {console.log(errors)}
+                            </form>
+                        )}
+                    </Formik>
+                )}
             </section>
         );
     }
