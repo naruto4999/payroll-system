@@ -232,8 +232,8 @@ def calculate_ot_attendance_using_total_earned(user, company_id, employee_ids, m
                 #required_unpaid_halves = (amount_to_deduct * Decimal(month_days * 2) / total_salary_rate).quantize(Decimal('1.'), rounding=ROUND_CEILING)
 
                 required_unpaid_halves = (amount_to_deduct * Decimal(month_days * 2) / total_salary_rate).quantize(Decimal('1.'), rounding=ROUND_HALF_UP)
-                if employee_monthly_attendance_detail.not_paid_days_count != 0:
-                    required_unpaid_halves-=employee_monthly_attendance_detail.not_paid_days_count
+                # if employee_monthly_attendance_detail.not_paid_days_count != 0:
+                #     required_unpaid_halves-=employee_monthly_attendance_detail.not_paid_days_count
                 earned_amount_dict = calculate_each_head_earnings_from_paid_days(month=month, year=year, employee=current_employee.employee, company_id=company_id, user=user, paid_days_count=(employee_monthly_attendance_detail.paid_days_count)-required_unpaid_halves)
                 projected_total_earned_amount = sum(entry['earned_amount'] for entry in earned_amount_dict.values())
                 if projected_total_earned_amount > (manually_inserted_total_earned+upper_buffer_manually_inserted_total_earned):
