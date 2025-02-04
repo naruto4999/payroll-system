@@ -45,7 +45,12 @@ const InsertTotalEarnedModal = ({
                             </p>
                             <p>
                                 4. Total Earned Computed will be max.{' '}
-                                <span className="italic text-blueAccent-600">entered_amount + 100 </span>or below that.
+                                <span className="italic text-blueAccent-600">entered_amount + 100 </span>or below that
+                                if entered amount is less than salary rate.
+                            </p>
+                            <p>
+                                5. When marking OT to match the total earned entered, it is rounded to nearest 0.5
+                                decimal place.
                             </p>
                         </div>
                     </div>

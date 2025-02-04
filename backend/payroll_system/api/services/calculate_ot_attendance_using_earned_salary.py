@@ -117,13 +117,13 @@ def calculate_ot_attendance_using_total_earned(user, company_id, employee_ids, m
             for salary_earning in employee_salary_earnings_for_each_head:
                 total_salary_rate += salary_earning.value
             max_earned_possible_without_ot = total_salary_rate
-            # if employee_monthly_attendance_detail.not_paid_days_count != 0:
-            #     earned_amount_dict = calculate_each_head_earnings_from_paid_days(month=month, year=year, employee=current_employee.employee, company_id=company_id, user=user, paid_days_count=(employee_monthly_attendance_detail.paid_days_count))
-            #     projected_total_earned_amount = sum(entry['earned_amount'] for entry in earned_amount_dict.values())
-            #     if projected_total_earned_amount < max_earned_possible_without_ot:
-            #         max_earned_possible_without_ot = projected_total_earned_amount
+            if employee_monthly_attendance_detail.not_paid_days_count != 0:
+                earned_amount_dict = calculate_each_head_earnings_from_paid_days(month=month, year=year, employee=current_employee.employee, company_id=company_id, user=user, paid_days_count=(employee_monthly_attendance_detail.paid_days_count))
+                projected_total_earned_amount = sum(entry['earned_amount'] for entry in earned_amount_dict.values())
+                if projected_total_earned_amount < max_earned_possible_without_ot:
+                    max_earned_possible_without_ot = projected_total_earned_amount
 
-            if manually_inserted_total_earned > max_earned_possible_without_ot:
+            if manually_inserted_total_earned > total_salary_rate:
                 print(f"yes amount is greater, marking OT")
                 if employee_salary_detail.first().overtime_type != 'all_days':
                     return False, "Employee's overtime type is 'No Overtime'"
@@ -138,15 +138,18 @@ def calculate_ot_attendance_using_total_earned(user, company_id, employee_ids, m
                         overtime_divisor = Decimal(company_calculations.ot_calculation)
                 ot_rate_per_hour = Decimal(total_salary_rate) * Decimal(overtime_rate_multiplier) / overtime_divisor / Decimal(8)
                 total_ot_hrs_to_fill = amount_to_fill_with_ot/ot_rate_per_hour
+                print(f"Total Ot Hrs: {total_ot_hrs_to_fill}, Max Earned without OT: {max_earned_possible_without_ot}, OT DIvisor: {overtime_divisor}")
                 
                 # Extract the integer and decimal parts
                 integer_part = int(total_ot_hrs_to_fill)
                 decimal_part = total_ot_hrs_to_fill - integer_part
 
-                if decimal_part >= Decimal('0.5'):
-                    total_ot_hrs_to_fill = integer_part + Decimal('0.5')
-                else:
+                if decimal_part < Decimal('0.25'):
                     total_ot_hrs_to_fill = Decimal(integer_part)
+                elif decimal_part >= Decimal('0.25') and decimal_part < Decimal('0.75'):
+                    total_ot_hrs_to_fill = integer_part + Decimal('0.5')
+                elif decimal_part >= Decimal('0.75'):
+                    total_ot_hrs_to_fill = Decimal(integer_part) + Decimal(1)
 
                 #List of Complete Working Days
                 queryset_of_complete_working_days = get_complete_working_days_queryset(from_date=from_date, to_date=to_date, employee_id=current_employee.employee, company_id=company_id, user=user if user.role=='OWNER' else user.regular_to_owner.owner).order_by('?')
@@ -222,8 +225,8 @@ def calculate_ot_attendance_using_total_earned(user, company_id, employee_ids, m
                 #Updating monthly attendance record
                 EmployeeGenerativeLeaveRecord.objects.generate_update_monthly_record(user=user, year=from_date.year, month=from_date.month, employee_id=current_employee.employee.id, company_id=current_employee.company.id)
         
-            elif manually_inserted_total_earned < max_earned_possible_without_ot: #Creating Less Salary then Salary Rate
-                amount_to_deduct = total_salary_rate - manually_inserted_total_earned
+            elif manually_inserted_total_earned < total_salary_rate: #Creating Less Salary then Salary Rate
+                amount_to_deduct = max_earned_possible_without_ot - manually_inserted_total_earned
                 month_days = calendar.monthrange(year, month)[1]
                 print(f"Amount To Deduct: {amount_to_deduct}, Month Days: {month_days}")
                 #required_unpaid_halves = (amount_to_deduct * Decimal(month_days * 2) / total_salary_rate).quantize(Decimal('1.'), rounding=ROUND_CEILING)
