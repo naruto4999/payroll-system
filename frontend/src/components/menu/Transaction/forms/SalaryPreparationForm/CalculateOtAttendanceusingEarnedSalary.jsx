@@ -558,17 +558,21 @@ const CalculateOtAttendanceusingEarnedSalary = ({
                 <section className="w-full">
                     <p className="mx-auto mt-6 w-fit dark:text-yellow-600">
                         Total Before Deductions :{' '}
-                        {formValues?.employeeSalaryPrepared?.netOtAmountMonthly +
-                            (formValues?.employeeSalaryPrepared?.incentiveAmount === ''
-                                ? 0
-                                : Number(formValues?.employeeSalaryPrepared?.incentiveAmount)) +
-                            formValues?.earnedAmount?.reduce((accumulator, item) => {
-                                // Convert the earnedAmount property to a number and add it to the accumulator
-                                return accumulator + Number(item.earnedAmount || 0); // Use 0 as a default value if earnedAmount is undefined or falsy
-                            }, 0)}
+                        {isEmployeePreparedSalarySuccess != false
+                            ? Number(formValues?.employeeSalaryPrepared?.netOtAmountMonthly || 0) +
+                            Number(formValues?.employeeSalaryPrepared?.incentiveAmount || 0) +
+                            formValues?.earnedAmount?.reduce(
+                                (accumulator, item) => accumulator + Number(item.earnedAmount || 0),
+                                0
+                            )
+                            : 'Salary Not Prepared Yet'}
                     </p>
                     {/* Using Same Net Salary Component as in Default Mode */}
-                    <NetSalary values={formValues} updateEmployeeId={updateEmployeeId} />
+                    {isEmployeePreparedSalarySuccess != false ? (
+                        <NetSalary values={formValues} updateEmployeeId={updateEmployeeId} />
+                    ) : (
+                        <p className="mx-auto mt-4 w-fit font-semibold text-redAccent-600">Salary Not Prepared Yet</p>
+                    )}
                 </section>
                 <section>
                     <div className="mt-4 mb-2 flex w-fit flex-row gap-4">

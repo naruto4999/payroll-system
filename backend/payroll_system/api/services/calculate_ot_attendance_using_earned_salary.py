@@ -102,15 +102,15 @@ def calculate_ot_attendance_using_total_earned(user, company_id, employee_ids, m
             employee_salary_earnings_for_each_head = EmployeeSalaryEarning.objects.filter(company_id=company_id, from_date__lte=from_date, to_date__gte=from_date, employee=current_employee.employee)
             company_calculations = Calculations.objects.get(user=user if user.role=="OWNER" else user.regular_to_owner.owner, company_id=company_id)
 
-            if not employee_pf_esi_detail.exists() or not employee_salary_detail.exists() or not employee_monthly_attendance_detail.exists() or not employee_salary_earnings_for_each_head.exists():
-                #Return error that details are not filled for this employee
-                return False, "Empoyee Details are not complete"
-                continue
-            elif employee_salary_detail.first().overtime_type != 'all_days':
-                if employee_salary_detail.first().overtime_type == 'no_overtime':
-                    return False, "Employee's Overtime Type is 'No Overtime'"
-                else:
-                    return False, "Employee's Overtime Type is Weekly/Holiday Off"
+            if not employee_pf_esi_detail.exists():
+                return False, "Empoyee PF ESI Details are not created"
+            elif not employee_salary_detail.exists():
+                return False, "Empoyee Salary Detials are not created"
+            elif not employee_monthly_attendance_detail.exists():
+                return False, "Empoyee Attndance was not marked successful, Please try again"
+            elif not employee_salary_earnings_for_each_head.exists():
+                return False, "Empoyee Salary is not added"
+
             employee_monthly_attendance_detail = employee_monthly_attendance_detail.first()
             total_salary_rate = 0
             days_in_month = calendar.monthrange(year, month)[1]
@@ -124,6 +124,12 @@ def calculate_ot_attendance_using_total_earned(user, company_id, employee_ids, m
                     max_earned_possible_without_ot = projected_total_earned_amount
 
             if manually_inserted_total_earned > total_salary_rate:
+                if employee_salary_detail.first().overtime_type != 'all_days':
+                    if employee_salary_detail.first().overtime_type == 'no_overtime':
+                        return False, "Employee's Overtime Type is 'No Overtime'"
+                    else:
+                        return False, "Employee's Overtime Type is Weekly/Holiday Off"
+
                 print(f"yes amount is greater, marking OT")
                 if employee_salary_detail.first().overtime_type != 'all_days':
                     return False, "Employee's overtime type is 'No Overtime'"
