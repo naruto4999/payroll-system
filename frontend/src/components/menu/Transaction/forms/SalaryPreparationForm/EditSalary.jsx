@@ -20,6 +20,7 @@ import ConfirmationModal from '../../../../UI/ConfirmationModal';
 import { ConfirmationModalSchema } from './SalaryPreperationSchema';
 import { useDispatch, useSelector } from 'react-redux';
 import { alertActions } from '../../../../authentication/store/slices/alertSlice';
+import LoadingSpinner from '../../../../UI/LoadingSpinner';
 
 ReactModal.setAppElement('#root');
 
@@ -150,10 +151,6 @@ const EditSalary = ({
 		}
 	);
 
-	useEffect(() => {
-		console.log('me am rendering');
-	}, []);
-
 	const currentEmployeeMonthlyAttendanceDetails = useMemo(() => {
 		if (allEmployeeMonthlyAttendanceDetails && updateEmployeeId) {
 			const selectedEmployeeData = allEmployeeMonthlyAttendanceDetails.filter((item) => {
@@ -195,7 +192,6 @@ const EditSalary = ({
 			setFieldValue('employeeSalaryPrepared.netOtMinutesMonthly', 0);
 		}
 	}, [currentEmployeeMonthlyAttendanceDetails]);
-	console.log(currentEmployeeSalaryEarning);
 
 	useEffect(() => {
 		if (currentEmployeeSalaryDetails) {
@@ -220,7 +216,10 @@ const EditSalary = ({
 				if (auth.account.role == 'OWNER') {
 					if (companyCalculations?.otCalculation == 'month_days') {
 						overtimeDivisor = new BigNumber(new Date(values.year, values.month, 0).getDate());
-					} else {
+					} else if (
+						companyCalculations?.otCalculation != undefined &&
+						companyCalculations?.otCalculation != null
+					) {
 						overtimeDivisor = new BigNumber(companyCalculations?.otCalculation);
 					}
 				}
@@ -238,7 +237,12 @@ const EditSalary = ({
 				setFieldValue('employeeSalaryPrepared.netOtAmountMonthly', 0);
 			}
 		}
-	}, [currentEmployeeSalaryDetails, currentEmployeeSalaryEarning, values.employeeSalaryPrepared.netOtMinutesMonthly]);
+	}, [
+		currentEmployeeSalaryDetails,
+		currentEmployeeSalaryEarning,
+		values.employeeSalaryPrepared.netOtMinutesMonthly,
+		companyCalculations,
+	]);
 
 	useEffect(() => {
 		if (
@@ -336,8 +340,19 @@ const EditSalary = ({
 			);
 		}
 	};
-
 	if (
+		isLoadingCompanyCalculations ||
+		isLoadingAllEmployeeMonthlyAttendanceDetails ||
+		isLoadingAllEmployeeSalaryDetails ||
+		isLoadingAllEmployeeSalaryEarnings ||
+		isLoadingAllEmployeePfEsiDetails
+	) {
+		return (
+			<div className="mx-auto">
+				<LoadingSpinner />
+			</div>
+		);
+	} else if (
 		currentEmployeeMonthlyAttendanceDetails?.length == 0 ||
 		currentEmployeeSalaryEarning?.length == 0 ||
 		currentEmployeeSalaryDetails == null ||
@@ -592,7 +607,7 @@ const EditSalary = ({
 				<section className="w-full">
 					<p className="mx-auto mt-6 w-fit dark:text-yellow-600">
 						Total Before Deductions :{' '}
-						{values?.employeeSalaryPrepared?.netOtAmountMonthly +
+						{(Number(values?.employeeSalaryPrepared?.netOtAmountMonthly) || 0) +
 							(values?.employeeSalaryPrepared?.incentiveAmount === ''
 								? 0
 								: Number(values?.employeeSalaryPrepared?.incentiveAmount)) +
