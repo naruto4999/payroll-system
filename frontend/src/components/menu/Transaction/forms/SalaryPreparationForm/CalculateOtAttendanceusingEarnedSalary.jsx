@@ -128,7 +128,11 @@ const CalculateOtAttendanceusingEarnedSalary = ({
             year: selectedDate?.year,
         },
         {
-            skip: globalCompany === null || globalCompany === '' || selectedDate?.year == undefined,
+            skip:
+                globalCompany === null ||
+                globalCompany === '' ||
+                selectedDate?.year == undefined ||
+                selectedDate.year == null,
         }
     );
 
@@ -175,7 +179,7 @@ const CalculateOtAttendanceusingEarnedSalary = ({
                 (item) => item.employee === updateEmployeeId && isDateWithinRange(item.fromDate, item.toDate)
             ) ?? [];
         return currentEmployeeSalaryEarning;
-    }, [allEmployeeSalaryEarnings, updateEmployeeId]);
+    }, [allEmployeeSalaryEarnings, updateEmployeeId, selectedDate.year, selectedDate.month]);
 
     const currentEmployeePfEsiDetails = useMemo(() => {
         const selectedEmployeeData = allEmployeePfEsiDetails?.filter((item) => item.employee === updateEmployeeId);
@@ -198,7 +202,7 @@ const CalculateOtAttendanceusingEarnedSalary = ({
         }
         // handleReset();
         return [];
-    }, [allEmployeeMonthlyAttendanceDetails, updateEmployeeId]);
+    }, [allEmployeeMonthlyAttendanceDetails, updateEmployeeId, selectedDate.year, selectedDate.month]);
 
     const optionsForYear = useMemo(() => {
         if (earliestMonthAndYear) {
@@ -309,6 +313,13 @@ const CalculateOtAttendanceusingEarnedSalary = ({
             setFormValues(initialFormValues);
         }
     }, [apiFormValues, defaultEarnedAmounts, initialFormValues]);
+
+    // Calculate rate totals
+    const rateTotals = useMemo(() => {
+        const defaultRateTotal = defaultEarnedAmounts.reduce((total, item) => total + Number(item.rate || 0), 0);
+        const formValuesRateTotal = formValues.earnedAmount.reduce((total, item) => total + Number(item.rate || 0), 0);
+        return { defaultRateTotal, formValuesRateTotal };
+    }, [defaultEarnedAmounts, formValues.earnedAmount]);
     if (
         isLoadingEmployeePreparedSalary ||
         isFetchingEmployeePreparedSalary ||
@@ -435,6 +446,11 @@ const CalculateOtAttendanceusingEarnedSalary = ({
                     >
                         {optionsForYear}
                     </select>
+
+                    {/* Conditionally render the salary changed message */}
+                    {rateTotals.defaultRateTotal !== rateTotals.formValuesRateTotal && (
+                        <p className="ml-2 inline text-sm font-medium text-redAccent-600">* Salary Rate Changed</p>
+                    )}
                 </section>
                 <section className="mt-2 flex flex-row gap-4">
                     <div className="w-full">
