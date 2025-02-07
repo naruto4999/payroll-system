@@ -14,7 +14,8 @@ import { useGetAllEmployeeSalaryDetailQuery } from '../../../../authentication/a
 import BigNumber from 'bignumber.js';
 import { alertActions } from '../../../../authentication/store/slices/alertSlice';
 import DeductionsForCalculateOtAttendanceUsingEarnedSalary from './DeductionsForCalculateOtAttendanceUsingEarnedSalary';
-import NetSalary from './NetSalary';
+// import NetSalary from './NetSalary';
+import NetSalaryForCalculateOtAttendanceUsingEarnedSalary from './NetSalaryForCalculateOtAttendanceUsingEarnedSalary';
 import ReactModal from 'react-modal';
 import InsertTotalEarnedModal from './InsertTotalEarnedModal';
 import LoadingSpinner from '../../../../UI/LoadingSpinner';
@@ -585,7 +586,12 @@ const CalculateOtAttendanceusingEarnedSalary = ({
                     </p>
                     {/* Using Same Net Salary Component as in Default Mode */}
                     {isEmployeePreparedSalarySuccess != false ? (
-                        <NetSalary values={formValues} updateEmployeeId={updateEmployeeId} />
+                        <>
+                            <NetSalaryForCalculateOtAttendanceUsingEarnedSalary
+                                formValues={formValues}
+                                updateEmployeeId={updateEmployeeId}
+                            />
+                        </>
                     ) : (
                         <p className="mx-auto mt-4 w-fit font-semibold text-redAccent-600">Salary Not Prepared Yet</p>
                     )}
