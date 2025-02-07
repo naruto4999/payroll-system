@@ -1,7 +1,7 @@
 from ..models import WeeklyOffHolidayOff, EmployeeAttendance, LeaveGrade, EmployeeShifts
 from dateutil.relativedelta import relativedelta
 from .paid_days_count_for_past_six_days import paid_days_count_for_past_six_days
-from django.db.models import Q
+from django.db.models import Q, QuerySet
 from .get_complete_working_days_queryset import get_complete_working_days_queryset
 from datetime import date, datetime, timedelta
 from .get_complete_working_days_queryset import get_complete_working_days_queryset
@@ -12,7 +12,6 @@ def mark_end_of_month_absent(from_date, to_date, employee, company_id, user, hal
     """
     Marks the entire day absent at the end of the month when there are no weekly off (WO) or holiday off (HD) references.
     This is for days that do not have a weekly off (WO) or holiday off (HD) at the end of the same month.
-    This method converts one unpaid half at a time.
     """
     absent = LeaveGrade.objects.get(user=user, company_id=company_id, name='A')
     weekly_off_holiday_off = WeeklyOffHolidayOff.objects.get(company_id=company_id, user=user)

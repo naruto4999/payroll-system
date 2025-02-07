@@ -40,11 +40,11 @@ def mark_whole_day_absent_with_wo_hd_skipping(from_date, to_date, employee, comp
                 #Ensure the Working Days being retrieved are in the same month
                 from_date_for_working_days = day.date - relativedelta(days=6)
                 to_date_for_working_days = day.date - relativedelta(days=1)
-                if from_date_for_working_days.month < day.date.month:
+                if from_date_for_working_days.month != day.date.month:
                     from_date_for_working_days = day.date.replace(day=1)
-
-                if to_date_for_working_days.month < day.date.month:
+                if to_date_for_working_days.month != day.date.month:
                     to_date_for_working_days = day.date.replace(day=1)
+
 
                 complete_working_days_list = get_complete_working_days_queryset(from_date=from_date_for_working_days, to_date=to_date_for_working_days, employee_id=employee.id, company_id=company_id, user=user)
                 if not complete_working_days_list.exists():
@@ -76,12 +76,11 @@ def mark_whole_day_absent_with_wo_hd_skipping(from_date, to_date, employee, comp
                 #Ensure the Working Days being retrieved are in the same month
                 from_date_for_working_days = day.date - relativedelta(days=6)
                 to_date_for_working_days = day.date - relativedelta(days=1)
-                if from_date_for_working_days.month < day.date.month:
+                if from_date_for_working_days.month != day.date.month:
                     from_date_for_working_days = day.date.replace(day=1)
-
-                if to_date_for_working_days.month < day.date.month:
+                if to_date_for_working_days.month != day.date.month:
                     to_date_for_working_days = day.date.replace(day=1)
-
+                
                 complete_working_days_list = get_complete_working_days_queryset(from_date=from_date_for_working_days, to_date=to_date_for_working_days, employee_id=employee.id, company_id=company_id, user=user)
                 if not complete_working_days_list.exists():
                     continue

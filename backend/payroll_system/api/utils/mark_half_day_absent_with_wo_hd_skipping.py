@@ -43,10 +43,9 @@ def mark_half_day_absent_with_wo_hd_skipping(from_date, to_date, employee, compa
                 #Ensure the Working Days being retrieved are in the same month
                 from_date_for_working_days = day.date - relativedelta(days=6)
                 to_date_for_working_days = day.date - relativedelta(days=1)
-                if from_date_for_working_days.month < day.date.month:
+                if from_date_for_working_days.month != day.date.month:
                     from_date_for_working_days = day.date.replace(day=1)
-
-                if to_date_for_working_days.month < day.date.month:
+                if to_date_for_working_days.month != day.date.month:
                     to_date_for_working_days = day.date.replace(day=1)
 
                 if mark_full_working_day_to_half_working_day == False:
