@@ -12,6 +12,7 @@ def mark_end_of_month_absent(from_date, to_date, employee, company_id, user, hal
     """
     Marks the entire day absent at the end of the month when there are no weekly off (WO) or holiday off (HD) references.
     This is for days that do not have a weekly off (WO) or holiday off (HD) at the end of the same month.
+    This method converts one unpaid half at a time.
     """
     absent = LeaveGrade.objects.get(user=user, company_id=company_id, name='A')
     weekly_off_holiday_off = WeeklyOffHolidayOff.objects.get(company_id=company_id, user=user)
@@ -31,16 +32,13 @@ def mark_end_of_month_absent(from_date, to_date, employee, company_id, user, hal
 
     last_wo_hd = filtered_wo_hd_records.first()
     converted_halves = 0
-
-    if halves_to_convert-converted_halves>=1 and mark_full_working_day_to_half_working_day == True:
+    if mark_full_working_day_to_half_working_day == True:
         complete_working_days = get_complete_working_days_queryset(from_date=last_wo_hd.date + relativedelta(days=1), to_date=to_date, employee_id=employee.id, company_id=company_id, user=user)
-        print(f"mark_end_of_month_queryset: {complete_working_days}")
         for mark_absent_day in complete_working_days:
             if halves_to_convert-converted_halves<1:
                 break
             #Marking P day to A
             if (halves_to_convert-converted_halves)%2==1: #Marking Full Working Day to Half WOrking day
-                print(f"marking half day absent")
                 employee_shift_on_current_date = EmployeeShifts.objects.filter(company_id=company_id, user=user if user.role=="OWNER" else user.regular_to_owner.owner, employee=employee, from_date__lte=mark_absent_day.date, to_date__gte=mark_absent_day.date)
                 if not employee_shift_on_current_date.exists():
                     raise ValueError(f'Shift Not Found on {mark_absent_day.date.strftime("%Y-%m-%d")}')
@@ -72,7 +70,7 @@ def mark_end_of_month_absent(from_date, to_date, employee, company_id, user, hal
                 mark_absent_day.save()
                 converted_halves+=2
 
-    if halves_to_convert-converted_halves==1:
+    if halves_to_convert>converted_halves:
         if mark_full_working_day_to_half_working_day == False:
             partial_working_days = get_half_working_days_queryset(from_date=last_wo_hd.date + relativedelta(days=1), to_date=to_date, employee_id=employee.id, company_id=company_id, user=user)
             for mark_absent_day in partial_working_days:

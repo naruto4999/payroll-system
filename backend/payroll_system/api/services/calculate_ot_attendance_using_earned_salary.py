@@ -244,7 +244,6 @@ def calculate_ot_attendance_using_total_earned(user, company_id, employee_ids, m
                 projected_total_earned_amount = sum(entry['earned_amount'] for entry in earned_amount_dict.values())
                 if projected_total_earned_amount > (manually_inserted_total_earned+upper_buffer_manually_inserted_total_earned):
                     required_unpaid_halves+=1
-
                 print(f"Required Halves: {required_unpaid_halves}")
                 
                 #Add parameter for random absentes
@@ -255,7 +254,10 @@ def calculate_ot_attendance_using_total_earned(user, company_id, employee_ids, m
                 """
                 Start New Method From Here
                 """
-                while required_unpaid_halves>converted_halves and loop_count<=200:
+                #False means calling the status won't do any good
+                
+                while required_unpaid_halves>converted_halves and loop_count<=150:
+                    change_made = False
                     loop_count +=1
                     print(f"Loop Count: {loop_count}, required_unpaid_halves: {required_unpaid_halves}, Converted Halves: {converted_halves}")
                     status, marked_count = "not_marked", 0
@@ -264,18 +266,21 @@ def calculate_ot_attendance_using_total_earned(user, company_id, employee_ids, m
                         # print(f"Method mark_whole_day_absent_with_wo_hd_skipping returned: {status}, marked_count, {marked_count}")
                         if status=="marked":
                             converted_halves+=marked_count
+                            change_made = True
                             continue
                     if required_unpaid_halves-converted_halves==3:
                         status, marked_count = mark_half_day_absent_with_wo_hd_skipping(from_date=from_date, to_date=to_date, employee=current_employee.employee, company_id=company_id, user=user, mark_full_working_day_to_half_working_day=True)
                         # print(f"Method mark_half_day_absent_with_wo_hd_skipping returned: {status}, marked_count, {marked_count}")
                         if status=="marked":
                             converted_halves+=marked_count
+                            change_made = True
                             continue
                     if required_unpaid_halves-converted_halves>=2:
                         status, marked_count = mark_whole_day_absent_without_wo_hd_skipping(from_date=from_date, to_date=to_date, employee=current_employee.employee, company_id=company_id, user=user)
                         # print(f"Method mark_whole_day_absent_without_wo_hd_skipping returned: {status}, marked_count, {marked_count}")
                         if status=="marked":
                             converted_halves+=marked_count
+                            change_made = True
                             continue
                     if required_unpaid_halves-converted_halves==1:
                         status, marked_count = mark_half_day_absent_without_wo_hd_skipping(from_date=from_date, to_date=to_date, employee=current_employee.employee, company_id=company_id, user=user, mark_full_working_day_to_half_working_day=True)
@@ -283,14 +288,22 @@ def calculate_ot_attendance_using_total_earned(user, company_id, employee_ids, m
 
                         if status=="marked":
                             converted_halves+=marked_count
+                            change_made = True
                             continue
                     if required_unpaid_halves-converted_halves!=0:
                         status, marked_count = mark_end_of_month_absent(from_date=from_date, to_date=to_date, employee=current_employee.employee, company_id=company_id, user=user, halves_to_convert=required_unpaid_halves-converted_halves, mark_full_working_day_to_half_working_day=True)
                         print(f"Method mark_end_of_month_absent returned: {status}, marked_count, {marked_count}, required haves passed: {required_unpaid_halves-converted_halves}")
                         if status=="marked":
                             converted_halves+=marked_count
+                            change_made = True
                             continue
-                    if (loop_count>200):
+                        else:
+                            status, marked_count = mark_end_of_month_absent(from_date=from_date, to_date=to_date, employee=current_employee.employee, company_id=company_id, user=user, halves_to_convert=required_unpaid_halves-converted_halves, mark_full_working_day_to_half_working_day=False) #Sometimes the halfday is left over in the second_half
+                            if status=="marked":
+                                converted_halves+=marked_count
+                                change_made = True
+                                continue
+                    if (loop_count>150) or change_made==False:
                         break
 
                 converted_halves_in_reevaluation = re_evaluate_weekly_holiday_off(from_date=from_date, to_date=to_date, employee=current_employee.employee, company_id=company_id, user=user)
