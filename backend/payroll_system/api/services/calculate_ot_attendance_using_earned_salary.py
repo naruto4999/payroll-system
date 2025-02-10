@@ -82,7 +82,8 @@ def calculate_ot_attendance_using_total_earned(user, company_id, employee_ids, m
     """
     Function to calculate OT and attendance based on total earned. Deductions are subtracted from the manually_inserted_total_earned.
     Overtime is not marked on weekly off or holidy off days.
-    Tweak the tweaking parameters later to modify the end result
+    Tweak the tweaking parameters later to modify the end result.
+    If there is only one week to mark the attendance (if employee resigned), might work unexpectedly.
    """
     #Tweaking parameters, Later get them from the frontend
     upper_buffer_manually_inserted_total_earned = 100 
@@ -232,7 +233,11 @@ def calculate_ot_attendance_using_total_earned(user, company_id, employee_ids, m
                 EmployeeGenerativeLeaveRecord.objects.generate_update_monthly_record(user=user, year=from_date.year, month=from_date.month, employee_id=current_employee.employee.id, company_id=current_employee.company.id)
         
             elif manually_inserted_total_earned < total_salary_rate: #Creating Less Salary then Salary Rate
-                amount_to_deduct = max_earned_possible_without_ot - manually_inserted_total_earned
+                earned_amount_dict = calculate_each_head_earnings_from_paid_days(month=month, year=year, employee=current_employee.employee, company_id=company_id, user=user, paid_days_count=(employee_monthly_attendance_detail.paid_days_count))
+                projected_total_earned_amount = sum(entry['earned_amount'] for entry in earned_amount_dict.values())
+                if projected_total_earned_amount < max_earned_possible_without_ot:
+                    max_earned_possible_without_ot = projected_total_earned_amount
+                amount_to_deduct = max((max_earned_possible_without_ot - manually_inserted_total_earned), 0)
                 month_days = calendar.monthrange(year, month)[1]
                 print(f"Amount To Deduct: {amount_to_deduct}, Month Days: {month_days}")
                 #required_unpaid_halves = (amount_to_deduct * Decimal(month_days * 2) / total_salary_rate).quantize(Decimal('1.'), rounding=ROUND_CEILING)
@@ -277,7 +282,7 @@ def calculate_ot_attendance_using_total_earned(user, company_id, employee_ids, m
                             continue
                     if required_unpaid_halves-converted_halves>=2:
                         status, marked_count = mark_whole_day_absent_without_wo_hd_skipping(from_date=from_date, to_date=to_date, employee=current_employee.employee, company_id=company_id, user=user)
-                        # print(f"Method mark_whole_day_absent_without_wo_hd_skipping returned: {status}, marked_count, {marked_count}")
+                        #print(f"Method mark_whole_day_absent_without_wo_hd_skipping returned: {status}, marked_count, {marked_count}")
                         if status=="marked":
                             converted_halves+=marked_count
                             change_made = True
@@ -299,6 +304,7 @@ def calculate_ot_attendance_using_total_earned(user, company_id, employee_ids, m
                             continue
                         else:
                             status, marked_count = mark_end_of_month_absent(from_date=from_date, to_date=to_date, employee=current_employee.employee, company_id=company_id, user=user, halves_to_convert=required_unpaid_halves-converted_halves, mark_full_working_day_to_half_working_day=False) #Sometimes the halfday is left over in the second_half
+                            print(f"Method mark_end_of_month_absent returned in else block: {status}, marked_count, {marked_count}, required haves passed: {required_unpaid_halves-converted_halves}")
                             if status=="marked":
                                 converted_halves+=marked_count
                                 change_made = True
