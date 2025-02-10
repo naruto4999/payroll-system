@@ -834,7 +834,8 @@ class EmployeeAttendanceManager(models.Manager):
             machine_out_sub_user = None
             if attendance.machine_out or attendance.manual_out:
                 machine_out_sub_user = datetime.combine(datetime.now().date(), attendance.manual_out if attendance.manual_out else attendance.machine_out)
-                if machine_out_sub_user < minimum_in_time:
+                #if machine_out_sub_user < minimum_in_time:  - OLD
+                if machine_out_sub_user<machine_in_sub_user if machine_in_sub_user!=None else machine_out_sub_user < minimum_in_time:
                     machine_out_sub_user = machine_out_sub_user + relativedelta(days=1)
                 if sub_user_misc_settings.enable_female_max_punch_out == True and attendance.employee.gender == 'F' :
                     # max_female_punch_out_with_current_date = datetime.combine(datetime.now().date(), sub_user_misc_settings.max_female_punch_out)
