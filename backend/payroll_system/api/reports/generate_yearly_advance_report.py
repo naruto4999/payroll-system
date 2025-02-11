@@ -48,12 +48,6 @@ def generate_yearly_advance_report(user, request_data, employees):
     'May', 'June', 'July', 'August',
     'September', 'October', 'November', 'December'
     ]
-    grand_total = {
-        "advance_taken_amount": 0,
-        "advance_deducted": 0,
-        "rate": 0,
-        "total_earned": 0,
-    }
 
     employees = employees.prefetch_related(
         Prefetch('earnings', queryset=EmployeeSalaryEarning.objects.all()),
@@ -72,6 +66,13 @@ def generate_yearly_advance_report(user, request_data, employees):
 
     
     for index, employee in enumerate(employees):
+        grand_total = {
+            "advance_taken_amount": 0,
+            "advance_deducted": 0,
+            "rate": 0,
+            "total_earned": 0,
+        }
+
         yearly_advance_report.set_line_width(width=0.4)
         ##Intro on left
         #ACN
