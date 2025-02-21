@@ -40,7 +40,7 @@ const Sidebar = () => {
 						children: main_menu_item.children.filter((item) => {
 							return item.title === 'Setup Entry' ? auth.account.role === 'OWNER' : true;
 						}),
-				  }
+					}
 				: main_menu_item;
 		});
 
@@ -107,7 +107,13 @@ const Sidebar = () => {
 					>
 						<div className="text-xl">
 							<div className="mt-1 flex items-center p-2.5">
-								<h1 className="ml-3 text-xl font-bold">PAY-PER</h1>
+								<div className="ml-3">
+									<img
+										src={`${import.meta.env.VITE_PUBLIC_URL}logo_text_dark.svg`}
+										alt="PAY-PER Logo"
+										className="h-4 w-auto"
+									/>
+								</div>
 								<FaRegWindowClose
 									className="absolute right-0 mx-4 cursor-pointer"
 									onClick={sidebarHandler}

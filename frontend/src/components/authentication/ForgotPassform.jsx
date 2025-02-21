@@ -69,16 +69,24 @@ const ForgotPassform = () => {
     };
 
     return (
-        <main className="mx-auto h-screen max-w-md ">
-            <section className="sticky top-0 z-10 p-2">
-                <img
-                    src={`${import.meta.env.VITE_PUBLIC_URL}logo_dark.png`}
-                    alt="LOGO"
-                    className="mx-auto h-16 w-auto object-center"
-                />
+        <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center">
+            <section className="top-0 z-10 flex w-full justify-center p-2">
+                <div className="relative h-[172px] w-full">
+                    <Link to="/">
+                        <img
+                            src={`${import.meta.env.VITE_PUBLIC_URL}logo_full_dark.svg`}
+                            alt="LOGO"
+                            className=" absolute inset-0 mx-auto h-36 w-auto object-center transition-all duration-700 ease-in-out hover:h-[154px]"
+                        />
+                    </Link>
+
+                    <p className="absolute bottom-0 mx-auto w-full text-center font-sans text-sm italic text-slate-400">
+                        A Smart Payroll System on Cloud
+                    </p>
+                </div>
             </section>
 
-            <section id="forgot-password" className="flex h-[calc(100vh-80px)] flex-col md:justify-center">
+            <section id="forgot-password" className="flex w-full flex-col md:justify-center">
                 <div
                     className="mt-2 box-border flex flex-col rounded-lg
                 bg-zinc-50 bg-opacity-60 p-6 shadow-xl dark:bg-black dark:bg-opacity-50 md:mx-6 md:mt-0"
