@@ -47,7 +47,7 @@ def generate_id_card_portrait(request_data, employees):
         #Headers
         id_card.set_font("Helvetica", size=7.5, style="B")
         id_card.cell(w=width_of_columns['id_card_width'], h=default_cell_height_large, text=f"IDENTITY CARD", align="C", new_x="LEFT", new_y='NEXT', border='TLR')
-        id_card.multi_cell_with_limit(w=width_of_columns['id_card_width'], h=default_cell_height_large, text=f"{employee.company.name} A long ass compnay name to test functionality", max_lines=1, border_each_line=False, align="C", new_x="LEFT", new_y='NEXT', border='LR')
+        id_card.multi_cell_with_limit(w=width_of_columns['id_card_width'], h=default_cell_height_large, text=f"{employee.company.name}", max_lines=1, border_each_line=False, align="C", new_x="LEFT", new_y='NEXT', border='LR')
         id_card.set_font("Helvetica", size=7.5, style="")
         id_card.multi_cell_with_limit(w=width_of_columns['id_card_width'], h=default_cell_height_large, text=f"{compnay_address}", min_lines=2, max_lines=2, border_each_line=False, align="C",  new_x="LEFT", new_y='NEXT', border='BLR')
 
