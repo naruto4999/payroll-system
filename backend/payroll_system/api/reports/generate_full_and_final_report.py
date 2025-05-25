@@ -31,7 +31,32 @@ class FPDF(FPDF):
             self.cell(w=210/2-6, h=5, text='Full And Final Report', align="R",  new_x="RIGHT", new_y='TOP', border=0)
             self.cell(w=210/2-7, h=5, text='/ पूर्ण एवं अंतिम भुगतान', align="L",  new_x="LMARGIN", new_y='NEXT', border=0)
 
-        
+
+def get_bonus_years(resignation_date, bonus_start_month):
+    """
+    Calculate current and previous bonus year ranges based on resignation date and bonus start month.
+
+    Returns:
+        (tuple): (previous_bonus_range_str, current_bonus_range_str)
+    """
+    resignation_month = resignation_date.month
+    resignation_year = resignation_date.year
+
+    if bonus_start_month == 1:
+        current_year_for_bonus = resignation_year
+        previous_year_for_bonus = resignation_year - 1
+    elif resignation_month < bonus_start_month:
+        current_year_for_bonus = resignation_year - 1
+        previous_year_for_bonus = resignation_year - 2
+    else:
+        current_year_for_bonus = resignation_year
+        previous_year_for_bonus = resignation_year - 1
+
+    previous_bonus_range = f"Bonus {previous_year_for_bonus}-{previous_year_for_bonus + 1}"
+    current_bonus_range = f"Bonus {current_year_for_bonus}-{current_year_for_bonus + 1}"
+
+    return previous_bonus_range, current_bonus_range
+
 
 # Create instance of FPDF class
 def generate_full_and_final_report(user, request_data, employee):
@@ -297,14 +322,16 @@ def generate_full_and_final_report(user, request_data, employee):
     full_and_final_report.cell(w=width_of_columns['salary_wage_rate']+width_of_columns['earnings']+width_of_columns['arrears'], h=default_cell_height, text=f'{int(employee_full_and_final.el_encashment_days/2) if (employee_full_and_final.el_encashment_days/2)%1==0 else employee_full_and_final.el_encashment_days/2} No. of EL Encashed', new_x="LEFT", new_y='TOP', align='L', border='L')
     full_and_final_report.cell(w=width_of_columns['salary_wage_rate']+width_of_columns['earnings']+width_of_columns['arrears'], h=default_cell_height, text=f'{employee_full_and_final.el_encashment_amount}', new_x="LEFT", new_y='NEXT', align='R', border='R')
     full_and_final_earnings += employee_full_and_final.el_encashment_amount
-    
+
+    bonus_start_month = employee.employee.company.calculations.bonus_start_month  # Assuming this is accessible
+    previous_bonus_range, current_bonus_range = get_bonus_years(resignation_date, bonus_start_month)
     #Previous Bonus
-    full_and_final_report.cell(w=width_of_columns['salary_wage_rate']+width_of_columns['earnings']+width_of_columns['arrears'], h=default_cell_height, text=f'Bonus {resignation_date.year-2}-{resignation_date.year-1}', new_x="LEFT", new_y='TOP', align='L', border='L')
+    full_and_final_report.cell(w=width_of_columns['salary_wage_rate']+width_of_columns['earnings']+width_of_columns['arrears'], h=default_cell_height, text=previous_bonus_range, new_x="LEFT", new_y='TOP', align='L', border='L')
     full_and_final_report.cell(w=width_of_columns['salary_wage_rate']+width_of_columns['earnings']+width_of_columns['arrears'], h=default_cell_height, text=f'{employee_full_and_final.bonus_prev_year}', new_x="LEFT", new_y='NEXT', align='R', border='R')
     full_and_final_earnings += employee_full_and_final.bonus_prev_year
     
     #Current Bonus
-    full_and_final_report.cell(w=width_of_columns['salary_wage_rate']+width_of_columns['earnings']+width_of_columns['arrears'], h=default_cell_height, text=f'Bonus {resignation_date.year-1}-{resignation_date.year}', new_x="LEFT", new_y='TOP', align='L', border='L')
+    full_and_final_report.cell(w=width_of_columns['salary_wage_rate']+width_of_columns['earnings']+width_of_columns['arrears'], h=default_cell_height, text=current_bonus_range, new_x="LEFT", new_y='TOP', align='L', border='L')
     full_and_final_report.cell(w=width_of_columns['salary_wage_rate']+width_of_columns['earnings']+width_of_columns['arrears'], h=default_cell_height, text=f'{employee_full_and_final.bonus_current_year}', new_x="LEFT", new_y='NEXT', align='R', border='R')
     full_and_final_earnings += employee_full_and_final.bonus_current_year
     
