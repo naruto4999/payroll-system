@@ -1,10 +1,13 @@
 from fpdf import FPDF
 import os
 from ..models import CompanyDetails, EmployeeGenerativeLeaveRecord, LeaveGrade, EmployeeSalaryEarning, EarnedAmount, EarningsHead
-from datetime import date
+from datetime import date, timedelta
 from dateutil.relativedelta import relativedelta
 from decimal import Decimal, ROUND_HALF_UP, ROUND_CEILING
 import calendar
+import django.db.models as models
+from django.db.models import Sum
+
 
 #A4 size 210 x 297 mm
 width_of_columns = {
@@ -138,6 +141,25 @@ def generate_bonus_form_c(user, request_data, employees):
             "bonus_wages_col_7": 0,
             "bonus_amount_col_8_and_14": 0,
     }
+
+    bonus_start_month = company_calculations.bonus_start_month
+    year = request_data['year']
+    start_date = date(year, bonus_start_month, 1)
+    end_date = date(year + 1, bonus_start_month, 1) - timedelta(days=1)
+
+    # Filter employees with at least 30 paid days in the bonus year
+    filtered_employees = []
+    for employee in employees:
+        #2 paid days represent 1 actual paid day
+        annual_paid_days = employee.employee.monthly_attendance_details.filter(
+            date__gte=start_date,
+            date__lte=end_date
+        ).aggregate(total=models.Sum('paid_days_count'))['total'] or 0
+        print(f"Annual Paid Days: {annual_paid_days/2}")
+        if annual_paid_days/2 >= 30: #if actual paid days are more than equal to 30, generate the sheet
+            filtered_employees.append(employee)
+
+    employees = filtered_employees
 
     for employee_index, employee in enumerate(employees):
         grand_total_employee = {
