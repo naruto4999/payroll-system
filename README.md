@@ -5,7 +5,7 @@
 <div align="center">
   <p>Payroll system made with React and Django</p>
   <p>A comprehensive software application for managing employee payrolls. The system includes functionality for calculating employee salaries, processing payroll taxes, generating paychecks or direct deposits, and keeping track of employee attendance and leave.</p>
-  <img src="docs/screenshots/login-page.png" alt="Login Page Screenshot">
+  <img src="docs/screenshots/log.in-page1.0.png" alt="Login Page Screenshot">
 </div>
 
 ## Screenshots
@@ -13,8 +13,8 @@
 ### Login and Register Pages
 
 <div align="center">
-  <img src="docs/screenshots/login-page.png" alt="Login Page">
-  <img src="docs/screenshots/register-page.png" alt="Register Page">
+  <img src="docs/screenshots/log.in-page1.0.png" alt="Login Page">
+  <img src="docs/screenshots/register-page1.0.png" alt="Register Page">
 </div>
 
 ### Selecting Company
