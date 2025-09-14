@@ -1,0 +1,133 @@
+.calendar-container {
+  background-color: #1a1a1a;
+  border-radius: 15px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  padding: 25px;
+  width: 320px;
+  color: #e0e0e0;
+  font-family: 'Arial', sans-serif;
+  animation: fadeIn 0.5s ease-in-out;
+  background-image: url('/logo_full_dark.svg');
+  background-size: 60%;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.75;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.calendar-header h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.nav-button {
+  background: #2c2c2c;
+  border: none;
+  color: #e0e0e0;
+  font-size: 1.8rem;
+  cursor: pointer;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background-color 0.3s ease;
+}
+
+.nav-button:hover {
+  background-color: #3a3a3a;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+.calendar-day-name {
+  text-align: center;
+  font-weight: bold;
+  color: #888888;
+  font-size: 0.9rem;
+}
+
+.calendar-day, .empty-day {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 38px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  font-size: 0.95rem;
+}
+
+.calendar-day:hover {
+  background-color: #007bff;
+  color: #ffffff;
+}
+
+.current-day {
+  background-color: #007bff;
+  color: #fff;
+  font-weight: bold;
+}
+
+@media (max-width: 768px) {
+  .calendar-container {
+    width: 100%;
+    padding: 20px;
+  }
+
+  .calendar-header h2 {
+    display: none;
+  }
+
+  .nav-button {
+    font-size: 1.5rem;
+    width: 35px;
+    height: 35px;
+  }
+
+  .calendar-day, .empty-day {
+    height: 35px;
+  }
+
+  .calendar-grid {
+    display: none;
+  }
+
+  .mobile-date {
+    display: block;
+    color: #e0e0e0;
+    font-size: 1.4rem;
+    text-align: right;
+    flex-grow: 1;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-date {
+    display: none;
+  }
+}
