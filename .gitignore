@@ -9,6 +9,7 @@ frontend/.env
 
 #python virtual env
 backend/env
+**/.python-version
 
 #django related
 backend/payroll_system/db.sqlite3
@@ -28,3 +29,9 @@ backend/.python-version
 
 # dist folder(production bundle)
 frontend/dist
+
+# prompt text files
+/prompt*
+
+#gemini ignore
+.geminiignore
