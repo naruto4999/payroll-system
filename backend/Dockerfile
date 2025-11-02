@@ -24,4 +24,9 @@ RUN pip install -r requirements.txt
 RUN pip install gunicorn==21.2.0
 EXPOSE 8000
 EXPOSE 587
-CMD ["gunicorn", "--bind", ":8000", "--workers", "4", "--timeout", "120", "payroll_system.wsgi:application"]
+CMD ["gunicorn", "payroll_system.wsgi:application", \
+     "--bind", ":8000", \
+     "--workers", "3", \
+     "--timeout", "120", \
+     "--max-requests", "20", \
+     "--max-requests-jitter", "10"]
