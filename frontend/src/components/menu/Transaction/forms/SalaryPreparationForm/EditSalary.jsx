@@ -69,14 +69,6 @@ const EditSalary = ({
 	};
 	const [showConfirmModal, setShowConfirmModal] = useState(false);
 
-	// const {
-	//     data: earningsHeads,
-	//     isLoading: isLoadingEarningsHeads,
-	//     isSuccess: isEarningsHeadsSuccess,
-	//     isError: isEarningsHeadsError,
-	//     error: earningsHeadsError,
-	// } = useGetEarningsHeadsQuery(globalCompany);
-
 	const [
 		employeeBulkSalaryPrepared,
 		{
@@ -223,12 +215,20 @@ const EditSalary = ({
 						overtimeDivisor = new BigNumber(companyCalculations?.otCalculation);
 					}
 				}
-
-				const netOtAmountMonthly = totalSalaryRate
-					.dividedBy(overtimeDivisor)
-					.dividedBy(new BigNumber(8))
-					.multipliedBy(netOtHrsMonthly)
-					.multipliedBy(overtimeRateMultiplier);
+				const dailyWageEmployee = currentEmployeeSalaryDetails?.salaryMode?.toLowerCase() == 'daily';
+				let netOtAmountMonthly;
+				if (dailyWageEmployee) {
+					netOtAmountMonthly = totalSalaryRate
+						.dividedBy(new BigNumber(8))
+						.multipliedBy(netOtHrsMonthly)
+						.multipliedBy(overtimeRateMultiplier);
+				} else {
+					netOtAmountMonthly = totalSalaryRate
+						.dividedBy(overtimeDivisor)
+						.dividedBy(new BigNumber(8))
+						.multipliedBy(netOtHrsMonthly)
+						.multipliedBy(overtimeRateMultiplier);
+				}
 				setFieldValue('employeeSalaryPrepared.netOtAmountMonthly', Math.round(netOtAmountMonthly.toNumber()));
 			}
 		} else {
@@ -246,17 +246,21 @@ const EditSalary = ({
 
 	useEffect(() => {
 		if (
+			currentEmployeeSalaryDetails &&
 			currentEmployeeSalaryEarning.length != 0 &&
 			!isSubmitting &&
 			currentEmployeeMonthlyAttendanceDetails?.length != 0
 		) {
+			const dailyWageEmployee = currentEmployeeSalaryDetails?.salaryMode?.toLowerCase() == 'daily';
 			const earnedAmountArray = currentEmployeeSalaryEarning.map((item) => ({
 				earningsHead: item.earningsHead,
 				rate: item.value,
-				earnedAmount: Math.round(
-					((item.value * 100) / new Date(values.year, values.month, 0).getDate() / 100) *
-						(currentEmployeeMonthlyAttendanceDetails?.[0]?.paidDaysCount / 2)
-				),
+				earnedAmount: !dailyWageEmployee
+					? Math.round(
+							((item.value * 100) / new Date(values.year, values.month, 0).getDate() / 100) *
+								(currentEmployeeMonthlyAttendanceDetails?.[0]?.paidDaysCount / 2)
+						)
+					: Math.round(item.value * (currentEmployeeMonthlyAttendanceDetails?.[0]?.paidDaysCount / 2)),
 				arearAmount: 0,
 			}));
 			setFieldValue(`earnedAmount`, earnedAmountArray);
@@ -264,6 +268,7 @@ const EditSalary = ({
 			setFieldValue(`earnedAmount`, []);
 		}
 	}, [
+		currentEmployeeSalaryDetails,
 		currentEmployeeSalaryEarning.map((item) => item.value).join(','),
 		currentEmployeeMonthlyAttendanceDetails,
 		updateEmployeeId,
@@ -276,13 +281,20 @@ const EditSalary = ({
 	useEffect(() => {
 		if (prevArearAmounts.current != values.earnedAmount.map((item) => item.arearAmount).join(',')) {
 			const updatedEarnedAmount = values.earnedAmount.map((item, index) => {
+				const dailyWageEmployee = currentEmployeeSalaryDetails?.salaryMode?.toLowerCase() == 'daily';
 				const rate = item.rate;
 				const year = values.year;
 				const month = values.month;
 				const daysInMonth = new Date(year, month, 0).getDate();
 				const paidDaysCount = currentEmployeeMonthlyAttendanceDetails?.[0]?.paidDaysCount || 0;
 				const arearAmount = item.arearAmount || 0;
-				const earnedAmount = Math.round(((rate * 100) / daysInMonth / 100) * (paidDaysCount / 2)) + arearAmount;
+				let earnedAmount;
+
+				if (dailyWageEmployee) {
+					earnedAmount = Math.round(rate * (paidDaysCount / 2)) + arearAmount;
+				} else {
+					earnedAmount = Math.round(((rate * 100) / daysInMonth / 100) * (paidDaysCount / 2)) + arearAmount;
+				}
 
 				return { ...item, earnedAmount };
 			});
