@@ -814,111 +814,121 @@ class EmployeeAttendanceManager(models.Manager):
             minimum_in_time = shift_beginning_time_with_current_date - relativedelta(hours=3) #inclusive meaning the intime can in equal to this
             maximum_out_time = minimum_in_time + relativedelta(days=1) #Exclusive meaning the outtime should be less than this
 
-            #Machine IN Sub User Datetime
-            machine_in_sub_user = None
-            punch_in_owner = None
-            if attendance.machine_in or attendance.manual_in:
-                machine_in_sub_user = datetime.combine(datetime.now().date(), attendance.manual_in if attendance.manual_in else attendance.machine_in)
-                punch_in_owner = machine_in_sub_user
-                if machine_in_sub_user > maximum_out_time:
-                    machine_in_sub_user = machine_in_sub_user - relativedelta(days=1)
+            # If daily wage employee on a weekly off, extra off, or holiday, mark as absent
+            attendance_first_half_override = None
+            attendance_second_half_override = None
+            if attendance.employee.employee_salary_detail.salary_mode.lower() == 'daily' and employee_weekly_off_holiday_off_extra_off:
+                machine_in_sub_user = None
+                machine_out_sub_user = None
+                ot_min_sub_user = None
+                late_min_sub_user = None
+                attendance_first_half_override = absent_leave #We only orverride attendance status for daily wage employees on their weekly/holiday/extra off
+                attendance_second_half_override = absent_leave #We only orverride attendance status for daily wage employees on their weekly/holiday/extra off
+            else:
+                #Machine IN Sub User Datetime
+                machine_in_sub_user = None
+                punch_in_owner = None
+                if attendance.machine_in or attendance.manual_in:
+                    machine_in_sub_user = datetime.combine(datetime.now().date(), attendance.manual_in if attendance.manual_in else attendance.machine_in)
                     punch_in_owner = machine_in_sub_user
-                if machine_in_sub_user<(shift_beginning_time_with_current_date - timedelta(minutes=AUTO_SHIFT_BEGINNING_BUFFER_BEFORE)):
-                    machine_in_sub_user = datetime.combine(datetime.now().date(), self.generate_random_time(reference_time=shift_beginning_time_with_current_date.time(), start_buffer=AUTO_SHIFT_BEGINNING_BUFFER_BEFORE if not employee_weekly_off_holiday_off_extra_off else WEEKLY_HOLIDAY_OFF_SHIFT_BEGINNING_BUFFER_BEFORE, end_buffer=current_employee_current_date_shift.shift.late_grace if not employee_weekly_off_holiday_off_extra_off else WEEKLY_HOLIDAY_OFF_SHIFT_BEGINNING_BUFFER_AFTER))
+                    if machine_in_sub_user > maximum_out_time:
+                        machine_in_sub_user = machine_in_sub_user - relativedelta(days=1)
+                        punch_in_owner = machine_in_sub_user
+                    if machine_in_sub_user<(shift_beginning_time_with_current_date - timedelta(minutes=AUTO_SHIFT_BEGINNING_BUFFER_BEFORE)):
+                        machine_in_sub_user = datetime.combine(datetime.now().date(), self.generate_random_time(reference_time=shift_beginning_time_with_current_date.time(), start_buffer=AUTO_SHIFT_BEGINNING_BUFFER_BEFORE if not employee_weekly_off_holiday_off_extra_off else WEEKLY_HOLIDAY_OFF_SHIFT_BEGINNING_BUFFER_BEFORE, end_buffer=current_employee_current_date_shift.shift.late_grace if not employee_weekly_off_holiday_off_extra_off else WEEKLY_HOLIDAY_OFF_SHIFT_BEGINNING_BUFFER_AFTER))
 
-            #Machine OUT Sub User Datetime
-            machine_out_sub_user = None
-            if attendance.machine_out or attendance.manual_out:
-                machine_out_sub_user = datetime.combine(datetime.now().date(), attendance.manual_out if attendance.manual_out else attendance.machine_out)
-                #if machine_out_sub_user < minimum_in_time:  - OLD
-                if machine_out_sub_user<machine_in_sub_user if machine_in_sub_user!=None else machine_out_sub_user < minimum_in_time:
-                    machine_out_sub_user = machine_out_sub_user + relativedelta(days=1)
-                if sub_user_misc_settings.enable_female_max_punch_out == True and attendance.employee.gender == 'F' :
-                    # max_female_punch_out_with_current_date = datetime.combine(datetime.now().date(), sub_user_misc_settings.max_female_punch_out)
-                    max_female_punch_out_with_current_date = datetime.combine(datetime.now().date(), self.generate_random_time(reference_time=sub_user_misc_settings.max_female_punch_out, start_buffer=AUTO_SHIFT_ENDING_BUFFER_BEFORE, end_buffer=AUTO_SHIFT_ENDING_BUFFER_AFTER))
-                    machine_out_sub_user = min(max_female_punch_out_with_current_date, machine_out_sub_user)
+                #Machine OUT Sub User Datetime
+                machine_out_sub_user = None
+                if attendance.machine_out or attendance.manual_out:
+                    machine_out_sub_user = datetime.combine(datetime.now().date(), attendance.manual_out if attendance.manual_out else attendance.machine_out)
+                    #if machine_out_sub_user < minimum_in_time:  - OLD
+                    if machine_out_sub_user<machine_in_sub_user if machine_in_sub_user!=None else machine_out_sub_user < minimum_in_time:
+                        machine_out_sub_user = machine_out_sub_user + relativedelta(days=1)
+                    if sub_user_misc_settings.enable_female_max_punch_out == True and attendance.employee.gender == 'F' :
+                        # max_female_punch_out_with_current_date = datetime.combine(datetime.now().date(), sub_user_misc_settings.max_female_punch_out)
+                        max_female_punch_out_with_current_date = datetime.combine(datetime.now().date(), self.generate_random_time(reference_time=sub_user_misc_settings.max_female_punch_out, start_buffer=AUTO_SHIFT_ENDING_BUFFER_BEFORE, end_buffer=AUTO_SHIFT_ENDING_BUFFER_AFTER))
+                        machine_out_sub_user = min(max_female_punch_out_with_current_date, machine_out_sub_user)
 
-            ot_min_sub_user = None
-            print("before step 1")
-            #Compare the out time to the shift end time with the ot begin after
-            if machine_in_sub_user and machine_out_sub_user:
-                reference_datetime=shift_end_time_with_current_date if not employee_weekly_off_holiday_off_extra_off else None
-                # print(f"Reference Datetime: {reference_datetime}, Machine Out Sub User: {machine_out_sub_user}, Date: {attendance.date}")
-                print("Step1")
-                if overtime_settings and attendance.employee.employee_salary_detail.overtime_type!="no_overtime" and ((attendance.ot_min and employee_weekly_off_holiday_off_extra_off) or (attendance.ot_min and attendance.employee.employee_salary_detail.overtime_type!="holiday_weekly_off" and machine_out_sub_user>(shift_end_time_with_current_date + timedelta(minutes=current_employee_current_date_shift.shift.ot_begin_after)))): #if OT Settings for this date exists
-                    if employee_weekly_off_holiday_off_extra_off:
-                        reference_datetime = min((max(shift_beginning_time_with_current_date, machine_in_sub_user) + timedelta(hours=overtime_settings.max_ot_hrs)), machine_out_sub_user)
-                    else:
-                        reference_datetime = min((shift_end_time_with_current_date + timedelta(hours=overtime_settings.max_ot_hrs)), machine_out_sub_user)
-                    print(f"Reference Datetime: {reference_datetime}")
-                    print(f"Machine Out Subuser: {machine_out_sub_user}")
-                    print(f"Machine In Subuser: {machine_in_sub_user}")
-                    print(f"Attendance manual out: {attendance.manual_out}")
-
-                    lunch_beginning_time_datetime_obj = datetime.combine(datetime.now().date(), current_employee_current_date_shift.shift.lunch_beginning_time)
-
-                    #Calculate OT from scratch if punch in is also different for the sub user
-                    if punch_in_owner<(shift_beginning_time_with_current_date - timedelta(minutes=AUTO_SHIFT_BEGINNING_BUFFER_BEFORE)) and attendance.ot_min and (attendance.employee.gender!='F' or sub_user_misc_settings.enable_female_max_punch_out==True):
-                        print("Inside upper if")
-                        if attendance.employee.employee_salary_detail.overtime_type != 'no_overtime':
-                            overtime_minutes = timedelta(minutes=0)
-                            # if not skip_calculating_attendances and (punch_in_time is not None and punch_out_time is not None):
-                            if employee_weekly_off_holiday_off_extra_off:
-                                if(machine_out_sub_user>reference_datetime):
-                                    minutes_worked = (reference_datetime - machine_in_sub_user)
-                                else:
-                                    minutes_worked = (machine_out_sub_user - machine_in_sub_user)
-                                print(f"Minutes Worked: {minutes_worked}")
-                                if minutes_worked > timedelta(minutes=current_employee_current_date_shift.shift.ot_begin_after):
-                                    print(f"Lunch Begginging Time: {datetime.combine(datetime.now().date(), current_employee_current_date_shift.shift.lunch_beginning_time)}")
-                                    if current_employee_current_date_shift.shift.lunch_beginning_time and current_employee_current_date_shift.shift.lunch_duration and reference_datetime > lunch_beginning_time_datetime_obj:
-                                        time_difference_lunch_time_reference_datetime = int((reference_datetime-lunch_beginning_time_datetime_obj).total_seconds() / 60)
-                                        print(f"Time Difference: {time_difference_lunch_time_reference_datetime} mins")
-                                        print((f"Minutes Worked: {minutes_worked}"))
-                                        if(time_difference_lunch_time_reference_datetime > (current_employee_current_date_shift.shift.lunch_duration/2)):
-                                            print("yes subtract")
-                                            #minutes_worked -= timedelta(minutes=current_employee_current_date_shift.shift.lunch_duration)
-                                            if (reference_datetime==machine_out_sub_user): #Then we can't change Timings since the reference datetime represents the actual time employee left at
-                                                minutes_worked -= timedelta(minutes=current_employee_current_date_shift.shift.lunch_duration)
-                                            else:
-                                                reference_datetime = reference_datetime + timedelta(minutes=current_employee_current_date_shift.shift.lunch_duration)
-                                            print(f"Reference Datime Revised: {reference_datetime}")
-                                    overtime_minutes += minutes_worked
-                            elif attendance.employee.employee_salary_detail.overtime_type == 'all_days':
-                                over_stayed_minutes = machine_out_sub_user - shift_end_time_with_current_date
-                                if over_stayed_minutes > timedelta(minutes=current_employee_current_date_shift.shift.ot_begin_after):
-                                    overtime_minutes += over_stayed_minutes
-                        overtime_minutes_integer = int(overtime_minutes.total_seconds() / 60)
-                        if overtime_minutes_integer > 0:
-                            overtime_minutes_integer = (overtime_minutes_integer//30) * 30 + (30 if overtime_minutes_integer%30>15 else 0)
+                ot_min_sub_user = None
+                print("before step 1")
+                #Compare the out time to the shift end time with the ot begin after
+                if machine_in_sub_user and machine_out_sub_user:
+                    reference_datetime=shift_end_time_with_current_date if not employee_weekly_off_holiday_off_extra_off else None
+                    # print(f"Reference Datetime: {reference_datetime}, Machine Out Sub User: {machine_out_sub_user}, Date: {attendance.date}")=
+                    print("Step1")
+                    if overtime_settings and attendance.employee.employee_salary_detail.overtime_type!="no_overtime" and ((attendance.ot_min and employee_weekly_off_holiday_off_extra_off) or (attendance.ot_min and attendance.employee.employee_salary_detail.overtime_type!="holiday_weekly_off" and machine_out_sub_user>(shift_end_time_with_current_date + timedelta(minutes=current_employee_current_date_shift.shift.ot_begin_after)))): #if OT Settings for this date exists
+                        if employee_weekly_off_holiday_off_extra_off:
+                            reference_datetime = min((max(shift_beginning_time_with_current_date, machine_in_sub_user) + timedelta(hours=overtime_settings.max_ot_hrs)), machine_out_sub_user)
                         else:
-                            overtime_minutes_integer = 0
-                        print(f"overtime_min_integer: {overtime_minutes_integer}, overtime settings: {overtime_settings.max_ot_hrs*60}")
-                        ot_min_sub_user = min(attendance.ot_min, overtime_settings.max_ot_hrs*60, overtime_minutes_integer)
+                            reference_datetime = min((shift_end_time_with_current_date + timedelta(hours=overtime_settings.max_ot_hrs)), machine_out_sub_user)
+                        print(f"Reference Datetime: {reference_datetime}")
+                        print(f"Machine Out Subuser: {machine_out_sub_user}")
+                        print(f"Machine In Subuser: {machine_in_sub_user}")
+                        print(f"Attendance manual out: {attendance.manual_out}")
 
-                        # if employee_weekly_off_holiday_off_extra_off:
-                        #     ot_min_sub_user-=current_employee_current_date_shift.shift.lunch_duration #deducting lunch duration for overtime on weekly off or holiday
-                    else:
-                        print(f"Employee Name: {attendance.employee.name}, OT Minutes : {attendance.ot_min}, Overtime Settings: {overtime_settings.max_ot_hrs} Date: {attendance.date}")
-                        ot_min_sub_user = min(attendance.ot_min, overtime_settings.max_ot_hrs*60)
-                        print(f"Ot Before subtracting: {ot_min_sub_user}")
-                        if employee_weekly_off_holiday_off_extra_off and ot_min_sub_user!=attendance.ot_min:
-                            if current_employee_current_date_shift.shift.lunch_beginning_time and current_employee_current_date_shift.shift.lunch_duration and reference_datetime > lunch_beginning_time_datetime_obj:
-                                time_difference_lunch_time_machine_out_sub_user = int((reference_datetime-lunch_beginning_time_datetime_obj).total_seconds() / 60)
-                                if(time_difference_lunch_time_machine_out_sub_user > (current_employee_current_date_shift.shift.lunch_duration/2)):
-                                    print('Inside If')
-                                    ot_min_sub_user-=current_employee_current_date_shift.shift.lunch_duration
-                                    print(f"Ot After subtracting: {ot_min_sub_user}")
-                        # print(f"OT Minutes Sub User: {ot_min_sub_user}, Chutti?: {employee_weekly_off_holiday_off_extra_off}, After Subtracting: {attendance.ot_min-current_employee_current_date_shift.shift.lunch_duration}")
-                
-                #Calculate machine_out_again
-                elif employee_weekly_off_holiday_off_extra_off: #if no OT and weelyoff/Holiday off, below if block should not run if the code enter this block
-                    machine_in_sub_user = None
-                    machine_out_sub_user = None
+                        lunch_beginning_time_datetime_obj = datetime.combine(datetime.now().date(), current_employee_current_date_shift.shift.lunch_beginning_time)
 
-                if reference_datetime != machine_out_sub_user and reference_datetime and (machine_out_sub_user and machine_out_sub_user>reference_datetime): #Checking if machine_out_sub_user needs to be recalculated
-                    machine_out_sub_user = datetime.combine(machine_out_sub_user.date(), self.generate_random_time(reference_time=reference_datetime.time(), start_buffer=AUTO_SHIFT_ENDING_BUFFER_BEFORE if not employee_weekly_off_holiday_off_extra_off else WEEKLY_HOLIDAY_OFF_SHIFT_ENDING_BUFFER_BEFORE, end_buffer=AUTO_SHIFT_ENDING_BUFFER_AFTER if not employee_weekly_off_holiday_off_extra_off else WEEKLY_HOLIDAY_OFF_SHIFT_ENDING_BUFFER_AFTER))
+                        #Calculate OT from scratch if punch in is also different for the sub user
+                        if punch_in_owner<(shift_beginning_time_with_current_date - timedelta(minutes=AUTO_SHIFT_BEGINNING_BUFFER_BEFORE)) and attendance.ot_min and (attendance.employee.gender!='F' or sub_user_misc_settings.enable_female_max_punch_out==True):
+                            print("Inside upper if")
+                            if attendance.employee.employee_salary_detail.overtime_type != 'no_overtime':
+                                overtime_minutes = timedelta(minutes=0)
+                                # if not skip_calculating_attendances and (punch_in_time is not None and punch_out_time is not None):
+                                if employee_weekly_off_holiday_off_extra_off:
+                                    if(machine_out_sub_user>reference_datetime):
+                                        minutes_worked = (reference_datetime - machine_in_sub_user)
+                                    else:
+                                        minutes_worked = (machine_out_sub_user - machine_in_sub_user)
+                                    print(f"Minutes Worked: {minutes_worked}")
+                                    if minutes_worked > timedelta(minutes=current_employee_current_date_shift.shift.ot_begin_after):
+                                        print(f"Lunch Begginging Time: {datetime.combine(datetime.now().date(), current_employee_current_date_shift.shift.lunch_beginning_time)}")
+                                        if current_employee_current_date_shift.shift.lunch_beginning_time and current_employee_current_date_shift.shift.lunch_duration and reference_datetime > lunch_beginning_time_datetime_obj:
+                                            time_difference_lunch_time_reference_datetime = int((reference_datetime-lunch_beginning_time_datetime_obj).total_seconds() / 60)
+                                            print(f"Time Difference: {time_difference_lunch_time_reference_datetime} mins")
+                                            print((f"Minutes Worked: {minutes_worked}"))
+                                            if(time_difference_lunch_time_reference_datetime > (current_employee_current_date_shift.shift.lunch_duration/2)):
+                                                print("yes subtract")
+                                                #minutes_worked -= timedelta(minutes=current_employee_current_date_shift.shift.lunch_duration)
+                                                if (reference_datetime==machine_out_sub_user): #Then we can't change Timings since the reference datetime represents the actual time employee left at
+                                                    minutes_worked -= timedelta(minutes=current_employee_current_date_shift.shift.lunch_duration)
+                                                else:
+                                                    reference_datetime = reference_datetime + timedelta(minutes=current_employee_current_date_shift.shift.lunch_duration)
+                                                print(f"Reference Datime Revised: {reference_datetime}")
+                                        overtime_minutes += minutes_worked
+                                elif attendance.employee.employee_salary_detail.overtime_type == 'all_days':
+                                    over_stayed_minutes = machine_out_sub_user - shift_end_time_with_current_date
+                                    if over_stayed_minutes > timedelta(minutes=current_employee_current_date_shift.shift.ot_begin_after):
+                                        overtime_minutes += over_stayed_minutes
+                            overtime_minutes_integer = int(overtime_minutes.total_seconds() / 60)
+                            if overtime_minutes_integer > 0:
+                                overtime_minutes_integer = (overtime_minutes_integer//30) * 30 + (30 if overtime_minutes_integer%30>15 else 0)
+                            else:
+                                overtime_minutes_integer = 0
+                            print(f"overtime_min_integer: {overtime_minutes_integer}, overtime settings: {overtime_settings.max_ot_hrs*60}")
+                            ot_min_sub_user = min(attendance.ot_min, overtime_settings.max_ot_hrs*60, overtime_minutes_integer)
 
+                            # if employee_weekly_off_holiday_off_extra_off:
+                            #     ot_min_sub_user-=current_employee_current_date_shift.shift.lunch_duration #deducting lunch duration for overtime on weekly off or holiday
+                        else:
+                            print(f"Employee Name: {attendance.employee.name}, OT Minutes : {attendance.ot_min}, Overtime Settings: {overtime_settings.max_ot_hrs} Date: {attendance.date}")
+                            ot_min_sub_user = min(attendance.ot_min, overtime_settings.max_ot_hrs*60)
+                            print(f"Ot Before subtracting: {ot_min_sub_user}")
+                            if employee_weekly_off_holiday_off_extra_off and ot_min_sub_user!=attendance.ot_min:
+                                if current_employee_current_date_shift.shift.lunch_beginning_time and current_employee_current_date_shift.shift.lunch_duration and reference_datetime > lunch_beginning_time_datetime_obj:
+                                    time_difference_lunch_time_machine_out_sub_user = int((reference_datetime-lunch_beginning_time_datetime_obj).total_seconds() / 60)
+                                    if(time_difference_lunch_time_machine_out_sub_user > (current_employee_current_date_shift.shift.lunch_duration/2)):
+                                        print('Inside If')
+                                        ot_min_sub_user-=current_employee_current_date_shift.shift.lunch_duration
+                                        print(f"Ot After subtracting: {ot_min_sub_user}")
+                            # print(f"OT Minutes Sub User: {ot_min_sub_user}, Chutti?: {employee_weekly_off_holiday_off_extra_off}, After Subtracting: {attendance.ot_min-current_employee_current_date_shift.shift.lunch_duration}")
+                    
+                    #Calculate machine_out_again
+                    elif employee_weekly_off_holiday_off_extra_off: #if no OT and weelyoff/Holiday off, below if block should not run if the code enter this block
+                        machine_in_sub_user = None
+                        machine_out_sub_user = None
+
+                    if reference_datetime != machine_out_sub_user and reference_datetime and (machine_out_sub_user and machine_out_sub_user>reference_datetime): #Checking if machine_out_sub_user needs to be recalculated
+                        machine_out_sub_user = datetime.combine(machine_out_sub_user.date(), self.generate_random_time(reference_time=reference_datetime.time(), start_buffer=AUTO_SHIFT_ENDING_BUFFER_BEFORE if not employee_weekly_off_holiday_off_extra_off else WEEKLY_HOLIDAY_OFF_SHIFT_ENDING_BUFFER_BEFORE, end_buffer=AUTO_SHIFT_ENDING_BUFFER_AFTER if not employee_weekly_off_holiday_off_extra_off else WEEKLY_HOLIDAY_OFF_SHIFT_ENDING_BUFFER_AFTER))
             # Check if attendance needs to be created or updated
             identifier = (attendance.employee_id, attendance.date)
             if identifier in existing_attendances_map:
@@ -969,21 +979,9 @@ class EmployeeAttendanceManager(models.Manager):
                             late_minutes_integer = 0
                         first_half = absent_leave
                         second_half = absent_leave
-                        if attendance.date.strftime('%a').lower() == attendance.employee.employee_professional_detail.weekly_off or (weekday_occurrence_in_month(date=attendance.date) == attendance.employee.employee_professional_detail.extra_off):
-                            if len(to_create) != 0:
-                                self.bulk_create(to_create)
-                                to_create.clear()
-                            if len(to_update) !=0:
-                                self.bulk_update(to_update, ["machine_in", "machine_out", "first_half", "second_half", "ot_min", "late_min", "pay_multiplier"])
-                                to_update.clear()
 
-                            first_half = weekly_off_skip
-                            second_half = weekly_off_skip
-                            if paid_days_count_for_past_six_days(user=user.owner_to_regular.user, company_id=company_id, attendance_date=attendance.date, employee=attendance.employee) >= (weekly_off_holiday_off.min_days_for_weekly_off * 2):
-                                first_half = weekly_off
-                                second_half = weekly_off
-
-                        elif holiday_queryset.filter(date=attendance.date).exists():
+                        # Holiday Off
+                        if attendance.employee.employee_salary_detail.salary_mode.lower() != 'daily' and holiday_queryset.filter(date=attendance.date).exists():
                             if len(to_create) != 0:
                                 self.bulk_create(to_create)
                                 to_create.clear()
@@ -995,6 +993,22 @@ class EmployeeAttendanceManager(models.Manager):
                             if paid_days_count_for_past_six_days(user=user, company_id=company_id, attendance_date=attendance.date, employee=attendance.employee) >= (weekly_off_holiday_off.min_days_for_holiday_off * 2):
                                 first_half = holiday_off
                                 second_half = holiday_off
+
+                        # Weekly Off or Extra off
+                        elif attendance.employee.employee_salary_detail.salary_mode.lower() != 'daily' and attendance.date.strftime('%a').lower() == attendance.employee.employee_professional_detail.weekly_off or (weekday_occurrence_in_month(date=attendance.date) == attendance.employee.employee_professional_detail.extra_off):
+                            if len(to_create) != 0:
+                                self.bulk_create(to_create)
+                                to_create.clear()
+                            if len(to_update) !=0:
+                                self.bulk_update(to_update, ["machine_in", "machine_out", "first_half", "second_half", "ot_min", "late_min", "pay_multiplier"])
+                                to_update.clear()
+                            first_half = weekly_off_skip
+                            second_half = weekly_off_skip
+                            if paid_days_count_for_past_six_days(user=user.owner_to_regular.user, company_id=company_id, attendance_date=attendance.date, employee=attendance.employee) >= (weekly_off_holiday_off.min_days_for_weekly_off * 2):
+                                first_half = weekly_off
+                                second_half = weekly_off
+
+                        
                         else:
                             if punch_in_time is not None and punch_out_time is not None:
                                 total_worked_minutes = punch_out_time - punch_in_time
@@ -1023,8 +1037,8 @@ class EmployeeAttendanceManager(models.Manager):
                         existing_record.second_half = second_half
                 else:
                     # print(f"IN else of manual, Date: {attendance.date} second half: {attendance.second_half.name}, EMployee: {attendance.employee.name}")
-                    existing_record.first_half = attendance.first_half
-                    existing_record.second_half = attendance.second_half
+                    existing_record.first_half = attendance.first_half if attendance_first_half_override is None else attendance_first_half_override
+                    existing_record.second_half = attendance.second_half if attendance_second_half_override is None else attendance_second_half_override
                     existing_record.manual_mode = attendance.manual_mode
                     print(f"existing attendance manual mode: {existing_record.manual_mode} Attendance manual mode: {attendance.manual_mode}, Employee: {attendance.employee.name}, date: {attendance.date}")
                     # print(f"Existing Record: {existing_record.second_half}")
@@ -1043,8 +1057,8 @@ class EmployeeAttendanceManager(models.Manager):
                     "machine_out": machine_out_sub_user.time() if machine_out_sub_user else None,
                     "manual_in": None,
                     "manual_out": None,
-                    "first_half": attendance.first_half,
-                    "second_half": attendance.second_half,
+                    "first_half": attendance.first_half if attendance_first_half_override is None else attendance_first_half_override,
+                    "second_half": attendance.second_half if attendance_second_half_override is None else attendance_second_half_override,
                     "ot_min": ot_min_sub_user,
                     "late_min": attendance.late_min,
                     "manual_mode": attendance.manual_mode,
@@ -1122,13 +1136,16 @@ class EmployeeSalaryPreparedManager(models.Manager):
                     total_earned_amount = 0
                     earned_amount_dict = {}
                     for salary_earning in employee_salary_earnings_for_each_head:
-                        current_earning_earned_amount = (Decimal(salary_earning.value)*(Decimal(employee_monthly_attendance_detail.first().paid_days_count)/Decimal(2)))/Decimal(days_in_month)
+                        if employee_salary_detail.first().salary_mode.lower() == 'daily':
+                            current_earning_earned_amount = (Decimal(salary_earning.value)*(Decimal(employee_monthly_attendance_detail.first().paid_days_count)/Decimal(2)))
+                        else:
+                            current_earning_earned_amount = (Decimal(salary_earning.value)*(Decimal(employee_monthly_attendance_detail.first().paid_days_count)/Decimal(2)))/Decimal(days_in_month)
                         # rounded_earning = math.ceil(current_earning_earned_amount) if current_earning_earned_amount >= 0.5 else math.floor(current_earning_earned_amount)
                         rounded_earning = current_earning_earned_amount.quantize(Decimal('1.'), rounding=ROUND_HALF_UP)
                         total_earned_amount += rounded_earning
                         total_salary_rate += salary_earning.value
-                        if current_employee.employee.attendance_card_no ==1:
-                            print(f'{salary_earning.earnings_head.name}: {rounded_earning}, actual: {current_earning_earned_amount}')
+                        # if current_employee.employee.attendance_card_no ==1:
+                        #     print(f'{salary_earning.earnings_head.name}: {rounded_earning}, actual: {current_earning_earned_amount}')
                         earned_amount_dict[salary_earning.earnings_head.id] = {
                             'rate' : salary_earning.value,
                             'earned_amount' : rounded_earning,
@@ -1160,13 +1177,16 @@ class EmployeeSalaryPreparedManager(models.Manager):
                         net_ot_minutes_monthly = employee_monthly_attendance_detail.first().net_ot_minutes_monthly
                         net_ot_hrs = Decimal(net_ot_minutes_monthly) / Decimal(60)
                         overtime_rate_multiplier = 2 if employee_salary_detail.first().overtime_rate == 'D' or user.role=='REGULAR' else 1
-                        overtime_divisor = Decimal(26)
-                        if user.role=='OWNER':
-                            if company_calculations.ot_calculation == 'month_days':
-                                overtime_divisor = Decimal(days_in_month)
-                            else:
-                                overtime_divisor = Decimal(company_calculations.ot_calculation)
-                        net_ot_amount_monthly = Decimal(total_salary_rate) / overtime_divisor / Decimal(8) * net_ot_hrs * Decimal(overtime_rate_multiplier)
+                        if employee_salary_detail.first().salary_mode.lower() == 'daily':
+                            net_ot_amount_monthly = Decimal(total_salary_rate) / Decimal(8) * net_ot_hrs * Decimal(overtime_rate_multiplier)
+                        else:
+                            overtime_divisor = Decimal(26)
+                            if user.role=='OWNER':
+                                if company_calculations.ot_calculation == 'month_days':
+                                    overtime_divisor = Decimal(days_in_month)
+                                else:
+                                    overtime_divisor = Decimal(company_calculations.ot_calculation)
+                            net_ot_amount_monthly = Decimal(total_salary_rate) / overtime_divisor / Decimal(8) * net_ot_hrs * Decimal(overtime_rate_multiplier)
                         net_ot_amount_monthly = net_ot_amount_monthly.quantize(Decimal('1.'), rounding=ROUND_HALF_UP)
 
 
