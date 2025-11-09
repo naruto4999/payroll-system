@@ -50,32 +50,30 @@ class CustomFPDF(FPDF):
         """
         lines = self.multi_cell(w=w, h=h, text=text, border=0, align=align, fill=fill, 
                                 dry_run=True, output=MethodReturnValue.LINES, new_x=new_x, new_y=new_y)
-        print(lines)
         original_lines_length = len(lines)
-        number_of_lines_to_add = 0
-        c_margin_adjustment = round(self.c_margin, 2) * 2
-        last_line_first_word = ''
+        c_margin_adjustment = self.c_margin * 2
 
-
-        if max_lines > 0 and len(lines)>max_lines:
-            last_line_first_word = lines[-1].split()[0]
+        # Handle text truncation and ellipsis
+        if max_lines > 0 and original_lines_length > max_lines:
+            # Truncate lines to the max allowed
             lines = lines[:max_lines]
-        if len(lines) < min_lines:
-            number_of_lines_to_add = min_lines-len(lines)
-            print(f"number of lines to add: {number_of_lines_to_add}")
-
-        print(f"Lines after appending: {lines}")
-        if len(lines) < original_lines_length:
-            last_line = lines[-1]+' '+last_line_first_word
-            ellipsis_width = self.get_string_width("...")
-            print(f"Rounded C Margin {round(self.c_margin, 2)}, Not Rounded: {self.c_margin}")
-            print(f"Blank line string width: {round(self.get_string_width(' '), 2)}")
             
-            while self.get_string_width(last_line) + ellipsis_width + c_margin_adjustment > w and len(last_line) > 0:
-                last_line = last_line[:-1]
+            # Get the last line to apply ellipsis
+            last_line = lines[-1]
+            ellipsis = "..."
+            ellipsis_width = self.get_string_width(ellipsis)
 
-            last_line += "..."
-            lines[-1] = last_line
+            # Shorten the last line until the ellipsis fits within the cell width (including margins)
+            while self.get_string_width(last_line) + ellipsis_width > w - c_margin_adjustment and len(last_line) > 0:
+                last_line = last_line[:-1]
+            
+            # Update the last line with the ellipsis
+            lines[-1] = last_line.rstrip() + ellipsis
+
+        # Handle minimum number of lines
+        number_of_lines_to_add = 0
+        if len(lines) < min_lines:
+            number_of_lines_to_add = min_lines - len(lines)
 
         if not border_each_line:
             final_text = ' '.join(lines)
@@ -92,11 +90,8 @@ class CustomFPDF(FPDF):
                     elif border==1:
                         upper_multi_cell_border = 'TLR'
                         lower_multi_cell_border = 'BLR'
-                print(upper_multi_cell_border)
-                print(lower_multi_cell_border)
                 lines = self.multi_cell(w=w, h=h, text=number_of_lines_to_add*int((w-c_margin_adjustment)/self.get_string_width(' '))*' ', border=0, align=align, fill=fill, 
                                 dry_run=True, output=MethodReturnValue.LINES, new_x=new_x, new_y=new_y)
-                print(f"Adjusting lines: {lines}")
 
                 self.multi_cell(w=w, h=h, text=final_text, border=upper_multi_cell_border, align=align, fill=fill, new_x='LEFT', new_y='NEXT')
                 self.multi_cell(w=w, h=h, text=number_of_lines_to_add*int((w-c_margin_adjustment)/self.get_string_width(' '))*' ', border=lower_multi_cell_border, align=align, fill=fill, new_x=new_x, new_y=new_y)

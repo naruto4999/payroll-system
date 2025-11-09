@@ -258,6 +258,7 @@ const AttendanceReports = () => {
 					return missPunchFilter(employee);
 
 				case 'present_report':
+				case 'daily_attendance_report':
 				case 'absent_report':
 				case 'overtime_sheet_daily':
 				case 'attendance_register':

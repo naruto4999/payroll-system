@@ -39,6 +39,7 @@ const FilterOptions = ({
 					}}
 				>
 					<option value="attendance_register">Attendance Register</option>
+					<option value="daily_attendance_report">Daily Attendance Report</option>
 					<option value="present_report">Present Report</option>
 					<option value="absent_report">Absent Report</option>
 					{auth.account.role == 'OWNER' && (
@@ -51,6 +52,7 @@ const FilterOptions = ({
 				</Field>
 			</div>
 			{(values.reportType == 'present_report' ||
+				values.reportType == 'daily_attendance_report' ||
 				values.reportType == 'overtime_sheet_daily' ||
 				values.reportType == 'absent_report') && (
 				<div>
