@@ -3,17 +3,18 @@ import os
 from ..models import CompanyDetails, EmployeeGenerativeLeaveRecord, LeaveGrade, EmployeeSalaryEarning, EarnedAmount
 from datetime import date
 from decimal import Decimal, ROUND_HALF_UP, ROUND_CEILING
+from .pdf_utils.custom_fpdf import CustomFPDF
 
 #A4 size 210 x 297 mm
 width_of_columns = {
         "serial_number": 8,
         "paycode": 18,
         "employee_name": 48,
-        "father_name": 48,
+        "father_name": 45,
         "designation": 35,
         "in_time": 14,
         "out_time": 14,
-        "status": 12
+        "status": 15
     }
 
 def get_day_suffix(day):
@@ -23,7 +24,7 @@ def get_day_suffix(day):
         suffix = {1: 'st', 2: 'nd', 3: 'rd'}.get(day % 10, 'th')
     return suffix
 
-class FPDF(FPDF):
+class CustomFPDF(CustomFPDF):
     def __init__(self, my_date, company_name, company_address, *args, **kwargs):
         self.my_date = my_date
         self.company_name = company_name
@@ -61,7 +62,7 @@ def generate_present_report(request_data, present_employees_attendances):
     bottom_margin = 8
 
     company_details = CompanyDetails.objects.filter(company_id=request_data['company'])
-    present_report = FPDF(my_date=date(request_data['year'], request_data['month'], request_data['filters']['date']),company_name=present_employees_attendances[0].company.name,company_address=company_details[0].address if (company_details.exists() and company_details[0].address != None) else '    ', orientation="P", unit="mm", format="A4")
+    present_report = CustomFPDF(my_date=date(request_data['year'], request_data['month'], request_data['filters']['date']),company_name=present_employees_attendances[0].company.name,company_address=company_details[0].address if (company_details.exists() and company_details[0].address != None) else '    ', orientation="P", unit="mm", format="A4")
 
     #Page settings
     present_report.set_margins(left=left_margin, top=6, right=right_margin)
@@ -88,17 +89,17 @@ def generate_present_report(request_data, present_employees_attendances):
         present_report.cell(w=width_of_columns['paycode'], h=default_cell_height*default_row_number_of_cells, text=f'{attendance.employee.paycode}', align="L", new_x="RIGHT", new_y='TOP', border=1)
 
         #Employee Name
-        present_report.multi_cell(w=width_of_columns['employee_name'], h=default_cell_height*default_row_number_of_cells, text=f'{attendance.employee.name}', align="L", new_x="RIGHT", new_y='TOP', border=1)
-        
+        present_report.multi_cell_with_limit(w=width_of_columns['employee_name'], h=default_cell_height*default_row_number_of_cells, text=f'{attendance.employee.name}', max_lines=1, border_each_line=True, align="L",  new_x="RIGHT", new_y='TOP', border=1)
+
         #Father's Name
-        present_report.multi_cell(w=width_of_columns['father_name'], h=default_cell_height*default_row_number_of_cells, text=f'{attendance.employee.father_or_husband_name or ""}', align="L", new_x="RIGHT", new_y='TOP', border=1)
-        
+        present_report.multi_cell_with_limit(w=width_of_columns['father_name'], h=default_cell_height*default_row_number_of_cells, text=f'{attendance.employee.father_or_husband_name or ""}', max_lines=1, border_each_line=True, align="L",  new_x="RIGHT", new_y='TOP', border=1)
+
         #Designation
         employee_designation = None
         try:
             employee_designation = attendance.employee.employee_professional_detail.designation
         except: pass
-        present_report.multi_cell(w=width_of_columns['designation'], h=default_cell_height*default_row_number_of_cells, text=f'{employee_designation.name if employee_designation!=None else ""}', align="L", new_x="RIGHT", new_y='TOP', border=1)
+        present_report.multi_cell_with_limit(w=width_of_columns['designation'], h=default_cell_height*default_row_number_of_cells, text=f'{employee_designation.name if employee_designation!=None else ""}', max_lines=1, border_each_line=True, align="L",  new_x="RIGHT", new_y='TOP', border=1)
 
         #In time
         in_time = attendance.machine_in.strftime('%H:%M') if attendance.machine_in else ''
