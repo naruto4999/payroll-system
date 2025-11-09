@@ -34,6 +34,7 @@ from .reports.generate_overtime_sheet import generate_overtime_sheet
 from .reports.generate_advance_report import generate_advance_report
 from .reports.generate_yearly_advance_report import generate_yearly_advance_report
 from .reports.generate_present_report import generate_present_report
+from .reports.generate_daily_attendance_report import generate_daily_attendance_report
 from .reports.generate_absent_report import generate_absent_report
 from .reports.generate_miss_punch_report import generate_miss_punch_report
 from .reports.generate_bonus_calculation_sheet import generate_bonus_calculation_sheet
@@ -2583,6 +2584,47 @@ class AttendanceReportsCreateAPIView(generics.CreateAPIView):
             else:
                 return Response({"detail": "No Attendances Found for the given month"}, status=status.HTTP_404_NOT_FOUND)
 
+        if validated_data['report_type'] == 'daily_attendance_report':
+            num_days_in_month = calendar.monthrange(validated_data['year'], validated_data['month'])[1]
+            if validated_data['filters']['date']> num_days_in_month:
+                return Response({"detail": "Invalid Date"}, status=status.HTTP_400_BAD_REQUEST)
+
+            order_by = None
+            if validated_data['filters']['sort_by'] == "attendance_card_no":
+                order_by = ("employee__attendance_card_no",)
+            elif validated_data['filters']['sort_by'] == "employee_name":
+                order_by = ('employee__name',)
+            if validated_data['filters']['group_by'] != 'none':
+                if order_by != None:
+                    order_by = ('employee__employee_professional_detail__department', *order_by)
+                else:
+                    order_by = ('employee__employee_professional_detail__department',)
+
+            employees_attendances = EmployeeAttendance.objects.filter(
+                date=date(validated_data['year'], validated_data['month'], validated_data['filters']['date']),
+                company_id=validated_data['company'],
+                user=request.user
+            )
+
+            #Use python regular expression to orderby if the order by is using paycode because it is alpha numeric
+            if validated_data['filters']['sort_by'] == "paycode":
+                employees_attendances = sorted(
+                    employees_attendances, 
+                    key=lambda x: (
+                        (getattr(x.employee.employee_professional_detail.department, 'name', 'zzzzzzzz') if hasattr(x.employee.employee_professional_detail, 'department') else 'zzzzzzzz') if validated_data['filters']['group_by'] != 'none' else '',
+                        re.sub(r'[^A-Za-z]', '', x.employee.paycode), 
+                        int(re.sub(r'[^0-9]', '', x.employee.paycode))
+                    )
+                )
+            else:
+                employees_attendances = employees_attendances.order_by(*order_by)
+
+            if len(employees_attendances) !=0:
+                response = StreamingHttpResponse(generate_daily_attendance_report(serializer.validated_data, employees_attendances), content_type="application/pdf")
+                response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
+                return response
+            else:
+                return Response({"detail": "No Attendace found on this date"}, status=status.HTTP_404_NOT_FOUND)
 
         if validated_data['report_type'] == 'present_report':
             num_days_in_month = calendar.monthrange(validated_data['year'], validated_data['month'])[1]
