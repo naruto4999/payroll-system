@@ -35,29 +35,37 @@ def generate_appointment_letter_back_hindi(report, default_cell_height, default_
     report.set_font('noto-sans-devanagari', size=9, style="")
 
     #Main Body
+
     #14.
-    # report.set_xy(x=left_margin, y=report.get_y()+default_cell_height)
+    report.set_xy(x=left_margin, y=report.get_y()+default_cell_height)
     report.cell(w=width_of_columns['serial'], h=default_cell_height, text=f"14.", align="C", new_x="RIGHT", new_y='TOP', border=0)
-    report.cell(w=0, h=default_cell_height, text=f"आपको नियमानुसार प्रोविडेंट फंड (PF) की सुविधा भी मिलेगी जिसके लिए आपके वेतन के मूल (BASIC) व महंगाई भत्ते (DA) का 12 प्रतिशत काट लिया जाएगा |", align="L", new_x="LEFT", new_y='NEXT', border=0)
-    report.cell(w=0, h=default_cell_height, text=f"आपके (PF) खाते में हर महीने जमा किया जाएगा | कम्पनी भी अपनी तरफ से 12 प्रतिशत, उतना ही पैसा आपके खाते में जमा कराएगी | ", align="L", new_x="LMARGIN", new_y='NEXT', border=0)
-    
+    report.cell(w=0, h=default_cell_height, text=f"नियमानुसार आपको और आपके परिवार को मेडिकल इंश्योरेंस (ESI) की सुविधा दी जाएगी | जिसके लिए आपके कुल वेतन का 0.75 प्रतिशत हर महीने काट लिया जाएगा", align="L", new_x="LEFT", new_y='NEXT', border=0)
+    report.cell(w=0, h=default_cell_height, text=f"और आपके योगदान के रूप में आपको ESI का कार्ड दिया जाएगा | इस कार्ड से आपको बीमार पड़ने पर छुट्टियों का पैसा मिलेगा और गर्भावस्था के दौरान भी पैसा मिलेगा |", align="L", new_x="LEFT", new_y='NEXT', border=0)
+    report.cell(w=0, h=default_cell_height, text=f"अस्थाई या स्थाई रूप से अपंग होने पर भी पैसा मिलेगा | इसके अतिरिक्त्त उन सब चीज़ों का पैसा मिलेगा जो कि एम्प्लॉयीज़ स्टेट इंश्योरेंस एक्ट में दिए गए हैं |", align="L", new_x="LMARGIN", new_y='NEXT', border=0)
+
     #15.
     report.set_xy(x=left_margin, y=report.get_y()+default_cell_height)
     report.cell(w=width_of_columns['serial'], h=default_cell_height, text=f"15.", align="C", new_x="RIGHT", new_y='TOP', border=0)
-    report.cell(w=0, h=default_cell_height, text=f"यदि आप कम्पनी में 30 दिन से ज़्यादा काम कर चुके हैं तो साल में कुल वेतन का कम से कम 8.33% या अधिक से अधिक 20% बोनस दिया जाएगा |", align="L", new_x="LMARGIN", new_y='NEXT', border=0)
+    report.cell(w=0, h=default_cell_height, text=f"आपको नियमानुसार प्रोविडेंट फंड (PF) की सुविधा भी मिलेगी जिसके लिए आपके वेतन के मूल (BASIC) व महंगाई भत्ते (DA) का 12 प्रतिशत काट लिया जाएगा |", align="L", new_x="LEFT", new_y='NEXT', border=0)
+    report.cell(w=0, h=default_cell_height, text=f"आपके (PF) खाते में हर महीने जमा किया जाएगा | कम्पनी भी अपनी तरफ से 12 प्रतिशत, उतना ही पैसा आपके खाते में जमा कराएगी | ", align="L", new_x="LMARGIN", new_y='NEXT', border=0)
     
     #16.
     report.set_xy(x=left_margin, y=report.get_y()+default_cell_height)
     report.cell(w=width_of_columns['serial'], h=default_cell_height, text=f"16.", align="C", new_x="RIGHT", new_y='TOP', border=0)
+    report.cell(w=0, h=default_cell_height, text=f"यदि आप कम्पनी में 30 दिन से ज़्यादा काम कर चुके हैं तो साल में कुल वेतन का कम से कम 8.33% या अधिक से अधिक 20% बोनस दिया जाएगा |", align="L", new_x="LMARGIN", new_y='NEXT', border=0)
+    
+    #17.
+    report.set_xy(x=left_margin, y=report.get_y()+default_cell_height)
+    report.cell(w=width_of_columns['serial'], h=default_cell_height, text=f"17.", align="C", new_x="RIGHT", new_y='TOP', border=0)
     report.cell(w=0, h=default_cell_height, text=f"यदि आपने कम्पनी में बिना नौकरी छोड़े लगातार 5 साल तक काम किया है तो कम्पनी आपको नौकरी छोड़ने पर ग्रेचुएटी की सुविधा देगी जो की ग्रेचुएटी पेमेंट एक्ट के तहत", align="L", new_x="LEFT", new_y='NEXT', border=0)
     report.cell(w=0, h=default_cell_height, text=f"होगी |", align="L", new_x="LMARGIN", new_y='NEXT', border=0)
 
-    #17.
+    #18.
     employee_doj = ''
     try: employee_doj = employee.employee_professional_detail.date_of_joining.strftime('%d-%b-%Y')
     except: pass
     report.set_xy(x=left_margin, y=report.get_y()+default_cell_height)
-    report.cell(w=width_of_columns['serial'], h=default_cell_height, text=f"17.", align="C", new_x="RIGHT", new_y='TOP', border=0)
+    report.cell(w=width_of_columns['serial'], h=default_cell_height, text=f"18.", align="C", new_x="RIGHT", new_y='TOP', border=0)
     report.cell(w=0, h=default_cell_height, text=f"यदि आपको ऊपर दी गयीं शर्ते मंज़ूर हैं तो आप इस नियुक्त्ति पत्र पर स्वीकृत के लिए अपने हस्ताक्षर करें और दिनांक {employee_doj} से काम पर आएं |", align="L", new_x="LMARGIN", new_y='NEXT', border=0)
     
     #Signature
