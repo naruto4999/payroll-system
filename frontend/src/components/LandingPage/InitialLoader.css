@@ -1,0 +1,115 @@
+/* InitialLoader.css */
+
+.initial-loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgb(24 25 27);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.loader-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.loader-logo {
+  margin-bottom: 2rem;
+  animation: logoFloat 2s ease-in-out infinite;
+}
+
+.loader-image {
+  height: 6rem;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.3));
+}
+
+.loader-spinner {
+  margin-bottom: 1.5rem;
+}
+
+.spinner-ring {
+  width: 3rem;
+  height: 3rem;
+  border: 3px solid rgba(59, 130, 246, 0.2);
+  border-top: 3px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loader-text {
+  color: #d1d5db;
+  font-size: 1.125rem;
+  font-weight: 300;
+  animation: textPulse 1.5s ease-in-out infinite;
+}
+
+/* Animations */
+@keyframes logoFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes textPulse {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .loader-image {
+    height: 5rem;
+  }
+  
+  .spinner-ring {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+  
+  .loader-text {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .loader-image {
+    height: 4rem;
+  }
+  
+  .spinner-ring {
+    width: 2rem;
+    height: 2rem;
+  }
+  
+  .loader-text {
+    font-size: 0.875rem;
+  }
+}
