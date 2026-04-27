@@ -371,7 +371,13 @@ class EmployeeAttendanceManager(models.Manager):
             df = mdb.read_table(temp_file.name, 'CHECKINOUT')
             # print(df.tail(40).sort_values(by='USERID'))
             df['CHECKTIME'] = pd.to_datetime(df['CHECKTIME'], format='%m/%d/%y %H:%M:%S', errors='coerce')
-            filtered_rows = df[(df['CHECKTIME'] >= (from_date - relativedelta(days=1))) & (df['CHECKTIME'] <= (to_date + relativedelta(days=1)))]
+            # filtered_rows = df[(df['CHECKTIME'] >= (from_date - relativedelta(days=1))) & (df['CHECKTIME'] <= (to_date + relativedelta(days=1)))]
+            # Keep a wider coarse import window so valid after-midnight punch-outs
+            # on the final processed day are not discarded before shift-window pairing.
+            filtered_rows = df[
+                (df['CHECKTIME'] >= (from_date - relativedelta(days=1))) &
+                (df['CHECKTIME'] < (to_date + relativedelta(days=2)))
+            ]
 
             #Leaves
             present_leave = LeaveGrade.objects.get(company_id=company_id, user=user, name='P')
