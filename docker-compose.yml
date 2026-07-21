@@ -35,6 +35,19 @@ services:
         command: certificates
         restart: "no"
 
+    ssl-data-backup:
+        image: alpine:3.20
+        container_name: ssl_data_backup
+        volumes:
+            - ./data:/source/data:ro
+            - ../backup:/backup
+        command: >
+            sh -c "rm -rf /backup/data.tmp &&
+                   cp -a /source/data /backup/data.tmp &&
+                   rm -rf /backup/data &&
+                   mv /backup/data.tmp /backup/data"
+        restart: "no"
+
     backend:
         build:
             context: ./backend # Replace with the actual path to your backend code
