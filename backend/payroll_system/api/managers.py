@@ -15,6 +15,7 @@ import tempfile
 import os
 import pandas as pd
 from django.db import transaction
+from .services.overtime_policy import calculate_policy_overtime
 
 
 
@@ -1109,6 +1110,8 @@ class EmployeeSalaryPreparedManager(models.Manager):
             EarnedAmount = apps.get_model('api', 'EarnedAmount')
             EmployeePfEsiDetail = apps.get_model('api', 'EmployeePfEsiDetail')
             EarningsHead = apps.get_model('api', 'EarningsHead')
+            EmployeeAttendance = apps.get_model('api', 'EmployeeAttendance')
+            EmployeeSalaryPreparedOvertimeDetail = apps.get_model('api', 'EmployeeSalaryPreparedOvertimeDetail')
 
             #Querysets
             from_date=date(year, month, 1)
@@ -1177,23 +1180,23 @@ class EmployeeSalaryPreparedManager(models.Manager):
                     print(pf_deducted)
 
                     #OT earned
-                    net_ot_minutes_monthly = 0
-                    net_ot_amount_monthly = 0
-                    if employee_salary_detail.first().overtime_type != 'no_overtime':
-                        net_ot_minutes_monthly = employee_monthly_attendance_detail.first().net_ot_minutes_monthly
-                        net_ot_hrs = Decimal(net_ot_minutes_monthly) / Decimal(60)
-                        overtime_rate_multiplier = 2 if employee_salary_detail.first().overtime_rate == 'D' or user.role=='REGULAR' else 1
-                        if employee_salary_detail.first().salary_mode.lower() == 'daily':
-                            net_ot_amount_monthly = Decimal(total_salary_rate) / Decimal(8) * net_ot_hrs * Decimal(overtime_rate_multiplier)
-                        else:
-                            overtime_divisor = Decimal(26)
-                            if user.role=='OWNER':
-                                if company_calculations.ot_calculation == 'month_days':
-                                    overtime_divisor = Decimal(days_in_month)
-                                else:
-                                    overtime_divisor = Decimal(company_calculations.ot_calculation)
-                            net_ot_amount_monthly = Decimal(total_salary_rate) / overtime_divisor / Decimal(8) * net_ot_hrs * Decimal(overtime_rate_multiplier)
-                        net_ot_amount_monthly = net_ot_amount_monthly.quantize(Decimal('1.'), rounding=ROUND_HALF_UP)
+                    monthly_attendance_records = EmployeeAttendance.objects.filter(
+                        user=user,
+                        company_id=company_id,
+                        employee=current_employee.employee,
+                        date__gte=from_date,
+                        date__lte=to_date,
+                    ).select_related('first_half', 'second_half')
+                    overtime_result = calculate_policy_overtime(
+                        employee_salary_detail=employee_salary_detail.first(),
+                        attendance_records=monthly_attendance_records,
+                        salary_earnings=employee_salary_earnings_for_each_head,
+                        company_calculations=company_calculations,
+                        user=user,
+                        days_in_month=days_in_month,
+                    )
+                    net_ot_minutes_monthly = overtime_result.net_minutes
+                    net_ot_amount_monthly = overtime_result.amount
 
 
                     #ESI Deducted
@@ -1264,6 +1267,12 @@ class EmployeeSalaryPreparedManager(models.Manager):
                         date=from_date,
                         defaults=defaults,
                     )
+
+                    EmployeeSalaryPreparedOvertimeDetail.objects.filter(salary_prepared=salary_prepared_obj).delete()
+                    EmployeeSalaryPreparedOvertimeDetail.objects.bulk_create([
+                        EmployeeSalaryPreparedOvertimeDetail(salary_prepared=salary_prepared_obj, **detail)
+                        for detail in overtime_result.breakdown
+                    ])
 
                     for earnings_head_id, earned_dict in earned_amount_dict.items():
                         defaults = {

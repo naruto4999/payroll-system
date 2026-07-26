@@ -329,6 +329,86 @@ class EarningsHead(models.Model):
         ]
     def __str__(self):
         return f"{self.user.email} -> {self.company.name}: {self.name}"
+
+
+class OvertimePolicy(models.Model):
+    EARNINGS_BASIS_ALL = 'ALL_EARNINGS'
+    EARNINGS_BASIS_SELECTED = 'SELECTED_HEADS'
+    EARNINGS_BASIS_CHOICES = (
+        (EARNINGS_BASIS_ALL, 'All Earnings'),
+        (EARNINGS_BASIS_SELECTED, 'Selected Heads'),
+    )
+
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='overtime_policies')
+    name = models.CharField(max_length=100, null=False, blank=False)
+    code = models.CharField(max_length=50, null=False, blank=False)
+    is_default = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    is_system = models.BooleanField(default=False)
+    earnings_basis = models.CharField(max_length=20, choices=EARNINGS_BASIS_CHOICES, default=EARNINGS_BASIS_ALL)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['company', 'code'], name='unique_overtime_policy_code_per_company'),
+            models.UniqueConstraint(fields=['company'], condition=Q(is_default=True, is_active=True), name='unique_active_default_overtime_policy_per_company'),
+        ]
+
+    def clean(self):
+        if self.is_default and not self.is_active:
+            raise ValidationError({'is_default': 'Inactive overtime policies cannot be company defaults.'})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.company.name}: {self.name}"
+
+
+class OvertimePolicyDayRule(models.Model):
+    DAY_TYPE_REGULAR = 'REGULAR'
+    DAY_TYPE_WEEKLY_OFF = 'WEEKLY_OFF'
+    DAY_TYPE_HOLIDAY = 'HOLIDAY'
+    DAY_TYPE_CHOICES = (
+        (DAY_TYPE_REGULAR, 'Regular'),
+        (DAY_TYPE_WEEKLY_OFF, 'Weekly Off'),
+        (DAY_TYPE_HOLIDAY, 'Holiday'),
+    )
+
+    policy = models.ForeignKey(OvertimePolicy, on_delete=models.CASCADE, related_name='day_rules')
+    day_type = models.CharField(max_length=20, choices=DAY_TYPE_CHOICES)
+    multiplier = models.DecimalField(max_digits=6, decimal_places=3, validators=[MinValueValidator(Decimal('0.001'))])
+    late_deduction_priority = models.PositiveSmallIntegerField()
+
+    class Meta:
+        ordering = ['late_deduction_priority', 'day_type']
+        constraints = [
+            models.UniqueConstraint(fields=['policy', 'day_type'], name='unique_overtime_policy_day_type'),
+            models.UniqueConstraint(fields=['policy', 'late_deduction_priority'], name='unique_overtime_policy_late_priority'),
+        ]
+
+    def __str__(self):
+        return f"{self.policy.name}: {self.day_type} x{self.multiplier}"
+
+
+class OvertimePolicyEarningsHead(models.Model):
+    policy = models.ForeignKey(OvertimePolicy, on_delete=models.CASCADE, related_name='selected_earning_heads')
+    earnings_head = models.ForeignKey(EarningsHead, on_delete=models.PROTECT, related_name='overtime_policies')
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['policy', 'earnings_head'], name='unique_overtime_policy_earning_head'),
+        ]
+
+    def clean(self):
+        if self.earnings_head.company_id != self.policy.company_id:
+            raise ValidationError({'earnings_head': 'Selected earning head must belong to the policy company.'})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
     
 class DeductionsHead(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="deductions_head")
@@ -684,6 +764,7 @@ class EmployeeSalaryDetail(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="employee_salary_details")
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="employee_salary_details")
     employee = models.OneToOneField(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="employee_salary_detail", primary_key=True)
+    overtime_policy = models.ForeignKey(OvertimePolicy, on_delete=models.PROTECT, null=True, blank=True, related_name='assigned_salary_details')
     overtime_type = models.CharField(max_length=20, choices=OVERTIME_TYPE_CHOICES, default='no_overtime', null=False, blank=False)
     overtime_rate = models.CharField(max_length=1, choices=OVERTIME_RATE_CHOICES, null=True, blank=True)
     salary_mode = models.CharField(max_length=20, choices=SALARY_MODE_CHOICES, default='monthly', null=False, blank=False)
@@ -704,6 +785,8 @@ class EmployeeSalaryDetail(models.Model):
             raise ValidationError({
                 'overtime_rate': "Overtime rate cannot be null or blank for 'Holiday/Weekly Off' or 'All Days' overtime type."
             })
+        if self.overtime_policy and self.overtime_policy.company_id != self.company_id:
+            raise ValidationError({'overtime_policy': 'Overtime policy must belong to the employee company.'})
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -1183,6 +1266,65 @@ class EmployeeAttendance(models.Model):
         else:
             self.pay_multiplier = 0
         super().save(*args, **kwargs)
+
+
+class EmployeeAttendanceOvertimeDetail(models.Model):
+    SOURCE_EARLY_ARRIVAL = 'EARLY_ARRIVAL'
+    SOURCE_LATE_DEPARTURE = 'LATE_DEPARTURE'
+    SOURCE_OFF_DAY_WORK = 'OFF_DAY_WORK'
+    SOURCE_MANUAL = 'MANUAL'
+    SOURCE_IMPORTED = 'IMPORTED'
+    SOURCE_CHOICES = (
+        (SOURCE_EARLY_ARRIVAL, 'Early Arrival'),
+        (SOURCE_LATE_DEPARTURE, 'Late Departure'),
+        (SOURCE_OFF_DAY_WORK, 'Off Day Work'),
+        (SOURCE_MANUAL, 'Manual'),
+        (SOURCE_IMPORTED, 'Imported'),
+    )
+
+    attendance = models.ForeignKey(EmployeeAttendance, on_delete=models.CASCADE, related_name='overtime_details')
+    work_date = models.DateField()
+    day_type = models.CharField(max_length=20, choices=OvertimePolicyDayRule.DAY_TYPE_CHOICES)
+    source = models.CharField(max_length=20, choices=SOURCE_CHOICES)
+    start_datetime = models.DateTimeField(null=True, blank=True)
+    end_datetime = models.DateTimeField(null=True, blank=True)
+    gross_minutes = models.PositiveSmallIntegerField()
+    excluded_minutes = models.PositiveSmallIntegerField(default=0)
+    eligible_minutes = models.PositiveSmallIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['attendance', 'work_date', 'day_type']),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                check=(Q(start_datetime__isnull=True, end_datetime__isnull=True) | Q(start_datetime__isnull=False, end_datetime__isnull=False)),
+                name='attendance_ot_detail_datetimes_both_set_or_null',
+            ),
+            models.CheckConstraint(check=Q(gross_minutes__gt=0), name='attendance_ot_detail_gross_positive'),
+            models.CheckConstraint(check=Q(excluded_minutes__lte=models.F('gross_minutes')), name='attendance_ot_detail_excluded_lte_gross'),
+            models.CheckConstraint(check=Q(eligible_minutes__gt=0), name='attendance_ot_detail_eligible_positive'),
+        ]
+
+    def clean(self):
+        if (self.start_datetime is None) != (self.end_datetime is None):
+            raise ValidationError('Start and end datetime must both be set or both be blank.')
+        if self.start_datetime and self.end_datetime:
+            if self.end_datetime <= self.start_datetime:
+                raise ValidationError({'end_datetime': 'End datetime must be after start datetime.'})
+            duration_minutes = int((self.end_datetime - self.start_datetime).total_seconds() // 60)
+            if duration_minutes != self.gross_minutes:
+                raise ValidationError({'gross_minutes': 'Gross minutes must match the datetime duration.'})
+            if self.start_datetime.date() != self.work_date and self.end_datetime.date() != self.work_date:
+                raise ValidationError({'work_date': 'Overtime segment must belong to the payroll work date.'})
+        if self.eligible_minutes != self.gross_minutes - self.excluded_minutes:
+            raise ValidationError({'eligible_minutes': 'Eligible minutes must equal gross minutes minus excluded minutes.'})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
     
 
 class EmployeeGenerativeLeaveRecordManager(models.Manager):
@@ -1442,6 +1584,24 @@ class EmployeeSalaryPrepared(models.Model):
         ]
 
 
+class EmployeeSalaryPreparedOvertimeDetail(models.Model):
+    salary_prepared = models.ForeignKey(EmployeeSalaryPrepared, on_delete=models.CASCADE, related_name='overtime_breakdown')
+    day_type = models.CharField(max_length=20, choices=OvertimePolicyDayRule.DAY_TYPE_CHOICES)
+    gross_minutes = models.PositiveSmallIntegerField(default=0)
+    deducted_late_minutes = models.PositiveSmallIntegerField(default=0)
+    net_minutes = models.PositiveSmallIntegerField(default=0)
+    multiplier = models.DecimalField(max_digits=6, decimal_places=3)
+    eligible_salary_rate = models.DecimalField(max_digits=12, decimal_places=2)
+    divisor = models.DecimalField(max_digits=8, decimal_places=2)
+    amount = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['salary_prepared', 'day_type'], name='unique_salary_prepared_overtime_day_type'),
+            models.CheckConstraint(check=Q(gross_minutes__gte=models.F('deducted_late_minutes')), name='prepared_ot_gross_gte_deducted'),
+        ]
+
+
 class EmployeeAdvanceEmiRepayment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_company_employees_advance_emi_repayments")
     amount = models.PositiveIntegerField(null=False, blank=False)
@@ -1644,6 +1804,15 @@ def create_default_bonus_percentage(sender, instance, created, **kwargs):
         user = company.user
         # Create the default Weekly Off and Holiday Off on post save for company
         BonusPercentage.objects.create(user=user,company=company, bonus_percentage=8.33)
+
+
+@receiver(post_save, sender=Company)
+def create_default_overtime_policies(sender, instance, created, raw=False, **kwargs):
+    if raw or not created:
+        return
+    from .services.overtime_policy import ensure_standard_overtime_policies
+
+    ensure_standard_overtime_policies(instance)
 # @receiver(post_save, sender=EmployeeProfessionalDetail)
 # @receiver(post_delete, sender=EmployeeProfessionalDetail)
 

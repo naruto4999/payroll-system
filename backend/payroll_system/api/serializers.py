@@ -1,6 +1,6 @@
 from dataclasses import field
 
-from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning, EmployeeSalaryDetail, EmployeeFamilyNomineeDetial, EmployeePfEsiDetail, WeeklyOffHolidayOff, PfEsiSetup, Calculations, EmployeeShifts, EmployeeAttendance, EmployeeGenerativeLeaveRecord, EmployeeLeaveOpening, EmployeeMonthlyAttendanceDetails, EmployeeAdvancePayment, EmployeeSalaryPrepared, EarnedAmount, BonusCalculation, BonusPercentage, FullAndFinal, SubUserOvertimeSettings, SubUserMiscSettings, AttendanceMachineConfig, ExtraFeaturesConfig
+from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, OvertimePolicy, OvertimePolicyDayRule, OvertimePolicyEarningsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning, EmployeeSalaryDetail, EmployeeFamilyNomineeDetial, EmployeePfEsiDetail, WeeklyOffHolidayOff, PfEsiSetup, Calculations, EmployeeShifts, EmployeeAttendance, EmployeeGenerativeLeaveRecord, EmployeeLeaveOpening, EmployeeMonthlyAttendanceDetails, EmployeeAdvancePayment, EmployeeSalaryPrepared, EmployeeSalaryPreparedOvertimeDetail, EarnedAmount, BonusCalculation, BonusPercentage, FullAndFinal, SubUserOvertimeSettings, SubUserMiscSettings, AttendanceMachineConfig, ExtraFeaturesConfig
 from rest_framework import serializers
 
 class UserSerializer(serializers.ModelSerializer):
@@ -120,6 +120,86 @@ class EarningsHeadSerializer(serializers.ModelSerializer):
         fields = ('id', 'company', 'name', 'mandatory_earning')
         read_only_fields = ('mandatory_earning',)
 
+
+class OvertimePolicyDayRuleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OvertimePolicyDayRule
+        fields = ('id', 'day_type', 'multiplier', 'late_deduction_priority')
+
+
+class OvertimePolicySerializer(serializers.ModelSerializer):
+    day_rules = OvertimePolicyDayRuleSerializer(many=True, required=False)
+    selected_earning_head_ids = serializers.PrimaryKeyRelatedField(
+        source='selected_earning_heads',
+        many=True,
+        queryset=EarningsHead.objects.all(),
+        required=False,
+        write_only=True,
+    )
+    selected_earning_heads = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = OvertimePolicy
+        fields = (
+            'id',
+            'company',
+            'name',
+            'code',
+            'is_default',
+            'is_active',
+            'is_system',
+            'earnings_basis',
+            'day_rules',
+            'selected_earning_head_ids',
+            'selected_earning_heads',
+        )
+        read_only_fields = ('code', 'is_system')
+
+    def get_selected_earning_heads(self, obj):
+        return EarningsHeadSerializer([link.earnings_head for link in obj.selected_earning_heads.all()], many=True).data
+
+    def validate(self, attrs):
+        company = attrs.get('company') or getattr(self.instance, 'company', None)
+        selected_heads = attrs.get('selected_earning_heads', [])
+        for earnings_head in selected_heads:
+            if earnings_head.company_id != company.id:
+                raise serializers.ValidationError({'selected_earning_head_ids': 'All selected earning heads must belong to the policy company.'})
+        return attrs
+
+    def _save_related(self, policy, day_rules, selected_heads):
+        if day_rules is not None:
+            if policy.is_system:
+                raise serializers.ValidationError({'day_rules': 'System policy rules cannot be changed.'})
+            policy.day_rules.all().delete()
+            for rule in day_rules:
+                OvertimePolicyDayRule.objects.create(policy=policy, **rule)
+        if selected_heads is not None:
+            policy.selected_earning_heads.all().delete()
+            for earnings_head in selected_heads:
+                OvertimePolicyEarningsHead.objects.create(policy=policy, earnings_head=earnings_head)
+
+    def create(self, validated_data):
+        day_rules = validated_data.pop('day_rules', None)
+        selected_heads = validated_data.pop('selected_earning_heads', None)
+        if validated_data.get('is_default'):
+            OvertimePolicy.objects.filter(company=validated_data['company'], is_default=True).update(is_default=False)
+        policy = OvertimePolicy.objects.create(**validated_data)
+        self._save_related(policy, day_rules, selected_heads)
+        return policy
+
+    def update(self, instance, validated_data):
+        day_rules = validated_data.pop('day_rules', None)
+        selected_heads = validated_data.pop('selected_earning_heads', None)
+        if instance.is_system:
+            validated_data.pop('code', None)
+        if validated_data.get('is_default'):
+            OvertimePolicy.objects.filter(company=instance.company, is_default=True).exclude(id=instance.id).update(is_default=False)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        self._save_related(instance, day_rules, selected_heads)
+        return instance
+
 # class DeductionsHeadSerializer(serializers.ModelSerializer):
 #     user = UserSerializer(read_only=True)
 #     class Meta:
@@ -206,9 +286,25 @@ class EmployeeSalaryEarningUpdateSerializer(serializers.ModelSerializer):
         fields = ['employee', 'company', 'earnings_head', 'value', 'from_date', 'to_date']
     
 class EmployeeSalaryDetailSerializer(serializers.ModelSerializer):
+    resolved_overtime_policy = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = EmployeeSalaryDetail
-        fields = ['company', 'employee', 'overtime_type', 'overtime_rate', 'salary_mode', 'payment_mode', 'bank_name', 'account_number', 'ifcs', 'labour_wellfare_fund', 'late_deduction', 'bonus_allow', 'bonus_exg']
+        fields = ['company', 'employee', 'overtime_policy', 'resolved_overtime_policy', 'overtime_type', 'overtime_rate', 'salary_mode', 'payment_mode', 'bank_name', 'account_number', 'ifcs', 'labour_wellfare_fund', 'late_deduction', 'bonus_allow', 'bonus_exg']
+
+    def get_resolved_overtime_policy(self, obj):
+        from .services.overtime_policy import resolve_employee_overtime_policy
+
+        return OvertimePolicySerializer(resolve_employee_overtime_policy(obj)).data
+
+    def validate_overtime_policy(self, policy):
+        company_id = self.initial_data.get('company') or getattr(self.instance, 'company_id', None)
+        if policy and company_id and policy.company_id != int(company_id):
+            raise serializers.ValidationError('Overtime policy must belong to the employee company.')
+        existing_policy_id = getattr(self.instance, 'overtime_policy_id', None)
+        if policy and not policy.is_active and policy.id != existing_policy_id:
+            raise serializers.ValidationError('Inactive overtime policies cannot be newly assigned.')
+        return policy
 
 
 class EmployeePfEsiDetailSerializer(serializers.ModelSerializer):
@@ -340,12 +436,19 @@ class EmployeeSalaryPreparedSerializer(serializers.ModelSerializer):
         model = EmployeeSalaryPrepared
         fields = ('id', 'employee', 'company', 'date', 'incentive_amount', 'pf_deducted', 'esi_deducted', 'vpf_deducted', 'advance_deducted', 'tds_deducted', 'labour_welfare_fund_deducted', 'others_deducted', 'net_ot_minutes_monthly', 'net_ot_amount_monthly', 'payment_mode')
 
+
+class EmployeeSalaryPreparedOvertimeDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmployeeSalaryPreparedOvertimeDetail
+        fields = ('day_type', 'gross_minutes', 'deducted_late_minutes', 'net_minutes', 'multiplier', 'eligible_salary_rate', 'divisor', 'amount')
+
 class EmployeeSalaryPreparedWithEarnedAmountSerializer(serializers.ModelSerializer):
     earned_amounts = serializers.SerializerMethodField()
+    overtime_breakdown = EmployeeSalaryPreparedOvertimeDetailSerializer(many=True, read_only=True)
     id = serializers.IntegerField(read_only=True)
     class Meta:
         model = EmployeeSalaryPrepared
-        fields = ('id', 'employee', 'company', 'date', 'incentive_amount', 'pf_deducted', 'esi_deducted', 'vpf_deducted', 'advance_deducted', 'tds_deducted', 'labour_welfare_fund_deducted', 'others_deducted', 'net_ot_minutes_monthly', 'net_ot_amount_monthly', 'payment_mode', 'earned_amounts')
+        fields = ('id', 'employee', 'company', 'date', 'incentive_amount', 'pf_deducted', 'esi_deducted', 'vpf_deducted', 'advance_deducted', 'tds_deducted', 'labour_welfare_fund_deducted', 'others_deducted', 'net_ot_minutes_monthly', 'net_ot_amount_monthly', 'payment_mode', 'earned_amounts', 'overtime_breakdown')
     def get_earned_amounts(self, obj):
         # Get all related EarnedAmount records through the reverse relation
         earned_amounts = obj.current_salary_earned_amounts.all()

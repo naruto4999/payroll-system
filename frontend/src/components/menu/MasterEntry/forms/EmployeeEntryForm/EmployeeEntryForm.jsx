@@ -732,6 +732,7 @@ const EmployeeEntryForm = () => {
 
         const salaryDetail = {
             ...values.salaryDetail,
+            overtimePolicy: values.salaryDetail.overtimePolicy || null,
             company: globalCompany.id,
             employee: employeeId,
         };
@@ -902,6 +903,7 @@ const EmployeeEntryForm = () => {
         console.log('askldjsakldjaslkdj');
         const salaryDetail = {
             ...values.salaryDetail,
+            overtimePolicy: values.salaryDetail.overtimePolicy || null,
             company: globalCompany.id,
             employee: updateEmployeeId,
         };
@@ -1433,6 +1435,7 @@ const EmployeeEntryForm = () => {
                                             ? parseInt(singleEmployeeProfessionalDetail.dateOfJoining.split('-')[0])
                                             : '',
                                         salaryDetail: {
+                                            overtimePolicy: '',
                                             overtimeType: 'no_overtime',
                                             overtimeRate: '',
                                             salaryMode: 'monthly',
@@ -1659,6 +1662,7 @@ const EmployeeEntryForm = () => {
                                                     : null,
                                                 salaryDetail: {
                                                     ...singleEmployeeSalaryDetail,
+                                                    overtimePolicy: singleEmployeeSalaryDetail?.overtimePolicy ?? '',
                                                 },
                                             }
                                             : {
@@ -1673,6 +1677,7 @@ const EmployeeEntryForm = () => {
                                                     )
                                                     : '',
                                                 salaryDetail: {
+                                                    overtimePolicy: '',
                                                     overtimeType: 'no_overtime',
                                                     overtimeRate: '',
                                                     salaryMode: 'monthly',

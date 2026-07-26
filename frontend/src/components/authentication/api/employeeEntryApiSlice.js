@@ -143,6 +143,14 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
                 'AllEmployeeSalaryDetail',
             ],
         }),
+        getOvertimePolicies: builder.query({
+            query: (globalCompany) => ({
+                url: `/api/overtime-policy/${globalCompany.id}`,
+                method: 'GET',
+            }),
+            keepUnusedDataFor: 600,
+            providesTags: ['OvertimePolicies'],
+        }),
 
         //Pf Esi Detail
         getSingleEmployeePfEsiDetail: builder.query({
@@ -244,6 +252,7 @@ export const {
     useLazyGetSingleEmployeeSalaryDetailQuery,
     useGetSingleEmployeeSalaryDetailQuery,
     useUpdateEmployeeSalaryDetailMutation,
+    useGetOvertimePoliciesQuery,
     useAddEmployeeFamilyNomineeDetailMutation,
     useAddEmployeePfEsiDetailMutation,
     useLazyGetSingleEmployeePfEsiDetailQuery,

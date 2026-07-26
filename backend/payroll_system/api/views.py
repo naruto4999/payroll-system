@@ -60,6 +60,9 @@ import re
 import time
 from django.db.models import F, Value, CharField, Func, Exists, OuterRef
 from .permissions import isOwnerAndAdmin
+from .serializers import OvertimePolicySerializer
+from .models import OvertimePolicy, EmployeeSalaryPreparedOvertimeDetail
+from .services.overtime_policy import calculate_policy_overtime
 # import sys
 from django.db import connection, reset_queries 
 from rest_framework.exceptions import APIException
@@ -746,7 +749,52 @@ class EarningsHeadRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPI
         # Perform deletion
         self.perform_destroy(instance)
         return Response({"detail": "Successfully deleted."}, status=status.HTTP_204_NO_CONTENT)
-        
+
+
+class OvertimePolicyListCreateAPIView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = OvertimePolicySerializer
+    lookup_field = 'company_id'
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        user = self.request.user
+        owner = user if user.role == 'OWNER' else user.regular_to_owner.owner
+        return OvertimePolicy.objects.filter(company__user=owner, company_id=company_id).prefetch_related('day_rules', 'selected_earning_heads__earnings_head')
+
+    def perform_create(self, serializer):
+        if self.request.user.role != 'OWNER':
+            raise PermissionDenied('Only owner accounts can create overtime policies.')
+        serializer.save(code=f"CUSTOM_{int(time.time() * 1000)}")
+
+
+class OvertimePolicyRetrieveUpdateAPIView(generics.RetrieveUpdateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = OvertimePolicySerializer
+    lookup_field = 'id'
+
+    def get_queryset(self, *args, **kwargs):
+        company_id = self.kwargs.get('company_id')
+        user = self.request.user
+        owner = user if user.role == 'OWNER' else user.regular_to_owner.owner
+        return OvertimePolicy.objects.filter(company__user=owner, company_id=company_id).prefetch_related('day_rules', 'selected_earning_heads__earnings_head')
+
+    def perform_update(self, serializer):
+        if self.request.user.role != 'OWNER':
+            raise PermissionDenied('Only owner accounts can update overtime policies.')
+        serializer.save()
+
+    def delete(self, request, *args, **kwargs):
+        if request.user.role != 'OWNER':
+            raise PermissionDenied('Only owner accounts can deactivate overtime policies.')
+        policy = self.get_object()
+        if policy.is_system:
+            return Response({'detail': 'System policies cannot be deactivated.'}, status=status.HTTP_403_FORBIDDEN)
+        policy.is_active = False
+        policy.is_default = False
+        policy.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+         
 
 # class DeductionsHeadListCreateAPIView(generics.ListCreateAPIView):
 #     permission_classes = [IsAuthenticated]
@@ -2095,6 +2143,40 @@ class EmployeeSalaryPreparedCreateAPIView(generics.CreateAPIView):
         if employee_salary_after_saved.exists():
             print("YES SALARY EXISTS")
             employee_salary_after_saved_instance = employee_salary_after_saved.first()
+            from_date = employee_salary_after_saved_instance.date
+            to_date = from_date + relativedelta(months=1) - relativedelta(days=1)
+            owner = user if user.role == 'OWNER' else user.regular_to_owner.owner
+            employee_salary_detail = EmployeeSalaryDetail.objects.get(company=employee_salary_after_saved_instance.company, employee=employee_salary_after_saved_instance.employee)
+            company_calculations = Calculations.objects.get(user=owner, company=employee_salary_after_saved_instance.company)
+            salary_earnings = EmployeeSalaryEarning.objects.filter(
+                company=employee_salary_after_saved_instance.company,
+                employee=employee_salary_after_saved_instance.employee,
+                from_date__lte=from_date,
+                to_date__gte=from_date,
+            )
+            attendance_records = EmployeeAttendance.objects.filter(
+                user=user,
+                company=employee_salary_after_saved_instance.company,
+                employee=employee_salary_after_saved_instance.employee,
+                date__gte=from_date,
+                date__lte=to_date,
+            ).select_related('first_half', 'second_half')
+            overtime_result = calculate_policy_overtime(
+                employee_salary_detail=employee_salary_detail,
+                attendance_records=attendance_records,
+                salary_earnings=salary_earnings,
+                company_calculations=company_calculations,
+                user=user,
+                days_in_month=calendar.monthrange(from_date.year, from_date.month)[1],
+            )
+            employee_salary_after_saved_instance.net_ot_minutes_monthly = overtime_result.net_minutes
+            employee_salary_after_saved_instance.net_ot_amount_monthly = overtime_result.amount
+            employee_salary_after_saved_instance.save(update_fields=['net_ot_minutes_monthly', 'net_ot_amount_monthly'])
+            EmployeeSalaryPreparedOvertimeDetail.objects.filter(salary_prepared=employee_salary_after_saved_instance).delete()
+            EmployeeSalaryPreparedOvertimeDetail.objects.bulk_create([
+                EmployeeSalaryPreparedOvertimeDetail(salary_prepared=employee_salary_after_saved_instance, **detail)
+                for detail in overtime_result.breakdown
+            ])
             EarnedAmount.objects.filter(salary_prepared=employee_salary_after_saved_instance.id).delete()
 
             #Iterating through all the earned amounts and saving it

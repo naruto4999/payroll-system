@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import { FaUserPlus } from 'react-icons/fa6';
 import { FaCircleNotch } from 'react-icons/fa6';
 import { Field, ErrorMessage } from 'formik';
+import { useGetOvertimePoliciesQuery } from '../../../../authentication/api/employeeEntryApiSlice';
 // import { useLazyGetSingleEmployeeSalaryEarningQuery } from "../../../../authentication/api/employeeEntryApiSlice";
 
 const classNames = (...classes) => {
@@ -34,6 +35,12 @@ const EmployeeSalaryDetail = ({
 	isSingleEmployeeSalaryDetailSuccess,
 	isSingleEmployeeProfessionalDetailSuccess,
 }) => {
+    const { data: overtimePolicies = [] } = useGetOvertimePoliciesQuery(globalCompany, {
+        skip: !globalCompany?.id,
+    });
+
+    const resolvedPolicy = values.salaryDetail.resolvedOvertimePolicy;
+
 	console.log(errors);
 	console.log(values.year);
 	console.log(values);
@@ -65,6 +72,32 @@ const EmployeeSalaryDetail = ({
 				<form action="" className="flex flex-col justify-center gap-2" onSubmit={handleSubmit}>
 					<section className="flex flex-row flex-wrap justify-center gap-10 lg:flex-nowrap">
 						<div className="w-fit">
+							<label
+								htmlFor={'salaryDetail.overtimePolicy'}
+								className="text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
+							>
+								Overtime Policy
+							</label>
+							<Field
+								as="select"
+								name="salaryDetail.overtimePolicy"
+								className="my-1 block rounded-md bg-zinc-50 bg-opacity-50 p-1 dark:bg-zinc-700"
+							>
+								<option value="">Use company default</option>
+								{overtimePolicies
+									.filter((policy) => policy.isActive || policy.id === Number(values.salaryDetail.overtimePolicy))
+									.map((policy) => (
+										<option key={policy.id} value={policy.id}>
+											{policy.name}
+										</option>
+									))}
+							</Field>
+							<div className="mb-3 max-w-72 text-xs text-blueAccent-600 dark:text-blueAccent-400">
+								{resolvedPolicy
+									? `Resolved: ${resolvedPolicy.name}`
+									: 'Leave blank to inherit the company default policy.'}
+							</div>
+
 							<label
 								htmlFor="year"
 								className="text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
