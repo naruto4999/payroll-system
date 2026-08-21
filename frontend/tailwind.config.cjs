@@ -5,39 +5,6 @@ module.exports = {
     theme: {
         extend: {
             colors: {
-                // grey: {
-                //     100: "#e0e0e0",
-                //     200: "#c2c2c2",
-                //     300: "#a3a3a3",
-                //     400: "#858585",
-                //     500: "#666666",
-                //     600: "#525252",
-                //     700: "#3d3d3d",
-                //     800: "#292929",
-                //     900: "#141414",
-                // },
-                // primary: {
-                //     100: "#d0d1d5",
-                //     200: "#a1a4ab",
-                //     300: "#727681",
-                //     400: "#1f2a40",
-                //     500: "#141b2d",
-                //     600: "#101624",
-                //     700: "#0c101b",
-                //     800: "#080b12",
-                //     900: "#040509",
-                // },
-                // greenAccent: {
-                //     100: "#dbf5ee",
-                //     200: "#b7ebde",
-                //     300: "#94e2cd",
-                //     400: "#70d8bd",
-                //     500: "#4cceac",
-                //     600: "#3da58a",
-                //     700: "#2e7c67",
-                //     800: "#1e5245",
-                //     900: "#0f2922",
-                // },
                 redAccent: {
                     100: "#f8dcdb",
                     200: "#f1b9b7",
@@ -60,17 +27,32 @@ module.exports = {
                     800: "#2a2d64",
                     900: "#151632",
                 },
-                
             },
             keyframes: {
                 'loading-bar': {
                   '0%': { transform: 'translateX(0px)' },
                   '100%': { transform: 'translateX(calc(100vw))' },
                 },
-              },
-              animation: {
-                'loading-bar': 'loading-bar 2.5s infinite linear '
-              }
+                'gradient': {
+                  '0%': { backgroundPosition: '0% 50%' },
+                  '50%': { backgroundPosition: '100% 50%' },
+                  '100%': { backgroundPosition: '0% 50%' },
+                },
+                'float': {
+                  '0%, 100%': { transform: 'translateY(0px)' },
+                  '50%': { transform: 'translateY(-20px)' },
+                },
+                'glow': {
+                  '0%, 100%': { boxShadow: '0 0 20px rgba(59, 130, 246, 0.5)' },
+                  '50%': { boxShadow: '0 0 40px rgba(59, 130, 246, 0.8)' },
+                },
+            },
+            animation: {
+                'loading-bar': 'loading-bar 2.5s infinite linear',
+                'gradient': 'gradient 3s ease infinite',
+                'float': 'float 6s ease-in-out infinite',
+                'glow': 'glow 2s ease-in-out infinite',
+            }
         },
     },
     plugins: [],
