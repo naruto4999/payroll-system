@@ -1,7 +1,23 @@
+import calendar
 from dataclasses import field
+from datetime import date
 
-from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, OvertimePolicy, OvertimePolicyDayRule, OvertimePolicyEarningsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning, EmployeeSalaryDetail, EmployeeFamilyNomineeDetial, EmployeePfEsiDetail, WeeklyOffHolidayOff, PfEsiSetup, Calculations, EmployeeShifts, EmployeeAttendance, EmployeeGenerativeLeaveRecord, EmployeeLeaveOpening, EmployeeMonthlyAttendanceDetails, EmployeeAdvancePayment, EmployeeSalaryPrepared, EmployeeSalaryPreparedOvertimeDetail, EarnedAmount, BonusCalculation, BonusPercentage, FullAndFinal, SubUserOvertimeSettings, SubUserMiscSettings, AttendanceMachineConfig, ExtraFeaturesConfig
+from django.db.models import Sum
+
+from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, OvertimePolicy, OvertimePolicyDayRule, OvertimePolicyEarningsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning, EmployeeSalaryDetail, EmployeeFamilyNomineeDetial, EmployeePfEsiDetail, WeeklyOffHolidayOff, PfEsiSetup, Calculations, EmployeeShifts, EmployeeAttendance, EmployeeAttendanceOvertimeDetail, EmployeeGenerativeLeaveRecord, EmployeeLeaveOpening, EmployeeMonthlyAttendanceDetails, EmployeeAdvancePayment, EmployeeSalaryPrepared, EmployeeSalaryPreparedOvertimeDetail, EarnedAmount, BonusCalculation, BonusPercentage, FullAndFinal, SubUserOvertimeSettings, SubUserMiscSettings, AttendanceMachineConfig
 from rest_framework import serializers
+
+from .services.overtime_policy import create_overtime_policy, update_overtime_policy
+
+
+ATTENDANCE_HISTORY_MIN_DATE = date(2009, 1, 1)
+
+
+def validate_attendance_period_not_before_cutoff(attrs):
+    from_date = date(attrs['year'], attrs['month'], attrs.get('month_from_date', 1))
+    if from_date < ATTENDANCE_HISTORY_MIN_DATE:
+        raise serializers.ValidationError({'date': 'Attendance cannot be created before 2009-01-01.'})
+    return attrs
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -26,12 +42,35 @@ class CreateCompanySerializer(serializers.ModelSerializer):
         fields = ('name',)
 
 class CompanyEntrySerializer(serializers.ModelSerializer):
+    company = serializers.PrimaryKeyRelatedField(queryset=Company.objects.all(), validators=[])
     #comp = serializers.StringRelatedField(many=False, read_only=True)
     # user = UserSerializer(read_only=True)
     class Meta:
         model = CompanyDetails
         #fields = ('company', 'address', 'key_person', 'involving_industry', 'phone_no', 'email', 'pf_no', 'esi_no', 'head_office_address', 'pan_no', 'gst_no', 'registration_no', 'registration_date')
-        fields = ('company', 'address', 'key_person' ,'involving_industry', 'phone_no', 'email', 'pf_no', 'esi_no', 'head_office_address', 'pan_no', 'gst_no')
+        fields = ('company', 'address', 'key_person' ,'involving_industry', 'phone_no', 'email', 'pf_no', 'esi_no', 'head_office_address', 'pan_no', 'gst_no', 'payroll_timezone')
+
+    def validate_company(self, company):
+        request_user = self.context['request'].user
+        owner = request_user if request_user.role == 'OWNER' else request_user.regular_to_owner.owner
+        if company.user_id != owner.id or (request_user.role == 'REGULAR' and not company.visible):
+            raise serializers.ValidationError('Company does not belong to the authenticated account scope.')
+        return company
+
+    def create(self, validated_data):
+        company = validated_data.pop('company')
+        user = validated_data.pop('user')
+        instance, created = CompanyDetails.objects.get_or_create(
+            company=company,
+            defaults={'user': user, **validated_data},
+        )
+        if not created:
+            instance.user = user
+            for field_name, value in validated_data.items():
+                setattr(instance, field_name, value)
+            instance.full_clean()
+            instance.save()
+        return instance
 
         def to_representation(self, instance):
             print(instance)
@@ -149,56 +188,133 @@ class OvertimePolicySerializer(serializers.ModelSerializer):
             'is_active',
             'is_system',
             'earnings_basis',
+            'rounding_increment_minutes',
+            'round_up_from_minutes',
             'day_rules',
             'selected_earning_head_ids',
             'selected_earning_heads',
         )
-        read_only_fields = ('code', 'is_system')
+        read_only_fields = ('company', 'code', 'is_system')
 
     def get_selected_earning_heads(self, obj):
         return EarningsHeadSerializer([link.earnings_head for link in obj.selected_earning_heads.all()], many=True).data
 
     def validate(self, attrs):
-        company = attrs.get('company') or getattr(self.instance, 'company', None)
-        selected_heads = attrs.get('selected_earning_heads', [])
-        for earnings_head in selected_heads:
+        company = self.context.get('company') or getattr(self.instance, 'company', None)
+        submitted_company = self.initial_data.get('company')
+        if submitted_company is not None and company is not None and str(submitted_company) != str(company.pk):
+            raise serializers.ValidationError({'company': 'Company is bound by the URL and cannot be changed.'})
+        if self.instance is not None and self.instance.is_system:
+            if 'code' in self.initial_data and self.initial_data['code'] != self.instance.code:
+                raise serializers.ValidationError({'code': 'System policy definitions cannot be changed.'})
+            if 'is_system' in self.initial_data and bool(self.initial_data['is_system']) != self.instance.is_system:
+                raise serializers.ValidationError({'is_system': 'System policy definitions cannot be changed.'})
+
+        day_rules = attrs.get('day_rules')
+        if day_rules is not None:
+            day_types = [rule['day_type'] for rule in day_rules]
+            priorities = [rule['late_deduction_priority'] for rule in day_rules]
+            if len(day_types) != len(set(day_types)):
+                raise serializers.ValidationError({'day_rules': 'Day types must be unique.'})
+            if len(priorities) != len(set(priorities)):
+                raise serializers.ValidationError({'day_rules': 'Late-deduction priorities must be unique.'})
+            if any(priority < 1 for priority in priorities):
+                raise serializers.ValidationError({'day_rules': 'Late-deduction priorities must be at least 1.'})
+
+        selected_heads = attrs.get('selected_earning_heads')
+        if selected_heads is not None and len(selected_heads) != len({head.pk for head in selected_heads}):
+            raise serializers.ValidationError({'selected_earning_head_ids': 'Selected earning heads must be unique.'})
+        selected_heads_for_validation = selected_heads
+        if selected_heads_for_validation is None and self.instance is not None:
+            selected_heads_for_validation = [link.earnings_head for link in self.instance.selected_earning_heads.all()]
+        selected_heads_for_validation = selected_heads_for_validation or []
+        for earnings_head in selected_heads_for_validation:
             if earnings_head.company_id != company.id:
                 raise serializers.ValidationError({'selected_earning_head_ids': 'All selected earning heads must belong to the policy company.'})
-        return attrs
 
-    def _save_related(self, policy, day_rules, selected_heads):
-        if day_rules is not None:
-            if policy.is_system:
-                raise serializers.ValidationError({'day_rules': 'System policy rules cannot be changed.'})
-            policy.day_rules.all().delete()
-            for rule in day_rules:
-                OvertimePolicyDayRule.objects.create(policy=policy, **rule)
-        if selected_heads is not None:
-            policy.selected_earning_heads.all().delete()
-            for earnings_head in selected_heads:
-                OvertimePolicyEarningsHead.objects.create(policy=policy, earnings_head=earnings_head)
+        resulting_basis = attrs.get('earnings_basis', getattr(self.instance, 'earnings_basis', OvertimePolicy.EARNINGS_BASIS_ALL))
+        previous_basis = getattr(self.instance, 'earnings_basis', None)
+        if resulting_basis == OvertimePolicy.EARNINGS_BASIS_SELECTED:
+            if previous_basis != OvertimePolicy.EARNINGS_BASIS_SELECTED and selected_heads is None:
+                raise serializers.ValidationError({'selected_earning_head_ids': 'A non-empty list is required when selecting SELECTED_HEADS.'})
+            if not selected_heads_for_validation:
+                raise serializers.ValidationError({'selected_earning_head_ids': 'At least one earning head is required for SELECTED_HEADS.'})
+        elif resulting_basis == OvertimePolicy.EARNINGS_BASIS_ALL:
+            attrs['selected_earning_heads'] = []
+
+        resulting_default = attrs.get('is_default', getattr(self.instance, 'is_default', False))
+        resulting_active = attrs.get('is_active', getattr(self.instance, 'is_active', True))
+        if resulting_default and not resulting_active:
+            raise serializers.ValidationError({'is_default': 'An inactive policy cannot be the company default.'})
+        if self.instance is not None and self.instance.is_default and not resulting_default:
+            raise serializers.ValidationError({'is_default': 'Select another default instead of clearing the active default.'})
+
+        resulting_increment = attrs.get(
+            'rounding_increment_minutes', getattr(self.instance, 'rounding_increment_minutes', 30)
+        )
+        resulting_threshold = attrs.get(
+            'round_up_from_minutes', getattr(self.instance, 'round_up_from_minutes', 16)
+        )
+        if resulting_increment <= 0:
+            raise serializers.ValidationError({'rounding_increment_minutes': 'Rounding increment must be greater than zero.'})
+        if resulting_threshold < 1:
+            raise serializers.ValidationError({'round_up_from_minutes': 'Round-up threshold must be at least 1.'})
+        if resulting_threshold > resulting_increment:
+            raise serializers.ValidationError({'round_up_from_minutes': 'Round-up threshold cannot exceed the rounding increment.'})
+
+        if self.instance is not None and self.instance.is_system:
+            protected = ('name', 'is_active', 'earnings_basis')
+            changed = [field for field in protected if field in attrs and attrs[field] != getattr(self.instance, field)]
+            if day_rules is not None:
+                changed.append('day_rules')
+            if selected_heads is not None and [head.pk for head in selected_heads] != list(
+                self.instance.selected_earning_heads.values_list('earnings_head_id', flat=True)
+            ):
+                changed.append('selected_earning_head_ids')
+            if changed:
+                raise serializers.ValidationError({field: 'System policy definitions cannot be changed.' for field in changed})
+        return attrs
 
     def create(self, validated_data):
         day_rules = validated_data.pop('day_rules', None)
         selected_heads = validated_data.pop('selected_earning_heads', None)
-        if validated_data.get('is_default'):
-            OvertimePolicy.objects.filter(company=validated_data['company'], is_default=True).update(is_default=False)
-        policy = OvertimePolicy.objects.create(**validated_data)
-        self._save_related(policy, day_rules, selected_heads)
-        return policy
+        try:
+            return create_overtime_policy(
+                actor=self.context['request'].user,
+                company=self.context['company'],
+                validated_data=validated_data,
+                day_rules=day_rules,
+                selected_heads=selected_heads,
+            )
+        except Exception as exc:
+            self._raise_service_validation(exc)
 
     def update(self, instance, validated_data):
         day_rules = validated_data.pop('day_rules', None)
         selected_heads = validated_data.pop('selected_earning_heads', None)
-        if instance.is_system:
-            validated_data.pop('code', None)
-        if validated_data.get('is_default'):
-            OvertimePolicy.objects.filter(company=instance.company, is_default=True).exclude(id=instance.id).update(is_default=False)
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-        self._save_related(instance, day_rules, selected_heads)
-        return instance
+        try:
+            return update_overtime_policy(
+                actor=self.context['request'].user,
+                company=self.context['company'],
+                policy=instance,
+                validated_data=validated_data,
+                day_rules=day_rules,
+                selected_heads=selected_heads,
+            )
+        except Exception as exc:
+            self._raise_service_validation(exc)
+
+    @staticmethod
+    def _raise_service_validation(exc):
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        from django.db import IntegrityError
+
+        if isinstance(exc, DjangoValidationError):
+            detail = getattr(exc, 'message_dict', None) or getattr(exc, 'messages', None)
+            raise serializers.ValidationError(detail) from exc
+        if isinstance(exc, IntegrityError):
+            raise serializers.ValidationError('The policy conflicts with existing overtime configuration.') from exc
+        raise exc
 
 # class DeductionsHeadSerializer(serializers.ModelSerializer):
 #     user = UserSerializer(read_only=True)
@@ -293,18 +409,40 @@ class EmployeeSalaryDetailSerializer(serializers.ModelSerializer):
         fields = ['company', 'employee', 'overtime_policy', 'resolved_overtime_policy', 'overtime_type', 'overtime_rate', 'salary_mode', 'payment_mode', 'bank_name', 'account_number', 'ifcs', 'labour_wellfare_fund', 'late_deduction', 'bonus_allow', 'bonus_exg']
 
     def get_resolved_overtime_policy(self, obj):
-        from .services.overtime_policy import resolve_employee_overtime_policy
+        from .services.overtime_policy import resolve_calculation_overtime_policy, resolve_employee_overtime_policy
 
-        return OvertimePolicySerializer(resolve_employee_overtime_policy(obj)).data
+        request = self.context.get('request')
+        policy = (
+            resolve_calculation_overtime_policy(actor=request.user, employee_salary_detail=obj)
+            if request and request.user.is_authenticated
+            else resolve_employee_overtime_policy(obj)
+        )
+        return OvertimePolicySerializer(policy).data
 
     def validate_overtime_policy(self, policy):
-        company_id = self.initial_data.get('company') or getattr(self.instance, 'company_id', None)
+        company = self.context.get('company')
+        company_id = getattr(company, 'pk', None) or self.initial_data.get('company') or getattr(self.instance, 'company_id', None)
         if policy and company_id and policy.company_id != int(company_id):
             raise serializers.ValidationError('Overtime policy must belong to the employee company.')
         existing_policy_id = getattr(self.instance, 'overtime_policy_id', None)
         if policy and not policy.is_active and policy.id != existing_policy_id:
             raise serializers.ValidationError('Inactive overtime policies cannot be newly assigned.')
         return policy
+
+    def validate(self, attrs):
+        company = self.context.get('company') or attrs.get('company') or getattr(self.instance, 'company', None)
+        employee = attrs.get('employee') or getattr(self.instance, 'employee', None)
+        if self.instance is not None:
+            if 'company' in attrs and attrs['company'].pk != self.instance.company_id:
+                raise serializers.ValidationError({'company': 'Employee salary details cannot be moved to another company.'})
+            if 'employee' in attrs and attrs['employee'].pk != self.instance.employee_id:
+                raise serializers.ValidationError({'employee': 'Employee salary details cannot be moved to another employee.'})
+        if company and employee and (employee.company_id != company.pk or employee.user_id != company.user_id):
+            raise serializers.ValidationError({'employee': 'Employee must belong to the salary-detail company.'})
+        policy = attrs.get('overtime_policy', getattr(self.instance, 'overtime_policy', None))
+        if policy and company and policy.company_id != company.pk:
+            raise serializers.ValidationError({'overtime_policy': 'Overtime policy must belong to the employee company.'})
+        return attrs
 
 
 class EmployeePfEsiDetailSerializer(serializers.ModelSerializer):
@@ -343,10 +481,87 @@ class EmployeeShiftsUpdateSerializer(serializers.ModelSerializer):
         model = EmployeeShifts
         fields = ['employee', 'company', 'shift', 'from_date', 'to_date']
 
+class AttendanceOvertimeExclusionInputSerializer(serializers.Serializer):
+    start_datetime = serializers.DateTimeField()
+    end_datetime = serializers.DateTimeField()
+    exclusion_reason = serializers.ChoiceField(
+        choices=EmployeeAttendanceOvertimeDetail.EXCLUSION_REASON_CHOICES,
+    )
+    exclusion_note = serializers.CharField(required=False, allow_blank=True, max_length=255)
+
+
+class AttendanceOvertimeIntervalInputSerializer(serializers.Serializer):
+    start_datetime = serializers.DateTimeField()
+    end_datetime = serializers.DateTimeField()
+    excluded_minutes = serializers.IntegerField(required=False, min_value=0)
+    exclusion_reason = serializers.ChoiceField(
+        choices=EmployeeAttendanceOvertimeDetail.EXCLUSION_REASON_CHOICES,
+        required=False,
+    )
+    exclusion_note = serializers.CharField(required=False, allow_blank=True, max_length=255)
+    exclusions = AttendanceOvertimeExclusionInputSerializer(many=True, required=False)
+
+
+class AttendanceOvertimeDurationInputSerializer(serializers.Serializer):
+    work_date = serializers.DateField()
+    gross_minutes = serializers.IntegerField(min_value=1)
+    excluded_minutes = serializers.IntegerField(required=False, min_value=0)
+    exclusion_reason = serializers.ChoiceField(
+        choices=EmployeeAttendanceOvertimeDetail.EXCLUSION_REASON_CHOICES,
+        required=False,
+    )
+    exclusion_note = serializers.CharField(required=False, allow_blank=True, max_length=255)
+
+
+class EmployeeAttendanceOvertimeDetailSerializer(serializers.ModelSerializer):
+    attendance = serializers.SerializerMethodField()
+    exclusion_reason_display = serializers.CharField(
+        source='get_exclusion_reason_display',
+        read_only=True,
+    )
+
+    def get_attendance(self, obj):
+        return obj.attendance.date
+
+    class Meta:
+        model = EmployeeAttendanceOvertimeDetail
+        fields = [
+            'id', 'attendance', 'work_date', 'day_type', 'source', 'start_datetime', 'end_datetime',
+            'gross_minutes', 'excluded_minutes', 'eligible_minutes', 'exclusion_reason',
+            'exclusion_reason_display', 'exclusion_note', 'created_at', 'updated_at',
+        ]
+        read_only_fields = fields
+
+
 class EmployeeAttendanceSerializer(serializers.ModelSerializer):
+    overtime_details = EmployeeAttendanceOvertimeDetailSerializer(many=True, read_only=True)
+    overtime_intervals = AttendanceOvertimeIntervalInputSerializer(many=True, write_only=True, required=False)
+    overtime_duration_entries = AttendanceOvertimeDurationInputSerializer(many=True, write_only=True, required=False)
+
     class Meta:
         model = EmployeeAttendance
-        fields = ['id', 'employee', 'company', 'machine_in', 'machine_out', 'manual_in', 'manual_out', 'first_half', 'second_half', 'date', 'ot_min', 'late_min', 'manual_mode']
+        fields = [
+            'id', 'employee', 'company', 'machine_in', 'machine_out', 'manual_in',
+            'manual_out', 'first_half', 'second_half', 'date', 'ot_min', 'late_min',
+            'manual_mode', 'overtime_details', 'overtime_intervals',
+            'overtime_duration_entries',
+        ]
+        read_only_fields = ['id', 'employee', 'company', 'ot_min', 'overtime_details']
+
+    def validate_date(self, value):
+        if value < ATTENDANCE_HISTORY_MIN_DATE:
+            raise serializers.ValidationError('Attendance cannot be created before 2009-01-01.')
+        return value
+
+    def create(self, validated_data):
+        validated_data.pop('overtime_intervals', None)
+        validated_data.pop('overtime_duration_entries', None)
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        validated_data.pop('overtime_intervals', None)
+        validated_data.pop('overtime_duration_entries', None)
+        return super().update(instance, validated_data)
 
 class AllEmployeeCurrentMonthAttendanceSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
@@ -434,7 +649,72 @@ class EmployeeSalaryPreparedSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
     class Meta:
         model = EmployeeSalaryPrepared
-        fields = ('id', 'employee', 'company', 'date', 'incentive_amount', 'pf_deducted', 'esi_deducted', 'vpf_deducted', 'advance_deducted', 'tds_deducted', 'labour_welfare_fund_deducted', 'others_deducted', 'net_ot_minutes_monthly', 'net_ot_amount_monthly', 'payment_mode')
+        fields = ('id', 'employee', 'company', 'date', 'incentive_amount', 'pf_deducted', 'esi_deducted', 'vpf_deducted', 'advance_deducted', 'tds_deducted', 'labour_welfare_fund_deducted', 'others_deducted', 'net_ot_minutes_monthly', 'net_ot_amount_monthly', 'ot_rounding_increment_minutes', 'ot_round_up_from_minutes', 'payment_mode')
+        read_only_fields = ('net_ot_minutes_monthly', 'net_ot_amount_monthly', 'ot_rounding_increment_minutes', 'ot_round_up_from_minutes')
+
+
+class SalaryOvertimePreviewSerializer(serializers.Serializer):
+    company = serializers.IntegerField(min_value=1)
+    employee = serializers.IntegerField(min_value=1)
+    year = serializers.IntegerField(min_value=1950, max_value=2100)
+    month = serializers.IntegerField(min_value=1, max_value=12)
+
+
+class SalaryArrearInputSerializer(serializers.Serializer):
+    earnings_head = serializers.IntegerField(min_value=1)
+    arear_amount = serializers.IntegerField(min_value=0, default=0)
+
+
+class SalaryPreparationPreviewSerializer(SalaryOvertimePreviewSerializer):
+    incentive_amount = serializers.IntegerField(min_value=0, default=0)
+    advance_deducted = serializers.IntegerField(min_value=0, allow_null=True, default=None)
+    vpf_deducted = serializers.IntegerField(min_value=0, allow_null=True, default=None)
+    tds_deducted = serializers.IntegerField(min_value=0, allow_null=True, default=None)
+    others_deducted = serializers.IntegerField(min_value=0, default=0)
+    arrears = SalaryArrearInputSerializer(many=True, required=False, default=list)
+
+
+class SalaryPreparationParentInputSerializer(serializers.Serializer):
+    employee = serializers.IntegerField(min_value=1)
+    company = serializers.IntegerField(min_value=1)
+    date = serializers.DateField()
+    incentive_amount = serializers.IntegerField(min_value=0, default=0)
+    advance_deducted = serializers.IntegerField(min_value=0, default=0)
+    others_deducted = serializers.IntegerField(min_value=0, default=0)
+    pf_deducted = serializers.IntegerField(min_value=0, required=False)
+    esi_deducted = serializers.IntegerField(min_value=0, required=False)
+    vpf_deducted = serializers.IntegerField(min_value=0, allow_null=True, required=False)
+    tds_deducted = serializers.IntegerField(min_value=0, allow_null=True, required=False)
+    labour_welfare_fund_deducted = serializers.IntegerField(min_value=0, required=False)
+    payment_mode = serializers.CharField(required=False)
+
+    def to_internal_value(self, data):
+        prohibited = sorted({
+            'pf_deducted',
+            'esi_deducted',
+            'labour_welfare_fund_deducted',
+            'payment_mode',
+            'net_ot_minutes_monthly',
+            'net_ot_amount_monthly',
+            'ot_rounding_increment_minutes',
+            'ot_round_up_from_minutes',
+            'overtime_breakdown',
+        } & set(data))
+        if prohibited:
+            raise serializers.ValidationError({
+                field: 'This overtime field is server-owned.' for field in prohibited
+            })
+        return super().to_internal_value(data)
+
+    def validate_date(self, value):
+        if value.day != 1:
+            raise serializers.ValidationError('Salary periods must start on the first day of a month.')
+        return value
+
+
+class EmployeeSalaryPreparationRequestSerializer(serializers.Serializer):
+    employee_salary_prepared = SalaryPreparationParentInputSerializer()
+    all_earned_amounts = serializers.ListField(child=serializers.DictField(), allow_empty=False)
 
 
 class EmployeeSalaryPreparedOvertimeDetailSerializer(serializers.ModelSerializer):
@@ -445,14 +725,29 @@ class EmployeeSalaryPreparedOvertimeDetailSerializer(serializers.ModelSerializer
 class EmployeeSalaryPreparedWithEarnedAmountSerializer(serializers.ModelSerializer):
     earned_amounts = serializers.SerializerMethodField()
     overtime_breakdown = EmployeeSalaryPreparedOvertimeDetailSerializer(many=True, read_only=True)
+    net_salary = serializers.SerializerMethodField()
     id = serializers.IntegerField(read_only=True)
     class Meta:
         model = EmployeeSalaryPrepared
-        fields = ('id', 'employee', 'company', 'date', 'incentive_amount', 'pf_deducted', 'esi_deducted', 'vpf_deducted', 'advance_deducted', 'tds_deducted', 'labour_welfare_fund_deducted', 'others_deducted', 'net_ot_minutes_monthly', 'net_ot_amount_monthly', 'payment_mode', 'earned_amounts', 'overtime_breakdown')
+        fields = ('id', 'employee', 'company', 'date', 'incentive_amount', 'pf_deducted', 'esi_deducted', 'vpf_deducted', 'advance_deducted', 'tds_deducted', 'labour_welfare_fund_deducted', 'others_deducted', 'net_ot_minutes_monthly', 'net_ot_amount_monthly', 'ot_rounding_increment_minutes', 'ot_round_up_from_minutes', 'payment_mode', 'net_salary', 'earned_amounts', 'overtime_breakdown')
+        read_only_fields = ('ot_rounding_increment_minutes', 'ot_round_up_from_minutes')
     def get_earned_amounts(self, obj):
         # Get all related EarnedAmount records through the reverse relation
         earned_amounts = obj.current_salary_earned_amounts.all()
         return EarnedAmountWithEarningsHeadSerializer(earned_amounts, many=True).data
+
+    def get_net_salary(self, obj):
+        total_earned = obj.current_salary_earned_amounts.aggregate(total=Sum('earned_amount'))['total'] or 0
+        total_deductions = sum(getattr(obj, field) or 0 for field in (
+            'pf_deducted',
+            'esi_deducted',
+            'vpf_deducted',
+            'advance_deducted',
+            'tds_deducted',
+            'labour_welfare_fund_deducted',
+            'others_deducted',
+        ))
+        return total_earned + obj.net_ot_amount_monthly + obj.incentive_amount - total_deductions
 
 class EarnedAmountWithEarningsHeadSerializer(serializers.ModelSerializer):
     # id = serializers.IntegerField(read_only=True)
@@ -551,34 +846,68 @@ class PfEsiReportsSerializer(serializers.Serializer):
         fields = ['employee_ids', "filters"]
 
 class EmployeeAttendanceBulkAutofillSerializer(serializers.Serializer):
-    month_from_date = serializers.IntegerField()
-    month_to_date = serializers.IntegerField()
+    month_from_date = serializers.IntegerField(min_value=1, max_value=31)
+    month_to_date = serializers.IntegerField(min_value=1, max_value=31)
     company = serializers.IntegerField()
-    month = serializers.IntegerField()
-    year = serializers.IntegerField()
+    month = serializers.IntegerField(min_value=1, max_value=12)
+    year = serializers.IntegerField(min_value=1)
+    employee_ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1), required=False, default=list,
+    )
+
+    def validate(self, attrs):
+        validate_attendance_period_not_before_cutoff(attrs)
+        if attrs['month_from_date'] > attrs['month_to_date']:
+            raise serializers.ValidationError({'month_to_date': 'End day must not precede start day.'})
+        last_day = calendar.monthrange(attrs['year'], attrs['month'])[1]
+        if attrs['month_from_date'] > last_day:
+            raise serializers.ValidationError({'month_from_date': 'Start day is outside the requested month.'})
+        return attrs
 
 class BulkPrepareSalariesSerializer(serializers.Serializer):
     company = serializers.IntegerField()
-    month = serializers.IntegerField()
-    year = serializers.IntegerField()
+    month = serializers.IntegerField(min_value=1, max_value=12)
+    year = serializers.IntegerField(min_value=1950, max_value=2100)
+    employee_ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1), required=False, allow_empty=True,
+    )
+
+    def validate_employee_ids(self, value):
+        if not value:
+            raise serializers.ValidationError('Select at least one employee or omit employee_ids.')
+        if len(value) != len(set(value)):
+            raise serializers.ValidationError('Employee IDs must be unique.')
+        return value
 
 class MachineAttendanceSerializer(serializers.Serializer):
     user = UserSerializer(read_only=True)
     # creator_id = serializers.ReadOnlyField(source='creator.id')
     mdb_database = serializers.FileField(required=True)
-    employee = serializers.IntegerField()
+    employee = serializers.IntegerField(min_value=1)
     company = serializers.IntegerField()
     all_employees_machine_attendance = serializers.BooleanField()
-    month_from_date = serializers.IntegerField()
-    month_to_date = serializers.IntegerField()
-    month = serializers.IntegerField()
-    year = serializers.IntegerField()
+    month_from_date = serializers.IntegerField(min_value=1, max_value=31)
+    month_to_date = serializers.IntegerField(min_value=1, max_value=31)
+    month = serializers.IntegerField(min_value=1, max_value=12)
+    year = serializers.IntegerField(min_value=1)
+
+    def validate(self, attrs):
+        validate_attendance_period_not_before_cutoff(attrs)
+        if attrs['month_from_date'] > attrs['month_to_date']:
+            raise serializers.ValidationError({'month_to_date': 'End day must not precede start day.'})
+        last_day = calendar.monthrange(attrs['year'], attrs['month'])[1]
+        if attrs['month_from_date'] > last_day:
+            raise serializers.ValidationError({'month_from_date': 'Start day is outside the requested month.'})
+        return attrs
 
 class DefaultAttendanceSerializer(serializers.Serializer):
     user = UserSerializer(read_only=True)
     company = serializers.IntegerField()
-    month = serializers.IntegerField()
-    year = serializers.IntegerField()
+    month = serializers.IntegerField(min_value=1, max_value=12)
+    year = serializers.IntegerField(min_value=1)
+
+    def validate(self, attrs):
+        return validate_attendance_period_not_before_cutoff(attrs)
 
 class EmployeeResignationSerializer(serializers.ModelSerializer):
     class Meta:
@@ -654,15 +983,10 @@ class AttendanceMachineConfigSerializer(serializers.ModelSerializer):
         model = AttendanceMachineConfig
         fields = ['company', 'machine_ip']
 
-class ExtraFeaturesConfigSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ExtraFeaturesConfig
-        fields = ['company', 'enable_calculate_ot_attendance_using_earned_salary']
-
 class TransferAttendanceFromOwnerToRegularSerializer(serializers.Serializer):
-    month = serializers.IntegerField()
+    month = serializers.IntegerField(min_value=1, max_value=12)
     company = serializers.IntegerField()
-    year = serializers.IntegerField()
+    year = serializers.IntegerField(min_value=1)
 
 class FiltersEmployeeStrengthReportsSerializer(serializers.Serializer):
     group_by = serializers.ChoiceField(choices=["none", "department"])
@@ -687,19 +1011,6 @@ class EmployeeMonthlyMissPunchSerializer(serializers.Serializer):
 
 class EmployeeYearlyAdvanceTakenDeductedSerializer(serializers.Serializer):
     employee_ids = serializers.ListField(child=serializers.IntegerField())
-
-class CalculateOtAttendanceUsingTotalEarnedSerializer(serializers.Serializer):
-    employee_ids = serializers.ListField(child=serializers.IntegerField())
-    company = serializers.IntegerField()
-    month = serializers.IntegerField()
-    year = serializers.IntegerField()
-    manually_inserted_total_earned = serializers.IntegerField()
-    mark_attendance = serializers.BooleanField()
-
-
-
-
-
 
 # class CompanyEmployeeStatisticsSerializer(serializers.ModelSerializer):
 #     class Meta:

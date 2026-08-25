@@ -112,6 +112,7 @@ const replaceEmptyStringsWithNull = (obj) => {
 
 const EmployeeEntryForm = () => {
     const globalCompany = useSelector((state) => state.globalCompany);
+    const account = useSelector((state) => state.auth.account);
     const dispatch = useDispatch();
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [employeeToDelete, setEmployeeToDelete] = useState(null);
@@ -730,9 +731,10 @@ const EmployeeEntryForm = () => {
         }
         console.log(toSend);
 
+        const { resolvedOvertimePolicy, overtimePolicy, ...salaryDetailInput } = values.salaryDetail;
         const salaryDetail = {
-            ...values.salaryDetail,
-            overtimePolicy: values.salaryDetail.overtimePolicy || null,
+            ...salaryDetailInput,
+            ...(account?.role === 'OWNER' ? { overtimePolicy: overtimePolicy || null } : {}),
             company: globalCompany.id,
             employee: employeeId,
         };
@@ -901,9 +903,10 @@ const EmployeeEntryForm = () => {
     const updateSalaryDetailButtonClicked = async (values, formikBag) => {
         console.log(values);
         console.log('askldjsakldjaslkdj');
+        const { resolvedOvertimePolicy, overtimePolicy, ...salaryDetailInput } = values.salaryDetail;
         const salaryDetail = {
-            ...values.salaryDetail,
-            overtimePolicy: values.salaryDetail.overtimePolicy || null,
+            ...salaryDetailInput,
+            ...(account?.role === 'OWNER' ? { overtimePolicy: overtimePolicy || null } : {}),
             company: globalCompany.id,
             employee: updateEmployeeId,
         };

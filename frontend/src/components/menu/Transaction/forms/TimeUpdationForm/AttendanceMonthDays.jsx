@@ -1,4 +1,4 @@
-import { Field, ErrorMessage } from 'formik';
+import { Field } from 'formik';
 import { memo } from 'react';
 
 const classNames = (...classes) => {
@@ -13,6 +13,11 @@ const AttendanceMonthDays = memo(
         shift,
         leaveGrades,
         otMin,
+        overtimeDetails = [],
+        otExcludedMinutes = 0,
+        otExclusionReason = 'NONE',
+        unbackfilledOvertime = false,
+        legacyOvertimeExclusion = false,
         lateMin,
         holidays,
         memoizedExtraOffDate,
@@ -34,13 +39,44 @@ const AttendanceMonthDays = memo(
             setFieldValue(name, parseInt(value, 10));
         };
 
+        const handlePunchChange = (event) => {
+            setFieldValue(event.target.name, event.target.value);
+            setFieldValue(`attendance.${day}.overtimeDetails`, []);
+            setFieldValue(`attendance.${day}.calculatedOvertimeIntervals`, []);
+            setFieldValue(`attendance.${day}.calculatedOvertimeComponents`, []);
+            setFieldValue(`attendance.${day}.unbackfilledOvertime`, false);
+            setFieldValue(`attendance.${day}.legacyOvertimeExclusion`, false);
+            setFieldValue(`attendance.${day}.overtimeDirty`, true);
+            setFieldValue(`attendance.${day}.overtimePending`, true);
+            setFieldValue(`attendance.${day}.otMin`, '');
+            setFieldValue(`attendance.${day}.otGrossMinutes`, '');
+            setFieldValue(`attendance.${day}.otExcludedMinutes`, 0);
+            setFieldValue(`attendance.${day}.otExclusionReason`, 'NONE');
+            setFieldValue(`attendance.${day}.otExclusionNote`, '');
+        };
+
+        const exclusions = overtimeDetails.filter((detail) => detail.excludedMinutes > 0);
+        const exclusionText = exclusions.length > 0
+            ? exclusions.map((detail) => `${detail.excludedMinutes}m ${detail.exclusionReasonDisplay}`).join(', ')
+            : otExcludedMinutes > 0
+                ? `${otExcludedMinutes}m ${otExclusionReason.replaceAll('_', ' ').toLowerCase()}`
+                : '';
+        const categoryText = [...new Set(overtimeDetails.map((detail) => detail.dayType))]
+            .map((dayType) => ({ REGULAR: 'REG', WEEKLY_OFF: 'WO', HOLIDAY: 'HD' })[dayType] || dayType)
+            .join('/');
+        const warning = unbackfilledOvertime
+            ? 'Categorized overtime backfill or a supported punch edit is required before saving.'
+            : legacyOvertimeExclusion
+                ? 'Migrated overtime exclusions require review or a supported punch edit before saving.'
+                : '';
+
         // const OtDisplayhours = Math.floor(otMin / 60);
         // const OtDisplayMinutes = otMin % 60;
         return (
             <div
                 className={classNames(
                     day == daysInMonth ? '' : 'border-b-0',
-                    'relative h-6 rounded-sm border  dark:border-slate-400 dark:border-opacity-30 focus-within:dark:bg-zinc-900 hover:dark:bg-zinc-800 ',
+                    'relative min-h-6 rounded-sm border dark:border-slate-400 dark:border-opacity-30 focus-within:dark:bg-zinc-900 hover:dark:bg-zinc-800',
                     weekdayIndex == 0 || isHoliday || isExtraOff ? 'dark:bg-red-700 dark:bg-opacity-40' : ''
                 )}
             >
@@ -52,7 +88,7 @@ const AttendanceMonthDays = memo(
                 >
                     {`${day} ${weekdays[weekdayIndex]}`}
                 </h6>
-                <section className="flex h-full flex-row divide-x divide-dashed divide-blueAccent-600/80">
+                <section className="flex h-6 flex-row divide-x divide-dashed divide-blueAccent-600/80">
                     <Field
                         type="time"
                         name={`attendance.${day}.machineIn`}
@@ -74,6 +110,7 @@ const AttendanceMonthDays = memo(
                         type="time"
                         name={`attendance.${day}.manualIn`}
                         id={`attendance.${day}.manualIn`}
+                        onChange={handlePunchChange}
                         className="h-full w-[92px] rounded-sm bg-transparent pl-2 pr-2 text-xs outline-none transition-colors duration-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 focus:dark:bg-zinc-700 sm:text-base"
                     />
 
@@ -81,6 +118,7 @@ const AttendanceMonthDays = memo(
                         type="time"
                         name={`attendance.${day}.manualOut`}
                         id={`attendance.${day}.manualOut`}
+                        onChange={handlePunchChange}
                         className="h-full w-[92px] rounded-sm bg-transparent pl-2 pr-2 text-xs outline-none transition-colors duration-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 focus:dark:bg-zinc-700 sm:text-base"
                     />
                     <div className="my-auto w-24 pl-2 pr-2">
@@ -121,13 +159,19 @@ const AttendanceMonthDays = memo(
                         })}
                     </Field>
 
-                    <h6 className="my-auto w-20 cursor-default pl-2 pr-2 text-xs dark:text-green-600">
+                    <h6
+                        className="my-auto w-20 cursor-default whitespace-nowrap px-1 text-xs dark:text-green-600"
+                        title={[
+                            categoryText ? `Categories: ${categoryText}` : '',
+                            exclusionText ? `Excluded: ${exclusionText}` : '',
+                        ].filter(Boolean).join('. ')}
+                    >
                         {otMin !== ''
                             ? `${String(Math.floor(otMin / 60)).padStart(2, '0')}:${String(otMin % 60).padStart(
                                 2,
                                 '0'
                             )}`
-                            : ''}
+                            : ''}{categoryText ? ` ${categoryText}` : ''}{exclusionText ? ' *' : ''}
                     </h6>
                     <h6 className="my-auto w-20 cursor-default pl-2 pr-2 text-xs dark:text-orange-600">
                         {lateMin !== ''
@@ -148,9 +192,11 @@ const AttendanceMonthDays = memo(
 
                 {/* </Field> */}
 
-                <div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
-                    <ErrorMessage name={'salaryDetail.overtimeType'} />
-                </div>
+                {warning && (
+                    <div className="max-w-[min(48rem,90vw)] bg-red-100 px-2 py-1 text-xs font-semibold text-red-700 dark:bg-red-950 dark:text-red-300">
+                        {`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}: ${warning}`}
+                    </div>
+                )}
             </div>
         );
     }

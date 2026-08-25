@@ -1,11 +1,15 @@
 from datetime import date, datetime, time
 from io import BytesIO
 from unittest.mock import patch
+from zoneinfo import ZoneInfo
 
 import pandas as pd
+from django.db import connection
 from django.test import TestCase
+from django.test.utils import CaptureQueriesContext
 
-from api.models import EmployeeAttendance, EmployeeShifts, Shift
+from api.managers import MACHINE_ATTENDANCE_CREATE_BATCH_SIZE, MACHINE_ATTENDANCE_UPDATE_BATCH_SIZE
+from api.models import EmployeeAttendance, EmployeeAttendanceOvertimeDetail, EmployeeShifts, Shift
 from api.tests.base import AttendanceTestDataMixin
 
 
@@ -63,7 +67,13 @@ class MachineAttendanceManagerTests(AttendanceTestDataMixin, TestCase):
         self.assertEqual(attendance.first_half, self.leave_present)
         self.assertEqual(attendance.second_half, self.leave_present)
         self.assertEqual(attendance.late_min, 20)
-        self.assertEqual(attendance.ot_min, 30)
+        self.assertEqual(attendance.ot_min, 40)
+        detail = attendance.overtime_details.get()
+        self.assertEqual(detail.source, EmployeeAttendanceOvertimeDetail.SOURCE_LATE_DEPARTURE)
+        self.assertEqual(detail.gross_minutes, 40)
+        payroll_tz = ZoneInfo(self.company.company_details.payroll_timezone)
+        self.assertEqual(detail.start_datetime.astimezone(payroll_tz), datetime(2024, 1, 3, 17, 0, tzinfo=payroll_tz))
+        self.assertEqual(detail.end_datetime.astimezone(payroll_tz), datetime(2024, 1, 3, 17, 40, tzinfo=payroll_tz))
         self.assertEqual(float(attendance.pay_multiplier), 1.0)
 
     def test_machine_attendance_marks_miss_punch_when_only_one_punch_exists(self):
@@ -119,6 +129,96 @@ class MachineAttendanceManagerTests(AttendanceTestDataMixin, TestCase):
         self.assertEqual(attendance.second_half, self.leave_present)
         self.assertTrue(attendance.manual_mode)
 
+    def test_machine_attendance_preserves_stale_details_when_manual_row_is_entirely_skipped(self):
+        employee = self.create_employee(paycode="E004", attendance_card_no=104)
+        target_date = date(2024, 1, 6)
+        attendance = EmployeeAttendance.objects.create(
+            user=self.user,
+            company=self.company,
+            employee=employee,
+            date=target_date,
+            manual_in=time(10, 0),
+            manual_out=time(18, 0),
+            first_half=self.leave_present,
+            second_half=self.leave_present,
+            manual_mode=True,
+        )
+        stale_detail = self.create_overtime_detail(attendance, minutes=17, source="MANUAL")
+
+        self.run_machine_attendance(
+            from_date=datetime.combine(target_date, time.min),
+            to_date=datetime.combine(target_date, time.min),
+            employee=employee,
+            checkinout_rows=[[5004, "01/06/24 08:00:00"], [5004, "01/06/24 19:00:00"]],
+            userinfo_rows=[[5004, str(employee.attendance_card_no)]],
+        )
+
+        attendance.refresh_from_db()
+        self.assertEqual(attendance.machine_in, None)
+        self.assertEqual(attendance.machine_out, None)
+        self.assertEqual(list(attendance.overtime_details.values_list('id', flat=True)), [stale_detail.id])
+
+    def test_machine_attendance_rolls_back_attendance_and_details_when_summary_fails(self):
+        employee = self.create_employee(paycode="E005", attendance_card_no=105)
+        target_date = datetime(2024, 1, 6)
+        fake_mdb = BytesIO(b"fake-mdb")
+        read_side_effect = self.build_mdb_side_effect(
+            [[5005, "01/06/24 09:00:00"], [5005, "01/06/24 18:00:00"]],
+            [[5005, str(employee.attendance_card_no)]],
+        )
+
+        with patch("api.managers.mdb.read_table", side_effect=read_side_effect):
+            with patch(
+                "api.models.EmployeeGenerativeLeaveRecord.objects.generate_update_monthly_record",
+                side_effect=RuntimeError("summary failed"),
+            ):
+                with self.assertRaisesRegex(RuntimeError, "summary failed"):
+                    EmployeeAttendance.objects.machine_attendance(
+                        from_date=target_date,
+                        to_date=target_date,
+                        company_id=self.company.id,
+                        user=self.user,
+                        all_employees_machine_attendance=False,
+                        mdb_database=fake_mdb,
+                        employee=employee.id,
+                    )
+
+        self.assertFalse(EmployeeAttendance.objects.filter(employee=employee, date=target_date.date()).exists())
+
+    def test_machine_attendance_rolls_back_existing_row_when_detail_replacement_fails(self):
+        employee = self.create_employee(paycode="E005B", attendance_card_no=115)
+        target_date = date(2024, 1, 6)
+        attendance = self.create_attendance(employee, work_date=target_date, ot_min=25)
+        attendance.machine_in = time(9, 15)
+        attendance.machine_out = time(17, 25)
+        attendance.save(update_fields=['machine_in', 'machine_out'])
+        original_detail = self.create_overtime_detail(attendance, minutes=25)
+
+        read_side_effect = self.build_mdb_side_effect(
+            [[5015, "01/06/24 09:00:00"], [5015, "01/06/24 18:00:00"]],
+            [[5015, str(employee.attendance_card_no)]],
+        )
+        with patch("api.managers.mdb.read_table", side_effect=read_side_effect):
+            with patch(
+                "api.services.attendance_overtime.replace_many_attendance_overtime",
+                side_effect=RuntimeError("detail replacement failed"),
+            ):
+                with self.assertRaisesRegex(RuntimeError, "detail replacement failed"):
+                    EmployeeAttendance.objects.machine_attendance(
+                        from_date=target_date,
+                        to_date=target_date,
+                        company_id=self.company.id,
+                        user=self.user,
+                        all_employees_machine_attendance=False,
+                        mdb_database=BytesIO(b"fake-mdb"),
+                        employee=employee.id,
+                    )
+
+        attendance.refresh_from_db()
+        self.assertEqual((attendance.machine_in, attendance.machine_out), (time(9, 15), time(17, 25)))
+        self.assertEqual(attendance.ot_min, 25)
+        self.assertEqual(list(attendance.overtime_details.values_list('id', flat=True)), [original_detail.id])
+
     def test_machine_attendance_marks_half_day_when_work_minutes_cross_half_day_threshold(self):
         employee = self.create_employee(paycode="E006", attendance_card_no=106, overtime_type="no_overtime")
         target_date = datetime(2024, 1, 8)
@@ -162,7 +262,7 @@ class MachineAttendanceManagerTests(AttendanceTestDataMixin, TestCase):
         self.assertIsNone(attendance.late_min)
         self.assertEqual(float(attendance.pay_multiplier), 0.5)
 
-    def test_machine_attendance_ignores_regular_day_overtime_for_holiday_weekly_off_mode(self):
+    def test_machine_attendance_does_not_gate_raw_regular_day_overtime_on_legacy_type(self):
         employee = self.create_employee(
             paycode="E008",
             attendance_card_no=108,
@@ -184,7 +284,11 @@ class MachineAttendanceManagerTests(AttendanceTestDataMixin, TestCase):
         attendance = EmployeeAttendance.objects.get(employee=employee, date=target_date.date(), user=self.user)
         self.assertEqual(attendance.first_half, self.leave_present)
         self.assertEqual(attendance.second_half, self.leave_present)
-        self.assertIsNone(attendance.ot_min)
+        self.assertEqual(attendance.ot_min, 150)
+        self.assertEqual(
+            list(attendance.overtime_details.order_by('start_datetime').values_list('source', 'gross_minutes')),
+            [('EARLY_ARRIVAL', 60), ('LATE_DEPARTURE', 90)],
+        )
 
     def test_machine_attendance_marks_paid_weekly_off_when_threshold_is_met(self):
         employee = self.create_employee(
@@ -210,6 +314,11 @@ class MachineAttendanceManagerTests(AttendanceTestDataMixin, TestCase):
         self.assertEqual(attendance.first_half, self.leave_weekly_off)
         self.assertEqual(attendance.second_half, self.leave_weekly_off)
         self.assertEqual(attendance.ot_min, 510)
+        detail = attendance.overtime_details.get()
+        self.assertEqual(detail.source, 'OFF_DAY_WORK')
+        self.assertEqual(detail.gross_minutes, 540)
+        self.assertEqual(detail.excluded_minutes, 30)
+        self.assertEqual(detail.exclusion_reason, 'MEAL_BREAK')
         self.assertEqual(float(attendance.pay_multiplier), 1.0)
 
     def test_machine_attendance_marks_unpaid_weekly_off_when_threshold_is_not_met(self):
@@ -283,6 +392,64 @@ class MachineAttendanceManagerTests(AttendanceTestDataMixin, TestCase):
         self.assertEqual(attendance.first_half, self.leave_absent)
         self.assertEqual(attendance.second_half, self.leave_absent)
         self.assertEqual(float(attendance.pay_multiplier), 0.0)
+
+    def test_machine_attendance_daily_weekly_off_uses_early_and_late_overtime_only(self):
+        employee = self.create_employee(
+            paycode="E012-WORKED",
+            attendance_card_no=212,
+            salary_mode="daily",
+            weekly_off="sun",
+        )
+        target_date = datetime(2024, 1, 7)
+
+        self.run_machine_attendance(
+            from_date=target_date,
+            to_date=target_date,
+            employee=employee,
+            checkinout_rows=[
+                [5012, "01/07/24 08:00:00"],
+                [5012, "01/07/24 18:00:00"],
+            ],
+            userinfo_rows=[[5012, str(employee.attendance_card_no)]],
+        )
+
+        attendance = EmployeeAttendance.objects.get(employee=employee, date=target_date.date(), user=self.user)
+        self.assertEqual((attendance.first_half, attendance.second_half), (self.leave_present, self.leave_present))
+        self.assertEqual(attendance.ot_min, 120)
+        self.assertEqual(
+            list(attendance.overtime_details.order_by('start_datetime').values_list(
+                'source', 'day_type', 'gross_minutes',
+            )),
+            [
+                ('EARLY_ARRIVAL', 'WEEKLY_OFF', 60),
+                ('LATE_DEPARTURE', 'WEEKLY_OFF', 60),
+            ],
+        )
+
+    def test_machine_attendance_daily_off_day_presence_uses_shift_overlap(self):
+        employee = self.create_employee(
+            paycode="E012-OVERLAP",
+            attendance_card_no=213,
+            salary_mode="daily",
+            weekly_off="sun",
+        )
+        target_date = datetime(2024, 1, 7)
+
+        self.run_machine_attendance(
+            from_date=target_date,
+            to_date=target_date,
+            employee=employee,
+            checkinout_rows=[
+                [5013, "01/07/24 06:00:00"],
+                [5013, "01/07/24 14:00:00"],
+            ],
+            userinfo_rows=[[5013, str(employee.attendance_card_no)]],
+        )
+
+        attendance = EmployeeAttendance.objects.get(employee=employee, date=target_date.date(), user=self.user)
+        self.assertEqual((attendance.first_half, attendance.second_half), (self.leave_present, self.leave_absent))
+        self.assertEqual(attendance.ot_min, 180)
+        self.assertEqual(attendance.overtime_details.get().day_type, 'WEEKLY_OFF')
 
     def test_machine_attendance_updates_existing_non_manual_record(self):
         employee = self.create_employee(paycode="E013", attendance_card_no=113, overtime_type="no_overtime")
@@ -364,6 +531,29 @@ class MachineAttendanceManagerTests(AttendanceTestDataMixin, TestCase):
         self.assertEqual(attendance.first_half, self.leave_miss_punch)
         self.assertEqual(attendance.second_half, self.leave_miss_punch)
 
+    def test_machine_attendance_treats_only_late_punch_as_machine_out(self):
+        employee = self.create_employee(paycode="E015B", attendance_card_no=215, overtime_type="no_overtime")
+        assignment = EmployeeShifts.objects.select_related("shift").get(employee=employee)
+        assignment.shift.beginning_time = time(10, 0)
+        assignment.shift.end_time = time(19, 0)
+        assignment.shift.half_day_minimum_minutes = 180
+        assignment.shift.save(update_fields=["beginning_time", "end_time", "half_day_minimum_minutes"])
+        target_date = datetime(2026, 1, 16)
+
+        self.run_machine_attendance(
+            from_date=target_date,
+            to_date=target_date,
+            employee=employee,
+            checkinout_rows=[[5021, "01/16/26 19:16:49"]],
+            userinfo_rows=[[5021, str(employee.attendance_card_no)]],
+        )
+
+        attendance = EmployeeAttendance.objects.get(employee=employee, date=target_date.date(), user=self.user)
+        self.assertIsNone(attendance.machine_in)
+        self.assertEqual(attendance.machine_out, time(19, 16))
+        self.assertEqual(attendance.first_half, self.leave_miss_punch)
+        self.assertEqual(attendance.second_half, self.leave_miss_punch)
+
     def test_machine_attendance_currently_keeps_weekly_off_status_for_overnight_shift_with_next_day_punch_out(self):
         overnight_shift = Shift.objects.create(
             user=self.user,
@@ -411,6 +601,10 @@ class MachineAttendanceManagerTests(AttendanceTestDataMixin, TestCase):
         self.assertEqual(attendance.machine_out, time(6, 30))
         self.assertEqual(attendance.first_half, self.leave_weekly_off)
         self.assertEqual(attendance.second_half, self.leave_weekly_off)
+        self.assertEqual(attendance.ot_min, 510)
+        details = list(attendance.overtime_details.order_by('start_datetime'))
+        self.assertEqual(sum(detail.eligible_minutes for detail in details), 510)
+        self.assertTrue(all(detail.source == 'OFF_DAY_WORK' for detail in details))
 
     def test_machine_attendance_keeps_month_end_punch_out_after_midnight_for_normal_shift(self):
         late_shift = Shift.objects.create(
@@ -462,3 +656,95 @@ class MachineAttendanceManagerTests(AttendanceTestDataMixin, TestCase):
         self.assertEqual(attendance.ot_min, 390)
         self.assertEqual(float(attendance.pay_multiplier), 1.0)
 
+    def test_machine_attendance_matches_numeric_mdb_badge_numbers(self):
+        employee = self.create_employee(paycode="E018", attendance_card_no=118)
+        target_date = datetime(2024, 1, 16)
+
+        self.run_machine_attendance(
+            from_date=target_date,
+            to_date=target_date,
+            employee=employee,
+            checkinout_rows=[
+                [5018, "01/16/24 09:00:00"],
+                [5018, "01/16/24 17:00:00"],
+            ],
+            userinfo_rows=[[5018, 118]],
+        )
+
+        attendance = EmployeeAttendance.objects.get(employee=employee, date=target_date.date())
+        self.assertEqual((attendance.machine_in, attendance.machine_out), (time(9), time(17)))
+
+    def test_machine_attendance_paid_history_includes_earlier_imported_days(self):
+        employee = self.create_employee(
+            paycode="E019",
+            attendance_card_no=119,
+            weekly_off="sun",
+        )
+        self.set_weekly_off_thresholds(weekly_days=3, holiday_days=3)
+        checkinout_rows = []
+        for day in range(1, 8):
+            checkinout_rows.extend([
+                [5019, f"01/{day:02d}/24 09:00:00"],
+                [5019, f"01/{day:02d}/24 17:00:00"],
+            ])
+
+        self.run_machine_attendance(
+            from_date=datetime(2024, 1, 1),
+            to_date=datetime(2024, 1, 7),
+            employee=employee,
+            checkinout_rows=checkinout_rows,
+            userinfo_rows=[[5019, str(employee.attendance_card_no)]],
+        )
+
+        weekly_off = EmployeeAttendance.objects.get(employee=employee, date=date(2024, 1, 7))
+        self.assertEqual(weekly_off.first_half, self.leave_weekly_off)
+        self.assertEqual(weekly_off.second_half, self.leave_weekly_off)
+
+    def test_machine_attendance_query_count_does_not_scale_per_day(self):
+        employee = self.create_employee(
+            paycode="E020",
+            attendance_card_no=120,
+            weekly_off="no_off",
+        )
+        checkinout_rows = []
+        for day in range(1, 8):
+            checkinout_rows.extend([
+                [5020, f"01/{day:02d}/24 09:00:00"],
+                [5020, f"01/{day:02d}/24 18:00:00"],
+            ])
+
+        with CaptureQueriesContext(connection) as queries:
+            self.run_machine_attendance(
+                from_date=datetime(2024, 1, 1),
+                to_date=datetime(2024, 1, 7),
+                employee=employee,
+                checkinout_rows=checkinout_rows,
+                userinfo_rows=[[5020, str(employee.attendance_card_no)]],
+            )
+
+        self.assertLessEqual(len(queries), 25, [query['sql'] for query in queries])
+
+    def test_machine_attendance_bounds_bulk_write_batches(self):
+        employee = self.create_employee(paycode="E021", attendance_card_no=121)
+        manager = EmployeeAttendance.objects
+
+        with patch.object(manager, 'bulk_create', wraps=manager.bulk_create) as bulk_create:
+            with patch.object(manager, 'bulk_update', wraps=manager.bulk_update) as bulk_update:
+                self.run_machine_attendance(
+                    from_date=datetime(2024, 1, 8),
+                    to_date=datetime(2024, 1, 8),
+                    employee=employee,
+                    checkinout_rows=[
+                        [5021, "01/08/24 09:00:00"],
+                        [5021, "01/08/24 17:00:00"],
+                    ],
+                    userinfo_rows=[[5021, str(employee.attendance_card_no)]],
+                )
+
+        self.assertEqual(bulk_create.call_args.kwargs['batch_size'], MACHINE_ATTENDANCE_CREATE_BATCH_SIZE)
+        attendance_update = next(
+            call
+            for call in bulk_update.call_args_list
+            if call.args[1] == ['machine_in', 'machine_out', 'first_half', 'second_half', 'late_min', 'pay_multiplier']
+        )
+        self.assertEqual(attendance_update.kwargs['batch_size'], MACHINE_ATTENDANCE_UPDATE_BATCH_SIZE)

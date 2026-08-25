@@ -151,19 +151,39 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('work_date', models.DateField()),
                 ('day_type', models.CharField(choices=[('REGULAR', 'Regular'), ('WEEKLY_OFF', 'Weekly Off'), ('HOLIDAY', 'Holiday')], max_length=20)),
-                ('source', models.CharField(choices=[('EARLY_ARRIVAL', 'Early Arrival'), ('LATE_DEPARTURE', 'Late Departure'), ('OFF_DAY_WORK', 'Off Day Work'), ('MANUAL', 'Manual'), ('IMPORTED', 'Imported')], max_length=20)),
+                ('source', models.CharField(choices=[('EARLY_ARRIVAL', 'Early Arrival'), ('LATE_DEPARTURE', 'Late Departure'), ('OFF_DAY_WORK', 'Off Day Work'), ('MANUAL', 'Manual'), ('IMPORTED', 'Imported'), ('LEGACY_BACKFILL', 'Legacy Backfill'), ('TRANSFER', 'Transfer'), ('EARNED_SALARY', 'Earned Salary')], max_length=20)),
                 ('start_datetime', models.DateTimeField(blank=True, null=True)),
                 ('end_datetime', models.DateTimeField(blank=True, null=True)),
                 ('gross_minutes', models.PositiveSmallIntegerField()),
                 ('excluded_minutes', models.PositiveSmallIntegerField(default=0)),
                 ('eligible_minutes', models.PositiveSmallIntegerField()),
+                ('exclusion_reason', models.CharField(choices=[('NONE', 'None'), ('MEAL_BREAK', 'Meal Break'), ('REST_BREAK', 'Rest Break'), ('UNAUTHORIZED_TIME', 'Unauthorized Time'), ('OUTSIDE_ALLOWED_OT', 'Outside Allowed Overtime'), ('MANUAL_ADJUSTMENT', 'Manual Adjustment'), ('OTHER', 'Other'), ('LEGACY_UNSPECIFIED', 'Legacy Unspecified')], default='NONE', max_length=24)),
+                ('exclusion_note', models.CharField(blank=True, default='', max_length=255)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
-                ('attendance', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='overtime_details', to='api.employeeattendance')),
+                ('attendance_date', models.DateField()),
+                ('company', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='employee_attendance_overtime_details', to='api.company')),
+                ('employee', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='attendance_overtime_details', to='api.employeepersonaldetail')),
+                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='employee_attendance_overtime_details', to='api.user')),
+                ('attendance', models.ForeignObject(from_fields=['employee', 'attendance_date', 'user'], on_delete=django.db.models.deletion.CASCADE, related_name='overtime_details', to='api.employeeattendance', to_fields=['employee', 'date', 'user'])),
             ],
             options={
-                'indexes': [models.Index(fields=['attendance', 'work_date', 'day_type'], name='api_employe_attenda_535638_idx')],
+                'indexes': [models.Index(fields=['user', 'company', 'employee', 'attendance_date'], name='api_employe_user_id_68eaa4_idx'), models.Index(fields=['attendance_date', 'work_date'], name='api_employe_attenda_524b1a_idx'), models.Index(fields=['employee', 'attendance_date', 'user', 'work_date', 'day_type'], name='api_employe_employe_35bfb7_idx')],
             },
+        ),
+        migrations.RunSQL(
+            sql="""
+                ALTER TABLE api_employeeattendanceovertimedetail
+                ADD CONSTRAINT attendance_ot_detail_attendance_composite_fk
+                FOREIGN KEY (employee_id, attendance_date, user_id)
+                REFERENCES api_employeeattendance (employee_id, date, user_id)
+                ON DELETE CASCADE
+                DEFERRABLE INITIALLY DEFERRED;
+            """,
+            reverse_sql="""
+                ALTER TABLE api_employeeattendanceovertimedetail
+                DROP CONSTRAINT IF EXISTS attendance_ot_detail_attendance_composite_fk;
+            """,
         ),
         migrations.AddConstraint(
             model_name='employeeattendanceovertimedetail',
@@ -180,6 +200,18 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name='employeeattendanceovertimedetail',
             constraint=models.CheckConstraint(check=models.Q(('eligible_minutes__gt', 0)), name='attendance_ot_detail_eligible_positive'),
+        ),
+        migrations.AddConstraint(
+            model_name='employeeattendanceovertimedetail',
+            constraint=models.CheckConstraint(check=models.Q(('start_datetime__isnull', True), ('start_datetime__lt', models.F('end_datetime')), _connector='OR'), name='attendance_ot_detail_start_before_end'),
+        ),
+        migrations.AddConstraint(
+            model_name='employeeattendanceovertimedetail',
+            constraint=models.CheckConstraint(check=models.Q(('eligible_minutes', models.F('gross_minutes') - models.F('excluded_minutes'))), name='attendance_ot_detail_eligible_arithmetic'),
+        ),
+        migrations.AddConstraint(
+            model_name='employeeattendanceovertimedetail',
+            constraint=models.CheckConstraint(check=models.Q(('excluded_minutes', 0), ('exclusion_reason', 'NONE'), _connector='AND') | (models.Q(('excluded_minutes__gt', 0)) & ~models.Q(('exclusion_reason', 'NONE'))), name='attendance_ot_detail_exclusion_reason_matches_minutes'),
         ),
         migrations.AddConstraint(
             model_name='employeesalarypreparedovertimedetail',

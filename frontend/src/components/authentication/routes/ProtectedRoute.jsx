@@ -18,4 +18,12 @@ export const ProtectedAndAdminRoute = ({ children }) => {
 	return <Navigate to="/home/select-company" />;
 };
 
+export const ProtectedOwnerRoute = ({ children }) => {
+	const auth = useSelector((state) => state.auth);
+	if (auth.account === null) {
+		return <Navigate to="/login" />;
+	}
+	return auth.account.role === 'OWNER' ? children : <Navigate to="/home/select-company" />;
+};
+
 // export default ProtectedRoute;

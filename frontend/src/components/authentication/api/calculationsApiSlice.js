@@ -16,7 +16,7 @@ export const calculationsApiSlice = apiSlice.injectEndpoints({
 				method: 'POST',
 				body: body,
 			}),
-			invalidatesTags: ['Calculations', 'BonusCalculations'],
+			invalidatesTags: ['Calculations', 'BonusCalculations', 'SalaryOvertimePreview'],
 		}),
 		updateCalculations: builder.mutation({
 			query: (body) => ({
@@ -24,7 +24,7 @@ export const calculationsApiSlice = apiSlice.injectEndpoints({
 				method: 'PUT',
 				body: body,
 			}),
-			invalidatesTags: ['Calculations', 'BonusCalculations'],
+			invalidatesTags: ['Calculations', 'BonusCalculations', 'SalaryOvertimePreview'],
 		}),
 	}),
 });

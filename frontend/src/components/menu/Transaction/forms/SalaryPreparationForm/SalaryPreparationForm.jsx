@@ -1,8 +1,7 @@
-import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import {
 	// column,
 	createColumnHelper,
-	flexRender,
 	getCoreRowModel,
 	useReactTable,
 	getSortedRowModel,
@@ -14,26 +13,37 @@ import {
 
 import { useGetEmployeePersonalDetailsQuery } from '../../../../authentication/api/employeeEntryApiSlice';
 import { useAddEmployeeSalaryPreparedMutation } from '../../../../authentication/api/salaryPreparationApiSlice';
-import { useGetExtraFeaturesConfigQuery } from '../../../../authentication/api/extraFeaturesConfigApiSlice';
 import { useOutletContext } from 'react-router-dom';
 import ReactModal from 'react-modal';
 import { Formik } from 'formik';
 import { useDispatch, useSelector } from 'react-redux';
 import { alertActions } from '../../../../authentication/store/slices/alertSlice';
+import { apiSlice } from '../../../../authentication/api/apiSlice';
+import { getApiErrorMessage } from '../../../../authentication/api/errorUtils';
 import EmployeeTable from './EmployeeTable';
 import EditSalary from './EditSalary';
+import { SalaryPreparationSchema } from './SalaryPreperationSchema';
 // import TableFilterInput from '../TimeUpdationForm/TableFilterInput';
 import TableFilterInput from './TableFilterInput';
-import CalculateOtAttendanceusingEarnedSalary from './CalculateOtAttendanceusingEarnedSalary';
 
-const classNames = (...classes) => {
-	return classes.filter(Boolean).join(' ');
-};
+const months = [
+	'January',
+	'February',
+	'March',
+	'April',
+	'May',
+	'June',
+	'July',
+	'August',
+	'September',
+	'October',
+	'November',
+	'December',
+];
 
 const SalaryPreparationForm = () => {
 	const dispatch = useDispatch();
 	const globalCompany = useSelector((state) => state.globalCompany);
-	const auth = useSelector((state) => state.auth);
 
 	const [showLoadingBar, setShowLoadingBar] = useOutletContext();
 	const {
@@ -41,9 +51,6 @@ const SalaryPreparationForm = () => {
 		isLoading: isLoadingEmployeePersonalDetails,
 		isSuccess: isSuccessEmployeePersonalDetails,
 	} = useGetEmployeePersonalDetailsQuery(globalCompany);
-	const [salaryPreperationMode, setSalaryPreperationMode] = useState('default');
-	console.log(salaryPreperationMode);
-
 	const [
 		addEmployeeSalaryPrepared,
 		{
@@ -52,15 +59,6 @@ const SalaryPreparationForm = () => {
 			isSuccess: isAddEmployeeSalaryPreparedSuccess,
 		},
 	] = useAddEmployeeSalaryPreparedMutation();
-
-	const {
-		data: { company, ...extraFeaturesConfig } = {},
-		isLoading: isLoadingExtraFeaturesConfig,
-		isSuccess: isExtraFeaturesConfigSuccess,
-		isError: isExtraFeaturesConfigError,
-		isFetching: isFetchingExtraFeaturesConfig,
-	} = useGetExtraFeaturesConfigQuery(globalCompany.id);
-	console.log(extraFeaturesConfig);
 
 	const [updateEmployeeId, setUpdateEmployeeId] = useState(null);
 	const [globalFilter, setGlobalFilter] = useState('');
@@ -73,34 +71,68 @@ const SalaryPreparationForm = () => {
 		columnHelper.accessor('paycode', {
 			header: () => 'PC',
 			cell: (props) => props.renderValue(),
+			meta: {
+				columnClassName: 'w-[64px]',
+				headerClassName: 'whitespace-nowrap',
+				cellClassName: 'whitespace-nowrap',
+			},
 			//   footer: props => props.column.id,
 			// filterFn: 'fuzzy',
 		}),
 		columnHelper.accessor('attendanceCardNo', {
 			header: () => 'ACN',
 			cell: (props) => props.renderValue(),
+			meta: {
+				columnClassName: 'w-[64px]',
+				headerClassName: 'whitespace-nowrap',
+				cellClassName: 'whitespace-nowrap',
+			},
 			//   footer: props => props.column.id,
 		}),
 
 		columnHelper.accessor('name', {
 			header: () => 'Employee Name',
 			cell: (props) => props.renderValue(),
+			meta: {
+				columnClassName: 'w-[220px]',
+				headerClassName: 'whitespace-nowrap text-left',
+				headerContentClassName: 'justify-start',
+				cellClassName: 'text-left',
+				cellContentClassName: 'truncate whitespace-nowrap',
+			},
 			//   footer: info => info.column.id,
 		}),
 		columnHelper.accessor('designation', {
 			header: () => 'Designation',
 			cell: (props) => props.renderValue(),
+			meta: {
+				columnClassName: 'w-[180px]',
+				headerClassName: 'whitespace-nowrap text-left',
+				headerContentClassName: 'justify-start',
+				cellClassName: 'text-left',
+				cellContentClassName: 'truncate whitespace-nowrap',
+			},
 			//   footer: info => info.column.id,
 		}),
 		columnHelper.accessor('dateOfJoining', {
 			header: () => 'DOJ',
 			cell: (props) => props.renderValue(),
+			meta: {
+				columnClassName: 'w-[118px]',
+				headerClassName: 'whitespace-nowrap',
+				cellClassName: 'whitespace-nowrap tabular-nums',
+			},
 			// enableHiding: true,
 			enableGlobalFilter: false,
 		}),
 		columnHelper.accessor('resignationDate', {
 			header: () => 'Resign Date',
 			cell: (props) => props.renderValue(),
+			meta: {
+				columnClassName: 'w-[118px]',
+				headerClassName: 'whitespace-nowrap',
+				cellClassName: 'whitespace-nowrap tabular-nums',
+			},
 			enableHiding: true,
 			enableGlobalFilter: false,
 		}),
@@ -110,7 +142,10 @@ const SalaryPreparationForm = () => {
 		year: new Date().getFullYear(),
 		month: new Date().getMonth() + 1,
 	});
-	console.log(selectedDate);
+	const selectionKey = `${globalCompany?.id}-${updateEmployeeId}-${selectedDate.year}-${selectedDate.month}`;
+	const latestSelectionKeyRef = useRef(selectionKey);
+	latestSelectionKeyRef.current = selectionKey;
+
 	const data = useMemo(() => {
 		if (!employeePersonalDetails) return [];
 
@@ -157,28 +192,25 @@ const SalaryPreparationForm = () => {
 		};
 	}, [employeePersonalDetails]);
 
-	const generateInitialValues = () => {
-		const currentDate = new Date();
-		const currentYear = currentDate.getFullYear();
-		// get method returns a zero-based index for the month
-		const currentMonthIndex = currentDate.getMonth();
-		// const daysInMonth = new Date(currentYear, currentMonthIndex + 1, 0).getDate();
+	const optionsForYear = useMemo(() => {
+		if (!earliestMonthAndYear?.earliestYear) return [];
 
+		return Array.from(
+			{ length: new Date().getFullYear() - earliestMonthAndYear.earliestYear + 1 },
+			(_, index) => earliestMonthAndYear.earliestYear + index
+		);
+	}, [earliestMonthAndYear]);
+
+	const generateInitialValues = () => {
 		const initialValues = {
 			year: selectedDate.year,
 			month: selectedDate.month,
 			employeeSalaryPrepared: {
 				incentiveAmount: 0,
-				pfDeducted: 0,
-				esiDeducted: 0,
-				vpfDeducted: 0,
-				advanceDeducted: 0,
-				tdsDeducted: 0,
-				labourWelfareFundDeducted: 0,
+				advanceDeducted: null,
+				vpfDeducted: null,
+				tdsDeducted: null,
 				othersDeducted: 0,
-				netOtMinutesMonthly: 0,
-				netOtAmountMonthly: 0,
-				paymentMode: '',
 			},
 			earnedAmount: [],
 		};
@@ -256,20 +288,43 @@ const SalaryPreparationForm = () => {
 				break;
 		}
 	};
-	const handleModeChange = (event) => {
-		setSalaryPreperationMode(event.target.value);
-	};
-
 	const updateButtonClicked = async (values, formikBag) => {
-		let toSend = { employeeSalaryPrepared: {}, allEarnedAmounts: [] };
-		toSend.employeeSalaryPrepared = { ...values.employeeSalaryPrepared };
-		toSend.employeeSalaryPrepared.date = `${values.year}-${values.month}-1`;
-		toSend.employeeSalaryPrepared.employee = parseInt(updateEmployeeId);
-		toSend.employeeSalaryPrepared.company = globalCompany.id;
-		toSend.allEarnedAmounts = [...values.earnedAmount];
+		const requestKey = `${globalCompany.id}-${updateEmployeeId}-${values.year}-${values.month}`;
+		const toSend = { employeeSalaryPrepared: {}, allEarnedAmounts: [] };
+		toSend.employeeSalaryPrepared = {
+			date: `${values.year}-${values.month}-1`,
+			employee: parseInt(updateEmployeeId),
+			company: globalCompany.id,
+			incentiveAmount: values.employeeSalaryPrepared.incentiveAmount,
+			advanceDeducted: values.employeeSalaryPrepared.advanceDeducted,
+			vpfDeducted: values.employeeSalaryPrepared.vpfDeducted,
+			tdsDeducted: values.employeeSalaryPrepared.tdsDeducted,
+			othersDeducted: values.employeeSalaryPrepared.othersDeducted,
+		};
+		toSend.allEarnedAmounts = values.earnedAmount.map((row) => ({
+			earningsHead: { id: row.earningsHead.id },
+			rate: row.rate,
+			earnedAmount: row.earnedAmount,
+			arearAmount: row.arearAmount,
+		}));
 
 		try {
-			const data = await addEmployeeSalaryPrepared(toSend).unwrap();
+			await addEmployeeSalaryPrepared(toSend).unwrap();
+			if (latestSelectionKeyRef.current !== requestKey) {
+				dispatch(
+					alertActions.createAlert({
+						message: 'Salary saved, but the selection changed before the response returned.',
+						type: 'Success',
+						duration: 5000,
+					})
+				);
+				return;
+			}
+			dispatch(
+				apiSlice.util.invalidateTags([
+					{ type: 'SalaryOvertimePreview', id: requestKey },
+				])
+			);
 			dispatch(
 				alertActions.createAlert({
 					message: 'Saved',
@@ -278,11 +333,18 @@ const SalaryPreparationForm = () => {
 				})
 			);
 		} catch (err) {
-			console.log(err);
-			let message = 'Error Occurred';
-			if (err.data?.detail == 'Too Much Advance Emi Repayment') {
-				message = 'Too Much Advance Emi Repayment';
+			const requiresReview = [
+				'stale_salary_rate',
+				'missing_earned_heads',
+				'duplicate_earned_head',
+				'invalid_earned_head',
+			].includes(err?.data?.code);
+			if (requiresReview) {
+				dispatch(apiSlice.util.invalidateTags(['AllEmployeeSalaryEarnings', 'SalaryOvertimePreview']));
 			}
+			const message = `${getApiErrorMessage(err)}${
+				requiresReview ? ' Salary earnings were refreshed; review the rows before saving again.' : ''
+			}`;
 			dispatch(
 				alertActions.createAlert({
 					message: message,
@@ -306,58 +368,46 @@ const SalaryPreparationForm = () => {
 	} else {
 		return (
 			<section className="mx-5 mt-2">
-				<div className="flex flex-row flex-wrap place-content-between">
+				<div className="flex flex-row flex-wrap items-start justify-between gap-4">
 					<div className="mr-4">
 						<h1 className="text-3xl font-medium">Salary Preperation</h1>
 						<p className="my-2 text-sm">Prepare employees salaries here</p>
 					</div>
+					<section className="flex flex-wrap items-center gap-2 text-sm">
+						<label
+							htmlFor="salary-preparation-year"
+							className="font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
+						>
+							Month and Year:
+						</label>
+						<select
+							id="salary-preparation-month"
+							value={selectedDate.month}
+							onChange={(event) => setSelectedDate((previous) => ({ ...previous, month: event.target.value }))}
+							className="rounded-md bg-zinc-50 bg-opacity-50 p-1 dark:bg-zinc-700"
+						>
+							{months.map((month, index) => (
+								<option key={month} value={index + 1}>
+									{month}
+								</option>
+							))}
+						</select>
+						<select
+							id="salary-preparation-year"
+							value={selectedDate.year}
+							onChange={(event) => setSelectedDate((previous) => ({ ...previous, year: event.target.value }))}
+							className="rounded-md bg-zinc-50 bg-opacity-50 p-1 dark:bg-zinc-700"
+						>
+							{optionsForYear.map((year) => (
+								<option key={year} value={year}>
+									{year}
+								</option>
+							))}
+						</select>
+					</section>
 				</div>
-				{auth.account.role === 'OWNER' &&
-					isExtraFeaturesConfigSuccess &&
-					extraFeaturesConfig?.enableCalculateOtAttendanceUsingEarnedSalary == true && (
-						<div>
-							<h3>Salary Preparation Mode</h3>
-							{/* Radio buttons to toggle between modes */}
-							<div className="flex w-2/5 flex-row gap-6 p-1">
-								<label
-									className={classNames(
-										salaryPreperationMode === 'default'
-											? 'scale-110 bg-teal-600 dark:bg-teal-700'
-											: 'bg-zinc-200 dark:bg-zinc-700  md:hover:scale-110',
-										'relative flex h-6 w-40 cursor-pointer items-center justify-center rounded text-sm font-semibold transition-transform'
-									)}
-								>
-									<input
-										type="radio"
-										value="default"
-										checked={salaryPreperationMode === 'default'}
-										onChange={handleModeChange}
-										className="absolute inset-0 h-full w-full cursor-pointer appearance-none"
-									/>
-									Default Mode
-								</label>
-								<label
-									className={classNames(
-										salaryPreperationMode === 'calculateOtAttendanceUsingEarnedSalary'
-											? 'scale-110 bg-teal-600 dark:bg-teal-700'
-											: 'bg-zinc-200  dark:bg-zinc-700  md:hover:scale-110',
-										'relative flex h-6 w-72 cursor-pointer items-center justify-center rounded text-sm font-semibold transition-transform'
-									)}
-								>
-									<input
-										type="radio"
-										value="calculateOtAttendanceUsingEarnedSalary"
-										checked={salaryPreperationMode === 'calculateOtAttendanceUsingEarnedSalary'}
-										onChange={handleModeChange}
-										className="absolute inset-0 h-full w-full cursor-pointer appearance-none"
-									/>
-									{'Calculate OT & Att. from Total Earned'}
-								</label>
-							</div>
-						</div>
-					)}
-				<div className="flex w-full flex-row gap-8">
-					<div className="mt-4 ml-4 w-2/5">
+				<div className="grid w-full gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-start lg:gap-8 xl:grid-cols-[minmax(640px,0.95fr)_minmax(0,1.05fr)]">
+					<div className="mt-4 min-w-0 lg:ml-4">
 						<TableFilterInput
 							globalFilter={globalFilter}
 							setGlobalFilter={setGlobalFilter}
@@ -366,7 +416,6 @@ const SalaryPreparationForm = () => {
 						/>
 						<EmployeeTable
 							table={table}
-							flexRender={flexRender}
 							tbodyRef={tbodyRef}
 							handleKeyDown={handleKeyDown}
 							onRowClick={onRowClick}
@@ -377,31 +426,25 @@ const SalaryPreparationForm = () => {
 						<div className="mx-auto mt-10 text-xl font-bold dark:text-red-700">
 							Please Select an Employee to prepare the Salary
 						</div>
-					) : salaryPreperationMode === 'default' ? (
-						<div className="mt-4">
+					) : (
+						<div className="mt-4 min-w-0">
 							<Formik
+								key={`${updateEmployeeId}-${selectedDate.year}-${selectedDate.month}`}
+								enableReinitialize
 								initialValues={initialValues}
-								validationSchema={''}
+								validationSchema={SalaryPreparationSchema}
 								onSubmit={updateButtonClicked}
 								component={(props) => (
 									<EditSalary
 										{...props}
 										updateEmployeeId={updateEmployeeId}
 										globalCompany={globalCompany}
-										earliestMonthAndYear={earliestMonthAndYear}
-										setSelectedDate={setSelectedDate}
+										isAddingEmployeeSalaryPrepared={isAddingEmployeeSalaryPrepared}
+										employeePersonalDetails={employeePersonalDetails}
 									/>
 								)}
 							/>
 						</div>
-					) : (
-						<CalculateOtAttendanceusingEarnedSalary
-							updateEmployeeId={updateEmployeeId}
-							globalCompany={globalCompany}
-							earliestMonthAndYear={earliestMonthAndYear}
-							setSelectedDate={setSelectedDate}
-							selectedDate={selectedDate}
-						/>
 					)}
 				</div>
 			</section>

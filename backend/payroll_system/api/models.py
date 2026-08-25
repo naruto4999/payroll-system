@@ -9,6 +9,7 @@ from django.utils import timezone
 from django.core.validators import MinValueValidator, MaxValueValidator
 from decimal import Decimal
 from django.db.models import Q
+from django.db.models.expressions import DatabaseDefault, RawSQL
 from dateutil.relativedelta import relativedelta
 import calendar
 import math
@@ -16,6 +17,7 @@ from django.db.models import Sum
 from django.core.files.storage import FileSystemStorage
 from .managers import EmployeeAttendanceManager, ActiveEmployeeManager, EmployeeSalaryPreparedManager
 import pytz
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 
 
@@ -71,6 +73,17 @@ PAYMENT_MODE_CHOICES = (
         ('rtgs', 'RTGS'),
         ('neft', 'NEFT'),
     )
+
+
+def get_default_payroll_timezone():
+    return settings.PAYROLL_DEFAULT_TIMEZONE
+
+
+def validate_iana_timezone(value):
+    try:
+        ZoneInfo(value)
+    except (ZoneInfoNotFoundError, ValueError, TypeError) as exc:
+        raise ValidationError('Enter a valid IANA timezone name.') from exc
 
 def is_valid_date(date):
     date_str = date.strftime('%Y-%m-%d')
@@ -139,7 +152,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_admin = models.BooleanField(default=False)
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = ['email', 'phone_no']
-    phone_no = models.PositiveBigIntegerField(null=False, unique=True)
+    phone_no = models.PositiveBigIntegerField(null=False)
     # Subscription Fields
     subscription_end_date = models.DateField(null=True, blank=True)
     # is_superuser = models.BooleanField(default=False)
@@ -217,6 +230,15 @@ class CompanyDetails(models.Model):
     head_office_address = models.TextField(null=True, blank=True)
     pan_no = models.CharField(max_length=10, unique=True, null=True, blank=True)
     gst_no = models.CharField(max_length=15, blank=True, null=True)
+    payroll_timezone = models.CharField(
+        max_length=63,
+        default=get_default_payroll_timezone,
+        validators=[validate_iana_timezone],
+    )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
     
 class Deparment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="departments")
@@ -346,6 +368,8 @@ class OvertimePolicy(models.Model):
     is_active = models.BooleanField(default=True)
     is_system = models.BooleanField(default=False)
     earnings_basis = models.CharField(max_length=20, choices=EARNINGS_BASIS_CHOICES, default=EARNINGS_BASIS_ALL)
+    rounding_increment_minutes = models.PositiveSmallIntegerField(default=30)
+    round_up_from_minutes = models.PositiveSmallIntegerField(default=16)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -353,11 +377,25 @@ class OvertimePolicy(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['company', 'code'], name='unique_overtime_policy_code_per_company'),
             models.UniqueConstraint(fields=['company'], condition=Q(is_default=True, is_active=True), name='unique_active_default_overtime_policy_per_company'),
+            models.CheckConstraint(check=Q(is_default=False) | Q(is_active=True), name='overtime_policy_default_requires_active'),
+            models.CheckConstraint(check=Q(rounding_increment_minutes__gt=0), name='overtime_policy_rounding_increment_positive'),
+            models.CheckConstraint(check=Q(round_up_from_minutes__gte=1), name='overtime_policy_round_up_positive'),
+            models.CheckConstraint(check=Q(round_up_from_minutes__lte=models.F('rounding_increment_minutes')), name='overtime_policy_round_up_lte_increment'),
         ]
 
     def clean(self):
         if self.is_default and not self.is_active:
             raise ValidationError({'is_default': 'Inactive overtime policies cannot be company defaults.'})
+        if self.rounding_increment_minutes is not None and self.rounding_increment_minutes <= 0:
+            raise ValidationError({'rounding_increment_minutes': 'Rounding increment must be greater than zero.'})
+        if self.round_up_from_minutes is not None and self.round_up_from_minutes < 1:
+            raise ValidationError({'round_up_from_minutes': 'Round-up threshold must be at least 1.'})
+        if (
+            self.rounding_increment_minutes is not None
+            and self.round_up_from_minutes is not None
+            and self.round_up_from_minutes > self.rounding_increment_minutes
+        ):
+            raise ValidationError({'round_up_from_minutes': 'Round-up threshold cannot exceed the rounding increment.'})
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -1215,6 +1253,11 @@ class LimitedFloatField(models.DecimalField):
         super().__init__(*args, **kwargs)
 
 class EmployeeAttendance(models.Model):
+    pk = models.CompositePrimaryKey('id', 'date')
+    id = models.BigIntegerField(
+        editable=False,
+        db_default=RawSQL("nextval('api_employeeattendance_id_seq'::regclass)", ()),
+    )
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="all_employees_attendance")
     employee = models.ForeignKey(EmployeePersonalDetail, on_delete=models.CASCADE, related_name="attendance")
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="all_company_employees_attendance")
@@ -1233,18 +1276,20 @@ class EmployeeAttendance(models.Model):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        # Set default value for 'first_half' based on the specified conditions
-        if not self.first_half:
-            try:
-                self.first_half = LeaveGrade.objects.get(user=self.user, company=self.company, name='A')
-            except LeaveGrade.DoesNotExist:
-                pass
-        if not self.second_half:
-            try:
-                self.second_half = LeaveGrade.objects.get(user=self.user, company=self.company, name='A')
-            except LeaveGrade.DoesNotExist:
-                pass
+        if self.first_half_id is not None and self.second_half_id is not None:
+            return
+        try:
+            absent = LeaveGrade.objects.get(
+                user_id=self.user_id,
+                company_id=self.company_id,
+                name='A',
+            )
+        except LeaveGrade.DoesNotExist:
+            return
+        if self.first_half_id is None:
+            self.first_half = absent
+        if self.second_half_id is None:
+            self.second_half = absent
 
     class Meta:
         indexes = [
@@ -1259,6 +1304,8 @@ class EmployeeAttendance(models.Model):
         ]
 
     def save(self, *args, **kwargs):
+        if self._state.adding and isinstance(self.id, DatabaseDefault):
+            kwargs['force_insert'] = True
         if self.first_half.paid and self.second_half.paid:
             self.pay_multiplier = 1
         elif self.first_half.paid or self.second_half.paid:
@@ -1267,22 +1314,67 @@ class EmployeeAttendance(models.Model):
             self.pay_multiplier = 0
         super().save(*args, **kwargs)
 
-
 class EmployeeAttendanceOvertimeDetail(models.Model):
+    pk = models.CompositePrimaryKey('id', 'attendance_date')
+    id = models.BigIntegerField(
+        editable=False,
+        db_default=RawSQL("nextval('api_employeeattendanceovertimedetail_id_seq'::regclass)", ()),
+    )
     SOURCE_EARLY_ARRIVAL = 'EARLY_ARRIVAL'
     SOURCE_LATE_DEPARTURE = 'LATE_DEPARTURE'
     SOURCE_OFF_DAY_WORK = 'OFF_DAY_WORK'
     SOURCE_MANUAL = 'MANUAL'
     SOURCE_IMPORTED = 'IMPORTED'
+    SOURCE_LEGACY_BACKFILL = 'LEGACY_BACKFILL'
+    SOURCE_TRANSFER = 'TRANSFER'
+    SOURCE_EARNED_SALARY = 'EARNED_SALARY'
     SOURCE_CHOICES = (
         (SOURCE_EARLY_ARRIVAL, 'Early Arrival'),
         (SOURCE_LATE_DEPARTURE, 'Late Departure'),
         (SOURCE_OFF_DAY_WORK, 'Off Day Work'),
         (SOURCE_MANUAL, 'Manual'),
         (SOURCE_IMPORTED, 'Imported'),
+        (SOURCE_LEGACY_BACKFILL, 'Legacy Backfill'),
+        (SOURCE_TRANSFER, 'Transfer'),
+        (SOURCE_EARNED_SALARY, 'Earned Salary'),
     )
 
-    attendance = models.ForeignKey(EmployeeAttendance, on_delete=models.CASCADE, related_name='overtime_details')
+    EXCLUSION_NONE = 'NONE'
+    EXCLUSION_MEAL_BREAK = 'MEAL_BREAK'
+    EXCLUSION_REST_BREAK = 'REST_BREAK'
+    EXCLUSION_UNAUTHORIZED_TIME = 'UNAUTHORIZED_TIME'
+    EXCLUSION_OUTSIDE_ALLOWED_OT = 'OUTSIDE_ALLOWED_OT'
+    EXCLUSION_MANUAL_ADJUSTMENT = 'MANUAL_ADJUSTMENT'
+    EXCLUSION_OTHER = 'OTHER'
+    EXCLUSION_LEGACY_UNSPECIFIED = 'LEGACY_UNSPECIFIED'
+    EXCLUSION_REASON_CHOICES = (
+        (EXCLUSION_NONE, 'None'),
+        (EXCLUSION_MEAL_BREAK, 'Meal Break'),
+        (EXCLUSION_REST_BREAK, 'Rest Break'),
+        (EXCLUSION_UNAUTHORIZED_TIME, 'Unauthorized Time'),
+        (EXCLUSION_OUTSIDE_ALLOWED_OT, 'Outside Allowed Overtime'),
+        (EXCLUSION_MANUAL_ADJUSTMENT, 'Manual Adjustment'),
+        (EXCLUSION_OTHER, 'Other'),
+        (EXCLUSION_LEGACY_UNSPECIFIED, 'Legacy Unspecified'),
+    )
+
+    def __init__(self, *args, **kwargs):
+        assigned_attendance = kwargs.get('attendance')
+        super().__init__(*args, **kwargs)
+        if assigned_attendance is not None and self.company_id is None:
+            self.company = assigned_attendance.company
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='employee_attendance_overtime_details')
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='employee_attendance_overtime_details')
+    employee = models.ForeignKey(EmployeePersonalDetail, on_delete=models.CASCADE, related_name='attendance_overtime_details')
+    attendance_date = models.DateField()
+    attendance = models.ForeignObject(
+        EmployeeAttendance,
+        from_fields=['employee', 'attendance_date', 'user'],
+        to_fields=['employee', 'date', 'user'],
+        on_delete=models.CASCADE,
+        related_name='overtime_details',
+    )
     work_date = models.DateField()
     day_type = models.CharField(max_length=20, choices=OvertimePolicyDayRule.DAY_TYPE_CHOICES)
     source = models.CharField(max_length=20, choices=SOURCE_CHOICES)
@@ -1291,12 +1383,16 @@ class EmployeeAttendanceOvertimeDetail(models.Model):
     gross_minutes = models.PositiveSmallIntegerField()
     excluded_minutes = models.PositiveSmallIntegerField(default=0)
     eligible_minutes = models.PositiveSmallIntegerField()
+    exclusion_reason = models.CharField(max_length=24, choices=EXCLUSION_REASON_CHOICES, default=EXCLUSION_NONE)
+    exclusion_note = models.CharField(max_length=255, blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         indexes = [
-            models.Index(fields=['attendance', 'work_date', 'day_type']),
+            models.Index(fields=['user', 'company', 'employee', 'attendance_date']),
+            models.Index(fields=['attendance_date', 'work_date']),
+            models.Index(fields=['employee', 'attendance_date', 'user', 'work_date', 'day_type']),
         ]
         constraints = [
             models.CheckConstraint(
@@ -1306,23 +1402,113 @@ class EmployeeAttendanceOvertimeDetail(models.Model):
             models.CheckConstraint(check=Q(gross_minutes__gt=0), name='attendance_ot_detail_gross_positive'),
             models.CheckConstraint(check=Q(excluded_minutes__lte=models.F('gross_minutes')), name='attendance_ot_detail_excluded_lte_gross'),
             models.CheckConstraint(check=Q(eligible_minutes__gt=0), name='attendance_ot_detail_eligible_positive'),
+            models.CheckConstraint(
+                check=Q(start_datetime__isnull=True) | Q(start_datetime__lt=models.F('end_datetime')),
+                name='attendance_ot_detail_start_before_end',
+            ),
+            models.CheckConstraint(
+                check=Q(eligible_minutes=models.F('gross_minutes') - models.F('excluded_minutes')),
+                name='attendance_ot_detail_eligible_arithmetic',
+            ),
+            models.CheckConstraint(
+                check=(
+                    Q(excluded_minutes=0, exclusion_reason='NONE')
+                    | Q(excluded_minutes__gt=0) & ~Q(exclusion_reason='NONE')
+                ),
+                name='attendance_ot_detail_exclusion_reason_matches_minutes',
+            ),
         ]
 
+    def _sync_attendance_scope_fields(self):
+        try:
+            attendance = self.attendance
+        except EmployeeAttendance.DoesNotExist:
+            return None
+        if self.company_id is None:
+            self.company = attendance.company
+        return attendance
+
+    def clean_fields(self, exclude=None):
+        self._sync_attendance_scope_fields()
+        super().clean_fields(exclude=exclude)
+
     def clean(self):
+        self.exclusion_note = (self.exclusion_note or '').strip()
+        if self.excluded_minutes == 0:
+            if self.exclusion_reason != self.EXCLUSION_NONE:
+                raise ValidationError({'exclusion_reason': 'Zero excluded minutes require the NONE reason.'})
+            if self.exclusion_note:
+                raise ValidationError({'exclusion_note': 'Zero excluded minutes require an empty exclusion note.'})
+        else:
+            if self.exclusion_reason == self.EXCLUSION_NONE:
+                raise ValidationError({'exclusion_reason': 'Positive excluded minutes require an exclusion reason.'})
+            if self.exclusion_reason == self.EXCLUSION_LEGACY_UNSPECIFIED:
+                existing_reason = None
+                if self.pk:
+                    existing_reason = type(self).objects.filter(pk=self.pk).values_list('exclusion_reason', flat=True).first()
+                if existing_reason != self.EXCLUSION_LEGACY_UNSPECIFIED:
+                    raise ValidationError({'exclusion_reason': 'LEGACY_UNSPECIFIED is reserved for migrated data.'})
+            if self.exclusion_reason in (self.EXCLUSION_MANUAL_ADJUSTMENT, self.EXCLUSION_OTHER) and not self.exclusion_note:
+                raise ValidationError({'exclusion_note': 'This exclusion reason requires a note.'})
         if (self.start_datetime is None) != (self.end_datetime is None):
             raise ValidationError('Start and end datetime must both be set or both be blank.')
+        attendance = self._sync_attendance_scope_fields()
+        if attendance is None:
+            raise ValidationError({'attendance': 'A matching attendance row is required.'})
+        if (
+            self.user_id != attendance.user_id
+            or self.company_id != attendance.company_id
+            or self.employee_id != attendance.employee_id
+            or self.attendance_date != attendance.date
+        ):
+            raise ValidationError({'attendance': 'Overtime detail scope must match the attendance row.'})
         if self.start_datetime and self.end_datetime:
+            if timezone.is_naive(self.start_datetime) or timezone.is_naive(self.end_datetime):
+                raise ValidationError('Exact overtime datetimes must be timezone-aware.')
             if self.end_datetime <= self.start_datetime:
                 raise ValidationError({'end_datetime': 'End datetime must be after start datetime.'})
-            duration_minutes = int((self.end_datetime - self.start_datetime).total_seconds() // 60)
-            if duration_minutes != self.gross_minutes:
+            duration_seconds = (self.end_datetime - self.start_datetime).total_seconds()
+            if duration_seconds % 60 or duration_seconds / 60 != self.gross_minutes:
                 raise ValidationError({'gross_minutes': 'Gross minutes must match the datetime duration.'})
-            if self.start_datetime.date() != self.work_date and self.end_datetime.date() != self.work_date:
-                raise ValidationError({'work_date': 'Overtime segment must belong to the payroll work date.'})
+            payroll_timezone = ZoneInfo(attendance.company.company_details.payroll_timezone)
+            local_start = self.start_datetime.astimezone(payroll_timezone)
+            local_end = self.end_datetime.astimezone(payroll_timezone)
+            following_midnight = datetime.combine(
+                local_start.date() + timedelta(days=1),
+                datetime.min.time(),
+                tzinfo=payroll_timezone,
+            )
+            if local_start.date() != self.work_date or not (
+                local_end.date() == self.work_date or local_end == following_midnight
+            ):
+                raise ValidationError({'work_date': 'Exact overtime must remain within one payroll work date.'})
+            overlaps = type(self).objects.filter(
+                user_id=self.user_id,
+                company_id=self.company_id,
+                employee_id=self.employee_id,
+                attendance_date=self.attendance_date,
+                start_datetime__lt=self.end_datetime,
+                end_datetime__gt=self.start_datetime,
+            )
+            if self.pk:
+                overlaps = overlaps.exclude(pk=self.pk)
+            if overlaps.exists():
+                raise ValidationError('Exact overtime intervals for an attendance record cannot overlap.')
         if self.eligible_minutes != self.gross_minutes - self.excluded_minutes:
             raise ValidationError({'eligible_minutes': 'Eligible minutes must equal gross minutes minus excluded minutes.'})
+        owner_id = attendance.user_id
+        if attendance.user.role == 'REGULAR':
+            owner_id = getattr(getattr(attendance.user, 'regular_to_owner', None), 'owner_id', None)
+        if (
+            attendance.employee.company_id != attendance.company_id
+            or attendance.employee.user_id != owner_id
+            or attendance.company.user_id != owner_id
+        ):
+            raise ValidationError({'attendance': 'Attendance, employee, company, and user scope must agree.'})
 
     def save(self, *args, **kwargs):
+        if self._state.adding and isinstance(self.id, DatabaseDefault):
+            kwargs['force_insert'] = True
         self.full_clean()
         super().save(*args, **kwargs)
     
@@ -1353,7 +1539,13 @@ class EmployeeGenerativeLeaveRecordManager(models.Manager):
         total_late_min = 0
         compensation_off_days_count = 0
 
-        employee_attendance_queryset = EmployeeAttendance.objects.filter(user=user, employee_id=employee_id, company_id=company_id, date__gte=from_date, date__lte=to_date)
+        employee_attendance_queryset = EmployeeAttendance.objects.filter(
+            user=user,
+            employee_id=employee_id,
+            company_id=company_id,
+            date__gte=from_date,
+            date__lte=to_date,
+        ).select_related('first_half', 'second_half')
 
         print(f'Yes Creating or updating generative leave, USER_ID: {user.id}')
         for employee_attendance in employee_attendance_queryset:
@@ -1575,13 +1767,44 @@ class EmployeeSalaryPrepared(models.Model):
     others_deducted = models.PositiveIntegerField(null=False, blank=False, default=0)
     net_ot_minutes_monthly = models.PositiveSmallIntegerField(null=False, blank=False, default=0)
     net_ot_amount_monthly = models.PositiveIntegerField(null=False, blank=False, default=0)
+    ot_rounding_increment_minutes = models.PositiveSmallIntegerField(null=True, blank=True)
+    ot_round_up_from_minutes = models.PositiveSmallIntegerField(null=True, blank=True)
     payment_mode = models.CharField(max_length=20, choices=PAYMENT_MODE_CHOICES, null=False, blank=False, default='bank_transfer')
     objects = EmployeeSalaryPreparedManager()
 
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=['date', 'employee', 'user'], name='unique_salary_for_each_month_per_employee_per_user'),
+            models.CheckConstraint(
+                check=(
+                    Q(ot_rounding_increment_minutes__isnull=True, ot_round_up_from_minutes__isnull=True)
+                    | Q(
+                        ot_rounding_increment_minutes__isnull=False,
+                        ot_round_up_from_minutes__isnull=False,
+                        ot_rounding_increment_minutes__gt=0,
+                        ot_round_up_from_minutes__gte=1,
+                        ot_round_up_from_minutes__lte=models.F('ot_rounding_increment_minutes'),
+                    )
+                ),
+                name='prepared_salary_rounding_pair_valid',
+            ),
         ]
+
+    def clean(self):
+        increment = self.ot_rounding_increment_minutes
+        threshold = self.ot_round_up_from_minutes
+        if (increment is None) != (threshold is None):
+            raise ValidationError('Overtime rounding snapshots must both be set or both be blank.')
+        if increment is not None and increment <= 0:
+            raise ValidationError({'ot_rounding_increment_minutes': 'Rounding increment must be greater than zero.'})
+        if threshold is not None and threshold < 1:
+            raise ValidationError({'ot_round_up_from_minutes': 'Round-up threshold must be at least 1.'})
+        if increment is not None and threshold is not None and threshold > increment:
+            raise ValidationError({'ot_round_up_from_minutes': 'Round-up threshold cannot exceed the rounding increment.'})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 
 class EmployeeSalaryPreparedOvertimeDetail(models.Model):
@@ -1593,13 +1816,28 @@ class EmployeeSalaryPreparedOvertimeDetail(models.Model):
     multiplier = models.DecimalField(max_digits=6, decimal_places=3)
     eligible_salary_rate = models.DecimalField(max_digits=12, decimal_places=2)
     divisor = models.DecimalField(max_digits=8, decimal_places=2)
-    amount = models.PositiveIntegerField(default=0)
+    amount = models.DecimalField(max_digits=14, decimal_places=2, default=0)
 
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=['salary_prepared', 'day_type'], name='unique_salary_prepared_overtime_day_type'),
             models.CheckConstraint(check=Q(gross_minutes__gte=models.F('deducted_late_minutes')), name='prepared_ot_gross_gte_deducted'),
+            models.CheckConstraint(check=Q(net_minutes=models.F('gross_minutes') - models.F('deducted_late_minutes')), name='prepared_ot_net_arithmetic'),
+            models.CheckConstraint(check=Q(multiplier__gt=0), name='prepared_ot_multiplier_positive'),
+            models.CheckConstraint(check=Q(divisor__gt=0), name='prepared_ot_divisor_positive'),
         ]
+
+    def clean(self):
+        if self.net_minutes != self.gross_minutes - self.deducted_late_minutes:
+            raise ValidationError({'net_minutes': 'Net minutes must equal gross minutes minus deducted late minutes.'})
+        if self.multiplier is not None and self.multiplier <= 0:
+            raise ValidationError({'multiplier': 'Multiplier must be greater than zero.'})
+        if self.divisor is not None and self.divisor <= 0:
+            raise ValidationError({'divisor': 'Divisor must be greater than zero.'})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 
 class EmployeeAdvanceEmiRepayment(models.Model):
@@ -1688,12 +1926,19 @@ class AttendanceMachineConfig(models.Model):
     company = models.OneToOneField(Company, on_delete=models.CASCADE, related_name="attendance_machine_configuration")
     machine_ip = models.GenericIPAddressField(protocol='IPv4', null=False, blank=False)
 
-class ExtraFeaturesConfig(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="extra_features_configuration")
-    company = models.OneToOneField(Company, on_delete=models.CASCADE, related_name="extra_features_configuration")
-    enable_calculate_ot_attendance_using_earned_salary = models.BooleanField(null=False, blank=False, default=False)
+@receiver(post_save, sender=Company)
+def create_company_details(sender, instance, created, raw=False, **kwargs):
+    if raw or not created:
+        return
+    CompanyDetails.objects.get_or_create(
+        company=instance,
+        defaults={
+            'user': instance.user,
+            'payroll_timezone': settings.PAYROLL_DEFAULT_TIMEZONE,
+        },
+    )
 
-    
+
 @receiver(post_save, sender=Company)
 def create_default_leave_grades_for_company(sender, instance, created, **kwargs):
     print("reciever ran")

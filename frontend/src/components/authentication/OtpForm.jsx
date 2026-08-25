@@ -1,78 +1,34 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef } from 'react';
+import { FiArrowRight, FiKey } from 'react-icons/fi';
+import Button from '../UI/Button';
+import Input from '../UI/Input';
 
-const classNames = (...classes) => {
-    return classes.filter(Boolean).join(" ");
+const OtpForm = ({ submitOtpButtonCliked, otpChangeHandler, setOtpFormPopover, otpMsg, sendOtpError, isLoading }) => {
+	const inputRef = useRef(null);
+
+	useEffect(() => {
+		inputRef.current?.focus();
+	}, []);
+
+	return (
+		<div>
+			<p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-teal-400">Almost there</p>
+			<h2 className="text-2xl font-semibold tracking-tight">Verify your email</h2>
+			<p className="mt-2 text-sm leading-6 text-zinc-400">Enter the one-time code sent to your email address to finish creating your account.</p>
+
+			<form className="mt-6 space-y-4" onSubmit={submitOtpButtonCliked}>
+				<label htmlFor="otp" className="block text-xs font-medium text-zinc-300">Verification code</label>
+				<Input ref={inputRef} id="otp" name="otp" type="text" inputMode="numeric" pattern="[0-9]*" onChange={otpChangeHandler} placeholder="Enter your code" autoComplete="one-time-code" startAdornment={<FiKey />} className="h-11 rounded-lg border-zinc-700 bg-zinc-800 text-zinc-100 placeholder:text-zinc-500 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10" />
+				{sendOtpError && <p role="alert" className="text-xs leading-5 text-red-400">{otpMsg}</p>}
+				<div className="flex gap-3 pt-2">
+					<Button type="submit" disabled={isLoading} className="group h-11 flex-1 rounded-lg bg-teal-700 px-4 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60">
+						{isLoading ? 'Verifying...' : 'Verify code'} {!isLoading && <FiArrowRight className="transition-transform group-hover:translate-x-1" />}
+					</Button>
+					<Button type="button" variant="ghost" onClick={() => setOtpFormPopover(false)} className="h-11 rounded-lg border border-zinc-700 px-4 text-sm font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white">Cancel</Button>
+				</div>
+			</form>
+		</div>
+	);
 };
 
-const OtpForm = ({
-    submitOtpButtonCliked,
-    otpChangeHandler,
-    setOtpFormPopover,
-    otpMsg,
-    sendOtpError,
-}) => {
-    const inputRef = useRef(null);
-    useEffect(() => {
-        inputRef.current.focus();
-    }, []);
-    console.log(sendOtpError);
-    return (
-        <div className="text-gray-900 dark:text-slate-100">
-            <h1 className="font-medium text-2xl mb-2">Enter OTP</h1>
-
-            <form
-                action=""
-                className="flex flex-col gap-2 justify-center"
-                onSubmit={submitOtpButtonCliked}
-            >
-                <label
-                    htmlFor="comapny-name"
-                    className="text-black font-medium text-opacity-100 dark:text-white dark:text-opacity-70 text-sm"
-                >
-                    Enter the OTP sent to your email.
-                </label>
-                <div className="relative">
-                    <input
-                        className="border-gray-800 dark:border-slate-100 border-opacity-25 dark:border-opacity-25 rounded bg-opacity-50 bg-zinc-50 dark:bg-zinc-700 border-2 p-1 outline-none focus:border-opacity-100 dark:focus:border-opacity-75 transition w-full"
-                        type="number"
-                        id="newDepartment"
-                        name="newDepartment"
-                        onChange={otpChangeHandler}
-                        ref={inputRef}
-                    />
-                    {/* {isValid ? "" :<p className="mt-1 text-xs dark:text-red-700 text-red-500 font-bold">{errors.newDepartment}</p>} */}
-                </div>
-                {sendOtpError ? (
-                    <p
-                        className={classNames(
-                            sendOtpError
-                                ? "text-red-500 dark:text-red-700"
-                                : "text-green-500 dark:text-green-700",
-                            "mt-1 text-sm font-bold"
-                        )}
-                    >
-                        {otpMsg}
-                    </p>
-                ) : (
-                    ""
-                )}
-                <section className="flex flex-row gap-4 mt-4 mb-2">
-                    <button
-                        className="dark:hover:bg-teal-600  hover:bg-teal-600 dark:bg-teal-700 rounded w-20 p-2 text-base font-medium bg-teal-500"
-                        // onClick={submitOtpButtonCliked}
-                        type="submit"
-                    >
-                        Submit
-                    </button>
-                    <button
-                        className="bg-zinc-400 hover:bg-zinc-500 dark:bg-zinc-600 rounded w-20 p-2 text-base font-medium dark:hover:bg-zinc-700"
-                        onClick={() => setOtpFormPopover(false)}
-                    >
-                        Cancel
-                    </button>
-                </section>
-            </form>
-        </div>
-    );
-};
 export default OtpForm;

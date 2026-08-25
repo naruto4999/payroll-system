@@ -221,6 +221,8 @@ LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'UTC'
 
+PAYROLL_DEFAULT_TIMEZONE = 'Asia/Kolkata'
+
 USE_I18N = True
 
 USE_TZ = True

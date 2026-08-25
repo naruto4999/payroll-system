@@ -4,6 +4,7 @@ import {
 } from '../../../../authentication/api/timeUpdationApiSlice';
 import { useGetSingleEmployeeSalaryDetailQuery } from '../../../../authentication/api/employeeEntryApiSlice';
 import { useSelector } from 'react-redux';
+import { calculatePolicyRoundedOvertime } from './overtimeIntervals';
 const classNames = (...classes) => {
   return classes.filter(Boolean).join(' ');
 };
@@ -11,6 +12,8 @@ const classNames = (...classes) => {
 const AttendanceFooter = React.memo(
   ({
     attendance,
+    overtimeEnabled,
+    overtimePolicy,
     absent,
     weeklyOffSkip,
     holidayOffSkip,
@@ -128,8 +131,13 @@ const AttendanceFooter = React.memo(
         }
 
         // Check for overtime
-        if (entry.otMin) {
-          initialData.totalOvertime += parseInt(entry.otMin);
+        if (overtimeEnabled && entry.otMin) {
+          initialData.totalOvertime += calculatePolicyRoundedOvertime({
+            components: entry.overtimeDirty
+              ? entry.calculatedOvertimeComponents
+              : entry.overtimeDetails,
+            policy: overtimePolicy || employeeSalaryDetails?.resolvedOvertimePolicy,
+          });
         }
         if (entry.lateMin) {
           initialData.totalLate += parseInt(entry.lateMin);
@@ -139,10 +147,19 @@ const AttendanceFooter = React.memo(
       });
 
       return initialData;
-    }, [attendance]);
+    }, [attendance, employeeSalaryDetails, overtimeEnabled, overtimePolicy]);
     useEffect(() => {
       setAttendanceFooterData(calculateAttendanceFooter());
-    }, [attendance]);
+    }, [calculateAttendanceFooter]);
+
+    const netOvertimeMinutes = Math.max(
+      attendanceFooterData.totalOvertime -
+      (employeeSalaryDetails?.lateDeduction == true && auth.account.role == 'OWNER'
+        ? Math.floor(attendanceFooterData.totalLate / 30) * 30 +
+        (attendanceFooterData.totalLate % 30 >= 20 ? 30 : 0)
+        : 0),
+      0
+    );
 
     return (
       <div className="flex flex-row justify-between gap-2 pt-2 text-sm">
@@ -168,14 +185,7 @@ const AttendanceFooter = React.memo(
         <div>
           OT:{' '}
           <span className="font-bold">
-            {Math.max(
-              attendanceFooterData.totalOvertime -
-              (employeeSalaryDetails?.lateDeduction == true && auth.account.role == 'OWNER'
-                ? Math.floor(attendanceFooterData.totalLate / 30) * 30 +
-                (attendanceFooterData.totalLate % 30 >= 20 ? 30 : 0)
-                : 0),
-              0
-            ) / 60}
+            {netOvertimeMinutes / 60}
             {/* {`${String(
 							Math.max(
 								attendanceFooterData.totalOvertime -

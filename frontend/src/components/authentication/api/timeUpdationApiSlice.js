@@ -79,6 +79,7 @@ export const timeUpdationApiSlice = apiSlice.injectEndpoints({
                 'AllEmployeeMonthlyAttendanceDetails',
                 'AllEmployeeMissPunches',
                 'ELLeft',
+				'SalaryOvertimePreview',
                 {
                     type: 'EmployeeYearlyBonus',
                     id: body.employee,
@@ -97,6 +98,7 @@ export const timeUpdationApiSlice = apiSlice.injectEndpoints({
                 'AllEmployeeGenerativeLeaveRecord',
                 'AllEmployeeMonthlyAttendanceDetails',
                 'AllEmployeeMissPunches',
+				'SalaryOvertimePreview',
             ],
         }),
         bulkDefaultAttendance: builder.mutation({
@@ -111,6 +113,7 @@ export const timeUpdationApiSlice = apiSlice.injectEndpoints({
                 'AllEmployeeGenerativeLeaveRecord',
                 'AllEmployeeMonthlyAttendanceDetails',
                 'AllEmployeeMissPunches',
+				'SalaryOvertimePreview',
             ],
         }),
         machineAttendanceAdd: builder.mutation({
@@ -125,6 +128,7 @@ export const timeUpdationApiSlice = apiSlice.injectEndpoints({
                 'AllEmployeeGenerativeLeaveRecord',
                 'AllEmployeeMonthlyAttendanceDetails',
                 'AllEmployeeMissPunches',
+				'SalaryOvertimePreview',
             ],
         }),
         updateEmployeeAttendance: builder.mutation({
@@ -140,6 +144,7 @@ export const timeUpdationApiSlice = apiSlice.injectEndpoints({
                 'AllEmployeeMonthlyAttendanceDetails',
                 'AllEmployeeMissPunches',
                 'ELLeft',
+				'SalaryOvertimePreview',
                 {
                     type: 'EmployeeYearlyBonus',
                     id: body.employee,

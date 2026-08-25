@@ -104,7 +104,7 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
                 method: 'POST',
                 body: body,
             }),
-            invalidatesTags: ['AllEmployeeSalaryEarnings'],
+            invalidatesTags: ['AllEmployeeSalaryEarnings', 'SalaryOvertimePreview'],
         }),
         updateEmployeeSalaryEarning: builder.mutation({
             query: (employee) => ({
@@ -112,7 +112,7 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
                 method: 'PUT',
                 body: employee,
             }),
-            invalidatesTags: ['SingleEmployeeSalaryEarning', 'AllEmployeeSalaryEarnings'],
+            invalidatesTags: ['SingleEmployeeSalaryEarning', 'AllEmployeeSalaryEarnings', 'SalaryOvertimePreview'],
         }),
 
         // Salary Detail
@@ -130,7 +130,7 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
                 method: 'POST',
                 body: employeeSalaryDetail,
             }),
-            invalidatesTags: ['AllEmployeeSalaryDetail'],
+            invalidatesTags: ['AllEmployeeSalaryDetail', 'SalaryOvertimePreview'],
         }),
         updateEmployeeSalaryDetail: builder.mutation({
             query: (employee) => ({
@@ -141,17 +141,9 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
             invalidatesTags: (result, error, id) => [
                 { type: 'EmployeeSalaryDetails', id: id.employee },
                 'AllEmployeeSalaryDetail',
+				'SalaryOvertimePreview',
             ],
         }),
-        getOvertimePolicies: builder.query({
-            query: (globalCompany) => ({
-                url: `/api/overtime-policy/${globalCompany.id}`,
-                method: 'GET',
-            }),
-            keepUnusedDataFor: 600,
-            providesTags: ['OvertimePolicies'],
-        }),
-
         //Pf Esi Detail
         getSingleEmployeePfEsiDetail: builder.query({
             query: (employee) => ({
@@ -252,7 +244,6 @@ export const {
     useLazyGetSingleEmployeeSalaryDetailQuery,
     useGetSingleEmployeeSalaryDetailQuery,
     useUpdateEmployeeSalaryDetailMutation,
-    useGetOvertimePoliciesQuery,
     useAddEmployeeFamilyNomineeDetailMutation,
     useAddEmployeePfEsiDetailMutation,
     useLazyGetSingleEmployeePfEsiDetailQuery,
