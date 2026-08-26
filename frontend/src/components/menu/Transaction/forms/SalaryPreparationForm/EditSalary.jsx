@@ -31,6 +31,10 @@ const formatMinutes = (minutes = 0) => {
 	return `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`;
 };
 
+const formatElapsedSeconds = (milliseconds = 0) => {
+	return `${(milliseconds / 1000).toFixed(1)} seconds`;
+};
+
 const humanizeCode = (value = '') =>
 	value
 		.toLowerCase()
@@ -480,7 +484,9 @@ const EditSalary = ({
 		};
 		setBulkErrors([]);
 		try {
+			const startedAt = performance.now();
 			const response = await employeeBulkSalaryPrepared(toSend).unwrap();
+			const elapsedTime = formatElapsedSeconds(performance.now() - startedAt);
 			setShowConfirmModal(false);
 			if (latestSelectionKeyRef.current === requestSelectionKey) {
 				setFieldValue('employeeSalaryPrepared.incentiveAmount', 0, false);
@@ -492,7 +498,7 @@ const EditSalary = ({
 			}
 			dispatch(
 				alertActions.createAlert({
-					message: `${response.preparedCount} salaries prepared for ${months[Number(values.month) - 1]} ${values.year}.`,
+					message: `${response.preparedCount} salaries prepared for ${months[Number(values.month) - 1]} ${values.year} in ${elapsedTime}.`,
 					type: 'Success',
 					duration: 5000,
 				})

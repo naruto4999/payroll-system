@@ -130,12 +130,21 @@ def serialize_overtime_result(result, *, include_diagnostics=False):
 
 def _lock_overtime_attendance(*, actor, company, employee, period_start):
     period_end = period_start + relativedelta(months=1) - relativedelta(days=1)
-    return list(EmployeeAttendance.objects.select_for_update().filter(
-        user=actor,
-        company=company,
-        employee=employee,
-        date__range=(period_start, period_end),
-    ).order_by('id', 'date'))
+    return list(
+        EmployeeAttendance.objects.select_for_update()
+        .select_related('first_half', 'second_half')
+        .prefetch_related(
+            'first_half__payable_earnings_heads',
+            'second_half__payable_earnings_heads',
+        )
+        .filter(
+            user=actor,
+            company=company,
+            employee=employee,
+            date__range=(period_start, period_end),
+        )
+        .order_by('id', 'date')
+    )
 
 
 @transaction.atomic
@@ -217,12 +226,29 @@ def _load_prerequisites(*, actor, owner, company, employee, period_start):
     return salary_detail, pf_esi_detail, pf_esi_setup, company_calculations, attendance_rows[0], salary_earnings
 
 
-def _default_earned_inputs(*, salary_detail, monthly_attendance, salary_earnings, period_start):
+def _selective_paid_halves_by_head(attendance_records):
+    counts = {}
+    for attendance in attendance_records:
+        for leave_grade in (attendance.first_half, attendance.second_half):
+            if leave_grade.paid:
+                continue
+            for earnings_head in leave_grade.payable_earnings_heads.all():
+                counts[earnings_head.pk] = counts.get(earnings_head.pk, 0) + 1
+    return counts
+
+
+def _default_earned_inputs(
+    *, salary_detail, monthly_attendance, salary_earnings, period_start,
+    selective_paid_halves_by_head,
+):
     paid_days = Decimal(monthly_attendance.paid_days_count) / Decimal(2)
     days_in_month = Decimal(calendar.monthrange(period_start.year, period_start.month)[1])
     rows = []
     for earning in salary_earnings:
-        amount = Decimal(earning.value) * paid_days
+        selective_paid_days = Decimal(
+            selective_paid_halves_by_head.get(earning.earnings_head_id, 0)
+        ) / Decimal(2)
+        amount = Decimal(earning.value) * (paid_days + selective_paid_days)
         if salary_detail.salary_mode == 'monthly':
             amount /= days_in_month
         amount = amount.quantize(Decimal('1'), rounding=ROUND_HALF_UP)
@@ -237,6 +263,7 @@ def _default_earned_inputs(*, salary_detail, monthly_attendance, salary_earnings
 
 def _normalize_manual_earned_inputs(
     *, earned_inputs, salary_detail, monthly_attendance, salary_earnings, period_start,
+    selective_paid_halves_by_head,
 ):
     if not isinstance(earned_inputs, list):
         _error('Earned amounts must be an array.', code='invalid_earned_amounts', field='all_earned_amounts')
@@ -246,6 +273,7 @@ def _normalize_manual_earned_inputs(
         monthly_attendance=monthly_attendance,
         salary_earnings=salary_earnings,
         period_start=period_start,
+        selective_paid_halves_by_head=selective_paid_halves_by_head,
     )
     base_by_head = {row['earnings_head_id']: row['earned_amount'] for row in expected}
     normalized = []
@@ -291,12 +319,14 @@ def _normalize_manual_earned_inputs(
 
 def _earned_inputs_from_arrears(
     *, arrear_inputs, salary_detail, monthly_attendance, salary_earnings, period_start,
+    selective_paid_halves_by_head,
 ):
     rows = _default_earned_inputs(
         salary_detail=salary_detail,
         monthly_attendance=monthly_attendance,
         salary_earnings=salary_earnings,
         period_start=period_start,
+        selective_paid_halves_by_head=selective_paid_halves_by_head,
     )
     rows_by_head = {row['earnings_head_id']: row for row in rows}
     seen = set()
@@ -464,12 +494,14 @@ def _calculate_employee_salary(
         employee=employee,
         period_start=period_start,
     )
+    selective_paid_halves_by_head = _selective_paid_halves_by_head(attendance_records)
     if bulk:
         earned_rows = _default_earned_inputs(
             salary_detail=salary_detail,
             monthly_attendance=monthly_attendance,
             salary_earnings=salary_earnings,
             period_start=period_start,
+            selective_paid_halves_by_head=selective_paid_halves_by_head,
         )
     elif arrear_inputs is not None:
         earned_rows = _earned_inputs_from_arrears(
@@ -478,6 +510,7 @@ def _calculate_employee_salary(
             monthly_attendance=monthly_attendance,
             salary_earnings=salary_earnings,
             period_start=period_start,
+            selective_paid_halves_by_head=selective_paid_halves_by_head,
         )
     else:
         earned_rows = _normalize_manual_earned_inputs(
@@ -486,6 +519,7 @@ def _calculate_employee_salary(
             monthly_attendance=monthly_attendance,
             salary_earnings=salary_earnings,
             period_start=period_start,
+            selective_paid_halves_by_head=selective_paid_halves_by_head,
         )
     advances, repaid = _lock_advances(
         owner=owner,
@@ -612,6 +646,42 @@ def serialize_salary_calculation(calculation):
     }
 
 
+def _persist_salary_calculation(calculation):
+    salary = calculation.salary
+    defaults = calculation.values
+    if salary is None:
+        salary = EmployeeSalaryPrepared.objects.create(
+            user=calculation.actor,
+            employee=calculation.employee,
+            date=calculation.period_start,
+            **defaults,
+        )
+    else:
+        for field, value in defaults.items():
+            setattr(salary, field, value)
+        salary.save(update_fields=list(defaults))
+
+    salary.overtime_breakdown.all().delete()
+    EmployeeSalaryPreparedOvertimeDetail.objects.bulk_create([
+        EmployeeSalaryPreparedOvertimeDetail(salary_prepared=salary, **row)
+        for row in calculation.overtime_result.snapshot_breakdown
+    ])
+    salary.current_salary_earned_amounts.all().delete()
+    EarnedAmount.objects.bulk_create([
+        EarnedAmount(user=calculation.actor, salary_prepared=salary, **row)
+        for row in calculation.earned_rows
+    ])
+    _replace_repayments(
+        actor=calculation.actor,
+        salary=salary,
+        advances=calculation.advances,
+        repaid=calculation.repaid,
+        amount=defaults['advance_deducted'],
+    )
+    _reconcile_salary(salary)
+    return SalaryPreparationResult(salary=salary, overtime_result=calculation.overtime_result)
+
+
 @transaction.atomic
 def preview_employee_salary(
     *, actor, company_id, employee_id, year, month, parent_inputs=None, arrear_inputs=None,
@@ -643,63 +713,7 @@ def prepare_employee_salary(
         earned_inputs=earned_inputs,
         bulk=bulk,
     )
-    salary = calculation.salary
-    defaults = calculation.values
-    if salary is None:
-        salary = EmployeeSalaryPrepared.objects.create(
-            user=actor, employee=calculation.employee, date=calculation.period_start, **defaults,
-        )
-    else:
-        for field, value in defaults.items():
-            setattr(salary, field, value)
-        salary.save(update_fields=list(defaults))
-
-    salary.overtime_breakdown.all().delete()
-    EmployeeSalaryPreparedOvertimeDetail.objects.bulk_create([
-        EmployeeSalaryPreparedOvertimeDetail(salary_prepared=salary, **row)
-        for row in calculation.overtime_result.snapshot_breakdown
-    ])
-    salary.current_salary_earned_amounts.all().delete()
-    EarnedAmount.objects.bulk_create([
-        EarnedAmount(user=actor, salary_prepared=salary, **row) for row in calculation.earned_rows
-    ])
-    _replace_repayments(
-        actor=actor,
-        salary=salary,
-        advances=calculation.advances,
-        repaid=calculation.repaid,
-        amount=defaults['advance_deducted'],
-    )
-    _reconcile_salary(salary)
-    return SalaryPreparationResult(salary=salary, overtime_result=calculation.overtime_result)
-
-
-def _preflight_employee(*, actor, owner, company, employee, period_start):
-    salary_detail, pf_esi_detail, pf_esi_setup, _company_calculations, monthly_attendance, salary_earnings = _load_prerequisites(
-        actor=actor,
-        owner=owner,
-        company=company,
-        employee=employee,
-        period_start=period_start,
-    )
-    earned_rows = _default_earned_inputs(
-        salary_detail=salary_detail,
-        monthly_attendance=monthly_attendance,
-        salary_earnings=salary_earnings,
-        period_start=period_start,
-    )
-    overtime_result = calculate_employee_overtime(
-        actor=actor, company=company, employee=employee, period_start=period_start,
-    )
-    _calculate_deductions(
-        actor=actor,
-        salary_detail=salary_detail,
-        pf_esi_detail=pf_esi_detail,
-        pf_esi_setup=pf_esi_setup,
-        earned_rows=earned_rows,
-        earnings_heads={earning.earnings_head_id: earning.earnings_head for earning in salary_earnings},
-        overtime_result=overtime_result,
-    )
+    return _persist_salary_calculation(calculation)
 
 
 @transaction.atomic
@@ -727,15 +741,17 @@ def bulk_prepare_salaries(*, actor, company_id, year, month, employee_ids=None):
             'code': 'employee_not_found',
             'detail': 'The employee is unavailable in this company scope.',
         } for employee_id in missing)
+    calculations = []
     for employee in employees:
         try:
-            _preflight_employee(
+            calculations.append(_calculate_employee_salary(
                 actor=actor,
-                owner=owner,
-                company=company,
-                employee=employee,
-                period_start=period_start,
-            )
+                company_id=company.pk,
+                employee_id=employee.pk,
+                year=year,
+                month=month,
+                bulk=True,
+            ))
         except Exception as exc:
             detail = getattr(exc, 'detail', str(exc))
             errors.append({'employee': employee.pk, 'error': detail})
@@ -743,13 +759,6 @@ def bulk_prepare_salaries(*, actor, company_id, year, month, employee_ids=None):
         raise serializers.ValidationError({'code': 'bulk_preflight_failed', 'errors': errors})
 
     results = []
-    for employee in employees:
-        results.append(prepare_employee_salary(
-            actor=actor,
-            company_id=company.pk,
-            employee_id=employee.pk,
-            year=year,
-            month=month,
-            bulk=True,
-        ))
+    for calculation in calculations:
+        results.append(_persist_salary_calculation(calculation))
     return results

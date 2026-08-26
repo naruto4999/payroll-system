@@ -25,7 +25,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 
 #imports for signals
-from django.db.models.signals import post_save, post_delete
+from django.db.models.signals import m2m_changed, post_save, post_delete
 from django.dispatch import receiver
 
 # from django.db.models.signals import post_save
@@ -283,6 +283,12 @@ class LeaveGrade(models.Model):
     mandatory_leave = models.BooleanField(default=False, null=False, blank=False)
     paid = models.BooleanField(null=False, blank=False)
     generate_frequency = models.PositiveSmallIntegerField(null=True, blank=True)
+    payable_earnings_heads = models.ManyToManyField(
+        'EarningsHead',
+        through='LeaveGradePayableEarningsHead',
+        related_name='payable_leave_grades',
+        blank=True,
+    )
 
     class Meta:
         constraints = [
@@ -351,6 +357,65 @@ class EarningsHead(models.Model):
         ]
     def __str__(self):
         return f"{self.user.email} -> {self.company.name}: {self.name}"
+
+
+class LeaveGradePayableEarningsHead(models.Model):
+    leave_grade = models.ForeignKey(
+        LeaveGrade,
+        on_delete=models.CASCADE,
+        related_name='payable_earnings_head_links',
+    )
+    earnings_head = models.ForeignKey(
+        EarningsHead,
+        on_delete=models.PROTECT,
+        related_name='payable_leave_grade_links',
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['leave_grade', 'earnings_head'],
+                name='unique_leave_grade_payable_earning_head',
+            ),
+        ]
+
+    def clean(self):
+        if self.leave_grade.paid:
+            raise ValidationError({
+                'leave_grade': 'Paid leave grades already pay every earnings head.'
+            })
+        if (
+            self.earnings_head.company_id != self.leave_grade.company_id
+            or self.earnings_head.user_id != self.leave_grade.user_id
+        ):
+            raise ValidationError({
+                'earnings_head': 'Payable earnings head must belong to the leave grade company and owner.'
+            })
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
+@receiver(m2m_changed, sender=LeaveGrade.payable_earnings_heads.through)
+def validate_leave_grade_payable_earnings_heads(sender, instance, action, reverse, pk_set, **kwargs):
+    if action != 'pre_add' or not pk_set:
+        return
+    if reverse:
+        invalid = LeaveGrade.objects.filter(pk__in=pk_set).filter(
+            Q(paid=True) | ~Q(company_id=instance.company_id, user_id=instance.user_id)
+        ).exists()
+    else:
+        if instance.paid:
+            raise ValidationError('Paid leave grades already pay every earnings head.')
+        invalid = EarningsHead.objects.filter(pk__in=pk_set).exclude(
+            company_id=instance.company_id,
+            user_id=instance.user_id,
+        ).exists()
+    if invalid:
+        raise ValidationError(
+            'Payable earnings heads and leave grades must belong to the same company and owner.'
+        )
 
 
 class OvertimePolicy(models.Model):

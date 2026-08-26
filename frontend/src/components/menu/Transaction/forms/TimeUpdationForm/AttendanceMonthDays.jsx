@@ -37,6 +37,7 @@ const AttendanceMonthDays = memo(
         const handleSelectChange = (event) => {
             const { name, value } = event.target;
             setFieldValue(name, parseInt(value, 10));
+            setFieldValue(`attendance.${day}.manualMode`, true);
         };
 
         const handlePunchChange = (event) => {
@@ -160,7 +161,7 @@ const AttendanceMonthDays = memo(
                     </Field>
 
                     <h6
-                        className="my-auto w-20 cursor-default whitespace-nowrap px-1 text-xs dark:text-green-600"
+                        className="my-auto w-28 cursor-default whitespace-nowrap px-1 text-xs dark:text-green-600"
                         title={[
                             categoryText ? `Categories: ${categoryText}` : '',
                             exclusionText ? `Excluded: ${exclusionText}` : '',

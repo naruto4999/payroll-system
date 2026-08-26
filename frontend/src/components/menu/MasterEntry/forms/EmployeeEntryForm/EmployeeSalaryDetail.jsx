@@ -201,55 +201,6 @@ const EmployeeSalaryDetail = ({
 
 						<div className="w-fit">
 							<label
-								htmlFor={'salaryDetail.overtimeType'}
-								className="text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
-							>
-								Overtime Type
-							</label>
-							<Field
-								as="select"
-								name="salaryDetail.overtimeType"
-								className="my-1 block rounded-md bg-zinc-50 bg-opacity-50 p-1 dark:bg-zinc-700"
-							>
-								<option value="no_overtime">No Overtime</option>
-								<option value="all_days">All Days</option>
-								<option value="holiday_weekly_off">Holiday/Weekly Off</option>
-							</Field>
-							<div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
-								<ErrorMessage name={'salaryDetail.overtimeType'} />
-							</div>
-
-							<label
-								htmlFor={'salaryDetail.overtimeRate'}
-								className="text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
-							>
-								Overtime Rate
-							</label>
-							{values.salaryDetail.overtimeType !== 'no_overtime' ? (
-								<Field
-									as="select"
-									name="salaryDetail.overtimeRate"
-									className="my-1 block rounded-md bg-zinc-50 bg-opacity-50 p-1 dark:bg-zinc-700"
-								>
-									<option value="S">Single</option>
-									<option value="D">Double</option>
-								</Field>
-							) : (
-								<div className="mt-1 text-xs font-bold text-blueAccent-500 dark:text-blueAccent-700">
-									No overtime is allowed
-								</div>
-							)}
-							{errorMessage && errorMessage.overtimeRate && (
-								<p className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
-									{errorMessage.overtimeRate}
-								</p>
-							)}
-							{console.log(errorMessage)}
-							<div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
-								<ErrorMessage name={'salaryDetail.overtimeRate'} />
-							</div>
-
-							<label
 								htmlFor={'salaryDetail.salaryMode'}
 								className="text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
 							>

@@ -840,7 +840,14 @@ const EditAttendance = ({
 
 	// Runs when fetch value of employeeAttendance changes
 	useEffect(() => {
-		if (!isSubmitting && employeeAttendance && currentEmployeeProfessionalDetail && updateEmployeeId) {
+		if (
+			!isSubmitting &&
+			!isFetchingAllEmployeeAttendance &&
+			employeeAttendance &&
+			currentEmployeeProfessionalDetail &&
+			currentEmployeeSalaryDetail &&
+			updateEmployeeId
+		) {
 			const daysInMonth = new Date(values.year, values.month, 0).getDate();
 			const new_attendance = {};
 			const weeklyOffIndex = weeklyOffValues.indexOf(currentEmployeeProfessionalDetail.weeklyOff);
@@ -952,7 +959,13 @@ const EditAttendance = ({
 
 			setFieldValue('attendance', new_attendance);
 		}
-	}, [employeeAttendance, currentEmployeeProfessionalDetail, currentEmployeeSalaryDetail, attendanceRefreshVersion]);
+	}, [
+		employeeAttendance,
+		currentEmployeeProfessionalDetail,
+		currentEmployeeSalaryDetail,
+		attendanceRefreshVersion,
+		isFetchingAllEmployeeAttendance,
+	]);
 
 	const getTimePart = (date) => {
 		const hours = String(date.getHours()).padStart(2, '0');
@@ -1397,7 +1410,7 @@ const EditAttendance = ({
 									<>
 										<button
 											type="button"
-											className="h-7 w-56 rounded bg-blueAccent-400 p-1 text-sm font-medium hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:hover:bg-blueAccent-600"
+											className="h-7 w-48 rounded bg-blueAccent-400 p-1 text-sm font-medium hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:hover:bg-blueAccent-600"
 											onClick={() => setShowMdbMachineAttendanceModal(true)}
 										>
 											Machine Attendance MDB
@@ -1405,7 +1418,7 @@ const EditAttendance = ({
 										<button
 											type="button"
 											disabled={true}
-											className="opacity:30 h-7 w-56 rounded bg-blueAccent-400 p-1 text-sm font-medium hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:opacity-30 dark:hover:bg-blueAccent-600"
+											className="opacity:30 h-7 w-48 rounded bg-blueAccent-400 p-1 text-sm font-medium hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:opacity-30 dark:hover:bg-blueAccent-600"
 											onClick={() => setShowDirectMachineAttendanceModal(true)}
 										>
 											Machine Attendance Direct
@@ -1439,7 +1452,7 @@ const EditAttendance = ({
 							</button>
 							<button
 								type="button"
-								className="h-10 w-64 rounded bg-blueAccent-400 p-1 text-base font-medium hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:hover:bg-blueAccent-600"
+								className="h-10 w-64 whitespace-nowrap rounded bg-blueAccent-400 p-1 text-base font-medium hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:hover:bg-blueAccent-600"
 								onClick={bulkDefaultAttendanceClicked}
 							>
 								Update All with Default Value

@@ -16,6 +16,7 @@ const LeaveGradeModal = ({
 	setFieldValue,
 	cancelButtonClicked,
 	isEditing,
+	earningsHeads,
 }) => {
 	console.log(values);
 	const inputRef = useRef(null);
@@ -29,6 +30,8 @@ const LeaveGradeModal = ({
 		if (values.paid == false) {
 			setFieldValue('generateFrequency', '');
 			setFieldValue('limit', '');
+		} else {
+			setFieldValue('payableEarningsHeads', []);
 		}
 	}, [values.paid]);
 
@@ -36,11 +39,7 @@ const LeaveGradeModal = ({
 		<div className="text-gray-900 dark:text-slate-100">
 			<h1 className="mb-2 text-2xl font-medium">Add Leave Grade</h1>
 
-			<form
-				action=""
-				className="flex flex-col justify-center gap-2"
-				onSubmit={handleSubmit}
-			>
+			<form action="" className="flex flex-col justify-center gap-2" onSubmit={handleSubmit}>
 				<div>
 					<label
 						htmlFor="name"
@@ -65,9 +64,7 @@ const LeaveGradeModal = ({
 							<ErrorMessage name={'name'} />
 						</div>
 						{errorMessage && (
-							<p className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
-								{errorMessage}
-							</p>
+							<p className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">{errorMessage}</p>
 						)}
 					</div>
 				</div>
@@ -122,8 +119,7 @@ const LeaveGradeModal = ({
 					<div className="relative">
 						<Field
 							className={classNames(
-								errors.generateFrequency &&
-									touched.generateFrequency
+								errors.generateFrequency && touched.generateFrequency
 									? 'border-red-500 border-opacity-100 dark:border-red-700 dark:border-opacity-75'
 									: 'border-gray-800 border-opacity-25 dark:border-slate-100 dark:border-opacity-25',
 								'custom-number-input w-full rounded border-2  bg-zinc-50   bg-opacity-50 p-1 outline-none transition focus:border-opacity-100 dark:bg-zinc-700 dark:focus:border-opacity-75'
@@ -139,12 +135,43 @@ const LeaveGradeModal = ({
 					</div>
 				</div>
 
+				{!values.paid && (
+					<fieldset>
+						<legend className="text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70">
+							Payable Earnings Heads
+						</legend>
+						<p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+							Select earnings that remain payable for this otherwise unpaid leave.
+						</p>
+						<div className="mt-2 grid gap-2 rounded border-2 border-gray-800 border-opacity-25 bg-zinc-50 bg-opacity-50 p-2 dark:border-slate-100 dark:border-opacity-25 dark:bg-zinc-700 sm:grid-cols-2">
+							{earningsHeads.length === 0 ? (
+								<p className="text-sm text-amber-700 dark:text-amber-400 sm:col-span-2">
+									No earnings heads are available for this company.
+								</p>
+							) : (
+								earningsHeads.map((head) => (
+									<label key={head.id} className="flex items-center gap-2 text-sm">
+										<Field
+											type="checkbox"
+											name="payableEarningsHeads"
+											value={String(head.id)}
+											className="h-4 w-4 rounded accent-teal-600"
+										/>
+										{head.name}
+									</label>
+								))
+							)}
+						</div>
+						<div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
+							<ErrorMessage name="payableEarningsHeads" />
+						</div>
+					</fieldset>
+				)}
+
 				<section className="mt-4 mb-2 flex flex-row gap-4">
 					<button
 						className={classNames(
-							isValid
-								? 'hover:bg-teal-600  dark:hover:bg-teal-600'
-								: 'opacity-40',
+							isValid ? 'hover:bg-teal-600  dark:hover:bg-teal-600' : 'opacity-40',
 							'w-20 rounded bg-teal-500 p-2 text-base font-medium dark:bg-teal-700'
 						)}
 						type="submit"

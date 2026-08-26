@@ -515,12 +515,24 @@ class LeaveGradeListCreateAPIView(generics.ListCreateAPIView):
     serializer_class = LeaveGradeSerializer
     lookup_field = 'company_id'
 
+    def get_company(self):
+        if not hasattr(self, '_company'):
+            user = self.request.user
+            owner = user if user.role == 'OWNER' else user.regular_to_owner.owner
+            self._company = get_object_or_404(
+                Company, pk=self.kwargs['company_id'], user=owner
+            )
+        return self._company
+
+    def get_serializer_context(self):
+        return {**super().get_serializer_context(), 'company': self.get_company()}
+
     def get_queryset(self, *args, **kwargs):
         company_id = self.kwargs.get('company_id')
         user = self.request.user
         if user.role == "OWNER":
-            return user.leave_grades.filter(company=company_id)
-        return user.regular_to_owner.owner.leave_grades.filter(company=company_id)
+            return user.leave_grades.filter(company=company_id).prefetch_related('payable_earnings_heads')
+        return user.regular_to_owner.owner.leave_grades.filter(company=company_id).prefetch_related('payable_earnings_heads')
     
     def create(self, request, *args, **kwargs):
         print(request.data)
@@ -530,7 +542,7 @@ class LeaveGradeListCreateAPIView(generics.ListCreateAPIView):
         if user.role != "OWNER":
             user = user.regular_to_owner.owner
         try:
-            serializer.save(user=user)
+            serializer.save(user=user, company=self.get_company())
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         except IntegrityError as e:
             print(str(e))
@@ -541,12 +553,24 @@ class LeaveGradeRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIVi
     serializer_class = LeaveGradeSerializer
     lookup_field = 'id'
 
+    def get_company(self):
+        if not hasattr(self, '_company'):
+            user = self.request.user
+            owner = user if user.role == 'OWNER' else user.regular_to_owner.owner
+            self._company = get_object_or_404(
+                Company, pk=self.kwargs['company_id'], user=owner
+            )
+        return self._company
+
+    def get_serializer_context(self):
+        return {**super().get_serializer_context(), 'company': self.get_company()}
+
     def get_queryset(self, *args, **kwargs):
         company_id = self.kwargs.get('company_id')
         user = self.request.user
         if user.role == "OWNER":
-            return user.leave_grades.filter(company=company_id)
-        return user.regular_to_owner.owner.leave_grades.filter(company=company_id)
+            return user.leave_grades.filter(company=company_id).prefetch_related('payable_earnings_heads')
+        return user.regular_to_owner.owner.leave_grades.filter(company=company_id).prefetch_related('payable_earnings_heads')
     
     def update(self, request, *args, **kwargs):
         user = self.request.user
@@ -556,7 +580,7 @@ class LeaveGradeRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIVi
         serializer = self.get_serializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
         try:
-            serializer.save(user=user)
+            serializer.save(user=user, company=self.get_company())
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         except IntegrityError as e:
             print(str(e))
@@ -2547,12 +2571,21 @@ class BulkPrepareSalariesView(APIView):
             year=validated_data['year'],
             employee_ids=validated_data.get('employee_ids'),
         )
+        salary_ids = [result.salary.pk for result in results]
+        salary_by_id = {
+            salary.pk: salary
+            for salary in EmployeeSalaryPrepared.objects.filter(pk__in=salary_ids).prefetch_related(
+                'overtime_breakdown',
+                'current_salary_earned_amounts__earnings_head',
+            )
+        }
+        salaries = [salary_by_id[salary_id] for salary_id in salary_ids]
         return Response({
             'message': 'Bulk Prepare Salaries successful',
             'prepared_count': len(results),
             'salaries': [
-                EmployeeSalaryPreparedWithEarnedAmountSerializer(result.salary).data
-                for result in results
+                EmployeeSalaryPreparedWithEarnedAmountSerializer(salary).data
+                for salary in salaries
             ],
         }, status=status.HTTP_200_OK)
 

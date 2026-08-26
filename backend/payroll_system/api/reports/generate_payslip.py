@@ -1,6 +1,7 @@
 from fpdf import FPDF
 import os
 from ..models import CompanyDetails, EmployeeGenerativeLeaveRecord, LeaveGrade, EmployeeSalaryEarning, EarnedAmount
+from .generate_salary_sheet import displayed_absent_half_count, format_day_count, get_selective_pay_unpaid_leave_counts
 from datetime import date
 
 
@@ -37,7 +38,15 @@ def generate_payslip(user, request_data, employee_salaries):
     company_details = CompanyDetails.objects.filter(company_id=request_data['company']).first()
     language = request_data['filters']['language']
     generative_leaves = LeaveGrade.objects.filter(company_id=request_data['company'], generate_frequency__isnull=False)
-    default_number_of_cells_in_main_row = max(9, len(generative_leaves)+6)
+    owner = user if user.role == "OWNER" else user.regular_to_owner.owner
+    selective_pay_unpaid_leaves = LeaveGrade.objects.filter(
+        user=owner,
+        company_id=request_data['company'],
+        mandatory_leave=False,
+        paid=False,
+        payable_earnings_heads__isnull=False,
+    ).distinct().order_by('name')
+    default_number_of_cells_in_main_row = max(9, len(generative_leaves)+len(selective_pay_unpaid_leaves)+6)
     main_table_cell_height = 4
     max_name_earning_head_name_length = 10
     cell_height_for_dashed_line = 4.5
@@ -164,8 +173,19 @@ def generate_payslip(user, request_data, employee_salaries):
         if language=="hindi":
             payslip.cell(w=None, h=main_table_cell_height, text=f'अनुपस्थिति')
         #Value
+        selective_pay_unpaid_leave_counts = get_selective_pay_unpaid_leave_counts(
+            user=user,
+            company_id=request_data['company'],
+            employee_id=salary.employee.id,
+            salary_date=salary.date,
+            selective_pay_unpaid_leaves=selective_pay_unpaid_leaves,
+        )
+        absent_half_count = displayed_absent_half_count(
+            employee_monthly_details.not_paid_days_count,
+            selective_pay_unpaid_leave_counts,
+        )
         payslip.set_xy(x=current_payslip_initial_coordinates['x'], y=current_payslip_initial_coordinates['y']+intro_cell_height*8+main_table_cell_height*5)
-        payslip.cell(w=width_of_columns['attendance'], h=main_table_cell_height, text=f'{int(employee_monthly_details.not_paid_days_count/2) if (employee_monthly_details.not_paid_days_count/2)%1==0 else employee_monthly_details.not_paid_days_count/2}', new_x="RIGHT", align='R')
+        payslip.cell(w=width_of_columns['attendance'], h=main_table_cell_height, text=format_day_count(absent_half_count), new_x="RIGHT", align='R')
         payslip.set_xy(x=current_payslip_initial_coordinates['x'], y=current_payslip_initial_coordinates['y']+intro_cell_height*8+main_table_cell_height*6)
         #Generative Leaves
         employee_generative_leaves = EmployeeGenerativeLeaveRecord.objects.filter(user=user, employee=salary.employee, date=date(request_data['year'], request_data['month'], 1)).order_by('leave__name')
@@ -182,8 +202,13 @@ def generate_payslip(user, request_data, employee_salaries):
                 payslip.cell(w=None, h=main_table_cell_height, text=text)
             #Value
             payslip.set_xy(x=current_payslip_initial_coordinates['x'], y=current_payslip_initial_coordinates['y']+intro_cell_height*8+main_table_cell_height*(6+index))
-            payslip.cell(w=width_of_columns['attendance'], h=main_table_cell_height, text=f'{int(generative_leave.leave_count/2) if (generative_leave.leave_count/2)%1==0 else generative_leave.leave_count/2}', new_x="RIGHT", align='R')
+            payslip.cell(w=width_of_columns['attendance'], h=main_table_cell_height, text=format_day_count(generative_leave.leave_count), new_x="RIGHT", align='R')
             payslip.set_xy(x=current_payslip_initial_coordinates['x'], y=current_payslip_initial_coordinates['y']+intro_cell_height*8+main_table_cell_height*(6+index+1))
+        for selective_leave_index, (leave_name, leave_count) in enumerate(selective_pay_unpaid_leave_counts, start=len(employee_generative_leaves)):
+            payslip.cell(w=None, h=main_table_cell_height, text=leave_name, new_x="RIGHT")
+            payslip.set_xy(x=current_payslip_initial_coordinates['x'], y=current_payslip_initial_coordinates['y']+intro_cell_height*8+main_table_cell_height*(6+selective_leave_index))
+            payslip.cell(w=width_of_columns['attendance'], h=main_table_cell_height, text=format_day_count(leave_count), new_x="RIGHT", align='R')
+            payslip.set_xy(x=current_payslip_initial_coordinates['x'], y=current_payslip_initial_coordinates['y']+intro_cell_height*8+main_table_cell_height*(6+selective_leave_index+1))
         
         #Printing Total
         payslip.set_xy(x=current_payslip_initial_coordinates['x'], y=current_payslip_initial_coordinates['y']+intro_cell_height*8+main_table_cell_height*default_number_of_cells_in_main_row)

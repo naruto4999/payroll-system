@@ -1,8 +1,9 @@
 from fpdf import FPDF
-from ..models import EmployeeSalaryPrepared, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeePfEsiDetail, EmployeeSalaryDetail, LeaveGrade, EmployeeGenerativeLeaveRecord, EmployeeMonthlyAttendanceDetails, CompanyDetails, EarningsHead, EmployeeSalaryEarning, EarnedAmount, PfEsiSetup
+from ..models import EmployeeSalaryPrepared, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeePfEsiDetail, EmployeeSalaryDetail, LeaveGrade, EmployeeGenerativeLeaveRecord, EmployeeMonthlyAttendanceDetails, CompanyDetails, EarningsHead, EmployeeSalaryEarning, EarnedAmount, PfEsiSetup, EmployeeAttendance
 from datetime import date
 from django.db.models import Case, When, Value, CharField
 import math
+import calendar
 from decimal import Decimal, ROUND_HALF_UP, ROUND_CEILING
 
 
@@ -26,6 +27,44 @@ header_height = 0
 max_name_earning_head_name_length = 5
 # default_row_height = 40
 #default_number_of_cells_in_row = max(len(generative_leaves)+3, 8) #do this before even starting to draw the row of the slaray of employee
+
+
+def format_day_count(half_day_count):
+    days = half_day_count / 2
+    return f"{days:.1f}" if days % 1 != 0 else str(int(days))
+
+
+def displayed_absent_half_count(not_paid_half_count, selective_pay_unpaid_leave_counts):
+    selective_pay_unpaid_leave_half_count = sum(leave_count for _, leave_count in selective_pay_unpaid_leave_counts)
+    return max(not_paid_half_count-selective_pay_unpaid_leave_half_count, 0)
+
+
+def get_selective_pay_unpaid_leave_counts(user, company_id, employee_id, salary_date, selective_pay_unpaid_leaves):
+    leave_by_id = {leave.id: leave.name for leave in selective_pay_unpaid_leaves}
+    leave_counts = {leave.id: 0 for leave in selective_pay_unpaid_leaves}
+    if not leave_by_id:
+        return []
+
+    period_start = salary_date.replace(day=1)
+    period_end = date(salary_date.year, salary_date.month, calendar.monthrange(salary_date.year, salary_date.month)[1])
+    attendances = EmployeeAttendance.objects.filter(
+        user=user,
+        company_id=company_id,
+        employee_id=employee_id,
+        date__range=(period_start, period_end),
+    ).only('first_half_id', 'second_half_id')
+
+    for attendance in attendances:
+        if attendance.first_half_id in leave_counts:
+            leave_counts[attendance.first_half_id] += 1
+        if attendance.second_half_id in leave_counts:
+            leave_counts[attendance.second_half_id] += 1
+
+    return [
+        (leave_by_id[leave_id], leave_count)
+        for leave_id, leave_count in leave_counts.items()
+        if leave_count > 0
+    ]
 
 
 
@@ -115,11 +154,19 @@ def generate_salary_sheet(user, request_data, prepared_salaries):
 
     earnings_grand_total_dict = {}
     generative_leaves = LeaveGrade.objects.filter(company_id=request_data['company'], generate_frequency__isnull=False)
+    owner = user if user.role == "OWNER" else user.regular_to_owner.owner
+    selective_pay_unpaid_leaves = LeaveGrade.objects.filter(
+        user=owner,
+        company_id=request_data['company'],
+        mandatory_leave=False,
+        paid=False,
+        payable_earnings_heads__isnull=False,
+    ).distinct().order_by('name')
     earnings_head = EarningsHead.objects.filter(company_id=request_data['company']).order_by("id")
     for head in earnings_head:
         earnings_grand_total_dict[head.id] = {"name":head.name, "amount": 0, "arrear_amount": 0}
 
-    default_number_of_cells_in_row = max(len(generative_leaves)+2, 8, len(earnings_head)+1)
+    default_number_of_cells_in_row = max(len(generative_leaves)+len(selective_pay_unpaid_leaves)+2, 8, len(earnings_head)+1)
     company_details = CompanyDetails.objects.filter(company=generative_leaves[0].company.id)
     salary_sheet_pdf = FPDF(my_date=date(request_data['year'], request_data['month'], 1), company_name=generative_leaves[0].company.name, company_address=company_details.first().address if company_details.exists() else '', request_data=request_data, orientation="L", unit="mm", format="A4")
     salary_sheet_pdf.set_margins(left=6, top=4, right=6)
@@ -280,8 +327,22 @@ def generate_salary_sheet(user, request_data, prepared_salaries):
                 salary_sheet_pdf.rect(salary_sheet_pdf.get_x(), salary_sheet_pdf.get_y(), w=width_of_columns["attendance_detail"], h=default_cell_height*default_number_of_cells_in_row)
                 employee_generative_leaves = EmployeeGenerativeLeaveRecord.objects.filter(user=user, employee=salary.employee.id, date=salary.date).order_by('leave__name')
                 # generative_leaves = [{"name": "EL", "amount":4}, {"name":"CL", "amount":2}, {"name":"SL", "amount":1}] #Get actual data from db and replace this                
-                generative_leave_text = "\n".join(f"{leave.leave.name} : {int(leave.leave_count/2) if leave.leave_count/2%1==0 else leave.leave_count/2}" for leave in employee_generative_leaves)
-                salary_sheet_pdf.multi_cell(w=column_width/2, h=default_cell_height, txt=generative_leave_text, align='L', border=0)
+                selective_pay_unpaid_leave_counts = get_selective_pay_unpaid_leave_counts(
+                    user=user,
+                    company_id=request_data['company'],
+                    employee_id=salary.employee.id,
+                    salary_date=salary.date,
+                    selective_pay_unpaid_leaves=selective_pay_unpaid_leaves,
+                )
+                attendance_leave_lines = [
+                    f"{leave.leave.name} : {format_day_count(leave.leave_count)}"
+                    for leave in employee_generative_leaves
+                ]
+                attendance_leave_lines.extend(
+                    f"{leave_name} : {format_day_count(leave_count)}"
+                    for leave_name, leave_count in selective_pay_unpaid_leave_counts
+                )
+                salary_sheet_pdf.multi_cell(w=column_width/2, h=default_cell_height, txt="\n".join(attendance_leave_lines), align='L', border=0)
 
                 #Draw another multicell for non generative leaves which are permament in every company
                 #Get EmployeeMonthlyAttendanceDetails model data and plug them here
@@ -290,7 +351,10 @@ def generate_salary_sheet(user, request_data, prepared_salaries):
                 weekly_off = employee_monthly_attendance_details.weekly_off_days_count/2
                 holiday_off = employee_monthly_attendance_details.holiday_days_count/2
                 #Store compensation off in monthly attendance details and ask if it is actually compensaton off
-                absent_days = employee_monthly_attendance_details.not_paid_days_count/2
+                absent_days = displayed_absent_half_count(
+                    employee_monthly_attendance_details.not_paid_days_count,
+                    selective_pay_unpaid_leave_counts,
+                )/2
                 paid_days_count = employee_monthly_attendance_details.paid_days_count/2
                 compensation_off_days_count = employee_monthly_attendance_details.compensation_off_days_count/2
 

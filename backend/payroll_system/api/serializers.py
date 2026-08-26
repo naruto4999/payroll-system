@@ -2,7 +2,8 @@ import calendar
 from dataclasses import field
 from datetime import date
 
-from django.db.models import Sum
+from django.db import transaction
+from django.db.models import Q, Sum
 
 from .models import Company, CompanyDetails, User, Deparment, Designation, SalaryGrade, Regular, Category, Bank, LeaveGrade, Shift, Holiday, EarningsHead, OvertimePolicy, OvertimePolicyDayRule, OvertimePolicyEarningsHead, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeeSalaryEarning, EmployeeSalaryDetail, EmployeeFamilyNomineeDetial, EmployeePfEsiDetail, WeeklyOffHolidayOff, PfEsiSetup, Calculations, EmployeeShifts, EmployeeAttendance, EmployeeAttendanceOvertimeDetail, EmployeeGenerativeLeaveRecord, EmployeeLeaveOpening, EmployeeMonthlyAttendanceDetails, EmployeeAdvancePayment, EmployeeSalaryPrepared, EmployeeSalaryPreparedOvertimeDetail, EarnedAmount, BonusCalculation, BonusPercentage, FullAndFinal, SubUserOvertimeSettings, SubUserMiscSettings, AttendanceMachineConfig
 from rest_framework import serializers
@@ -135,10 +136,79 @@ class BankSerializer(serializers.ModelSerializer):
         fields = ('id', 'user', 'company', 'name')
 
 class LeaveGradeSerializer(serializers.ModelSerializer):
+    payable_earnings_heads = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=EarningsHead.objects.all(),
+        required=False,
+    )
+
     class Meta:
         model = LeaveGrade
-        fields = ('id', 'company', 'name' ,'limit', 'paid', 'generate_frequency', 'mandatory_leave')
+        fields = (
+            'id', 'company', 'name', 'limit', 'paid', 'generate_frequency',
+            'mandatory_leave', 'payable_earnings_heads',
+        )
         read_only_fields = ('mandatory_leave',)
+
+    def validate(self, attrs):
+        company = self.context.get('company') or attrs.get(
+            'company', getattr(self.instance, 'company', None)
+        )
+        submitted_company = attrs.get('company')
+        if submitted_company is not None and company is not None and submitted_company.pk != company.pk:
+            raise serializers.ValidationError({
+                'company': 'Company is bound by the URL and cannot be changed.'
+            })
+        selected_heads = attrs.get('payable_earnings_heads')
+        if selected_heads is not None:
+            if len(selected_heads) != len({head.pk for head in selected_heads}):
+                raise serializers.ValidationError({
+                    'payable_earnings_heads': 'Payable earnings heads must be unique.'
+                })
+            if company is not None and any(
+                head.company_id != company.pk or head.user_id != company.user_id
+                for head in selected_heads
+            ):
+                raise serializers.ValidationError({
+                    'payable_earnings_heads':
+                        'All payable earnings heads must belong to the leave grade company and owner.'
+                })
+
+        resulting_paid = attrs.get('paid', getattr(self.instance, 'paid', False))
+        if (
+            self.instance is not None
+            and resulting_paid != self.instance.paid
+            and EmployeeAttendance.objects.filter(
+                Q(first_half=self.instance) | Q(second_half=self.instance)
+            ).exists()
+        ):
+            raise serializers.ValidationError({
+                'paid': 'Paid status cannot be changed after a leave grade is used in attendance.'
+            })
+        if resulting_paid:
+            if selected_heads:
+                raise serializers.ValidationError({
+                    'payable_earnings_heads':
+                        'Paid leave grades already pay every earnings head.'
+                })
+            attrs['payable_earnings_heads'] = []
+        return attrs
+
+    @transaction.atomic
+    def create(self, validated_data):
+        selected_heads = validated_data.pop('payable_earnings_heads', [])
+        instance = super().create(validated_data)
+        instance.payable_earnings_heads.set(selected_heads)
+        return instance
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        missing = object()
+        selected_heads = validated_data.pop('payable_earnings_heads', missing)
+        instance = super().update(instance, validated_data)
+        if selected_heads is not missing:
+            instance.payable_earnings_heads.set(selected_heads)
+        return instance
 
 class ShiftSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
@@ -737,7 +807,11 @@ class EmployeeSalaryPreparedWithEarnedAmountSerializer(serializers.ModelSerializ
         return EarnedAmountWithEarningsHeadSerializer(earned_amounts, many=True).data
 
     def get_net_salary(self, obj):
-        total_earned = obj.current_salary_earned_amounts.aggregate(total=Sum('earned_amount'))['total'] or 0
+        prefetched = getattr(obj, '_prefetched_objects_cache', {})
+        if 'current_salary_earned_amounts' in prefetched:
+            total_earned = sum(row.earned_amount for row in prefetched['current_salary_earned_amounts'])
+        else:
+            total_earned = obj.current_salary_earned_amounts.aggregate(total=Sum('earned_amount'))['total'] or 0
         total_deductions = sum(getattr(obj, field) or 0 for field in (
             'pf_deducted',
             'esi_deducted',
