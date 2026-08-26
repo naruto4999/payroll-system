@@ -1,4 +1,4 @@
-import { Field, ErrorMessage } from 'formik';
+import { Field } from 'formik';
 import { memo } from 'react';
 
 const classNames = (...classes) => {
@@ -30,7 +30,7 @@ const AttendanceHeader = memo(() => {
                 <div className="my-auto w-20 pl-2 pr-2">
                     <h6 className="mx-auto w-fit cursor-default  text-xs font-medium">2nd Half</h6>
                 </div>
-                <div className="my-auto w-20 pl-2 pr-2">
+                <div className="my-auto w-28 pl-2 pr-2">
                     <h6 className="mx-auto w-fit cursor-default  text-xs font-medium">OT Hrs</h6>
                 </div>
                 <div className="my-auto w-20 pl-2 pr-2">
@@ -104,10 +104,6 @@ const AttendanceHeader = memo(() => {
             </section>
 
             {/* </Field> */}
-
-            <div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
-                <ErrorMessage name={'salaryDetail.overtimeType'} />
-            </div>
         </div>
     );
 });

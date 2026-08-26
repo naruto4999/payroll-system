@@ -13,6 +13,15 @@
       width: 6px;
       height: 6px;
     }
+
+    .scrollbar {
+      scrollbar-width: thin;
+      scrollbar-color: rgb(161 161 170) transparent;
+    }
+
+    .scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
   
     .scrollbar::-webkit-scrollbar-thumb {
       background: rgb(161 161 170);
@@ -30,6 +39,10 @@
 
     .dark .scrollbar::-webkit-scrollbar-thumb {
       background: rgb(82 82 91);
+    }
+
+    .dark .scrollbar {
+      scrollbar-color: rgb(82 82 91) transparent;
     }
   
     .dark .scrollbar::-webkit-scrollbar-thumb:hover {

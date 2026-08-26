@@ -129,6 +129,11 @@ const menuItems = [
                         icon: FaCalculator,
                         path: '/home/master-entry/calculations',
                     },
+                    {
+                        title: 'Overtime Policies',
+                        icon: FaCircleArrowRight,
+                        path: '/home/master-entry/overtime-policies',
+                    },
                 ],
             },
             {
@@ -219,11 +224,6 @@ const menuItems = [
                 title: 'Attendance Machine Config',
                 icon: FaCogs,
                 path: '/home/settings/attendance-machine-config',
-            },
-            {
-                title: 'Extra Features Config',
-                icon: FaCogs,
-                path: '/home/settings/extra-features-config',
             },
         ],
     },

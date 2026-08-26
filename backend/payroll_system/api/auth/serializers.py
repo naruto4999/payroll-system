@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.validators import UniqueValidator
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.settings import api_settings
 from django.contrib.auth.models import update_last_login
@@ -73,7 +74,17 @@ class LoginSerializer(MyTokenObtainPairSerializer):
 
 class RegisterSerializer(UserSerializer):
     password = serializers.CharField(max_length=128, min_length=8, write_only=True, required=True)
-    email = serializers.EmailField(required=True, write_only=False, max_length=128)
+    email = serializers.EmailField(
+        required=True,
+        write_only=False,
+        max_length=128,
+        validators=[
+            UniqueValidator(
+                queryset=User.objects.all(),
+                message='A user with this email already exists.',
+            )
+        ],
+    )
 
     class Meta:
         model = User

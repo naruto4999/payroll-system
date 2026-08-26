@@ -1,6 +1,7 @@
 from django.urls import path, include
-from .views import CompanyListCreateAPIView, CompanyDetailsMixinView, CompanyRetrieveUpdateDestroyAPIView, DepartmentListCreateAPIView, DepartmentRetrieveUpdateDestroyAPIView, DesignationListCreateAPIView, DesignationRetrieveUpdateDestroyAPIView, SalaryGradeListCreateAPIView, SalaryGradeRetrieveUpdateDestroyAPIView, RegularRegisterListCreateAPIViewView, RegularRetrieveUpdateAPIView, CompanyVisibilityPatchAPIView, CategoryListCreateAPIView, CategoryRetrieveUpdateDestroyAPIView, BankListCreateAPIView, BankRetrieveUpdateDestroyAPIView, LeaveGradeListCreateAPIView, LeaveGradeRetrieveUpdateDestroyAPIView, ShiftListCreateAPIView, ShiftRetrieveUpdateDestroyAPIView, HolidayListCreateAPIView, HolidayRetrieveUpdateDestroyAPIView, EarningsHeadListCreateAPIView, EarningsHeadRetrieveUpdateDestroyAPIView, EmployeePersonalDetailListCreateView, EmployeePersonalDetailRetrieveUpdateDestroyAPIView, EmployeeProfessionalDetailListCreateAPIView, EmployeeProfessionalDetailRetrieveUpdateDestroyAPIView, EmployeeSalaryEarningListCreateAPIView, EmployeeSalaryEarningListUpdateAPIView,EmployeeSalaryDetailListCreateAPIView, EmployeeSalaryDetailRetrieveUpdateAPIView, EmployeeFamilyNomineeDetialListCreateAPIView, EmployeePfEsiDetailListCreateAPIView, EmployeePfEsiDetailRetrieveUpdateDestroyAPIView, EmployeeFamilyNomineeDetialRetrieveUpdateDestroyAPIView, WeeklyOffHolidayOffCreateAPIView, WeeklyOffHolidayOffRetrieveUpdateDestroyAPIView, PfEsiSetupCreateAPIView, PfEsiSetupRetrieveUpdateDestroyAPIView, CalculationsCreateAPIView, CalculationsRetrieveUpdateDestroyAPIView, EmployeeShiftsListAPIView, EmployeeShiftsUpdateAPIView, EmployeeShiftsCreateAPIView, EmployeeShiftsPermanentUpdateAPIView, EmployeeAttendanceListCreateAPIView, EmployeeAttendanceUpdateAPIView, AllEmployeeMonthyShiftsListAPIView, EmployeeGenerativeLeaveRecordListAPIView, EmployeeLeaveOpeningListAPIView, EmployeeMonthlyAttendancePresentDetailsListAPIView, EmployeeAdvancePaymentListCreateAPIView, EmployeeAdvancePaymentRetrieveUpdateDestroyAPIView, EmployeeMonthlyAttendanceDetailsListAPIView, AllEmployeeSalaryEarningListAPIView, EmployeeSalaryPreparedCreateAPIView, SalaryOvertimeSheetCreateAPIView, EmployeeSalaryPreparedListAPIView, AttendanceReportsCreateAPIView, EmployeeAttendanceBulkAutoFillView, BulkPrepareSalariesView, MachineAttendanceAPIView, PersonnelFileReportsCreateAPIView, DefaultAttendanceAPIView, EmployeeResignationUpdateAPIView, EmployeeUnresignUpdateAPIView, BonusCalculationAPIView, BonusCalculationListAPIView, BonusPercentageListAPIView, EmployeeProfessionalDetailRetrieveAPIView, EarnedAmountPreparedSalaryListAPIView, FullAndFinalRetrieveAPIView, FullAndFinalCreateAPIView, EmployeeELLeftRetrieveAPIView, EmployeeBonusAmountYearlyRetrieveAPIView, FullAndFinalReportCreateAPIView, PfEsiReportsCreateAPIView, EmployeeVisibilityPatchAPIView, SubUserOvertimeSettingsMonthlyCreateUpdateAPIView, SubUserOvertimeSettingsListAPIView, SubUserMiscSettingsRetrieveUpdateDestroyAPIView, SubUserMiscSettingsCreateAPIView, TransferAttendanceFromOwnerToRegularAPIView, EmployeeStrengthReportsCreateAPIView, EmployeeLeaveOpeningCreateUpdateAPIView, LeaveClosingTransferCreateUpdateAPIView, EmployeeYearlyMissPunchListAPIView, EmployeeYearlyAdvanceTakenDeductedAPIView, AttendanceMachineConfigCreateAPIView, AttendanceMachineConfigRetrieveUpdateDestroyAPIView, DownloadAddEditEmployeeUsingExcelTemplateAPIView, ExtraFeaturesConfigRetrieveUpdateDestroyAPIView, ExtraFeaturesConfigCreateAPIView, CalculateOtAttendanceUsingTotalEarnedApiView, EmployeeSalaryPreparedRetrieveAPIView
+from .views import CompanyListCreateAPIView, CompanyDetailsMixinView, CompanyRetrieveUpdateDestroyAPIView, DepartmentListCreateAPIView, DepartmentRetrieveUpdateDestroyAPIView, DesignationListCreateAPIView, DesignationRetrieveUpdateDestroyAPIView, SalaryGradeListCreateAPIView, SalaryGradeRetrieveUpdateDestroyAPIView, RegularRegisterListCreateAPIViewView, RegularRetrieveUpdateAPIView, CompanyVisibilityPatchAPIView, CategoryListCreateAPIView, CategoryRetrieveUpdateDestroyAPIView, BankListCreateAPIView, BankRetrieveUpdateDestroyAPIView, LeaveGradeListCreateAPIView, LeaveGradeRetrieveUpdateDestroyAPIView, ShiftListCreateAPIView, ShiftRetrieveUpdateDestroyAPIView, HolidayListCreateAPIView, HolidayRetrieveUpdateDestroyAPIView, EarningsHeadListCreateAPIView, EarningsHeadRetrieveUpdateDestroyAPIView, EmployeePersonalDetailListCreateView, EmployeePersonalDetailRetrieveUpdateDestroyAPIView, EmployeeProfessionalDetailListCreateAPIView, EmployeeProfessionalDetailRetrieveUpdateDestroyAPIView, EmployeeSalaryEarningListCreateAPIView, EmployeeSalaryEarningListUpdateAPIView,EmployeeSalaryDetailListCreateAPIView, EmployeeSalaryDetailRetrieveUpdateAPIView, EmployeeFamilyNomineeDetialListCreateAPIView, EmployeePfEsiDetailListCreateAPIView, EmployeePfEsiDetailRetrieveUpdateDestroyAPIView, EmployeeFamilyNomineeDetialRetrieveUpdateDestroyAPIView, WeeklyOffHolidayOffCreateAPIView, WeeklyOffHolidayOffRetrieveUpdateDestroyAPIView, PfEsiSetupCreateAPIView, PfEsiSetupRetrieveUpdateDestroyAPIView, CalculationsCreateAPIView, CalculationsRetrieveUpdateDestroyAPIView, EmployeeShiftsListAPIView, EmployeeShiftsUpdateAPIView, EmployeeShiftsCreateAPIView, EmployeeShiftsPermanentUpdateAPIView, EmployeeAttendanceListCreateAPIView, EmployeeAttendanceUpdateAPIView, AllEmployeeMonthyShiftsListAPIView, EmployeeGenerativeLeaveRecordListAPIView, EmployeeLeaveOpeningListAPIView, EmployeeMonthlyAttendancePresentDetailsListAPIView, EmployeeAdvancePaymentListCreateAPIView, EmployeeAdvancePaymentRetrieveUpdateDestroyAPIView, EmployeeMonthlyAttendanceDetailsListAPIView, AllEmployeeSalaryEarningListAPIView, EmployeeSalaryPreparedCreateAPIView, SalaryOvertimeSheetCreateAPIView, EmployeeSalaryPreparedListAPIView, AttendanceReportsCreateAPIView, EmployeeAttendanceBulkAutoFillView, BulkPrepareSalariesView, MachineAttendanceAPIView, PersonnelFileReportsCreateAPIView, DefaultAttendanceAPIView, EmployeeResignationUpdateAPIView, EmployeeUnresignUpdateAPIView, BonusCalculationAPIView, BonusCalculationListAPIView, BonusPercentageListAPIView, EmployeeProfessionalDetailRetrieveAPIView, EarnedAmountPreparedSalaryListAPIView, FullAndFinalRetrieveAPIView, FullAndFinalCreateAPIView, EmployeeELLeftRetrieveAPIView, EmployeeBonusAmountYearlyRetrieveAPIView, FullAndFinalReportCreateAPIView, PfEsiReportsCreateAPIView, EmployeeVisibilityPatchAPIView, SubUserOvertimeSettingsMonthlyCreateUpdateAPIView, SubUserOvertimeSettingsListAPIView, SubUserMiscSettingsRetrieveUpdateDestroyAPIView, SubUserMiscSettingsCreateAPIView, TransferAttendanceFromOwnerToRegularAPIView, EmployeeStrengthReportsCreateAPIView, EmployeeLeaveOpeningCreateUpdateAPIView, LeaveClosingTransferCreateUpdateAPIView, EmployeeYearlyMissPunchListAPIView, EmployeeYearlyAdvanceTakenDeductedAPIView, AttendanceMachineConfigCreateAPIView, AttendanceMachineConfigRetrieveUpdateDestroyAPIView, DownloadAddEditEmployeeUsingExcelTemplateAPIView, EmployeeSalaryPreparedRetrieveAPIView
 from .auth.views import LoginView, RegisterView, RefreshView, PasswordResetAPIView, PasswordResetConfirmView, VerifyOTPView
+from .views import OvertimePolicyListCreateAPIView, OvertimePolicyRetrieveUpdateAPIView, SalaryOvertimePreviewAPIView, SalaryPreparationPreviewAPIView
 from django.contrib.auth.views import PasswordResetCompleteView
 
 
@@ -30,6 +31,8 @@ urlpatterns = [
     path('holiday/<int:company_id>/<int:id>', HolidayRetrieveUpdateDestroyAPIView.as_view()),
     path('earnings-head/<int:company_id>', EarningsHeadListCreateAPIView.as_view()),
     path('earnings-head/<int:company_id>/<int:id>', EarningsHeadRetrieveUpdateDestroyAPIView.as_view()),
+    path('overtime-policy/<int:company_id>', OvertimePolicyListCreateAPIView.as_view()),
+    path('overtime-policy/<int:company_id>/<int:id>', OvertimePolicyRetrieveUpdateAPIView.as_view()),
     # path('deductions-head/<int:company_id>', DeductionsHeadListCreateAPIView.as_view()),
     # path('deductions-head/<int:company_id>/<int:id>', DeductionsHeadRetrieveUpdateDestroyAPIView.as_view()),
 
@@ -93,6 +96,8 @@ urlpatterns = [
     path('all-employee-salary-earning/<int:company_id>/<int:year>', AllEmployeeSalaryEarningListAPIView.as_view()),
     path('employee-salary-prepared', EmployeeSalaryPreparedCreateAPIView.as_view()),
     path('employee-bulk-salary-prepared', BulkPrepareSalariesView.as_view()),
+    path('salary-overtime/preview', SalaryOvertimePreviewAPIView.as_view()),
+    path('salary-preparation/preview', SalaryPreparationPreviewAPIView.as_view()),
     path('employee-machine-attendance', MachineAttendanceAPIView.as_view()),
     path('bulk-default-attendance', DefaultAttendanceAPIView.as_view()),
 
@@ -123,20 +128,11 @@ urlpatterns = [
     path('attendance-machine-config-create', AttendanceMachineConfigCreateAPIView.as_view()),
     path('attendance-machine-config/<int:company_id>', AttendanceMachineConfigRetrieveUpdateDestroyAPIView.as_view()),
     path('download-employee-excel-template', DownloadAddEditEmployeeUsingExcelTemplateAPIView.as_view()),
-    path('extra-features-config-create', ExtraFeaturesConfigCreateAPIView.as_view()),
-    path('extra-features-config/<int:company_id>', ExtraFeaturesConfigRetrieveUpdateDestroyAPIView.as_view()),
-    path('calculate-ot-attendance-using-total-earned', CalculateOtAttendanceUsingTotalEarnedApiView.as_view()),
 
 
 
 
 
-    # path('company-statExtraFeaturesConfigistics/<int:company_id>', CompanyEmployeeStatisticsListAPIView.as_view()),
-
-
-
-
-    
     
 
     
@@ -163,4 +159,3 @@ urlpatterns = [
     path('password_reset_complete/', PasswordResetCompleteView.as_view(template_name='api/password_reset_complete.html'), name='password_reset_complete')
     
 ]
-

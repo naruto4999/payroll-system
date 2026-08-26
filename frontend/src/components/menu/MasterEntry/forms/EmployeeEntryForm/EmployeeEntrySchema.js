@@ -453,8 +453,9 @@ export const generateEmployeeSalaryDetailSchema = (earningHeadInitialValues) => 
 				.required('Year is required')
 				.min(1950, 'Year must be greater than or equal to 1950')
 				.max(2100, 'Year must be less than or equal to 2100'),
-			salaryDetail: yup.object().shape({
-				overtimeType: yup.string().required('Overtime Type is required'),
+				salaryDetail: yup.object().shape({
+					overtimePolicy: yup.mixed().nullable(),
+					overtimeType: yup.string().required('Overtime Type is required'),
 				overtimeRate: yup.string(),
 				salaryMode: yup.string().required('Salary Mode is required'),
 				paymentMode: yup.string().required('Payment Mode is required'),
@@ -475,8 +476,9 @@ export const generateEmployeeSalaryDetailSchema = (earningHeadInitialValues) => 
 				.required('Year is required')
 				.min(1950, 'Year must be greater than or equal to 1950')
 				.max(2100, 'Year must be less than or equal to 2100'),
-			salaryDetail: yup.object().shape({
-				overtimeType: yup.string().required('Overtime Type is required'),
+				salaryDetail: yup.object().shape({
+					overtimePolicy: yup.mixed().nullable(),
+					overtimeType: yup.string().required('Overtime Type is required'),
 				overtimeRate: yup.string(),
 				salaryMode: yup.string().required('Salary Mode is required'),
 				paymentMode: yup.string().required('Payment Mode is required'),

@@ -1,9 +1,6 @@
 from fpdf import FPDF
-import os
-from ..models import CompanyDetails, EmployeeGenerativeLeaveRecord, LeaveGrade, EmployeeSalaryEarning, EarnedAmount, EarningsHead
-from datetime import date, time
-from decimal import Decimal, ROUND_HALF_UP, ROUND_CEILING
-import calendar
+from ..models import CompanyDetails
+from datetime import date
 
 #A4 size 210 x 297 mm
 width_of_columns = {
@@ -63,7 +60,7 @@ class FPDF(FPDF):
         self.cell(w=width_of_columns['ot_amount'], h=5, text='Amount', align="C", new_x="LMARGIN", new_y='NEXT', border=1)
         self.set_line_width(0.2)
 
-def generate_overtime_sheet_daily(request_data, employees_attendances_with_ot):
+def generate_overtime_sheet_daily(request_data, overtime_rows):
     default_cell_height = 5
     default_cell_height_large = 7
     default_row_number_of_cells = 1
@@ -72,7 +69,8 @@ def generate_overtime_sheet_daily(request_data, employees_attendances_with_ot):
     bottom_margin = 8
 
     company_details = CompanyDetails.objects.filter(company_id=request_data['company'])
-    overtime_sheet_daily = FPDF(my_date=date(request_data['year'], request_data['month'], request_data['filters']['date']),company_name=employees_attendances_with_ot[0].company.name,company_address=company_details[0].address if company_details.exists() else '', orientation="L", unit="mm", format="A4")
+    first_attendance = overtime_rows[0]['attendance']
+    overtime_sheet_daily = FPDF(my_date=date(request_data['year'], request_data['month'], request_data['filters']['date']),company_name=first_attendance.company.name,company_address=company_details[0].address if company_details.exists() else '', orientation="L", unit="mm", format="A4")
 
     #Page settings
     overtime_sheet_daily.set_margins(left=left_margin, top=6, right=right_margin)
@@ -81,11 +79,13 @@ def generate_overtime_sheet_daily(request_data, employees_attendances_with_ot):
     initial_coordinates_after_header = {"x": overtime_sheet_daily.get_x(), "y": overtime_sheet_daily.get_y()}
     overtime_sheet_daily.set_font("Helvetica", size=8)
 
-    for employee_index, attendance in enumerate(employees_attendances_with_ot):
+    for employee_index, row in enumerate(overtime_rows):
+        attendance = row['attendance']
+        overtime_result = row['overtime_result']
         if request_data['filters']['group_by'] != 'none':
             try:
                 current_employee_department = attendance.employee.employee_professional_detail.department
-                previous_employee_department = employees_attendances_with_ot[employee_index-1].employee.employee_professional_detail.department if employee_index!=0 else None
+                previous_employee_department = overtime_rows[employee_index-1]['attendance'].employee.employee_professional_detail.department if employee_index!=0 else None
                 if employee_index == 0 or current_employee_department != previous_employee_department:
                     overtime_sheet_daily.set_font("Helvetica", size=10, style="B")
                     overtime_sheet_daily.cell(w=0, h=default_cell_height_large, text=f'{current_employee_department.name if current_employee_department else "No Department"}', align="L", new_x="LMARGIN", new_y='NEXT', border=0)
@@ -130,7 +130,7 @@ def generate_overtime_sheet_daily(request_data, employees_attendances_with_ot):
         overtime_sheet_daily.cell(w=width_of_columns['out_time'], h=default_cell_height*default_row_number_of_cells, text=f'{out_time}', align="C", new_x="RIGHT", new_y='TOP', border=1)
 
         #OT Hrs
-        overtime_hrs = attendance.ot_min
+        overtime_hrs = overtime_result.policy_eligible_gross_minutes
         overtime_formatted = ''
         if overtime_hrs:
             hours, minutes = divmod(overtime_hrs, 60)
@@ -138,9 +138,9 @@ def generate_overtime_sheet_daily(request_data, employees_attendances_with_ot):
         overtime_sheet_daily.cell(w=width_of_columns['ot_hrs'], h=default_cell_height*default_row_number_of_cells, text=f'{overtime_formatted}', align="C", new_x="RIGHT", new_y='TOP', border=1)
 
         #Late Hrs
-        late_hrs = attendance.late_min
+        late_hrs = overtime_result.deducted_late_minutes
         late_hrs_str = ''
-        if late_hrs and attendance.employee.employee_salary_detail.late_deduction:
+        if late_hrs:
             hours, minutes = divmod(late_hrs, 60)
             late_hrs_str = f"{hours:02d}:{minutes:02d}"
         overtime_sheet_daily.cell(w=width_of_columns['late_hrs'], h=default_cell_height*default_row_number_of_cells, text=f'{late_hrs_str}', align="C", new_x="RIGHT", new_y='TOP', border=1)
@@ -149,35 +149,15 @@ def generate_overtime_sheet_daily(request_data, employees_attendances_with_ot):
         overtime_sheet_daily.cell(w=width_of_columns['status'], h=default_cell_height*default_row_number_of_cells, text=f'{attendance.first_half.name}-{attendance.second_half.name}', align="C", new_x="RIGHT", new_y='TOP', border=1)
 
         #Salary Rate
-        total_earnings_rate = None
-        try:
-            total_earnings_rate = 0
-            earnings_heads = EarningsHead.objects.filter(company=attendance.company, user=attendance.user)
-            employee_salary_rates = EmployeeSalaryEarning.objects.filter(employee=attendance.employee, from_date__lte=attendance.date, to_date__gte=attendance.date)
-            for head in earnings_heads:
-                salary_for_particular_earning_head = employee_salary_rates.filter(earnings_head=head)
-                if salary_for_particular_earning_head.exists():
-                    total_earnings_rate += salary_for_particular_earning_head.first().value
-        except: 
-            pass
+        payable_breakdown = next(
+            (item for item in overtime_result.breakdown if item['eligible'] and item['gross_minutes']),
+            None,
+        )
+        total_earnings_rate = payable_breakdown['eligible_salary_rate'] if payable_breakdown else 0
         overtime_sheet_daily.cell(w=width_of_columns['rate'], h=default_cell_height*default_row_number_of_cells, text=f'{total_earnings_rate}', align="R", new_x="RIGHT", new_y='TOP', border=1)
 
         #OT Amount
-        late_hrs = late_hrs if late_hrs !=None else 0
-        overtime_hrs_after_late_deduction = overtime_hrs
-        overtime_amount = 0
-        overtime_rate_multiplier = 2 if attendance.employee.employee_salary_detail.overtime_rate == 'D' else 1
-        if attendance.employee.employee_salary_detail.late_deduction:
-            overtime_hrs_after_late_deduction -= ((late_hrs//30)*30 )+ (30 if late_hrs%30 >= 20 else 0)
-        company_calculations = attendance.employee.company.calculations
-        days_in_month = calendar.monthrange(request_data['year'], request_data['month'])[1]
-        if company_calculations.ot_calculation == 'month_days':
-            overtime_divisor = Decimal(days_in_month)
-        else:
-            overtime_divisor = Decimal(company_calculations.ot_calculation)
-        rate = Decimal(total_earnings_rate)
-        overtime_amount += (rate/overtime_divisor/Decimal(8) * Decimal(overtime_rate_multiplier)) * Decimal(overtime_hrs_after_late_deduction)/Decimal(60)
-        overtime_amount = overtime_amount.quantize(Decimal('1.'), rounding=ROUND_HALF_UP)
+        overtime_amount = overtime_result.amount
         overtime_sheet_daily.cell(w=width_of_columns['ot_amount'], h=default_cell_height*default_row_number_of_cells, text=f'{overtime_amount}', align="R", new_x="LMARGIN", new_y='NEXT', border=1)
 
 

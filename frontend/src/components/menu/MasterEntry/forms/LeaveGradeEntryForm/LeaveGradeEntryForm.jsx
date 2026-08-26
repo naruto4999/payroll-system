@@ -20,6 +20,7 @@ import { Formik } from 'formik';
 import LeaveGradeModal from './LeaveGradeModal';
 import { LeaveGradeSchema } from './LeaveGradeSchema';
 import { alertActions } from '../../../../authentication/store/slices/alertSlice';
+import { useGetEarningsHeadsQuery } from '../../../../authentication/api/earningsHeadEntryApiSlice';
 
 ReactModal.setAppElement('#root');
 
@@ -48,6 +49,10 @@ const LeaveGradeEntryForm = () => {
 		isFetching,
 		refetch,
 	} = useGetLeaveGradesQuery(globalCompany);
+	const { currentData: earningsHeads = [], isFetching: isFetchingEarningsHeads } = useGetEarningsHeadsQuery(
+		globalCompany,
+		{ skip: !globalCompany.id }
+	);
 	console.log(fetchedData);
 	const [addLeaveGrade, { isLoading: isAddingLeaveGrade }] = useAddLeaveGradeMutation();
 	const [updateLeaveGrade, { isLoading: isUpdatingLeaveGrade }] = useUpdateLeaveGradeMutation();
@@ -84,6 +89,7 @@ const LeaveGradeEntryForm = () => {
 		if (toSend.generateFrequency == '') {
 			toSend.generateFrequency = null;
 		}
+		toSend.payableEarningsHeads = toSend.paid ? [] : (toSend.payableEarningsHeads || []).map(Number);
 		toSend.company = globalCompany.id;
 
 		try {
@@ -123,6 +129,7 @@ const LeaveGradeEntryForm = () => {
 		if (toSend.generateFrequency == '') {
 			toSend.generateFrequency = null;
 		}
+		toSend.payableEarningsHeads = toSend.paid ? [] : (toSend.payableEarningsHeads || []).map(Number);
 		toSend.company = globalCompany.id;
 		toSend.id = updateLeaveGradeId;
 		try {
@@ -252,8 +259,10 @@ const LeaveGradeEntryForm = () => {
 	});
 	// console.log(tableInstance)
 	useEffect(() => {
-		setShowLoadingBar(isLoading || isAddingLeaveGrade || isDeletingLeaveGrade || isUpdatingLeaveGrade);
-	}, [isLoading, isAddingLeaveGrade, isDeletingLeaveGrade, isUpdatingLeaveGrade]);
+		setShowLoadingBar(
+			isLoading || isFetchingEarningsHeads || isAddingLeaveGrade || isDeletingLeaveGrade || isUpdatingLeaveGrade
+		);
+	}, [isLoading, isFetchingEarningsHeads, isAddingLeaveGrade, isDeletingLeaveGrade, isUpdatingLeaveGrade]);
 
 	if (globalCompany.id == null) {
 		return (
@@ -369,6 +378,7 @@ const LeaveGradeEntryForm = () => {
 								limit: '',
 								paid: false,
 								generateFrequency: '',
+								payableEarningsHeads: [],
 							}}
 							validationSchema={LeaveGradeSchema}
 							onSubmit={addButtonClicked}
@@ -380,6 +390,7 @@ const LeaveGradeEntryForm = () => {
 									setAddLeaveGradePopover={setAddLeaveGradePopover}
 									isEditing={false}
 									cancelButtonClicked={cancelButtonClicked}
+									earningsHeads={earningsHeads}
 								/>
 							)}
 						/>
@@ -388,9 +399,17 @@ const LeaveGradeEntryForm = () => {
 					{editLeaveGradePopover && (
 						<Formik
 							// Remember to divide generateFrequency by two in submission function
-							initialValues={replaceNullWithEmpty(
-								fetchedData.find((grade) => grade.id === updateLeaveGradeId)
-							)}
+							initialValues={(() => {
+								const grade = replaceNullWithEmpty(
+									fetchedData.find((item) => item.id === updateLeaveGradeId)
+								);
+								return {
+									...grade,
+									payableEarningsHeads: (grade.payableEarningsHeads || []).map((head) =>
+										String(typeof head === 'object' ? head.id : head)
+									),
+								};
+							})()}
 							validationSchema={LeaveGradeSchema}
 							onSubmit={updateButtonClicked}
 							component={(props) => (
@@ -403,6 +422,7 @@ const LeaveGradeEntryForm = () => {
 									isEditing={true}
 									disableEdit={disabledEdit}
 									cancelButtonClicked={cancelButtonClicked}
+									earningsHeads={earningsHeads}
 								/>
 							)}
 						/>
