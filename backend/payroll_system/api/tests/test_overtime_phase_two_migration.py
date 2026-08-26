@@ -1,4 +1,5 @@
 from datetime import date
+from unittest import skipUnless
 
 from django.conf import settings
 from django.db import connection
@@ -6,11 +7,18 @@ from django.db.migrations.executor import MigrationExecutor
 from django.test import TransactionTestCase
 
 
+@skipUnless(connection.vendor == 'postgresql', 'Attendance partition migrations require PostgreSQL.')
 class PhaseTwoMigrationTests(TransactionTestCase):
     migrate_from = ('api', '0049_extrafeaturesconfig')
-    migrate_to = ('api', '0060_backfill_legacy_attendance_overtime_details')
+    migrate_to = ('api', '0062_repartition_legacy_overtime_and_drop_old_tables')
+
     def setUp(self):
         super().setUp()
+        # The partition migrations are intentionally irreversible, so construct
+        # the old state from an empty test schema instead of migrating backwards.
+        with connection.cursor() as cursor:
+            cursor.execute('DROP SCHEMA public CASCADE;')
+            cursor.execute('CREATE SCHEMA public;')
         executor = MigrationExecutor(connection)
         executor.migrate([self.migrate_from])
         old_apps = executor.loader.project_state([self.migrate_from]).apps
@@ -139,3 +147,57 @@ class PhaseTwoMigrationTests(TransactionTestCase):
         self.assertIsNone(detail.start_datetime)
         self.assertIsNone(detail.end_datetime)
         self.assertEqual((detail.gross_minutes, detail.excluded_minutes, detail.eligible_minutes), (75, 0, 75))
+
+    def test_migration_repartitions_legacy_overtime_and_removes_backup_tables(self):
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT tableoid::regclass::text
+                FROM api_employeeattendanceovertimedetail
+                WHERE attendance_date = %s;
+                """,
+                [date(2024, 1, 2)],
+            )
+            self.assertEqual(
+                cursor.fetchone()[0],
+                'api_employeeattendanceovertimedetail_2024_01',
+            )
+
+            cursor.execute('SELECT COUNT(*) FROM api_employeeattendanceovertimedetail_default;')
+            self.assertEqual(cursor.fetchone()[0], 0)
+
+            cursor.execute(
+                """
+                SELECT
+                    to_regclass('api_employeeattendance_old'),
+                    to_regclass('api_employeeattendanceovertimedetail_old');
+                """
+            )
+            self.assertEqual(cursor.fetchone(), (None, None))
+
+            cursor.execute(
+                """
+                SELECT parent.relname, child.relname
+                FROM pg_inherits
+                INNER JOIN pg_class parent ON parent.oid = pg_inherits.inhparent
+                INNER JOIN pg_class child ON child.oid = pg_inherits.inhrelid
+                WHERE (parent.relname, child.relname) IN (
+                    ('api_employeeattendance', 'api_employeeattendance_default'),
+                    (
+                        'api_employeeattendanceovertimedetail',
+                        'api_employeeattendanceovertimedetail_default'
+                    )
+                )
+                ORDER BY parent.relname;
+                """
+            )
+            self.assertEqual(
+                cursor.fetchall(),
+                [
+                    ('api_employeeattendance', 'api_employeeattendance_default'),
+                    (
+                        'api_employeeattendanceovertimedetail',
+                        'api_employeeattendanceovertimedetail_default',
+                    ),
+                ],
+            )
