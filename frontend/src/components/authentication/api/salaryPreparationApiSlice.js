@@ -43,6 +43,30 @@ export const salaryPreparationApiSlice = apiSlice.injectEndpoints({
                 'EmployeePreparedSalary',
             ],
         }),
+        getSalaryOvertimePreview: builder.query({
+            query: (body) => ({
+                url: `/api/salary-overtime/preview`,
+                method: 'POST',
+                body,
+            }),
+            keepUnusedDataFor: 0,
+			providesTags: (result, error, body) => [{
+				type: 'SalaryOvertimePreview',
+				id: `${body.company}-${body.employee}-${body.year}-${body.month}`,
+			}],
+        }),
+        getSalaryPreparationPreview: builder.query({
+            query: (body) => ({
+                url: `/api/salary-preparation/preview`,
+                method: 'POST',
+                body,
+            }),
+            keepUnusedDataFor: 0,
+            providesTags: (result, error, body) => [{
+                type: 'SalaryOvertimePreview',
+                id: `${body.company}-${body.employee}-${body.year}-${body.month}`,
+            }],
+        }),
         employeeBulkSalaryPrepared: builder.mutation({
             query: (body) => ({
                 url: `/api/employee-bulk-salary-prepared`,
@@ -55,27 +79,6 @@ export const salaryPreparationApiSlice = apiSlice.injectEndpoints({
                 'EarnedAmountPreparedSalary',
                 'EmployeesForYearlyAdvanceReport',
                 'EmployeePreparedSalary',
-            ],
-        }),
-        calculateOtAttendanceUsingTotalEarned: builder.mutation({
-            query: (body) => ({
-                url: `/api/calculate-ot-attendance-using-total-earned`,
-                method: 'POST',
-                body: body,
-            }),
-            //Check this invalidates Tags later on
-            invalidatesTags: [
-                'AdvancePayments',
-                'PreparedSalaries',
-                'EarnedAmountPreparedSalary',
-                'EmployeesForYearlyAdvanceReport',
-                'EmployeePreparedSalary',
-                'AllEmployeeMonthlyAttendanceDetails',
-                'EmployeeAttendance',
-                'AllEmployeePresentCount',
-                'AllEmployeeGenerativeLeaveRecord',
-                'AllEmployeeMissPunches',
-                'EmployeeYearlyBonus',
             ],
         }),
         getEmployeePreparedSalary: builder.query({
@@ -112,7 +115,9 @@ export const {
     useGetAllEmployeeSalaryEarningsQuery,
     useGetAllEmployeePfEsiDetailsQuery,
     useAddEmployeeSalaryPreparedMutation,
+    useGetSalaryOvertimePreviewQuery,
+    useGetSalaryPreparationPreviewQuery,
     useEmployeeBulkSalaryPreparedMutation,
-    useCalculateOtAttendanceUsingTotalEarnedMutation,
     useGetEmployeePreparedSalaryQuery,
+	useLazyGetEmployeePreparedSalaryQuery,
 } = salaryPreparationApiSlice;

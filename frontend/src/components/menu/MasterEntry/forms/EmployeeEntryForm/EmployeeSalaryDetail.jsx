@@ -2,6 +2,8 @@ import { useRef, useEffect, useState } from 'react';
 import { FaUserPlus } from 'react-icons/fa6';
 import { FaCircleNotch } from 'react-icons/fa6';
 import { Field, ErrorMessage } from 'formik';
+import { useSelector } from 'react-redux';
+import { useGetOvertimePoliciesQuery } from '../../../../authentication/api/overtimePolicyApiSlice';
 // import { useLazyGetSingleEmployeeSalaryEarningQuery } from "../../../../authentication/api/employeeEntryApiSlice";
 
 const classNames = (...classes) => {
@@ -34,6 +36,24 @@ const EmployeeSalaryDetail = ({
 	isSingleEmployeeSalaryDetailSuccess,
 	isSingleEmployeeProfessionalDetailSuccess,
 }) => {
+    const account = useSelector((state) => state.auth.account);
+    const isOwner = account?.role === 'OWNER';
+    const {
+        currentData: overtimePolicies = [],
+        isError: isPolicyListError,
+        isFetching: isFetchingPolicyList,
+    } = useGetOvertimePoliciesQuery(globalCompany?.id, {
+        skip: !isOwner || !globalCompany?.id,
+    });
+
+    const resolvedPolicy = values.salaryDetail.resolvedOvertimePolicy;
+    const selectedPolicyId = Number(values.salaryDetail.overtimePolicy);
+    const categorySummary = resolvedPolicy?.dayRules?.length
+        ? resolvedPolicy.dayRules
+              .map((rule) => `${rule.dayType.replaceAll('_', ' ')} x${rule.multiplier}`)
+              .join(', ')
+        : 'No payable categories';
+
 	console.log(errors);
 	console.log(values.year);
 	console.log(values);
@@ -65,6 +85,60 @@ const EmployeeSalaryDetail = ({
 				<form action="" className="flex flex-col justify-center gap-2" onSubmit={handleSubmit}>
 					<section className="flex flex-row flex-wrap justify-center gap-10 lg:flex-nowrap">
 						<div className="w-fit">
+							{isOwner ? (
+								<>
+									<label
+										htmlFor={'salaryDetail.overtimePolicy'}
+										className="text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
+									>
+										Overtime Policy
+									</label>
+									<Field
+										as="select"
+										name="salaryDetail.overtimePolicy"
+										disabled={isFetchingPolicyList || isPolicyListError}
+										className="my-1 block max-w-72 rounded-md bg-zinc-50 bg-opacity-50 p-1 dark:bg-zinc-700"
+									>
+										<option value="">Use company default</option>
+										{overtimePolicies
+											.filter((policy) => policy.isActive || policy.id === selectedPolicyId)
+											.map((policy) => (
+												<option key={policy.id} value={policy.id}>
+													{policy.name}
+													{policy.isDefault ? ' (company default)' : ''}
+													{!policy.isActive ? ' (inactive, current assignment)' : ''}
+												</option>
+											))}
+									</Field>
+									{isPolicyListError && (
+										<p className="mb-2 max-w-72 text-xs font-semibold text-red-600 dark:text-red-400">
+											Unable to load overtime policies. The current assignment has not been changed.
+										</p>
+									)}
+								</>
+							) : (
+								<div className="mb-3 max-w-72 rounded border border-blueAccent-300 bg-blueAccent-50 p-3 text-xs dark:border-blueAccent-800 dark:bg-blueAccent-950/30">
+									<p className="font-semibold">Overtime policy is server controlled</p>
+									<p className="mt-1">REGULAR payroll always uses the server-returned system ALL_DAYS_DOUBLE policy. Employee policy assignment does not control the calculation.</p>
+								</div>
+							)}
+							{isOwner && resolvedPolicy && (
+								<div className="mb-3 max-w-72 rounded border border-zinc-300 p-3 text-xs dark:border-zinc-700">
+									<p className="font-semibold text-blueAccent-700 dark:text-blueAccent-400">
+										{values.salaryDetail.overtimePolicy ? 'Explicit assignment' : 'Inherited company default'}
+									</p>
+									<p className="mt-1 font-medium">{resolvedPolicy.name} ({resolvedPolicy.isActive ? 'active' : 'inactive'})</p>
+									<p>{resolvedPolicy.earningsBasis === 'SELECTED_HEADS' ? `Selected earning heads (${resolvedPolicy.selectedEarningHeads?.length || 0})` : 'All earnings'}</p>
+									<p>{categorySummary}</p>
+									<p>Rounds to {resolvedPolicy.roundingIncrementMinutes} minutes, up from {resolvedPolicy.roundUpFromMinutes}</p>
+								</div>
+							)}
+							{isOwner && !resolvedPolicy && !isPolicyListError && (
+								<div className="mb-3 max-w-72 text-xs text-blueAccent-600 dark:text-blueAccent-400">
+									Leave blank to inherit the company default policy.
+								</div>
+							)}
+
 							<label
 								htmlFor="year"
 								className="text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
@@ -126,55 +200,6 @@ const EmployeeSalaryDetail = ({
 						</div>
 
 						<div className="w-fit">
-							<label
-								htmlFor={'salaryDetail.overtimeType'}
-								className="text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
-							>
-								Overtime Type
-							</label>
-							<Field
-								as="select"
-								name="salaryDetail.overtimeType"
-								className="my-1 block rounded-md bg-zinc-50 bg-opacity-50 p-1 dark:bg-zinc-700"
-							>
-								<option value="no_overtime">No Overtime</option>
-								<option value="all_days">All Days</option>
-								<option value="holiday_weekly_off">Holiday/Weekly Off</option>
-							</Field>
-							<div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
-								<ErrorMessage name={'salaryDetail.overtimeType'} />
-							</div>
-
-							<label
-								htmlFor={'salaryDetail.overtimeRate'}
-								className="text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
-							>
-								Overtime Rate
-							</label>
-							{values.salaryDetail.overtimeType !== 'no_overtime' ? (
-								<Field
-									as="select"
-									name="salaryDetail.overtimeRate"
-									className="my-1 block rounded-md bg-zinc-50 bg-opacity-50 p-1 dark:bg-zinc-700"
-								>
-									<option value="S">Single</option>
-									<option value="D">Double</option>
-								</Field>
-							) : (
-								<div className="mt-1 text-xs font-bold text-blueAccent-500 dark:text-blueAccent-700">
-									No overtime is allowed
-								</div>
-							)}
-							{errorMessage && errorMessage.overtimeRate && (
-								<p className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
-									{errorMessage.overtimeRate}
-								</p>
-							)}
-							{console.log(errorMessage)}
-							<div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
-								<ErrorMessage name={'salaryDetail.overtimeRate'} />
-							</div>
-
 							<label
 								htmlFor={'salaryDetail.salaryMode'}
 								className="text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"

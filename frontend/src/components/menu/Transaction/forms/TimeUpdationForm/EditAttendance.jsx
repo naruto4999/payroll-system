@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState, useMemo, memo, useCallback } from '
 import ReactDOM from 'react-dom';
 import { FaUserPlus } from 'react-icons/fa6';
 import { FaCircleNotch } from 'react-icons/fa6';
-import { Field, ErrorMessage, Form } from 'formik';
+import { Field } from 'formik';
 // import { useGetEmployeeShiftsQuery } from '../../../../authentication/api/employeeShiftsApiSlice';
 import { useGetCurrentMonthAllEmployeeShiftsQuery } from '../../../../authentication/api/timeUpdationApiSlice';
 import AttendanceMonthDays from './AttendanceMonthDays';
@@ -35,10 +35,16 @@ import {
 import { alertActions } from '../../../../authentication/store/slices/alertSlice';
 import { useOutletContext } from 'react-router-dom';
 import calculateAttendance from './attendanceUtils';
+import { getApiErrorMessage } from '../../../../authentication/api/errorUtils';
 
 import { useFormikContext } from 'formik';
 import MdbMachineAttendance from './MdbMachineAttendanceModal';
 import DirectMachineAttendanceModal from './DirectMachineAttendanceModal';
+import {
+	buildPolicyOvertimeComponents,
+	buildPunchOvertime,
+	calculatePolicyRoundedOvertime,
+} from './overtimeIntervals';
 
 ReactModal.setAppElement('#root');
 
@@ -46,6 +52,8 @@ ReactModal.setAppElement('#root');
 const AUTO_SHIFT_BEGINNING_BUFFER_BEFORE = 10;
 const AUTO_SHIFT_ENDING_BUFFER_BEFORE = 10;
 const AUTO_SHIFT_ENDING_BUFFER_AFTER = 10;
+const ATTENDANCE_HISTORY_MIN_YEAR = 2009;
+const ATTENDANCE_HISTORY_MIN_MONTH = 1;
 
 const classNames = (...classes) => {
 	return classes.filter(Boolean).join(' ');
@@ -73,6 +81,8 @@ const EditAttendance = ({
 	// isSubmitting,
 	leaveGrades,
 	holidays,
+	payrollTimezone,
+	attendanceRefreshVersion,
 	// table,
 	// globalFilter,
 	// setGlobalFilter,
@@ -203,8 +213,24 @@ const EditAttendance = ({
 			? allEmployeeSalaryDetail.find((item) => parseInt(item.employee) === parseInt(updateEmployeeId))
 			: null;
 	}, [allEmployeeSalaryDetail, updateEmployeeId]);
+	const overtimePolicy = currentEmployeeSalaryDetail?.resolvedOvertimePolicy;
+	const overtimeEnabled = (overtimePolicy?.dayRules?.length || 0) > 0;
+	const classifyOvertimeWorkDate = useCallback((workDate) => {
+		const date = new Date(`${workDate}T00:00:00Z`);
+		if (holidays.some((holiday) => holiday.date === workDate)) return 'HOLIDAY';
+		const weekday = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][date.getUTCDay()];
+		const occurrence = `${weekday}${Math.floor((date.getUTCDate() - 1) / 7) + 1}`;
+		if (
+			currentEmployeeProfessionalDetail?.weeklyOff === weekday ||
+			currentEmployeeProfessionalDetail?.extraOff === occurrence
+		) {
+			return 'WEEKLY_OFF';
+		}
+		return 'REGULAR';
+	}, [currentEmployeeProfessionalDetail, holidays]);
 
 	const calculateEarliestMonthYear = useMemo(() => {
+		const attendanceCutoff = new Date(Date.UTC(ATTENDANCE_HISTORY_MIN_YEAR, ATTENDANCE_HISTORY_MIN_MONTH - 1, 1));
 		// Find the object with the earliest dateOfJoining
 		if (allEmployeeProfessionalDetail) {
 			const earliestEmployee = allEmployeeProfessionalDetail.reduce((earliest, current) => {
@@ -215,22 +241,22 @@ const EditAttendance = ({
 			}, null);
 			if (earliestEmployee) {
 				const date = new Date(earliestEmployee.dateOfJoining);
+				const earliestAllowedDate = date > attendanceCutoff ? date : attendanceCutoff;
 				return {
-					earliestMonth: date.getMonth() + 1, // Adding 1 because months are zero-based
-					earliestYear: date.getFullYear(),
+					earliestMonth: earliestAllowedDate.getMonth() + 1, // Adding 1 because months are zero-based
+					earliestYear: earliestAllowedDate.getFullYear(),
 				};
 			} else {
 				return {
-					earliestMonth: null,
-					earliestYear: null,
+					earliestMonth: ATTENDANCE_HISTORY_MIN_MONTH,
+					earliestYear: ATTENDANCE_HISTORY_MIN_YEAR,
 				};
 			}
 		}
 
-		const currentDate = new Date();
 		return {
-			earliestMonth: 1, // January (month is 0-based, so 1 = January)
-			earliestYear: currentDate.getFullYear(), // Current year
+			earliestMonth: ATTENDANCE_HISTORY_MIN_MONTH,
+			earliestYear: ATTENDANCE_HISTORY_MIN_YEAR,
 		};
 	}, [allEmployeeProfessionalDetail]);
 
@@ -255,23 +281,13 @@ const EditAttendance = ({
 			const result = {};
 
 			allEmployeeAttendance.forEach((obj) => {
-				const newObj = {
-					...obj,
-					firstHalf: obj.firstHalfId,
-					secondHalf: obj.secondHalfId,
-					employee: obj.employeeId,
-				};
-				delete newObj.firstHalfId;
-				delete newObj.secondHalfId;
-				delete newObj.employeeId;
-
-				const employeeId = obj.employeeId;
+				const employeeId = obj.employee;
 
 				if (!result[employeeId]) {
 					result[employeeId] = [];
 				}
 
-				result[employeeId].push(newObj);
+				result[employeeId].push(obj);
 			});
 
 			return result;
@@ -369,6 +385,14 @@ const EditAttendance = ({
 				.sort((a, b) => a - b),
 		[values.attendance]
 	);
+	const blockingOvertimeRows = useMemo(
+		() => Object.values(values.attendance).filter(
+			(attendance) => attendance.unbackfilledOvertime ||
+				attendance.legacyOvertimeExclusion ||
+				attendance.overtimePending
+		),
+		[values.attendance]
+	);
 
 	// Creating Year values from DOJ till now
 	const currentDate = new Date();
@@ -407,129 +431,6 @@ const EditAttendance = ({
 		const timeParts = getTimeParts(time);
 		return new Date(values.year, values.month - 1, parseInt(day), timeParts.hours, timeParts.minutes);
 	};
-
-	// Calculate Overtime for a particular day
-	const calculateWeeklyHolidayOvertime = (day) => {
-		let overtime = 0;
-		// let manualIn = values.attendance[day].manualIn;
-		let manualIn =
-			values.attendance[day]?.manualIn != ''
-				? values.attendance[day]?.manualIn
-				: values.attendance[day]?.machineIn;
-		// let manualOut = values.attendance[day].manualOut;
-		let manualOut =
-			values.attendance[day]?.manualOut != ''
-				? values.attendance[day]?.manualOut
-				: values.attendance[day]?.machineOut;
-		let manualInObj = getTimeInDateObj(manualIn, day);
-		let manualOutObj = getTimeInDateObj(manualOut, manualIn < manualOut ? day : parseInt(day) + 1);
-
-		const shift = getShift(values.year, values.month, day);
-		let shiftLunchBeginningTimeObj = getTimeInDateObj(shift.lunchBeginningTime, day);
-
-		const timeDifferenceInMilliseconds = manualOutObj - manualInObj;
-		let timeDifferenceInMinutes = timeDifferenceInMilliseconds / (1000 * 60);
-		if (shift.lunchBeginningTime && shift.lunchDuration && manualOutObj > shiftLunchBeginningTimeObj) {
-			let lunchManualOutDifferenceInMinutes = (manualOutObj - shiftLunchBeginningTimeObj) / 1000 / 60;
-			if (parseInt(lunchManualOutDifferenceInMinutes) > parseInt(shift.lunchDuration / 2)) {
-				timeDifferenceInMinutes -= shift.lunchDuration;
-			}
-		}
-		overtime += timeDifferenceInMinutes;
-
-		return overtime;
-	};
-
-	const calculateOvertime = useCallback(
-		(day) => {
-			// let manualIn = values.attendance[day].manualIn;
-			let manualIn =
-				values.attendance[day]?.manualIn != ''
-					? values.attendance[day]?.manualIn
-					: values.attendance[day]?.machineIn;
-			// let manualOut = values.attendance[day].manualOut;
-			let manualOut =
-				values.attendance[day]?.manualOut != ''
-					? values.attendance[day]?.manualOut
-					: values.attendance[day]?.machineOut;
-			const shift = getShift(values.year, values.month, day);
-			let manualInObj;
-			let manualOutObj;
-			let overtime = 0;
-
-			if (shift.beginningTime < shift.endTime) {
-				const shiftBeginningTime = getTimeInDateObj(shift.beginningTime, day);
-				const shiftEndTime = getTimeInDateObj(shift.endTime, day);
-				// If manualIn < shift begin time (without date object one) and manualIn > "00:00":
-				if (manualIn != '' && manualIn < shift.beginningTime.slice(0, 5)) {
-					manualInObj = getTimeInDateObj(manualIn, day);
-				}
-
-				// else if manualIn > shift end time (withoud date object one) and manualIn < "00:00"
-				else if (manualIn != '' && manualIn > shift.endTime.slice(0, 5)) {
-					manualInObj = getTimeInDateObj(manualIn, parseInt(day) - 1);
-				}
-				// If manualOut > shift end time (without date object one) and manualOut < "00:00":
-				if (manualOut != '' && manualOut > shift.endTime.slice(0, 5)) {
-					manualOutObj = getTimeInDateObj(manualOut, day);
-				} else if (manualOut != '' && manualOut < shift.beginningTime.slice(0, 5)) {
-					manualOutObj = getTimeInDateObj(manualOut, parseInt(day) + 1);
-				}
-				if (manualInObj != undefined) {
-					const timeDifferenceInMilliseconds = shiftBeginningTime - manualInObj;
-					const timeDifferenceInMinutes = timeDifferenceInMilliseconds / (1000 * 60);
-					if (timeDifferenceInMinutes > parseInt(shift.otBeginAfter)) {
-						overtime += timeDifferenceInMinutes;
-					}
-				}
-				if (manualOutObj != undefined) {
-					const timeDifferenceInMilliseconds = manualOutObj - shiftEndTime;
-					const timeDifferenceInMinutes = timeDifferenceInMilliseconds / (1000 * 60);
-					if (timeDifferenceInMinutes > parseInt(shift.otBeginAfter)) {
-						overtime += timeDifferenceInMinutes;
-					}
-				}
-				// setFieldValue(`attendance.${day}.otMin`, overtime);
-			} else if (shift.beginningTime > shift.endTime) {
-				const shiftBeginningTime = getTimeInDateObj(shift.beginningTime, day);
-				const shiftEndTime = getTimeInDateObj(shift.endTime, parseInt(day) + 1);
-				// If manualIn < shift begin time (without date object) and manualIn > shift end time (without object):
-
-				if (
-					manualIn != '' &&
-					manualIn < shift.beginningTime.slice(0, 5) &&
-					manualIn > shift.endTime.slice(0, 5)
-				) {
-					manualInObj = getTimeInDateObj(manualIn, day);
-				}
-
-				// If manualOut > shift end time (without the date object one) and and manualOut < shift begin time (without the date object one):
-				if (
-					manualOut != '' &&
-					manualOut > shift.endTime.slice(0, 5) &&
-					manualOut < shift.beginningTime.slice(0, 5)
-				) {
-					manualOutObj = getTimeInDateObj(manualOut, parseInt(day) + 1);
-				}
-				if (manualInObj !== undefined) {
-					const timeDifferenceInMilliseconds = shiftBeginningTime - manualInObj;
-					const timeDifferenceInMinutes = timeDifferenceInMilliseconds / (1000 * 60);
-					if (timeDifferenceInMinutes > parseInt(shift.otBeginAfter)) {
-						overtime += timeDifferenceInMinutes;
-					}
-				}
-				if (manualOutObj !== undefined) {
-					const timeDifferenceInMilliseconds = manualOutObj - shiftEndTime;
-					const timeDifferenceInMinutes = timeDifferenceInMilliseconds / (1000 * 60);
-					if (timeDifferenceInMinutes > parseInt(shift.otBeginAfter)) {
-						overtime += timeDifferenceInMinutes;
-					}
-				}
-			}
-			return overtime;
-		},
-		[values.attendance, categorizedAllEmployeeShifts, allEmployeeShifts]
-	);
 
 	const calculateLateHrs = useCallback(
 		(day) => {
@@ -715,12 +616,10 @@ const EditAttendance = ({
 
 		const setFieldValueIfChanged = (fieldPath, newValue) => {
 			const currentValue = fieldPath.split('.').reduce((acc, key) => acc[key], values);
-			if (currentValue != newValue) {
-				console.log(
-					'yes not equal: ' + 'Old: ' + currentValue + ' ' + 'New: ' + newValue,
-					' Field name: ',
-					+fieldPath + ' ' + fieldPath.split('.')
-				);
+			const changed = typeof newValue === 'object'
+				? JSON.stringify(currentValue) !== JSON.stringify(newValue)
+				: currentValue != newValue;
+			if (changed) {
 				setFieldValue(fieldPath, newValue);
 			}
 		};
@@ -733,6 +632,7 @@ const EditAttendance = ({
 				// 	extraOff = calculateExtraOffDate().getDate();
 				// }
 				for (const day in values.attendance) {
+					const overtimeDirty = values.attendance[day].overtimeDirty;
 					let weeklyOffDay = false;
 					let holidayDay = false;
 
@@ -741,6 +641,11 @@ const EditAttendance = ({
 
 					const weeklyOffIndex = weeklyOffValues.indexOf(currentEmployeeProfessionalDetail.weeklyOff);
 					const attendanceWeekday = attendanceDay.getDay();
+					const calendarHolidayDay = holidays.some(
+						(holiday) => new Date(holiday.date).getTime() === attendanceDay.getTime()
+					);
+					const calendarWeeklyOffDay = attendanceWeekday === weeklyOffIndex ||
+						(memoizedExtraOffDate && parseInt(day) === memoizedExtraOffDate.getDate());
 
 					if (!values.attendance[day].manualMode) {
 						// Checking for holiday off (daily wage employees don't get WO or HD or WO* or HD*)
@@ -803,65 +708,46 @@ const EditAttendance = ({
 					const shift = getShift(values.year, values.month, day);
 
 					if (hasPunchIn && hasPunchOut) {
-						// Conditions for calculating Over Time
-						if (currentEmployeeSalaryDetail.overtimeType != 'no_overtime') {
-							let overtime;
-							if (currentEmployeeSalaryDetail.overtimeType == 'all_days') {
-								if (
-									weeklyOffDay ||
-									(values.attendance[day].manualMode &&
-										(values.attendance[day].firstHalf == weeklyOff.id ||
-											values.attendance[day].firstHalf == weeklyOffSkip.id ||
-											values.attendance[day].firstHalf == holidayOff.id ||
-											values.attendance[day].firstHalf == holidayOffSkip.id ||
-											values.attendance[day].firstHalf == compensationOff.id) &&
-										(values.attendance[day].secondHalf == weeklyOff.id ||
-											values.attendance[day].secondHalf == weeklyOffSkip.id ||
-											values.attendance[day].secondHalf == holidayOff.id ||
-											values.attendance[day].secondHalf == holidayOffSkip.id ||
-											values.attendance[day].secondHalf == compensationOff.id)) ||
-									holidayDay
-								) {
-									overtime = calculateWeeklyHolidayOvertime(day);
-								} else {
-									overtime = calculateOvertime(day);
-								}
-								setFieldValueIfChanged(
-									`attendance.${day}.otMin`,
-									overtime > 0 ? Math.floor(overtime / 30) * 30 + (overtime % 30 > 15 ? 30 : 0) : ''
-								);
-							} else if (
-								currentEmployeeSalaryDetail.overtimeType == 'holiday_weekly_off' &&
-								!dailyWageEmployee
-							) {
-								if (
-									weeklyOffDay ||
-									(values.attendance[day].manualMode &&
-										(values.attendance[day].firstHalf == weeklyOff.id ||
-											values.attendance[day].firstHalf == weeklyOffSkip.id ||
-											values.attendance[day].firstHalf == holidayOff.id ||
-											values.attendance[day].firstHalf == holidayOffSkip.id ||
-											values.attendance[day].firstHalf == compensationOff.id) &&
-										(values.attendance[day].secondHalf == weeklyOff.id ||
-											values.attendance[day].secondHalf == weeklyOffSkip.id ||
-											values.attendance[day].secondHalf == holidayOff.id ||
-											values.attendance[day].secondHalf == holidayOffSkip.id ||
-											values.attendance[day].secondHalf == compensationOff.id)) ||
-									holidayDay
-								) {
-									overtime = calculateWeeklyHolidayOvertime(day);
-									setFieldValueIfChanged(
-										`attendance.${day}.otMin`,
-										overtime > 0
-											? Math.floor(overtime / 30) * 30 + (overtime % 30 > 15 ? 30 : 0)
-											: ''
-									);
-								} else {
-									setFieldValueIfChanged(`attendance.${day}.otMin`, ''); //not weeklyoff and not holiday and employee's Overtime is "Weekly/Holiday"
-								}
-							}
-						} else {
-							setFieldValueIfChanged(`attendance.${day}.otMin`, ''); //set otMin to '' if Overtime Type is "No Overtime"
+						const calendarOffDay = calendarHolidayDay || calendarWeeklyOffDay;
+						const fullSpanOffDay = calendarOffDay && !dailyWageEmployee;
+						if (overtimeDirty) {
+							const effectiveIn = attendance.manualIn || attendance.machineIn;
+							const effectiveOut = attendance.manualOut || attendance.machineOut;
+							const overtimeFacts = buildPunchOvertime({
+								year: values.year,
+								month: values.month,
+								day,
+								punchIn: effectiveIn,
+								punchOut: effectiveOut,
+								shift,
+								fullSpanOffDay,
+								payrollTimezone,
+							});
+							const overtimeComponents = buildPolicyOvertimeComponents({
+								intervals: overtimeFacts.intervals,
+								payrollTimezone,
+								classifyWorkDate: classifyOvertimeWorkDate,
+							});
+							const overtime = overtimeFacts.grossMinutes - overtimeFacts.excludedMinutes;
+							setFieldValueIfChanged(
+								`attendance.${day}.calculatedOvertimeIntervals`,
+								overtimeFacts.intervals
+							);
+							setFieldValueIfChanged(
+								`attendance.${day}.calculatedOvertimeComponents`,
+								overtimeComponents
+							);
+							setFieldValueIfChanged(`attendance.${day}.otMin`, overtime > 0 ? overtime : '');
+							setFieldValueIfChanged(
+								`attendance.${day}.otGrossMinutes`,
+								overtime > 0 ? overtimeFacts.grossMinutes : ''
+							);
+							setFieldValueIfChanged(`attendance.${day}.otExcludedMinutes`, overtimeFacts.excludedMinutes);
+							setFieldValueIfChanged(
+								`attendance.${day}.otExclusionReason`,
+								overtimeFacts.excludedMinutes > 0 ? 'MEAL_BREAK' : 'NONE'
+							);
+							setFieldValueIfChanged(`attendance.${day}.overtimePending`, false);
 						}
 
 						// Conditions for calculating Late
@@ -902,10 +788,27 @@ const EditAttendance = ({
 						!holidayDay &&
 						!values.attendance[day].manualMode
 					) {
+						if (overtimeDirty) {
+							setFieldValueIfChanged(`attendance.${day}.calculatedOvertimeIntervals`, []);
+							setFieldValueIfChanged(`attendance.${day}.calculatedOvertimeComponents`, []);
+							setFieldValueIfChanged(`attendance.${day}.otMin`, '');
+							setFieldValueIfChanged(`attendance.${day}.otGrossMinutes`, '');
+							setFieldValueIfChanged(`attendance.${day}.otExcludedMinutes`, 0);
+							setFieldValueIfChanged(`attendance.${day}.otExclusionReason`, 'NONE');
+							setFieldValueIfChanged(`attendance.${day}.overtimePending`, false);
+						}
 						setFieldValueIfChanged(`attendance.${day}.firstHalf`, missPunch.id);
 						setFieldValueIfChanged(`attendance.${day}.secondHalf`, missPunch.id);
 					} else if (!hasPunchIn && !hasPunchOut) {
-						setFieldValueIfChanged(`attendance.${day}.otMin`, '');
+						if (overtimeDirty) {
+							setFieldValueIfChanged(`attendance.${day}.calculatedOvertimeIntervals`, []);
+							setFieldValueIfChanged(`attendance.${day}.calculatedOvertimeComponents`, []);
+							setFieldValueIfChanged(`attendance.${day}.otMin`, '');
+							setFieldValueIfChanged(`attendance.${day}.otGrossMinutes`, '');
+							setFieldValueIfChanged(`attendance.${day}.otExcludedMinutes`, 0);
+							setFieldValueIfChanged(`attendance.${day}.otExclusionReason`, 'NONE');
+							setFieldValueIfChanged(`attendance.${day}.overtimePending`, false);
+						}
 						setFieldValueIfChanged(`attendance.${day}.lateMin`, '');
 
 						if (!holidayDay && !weeklyOffDay && !values.attendance[day].manualMode) {
@@ -927,11 +830,24 @@ const EditAttendance = ({
 		return () => {
 			clearTimeout(timeoutId);
 		};
-	}, [values.attendance, currentEmployeeProfessionalDetail, currentEmployeeSalaryDetail]);
+	}, [
+		values.attendance,
+		currentEmployeeProfessionalDetail,
+		currentEmployeeSalaryDetail,
+		payrollTimezone,
+		classifyOvertimeWorkDate,
+	]);
 
 	// Runs when fetch value of employeeAttendance changes
 	useEffect(() => {
-		if (!isSubmitting && employeeAttendance && currentEmployeeProfessionalDetail && updateEmployeeId) {
+		if (
+			!isSubmitting &&
+			!isFetchingAllEmployeeAttendance &&
+			employeeAttendance &&
+			currentEmployeeProfessionalDetail &&
+			currentEmployeeSalaryDetail &&
+			updateEmployeeId
+		) {
 			const daysInMonth = new Date(values.year, values.month, 0).getDate();
 			const new_attendance = {};
 			const weeklyOffIndex = weeklyOffValues.indexOf(currentEmployeeProfessionalDetail.weeklyOff);
@@ -958,6 +874,17 @@ const EditAttendance = ({
 					firstHalf: absent.id,
 					secondHalf: absent.id,
 					otMin: '',
+					overtimeDetails: [],
+					calculatedOvertimeIntervals: [],
+					calculatedOvertimeComponents: [],
+					otGrossMinutes: '',
+					otExcludedMinutes: 0,
+					otExclusionReason: 'NONE',
+					otExclusionNote: '',
+					unbackfilledOvertime: false,
+					legacyOvertimeExclusion: false,
+					overtimeDirty: true,
+					overtimePending: false,
 					lateMin: '',
 					date: `${values.year}-${values.month}-${day}`,
 					manualMode: false,
@@ -1021,12 +948,24 @@ const EditAttendance = ({
 								matchingEmployeeAttendance[key] === null ? '' : matchingEmployeeAttendance[key];
 						}
 					}
+					new_attendance[day].unbackfilledOvertime =
+						matchingEmployeeAttendance.otMin > 0 &&
+						matchingEmployeeAttendance.overtimeDetails?.length === 0;
+					new_attendance[day].legacyOvertimeExclusion = matchingEmployeeAttendance.overtimeDetails
+						?.some((detail) => detail.exclusionReason === 'LEGACY_UNSPECIFIED');
+					new_attendance[day].overtimeDirty = false;
 				}
 			}
 
 			setFieldValue('attendance', new_attendance);
 		}
-	}, [employeeAttendance, currentEmployeeProfessionalDetail, currentEmployeeSalaryDetail]);
+	}, [
+		employeeAttendance,
+		currentEmployeeProfessionalDetail,
+		currentEmployeeSalaryDetail,
+		attendanceRefreshVersion,
+		isFetchingAllEmployeeAttendance,
+	]);
 
 	const getTimePart = (date) => {
 		const hours = String(date.getHours()).padStart(2, '0');
@@ -1093,13 +1032,18 @@ const EditAttendance = ({
 
 			setFieldValue(`attendance.${day}.manualIn`, getTimePart(randomBeginningDate));
 			setFieldValue(`attendance.${day}.manualOut`, getTimePart(randomEndingDate));
+			setFieldValue(`attendance.${day}.overtimeDetails`, []);
+			setFieldValue(`attendance.${day}.calculatedOvertimeComponents`, []);
+			setFieldValue(`attendance.${day}.unbackfilledOvertime`, false);
+			setFieldValue(`attendance.${day}.legacyOvertimeExclusion`, false);
+			setFieldValue(`attendance.${day}.overtimeDirty`, true);
+			setFieldValue(`attendance.${day}.overtimePending`, true);
 		}
 	}, [values.manualToDate, values.manualFromDate, currentEmployeeProfessionalDetail, values.year, values.month]);
 
 	const machineAttendance = async (formikBag) => {
 		const fileInput = document.getElementById('machineAttendanceUpload'); // Replace with the actual ID of your file input element
 		const file = fileInput.files[0];
-		console.log(formikBag.allEmployeesMachineAttendance);
 		const formData = new FormData();
 		formData.append('mdbDatabase', file);
 		formData.append('employee', updateEmployeeId);
@@ -1128,7 +1072,7 @@ const EditAttendance = ({
 			// console.log(err);
 			dispatch(
 				alertActions.createAlert({
-					message: 'Error Occurred',
+					message: getApiErrorMessage(err),
 					type: 'Error',
 					duration: 5000,
 				})
@@ -1164,7 +1108,7 @@ const EditAttendance = ({
 			// console.log(err);
 			dispatch(
 				alertActions.createAlert({
-					message: 'Error Occurred',
+					message: getApiErrorMessage(err),
 					type: 'Error',
 					duration: 5000,
 				})
@@ -1196,7 +1140,7 @@ const EditAttendance = ({
 		} catch (err) {
 			dispatch(
 				alertActions.createAlert({
-					message: 'Error Occurred',
+					message: getApiErrorMessage(err),
 					type: 'Error',
 					duration: 5000,
 				})
@@ -1215,6 +1159,12 @@ const EditAttendance = ({
 			let skipThisDay = false;
 			setFieldValue(`attendance.${day}.manualIn`, '');
 			setFieldValue(`attendance.${day}.manualOut`, '');
+			setFieldValue(`attendance.${day}.overtimeDetails`, []);
+			setFieldValue(`attendance.${day}.calculatedOvertimeComponents`, []);
+			setFieldValue(`attendance.${day}.unbackfilledOvertime`, false);
+			setFieldValue(`attendance.${day}.legacyOvertimeExclusion`, false);
+			setFieldValue(`attendance.${day}.overtimeDirty`, true);
+			setFieldValue(`attendance.${day}.overtimePending`, true);
 		}
 	}, [values.manualToDate, values.manualFromDate]);
 
@@ -1249,7 +1199,19 @@ const EditAttendance = ({
 								month={values.month}
 								shift={shiftForCurrentDate?.name}
 								leaveGrades={leaveGrades}
-								otMin={values.attendance[day].otMin}
+								otMin={overtimeEnabled && values.attendance[day].otMin !== ''
+									? calculatePolicyRoundedOvertime({
+										components: values.attendance[day].overtimeDirty
+											? values.attendance[day].calculatedOvertimeComponents
+											: values.attendance[day].overtimeDetails,
+										policy: overtimePolicy,
+									})
+									: ''}
+								overtimeDetails={overtimeEnabled ? values.attendance[day].overtimeDetails : []}
+								otExcludedMinutes={overtimeEnabled ? values.attendance[day].otExcludedMinutes : 0}
+								otExclusionReason={values.attendance[day].otExclusionReason}
+								unbackfilledOvertime={values.attendance[day].unbackfilledOvertime}
+								legacyOvertimeExclusion={values.attendance[day].legacyOvertimeExclusion}
 								lateMin={values.attendance[day].lateMin}
 								holidays={holidays}
 								memoizedExtraOffDate={memoizedExtraOffDate}
@@ -1273,6 +1235,8 @@ const EditAttendance = ({
 					<AttendanceFooter
 						absent={absent}
 						attendance={values.attendance}
+						overtimeEnabled={overtimeEnabled}
+						overtimePolicy={overtimePolicy}
 						holidayOffSkip={holidayOffSkip}
 						weeklyOffSkip={weeklyOffSkip}
 						missPunch={missPunch}
@@ -1446,7 +1410,7 @@ const EditAttendance = ({
 									<>
 										<button
 											type="button"
-											className="h-7 w-56 rounded bg-blueAccent-400 p-1 text-sm font-medium hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:hover:bg-blueAccent-600"
+											className="h-7 w-48 rounded bg-blueAccent-400 p-1 text-sm font-medium hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:hover:bg-blueAccent-600"
 											onClick={() => setShowMdbMachineAttendanceModal(true)}
 										>
 											Machine Attendance MDB
@@ -1454,7 +1418,7 @@ const EditAttendance = ({
 										<button
 											type="button"
 											disabled={true}
-											className="opacity:30 h-7 w-56 rounded bg-blueAccent-400 p-1 text-sm font-medium hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:opacity-30 dark:hover:bg-blueAccent-600"
+											className="opacity:30 h-7 w-48 rounded bg-blueAccent-400 p-1 text-sm font-medium hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:opacity-30 dark:hover:bg-blueAccent-600"
 											onClick={() => setShowDirectMachineAttendanceModal(true)}
 										>
 											Machine Attendance Direct
@@ -1472,11 +1436,13 @@ const EditAttendance = ({
 						<>
 							<button
 								className={classNames(
-									isValid ? 'hover:bg-teal-600  dark:hover:bg-teal-600' : 'opacity-40',
+									isValid && !isSubmitting && blockingOvertimeRows.length === 0
+										? 'hover:bg-teal-600 dark:hover:bg-teal-600'
+										: 'cursor-not-allowed opacity-40',
 									'h-10 w-fit rounded bg-teal-500 p-2 px-4 text-base font-medium dark:bg-teal-700'
 								)}
 								type="submit"
-								disabled={!isValid}
+								disabled={!isValid || isSubmitting || blockingOvertimeRows.length > 0}
 								onClick={handleSubmit}
 							>
 								Update
@@ -1484,10 +1450,9 @@ const EditAttendance = ({
 									<FaCircleNotch className="my-auto ml-2 inline animate-spin text-xl text-amber-700 dark:text-amber-600 " />
 								)}
 							</button>
-
 							<button
 								type="button"
-								className="h-10 w-64 rounded bg-blueAccent-400 p-1 text-base font-medium hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:hover:bg-blueAccent-600"
+								className="h-10 w-64 whitespace-nowrap rounded bg-blueAccent-400 p-1 text-base font-medium hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:hover:bg-blueAccent-600"
 								onClick={bulkDefaultAttendanceClicked}
 							>
 								Update All with Default Value

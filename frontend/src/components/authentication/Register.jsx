@@ -1,348 +1,147 @@
 import React, { useState } from 'react';
-import authSlice from './store/slices/auth';
-import { useDispatch } from 'react-redux';
-import { Link } from 'react-router-dom';
-import { FaCircleNotch } from 'react-icons/fa';
-import { useRegisterMutation, useSendOtpMutation } from './api/registerApiSlice';
+import { FiArrowRight, FiCheck, FiEye, FiEyeOff, FiLock, FiMail, FiPhone, FiUser } from 'react-icons/fi';
 import { Formik } from 'formik';
+import { Link } from 'react-router-dom';
+import Button from '../UI/Button';
+import Input from '../UI/Input';
+import Modal from '../UI/Modal';
 import { registerSchema } from './AuthSchema';
-import { useRef } from 'react';
-import ReactModal from 'react-modal';
 import OtpForm from './OtpForm';
-import { confirmPassFormApiSlice } from './api/confirmPassFormApiSlice';
+import { useRegisterMutation, useSendOtpMutation } from './api/registerApiSlice';
+import { getApiErrorMessage } from './api/errorUtils';
 
-const classNames = (...classes) => {
-    return classes.filter(Boolean).join(' ');
-};
+const FieldError = ({ error, touched }) =>
+	(error && touched ? <p className="mt-1 text-xs leading-5 text-red-500 dark:text-red-400">{error}</p> : null);
+
 const RegisterForm = () => {
-    const [register, { isLoading, isError, isSuccess }] = useRegisterMutation(); //use the isLoading later
-    const [sendOtp, { isLoading: isLoadingOtp, isError: sendOtpError, isSuccess: sendOtpSuccess }] =
-        useSendOtpMutation(); //use the isLoading later
-    const [msg, setMsg] = useState('');
-    const [otpMsg, setOtpMsg] = useState('');
-    const formRef = useRef(null);
-    const [otpFormPopover, setOtpFormPopover] = useState(false);
-    const [otp, setOtp] = useState('');
-    console.log(otp);
-    const [userDetails, setUserDetails] = useState(null);
+	const [register, { isLoading, isError }] = useRegisterMutation();
+	const [sendOtp, { isLoading: isLoadingOtp, isError: sendOtpError }] = useSendOtpMutation();
+	const [msg, setMsg] = useState('');
+	const [otpMsg, setOtpMsg] = useState('');
+	const [otpFormPopover, setOtpFormPopover] = useState(false);
+	const [otp, setOtp] = useState('');
+	const [userDetails, setUserDetails] = useState(null);
+	const [showPassword, setShowPassword] = useState(false);
+	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-    // const changeHandler = (event) => {
-    //     setUserDetails((prevState) => {
-    //         return { ...prevState, [event.target.name]: event.target.value };
-    //     });
-    // };
-    console.log(userDetails);
-    const otpChangeHandler = (event) => {
-        setOtp(event.target.value);
-    };
+	const submitButtonClicked = async (values) => {
+		setMsg('');
+		setOtpMsg('');
+		try {
+			const data = await register({
+				email: values.email,
+				password: values.password,
+				username: values.username,
+				phone_no: values.phone_no,
+			}).unwrap();
+			setUserDetails(values);
+			setMsg(data.detail || 'Verification code sent.');
+			setOtpFormPopover(true);
+		} catch (err) {
+			setMsg(getApiErrorMessage(err, 'Unable to create your account right now. Please try again.'));
+		}
+	};
 
-    const submitButtonClicked = async (values, formikBag) => {
-        setOtpMsg('');
+	const submitOtpButtonCliked = async (e) => {
+		e.preventDefault();
+		setOtpMsg('');
+		try {
+			const data = await sendOtp({ ...userDetails, otp }).unwrap();
+			setMsg(data.detail || 'Account created successfully.');
+			setUserDetails(null);
+			setOtpFormPopover(false);
+		} catch (err) {
+			setOtpMsg(getApiErrorMessage(err, 'That code is invalid. Please try again.'));
+		}
+	};
 
-        // console.log(formikBag.resetForm)
+	const inputClass = 'h-11 rounded-lg border-zinc-700 bg-zinc-800 text-zinc-100 placeholder:text-zinc-500 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10';
 
-        try {
-            const data = await register({
-                email: values.email,
-                password: values.password,
-                username: values.username,
-                phone_no: values.phone_no,
-            }).unwrap();
-            console.log(data);
-            setOtpFormPopover(true);
-            setMsg(data.detail);
-        } catch (err) {
-            console.log(err);
-            if (err.hasOwnProperty('data')) {
-                if (err.data.hasOwnProperty('username')) {
-                    setMsg(err.data.username);
-                } else if (err.data.hasOwnProperty('email')) {
-                    setMsg(err.data.email);
-                } else if (err.data.hasOwnProperty('phone_no')) {
-                    setMsg(err.data.phone_no);
-                } else if (err.data.hasOwnProperty('password')) {
-                    setMsg('Ensure password is at least 8 characters long.');
-                }
-            } else {
-                setMsg('Server Down');
-            }
-        }
-        setUserDetails(values);
-    };
-    console.log(msg);
-    const submitOtpButtonCliked = async (e) => {
-        e.preventDefault();
-        console.log(otp);
-        // console.log(userDetails);
-        const credentials = { ...userDetails, otp: otp };
-        console.log(credentials);
-        try {
-            const data = await sendOtp(credentials).unwrap();
-            console.log(data);
-            setMsg(data.detail);
+	return (
+		<main className="relative flex min-h-screen overflow-hidden bg-brand-light text-zinc-900 dark:bg-brand-canvas dark:text-white">
+			<div className="pointer-events-none absolute -left-32 -top-32 h-80 w-80 rounded-full bg-teal-200/40 blur-3xl dark:bg-teal-900/30" />
+			<div className="pointer-events-none absolute -bottom-40 right-0 h-96 w-96 rounded-full bg-blueAccent-100/60 blur-3xl dark:bg-blueAccent-900/20" />
 
-            setUserDetails(null);
-            setOtpFormPopover(false);
-        } catch (err) {
-            console.log(err);
-            setOtpMsg(err.data.detail);
-        }
-    };
+			<section className="relative hidden w-[46%] flex-col justify-between overflow-hidden bg-brand-ink p-12 text-white lg:flex xl:p-16">
+				<div className="absolute -right-24 top-16 h-72 w-72 rounded-full border-[36px] border-teal-400/10" />
+				<div className="absolute -bottom-40 -left-32 h-96 w-96 rounded-full border-[52px] border-teal-300/10" />
+				<Link to="/" className="relative z-10 inline-flex items-center">
+					<img src={`${import.meta.env.VITE_PUBLIC_URL}logo_text_dark.svg`} alt="Payper" className="h-auto w-44 brightness-0 invert" />
+				</Link>
+				<div className="relative z-10 max-w-md pb-8">
+					<p className="mb-5 text-sm font-medium uppercase tracking-[0.24em] text-teal-300">A better way to work</p>
+					<h1 className="text-5xl font-semibold leading-[1.08] tracking-[-0.04em] xl:text-6xl">Bring your whole team into focus.</h1>
+					<p className="mt-6 max-w-sm text-base leading-7 text-slate-300">Set up your payroll workspace once, then spend less time chasing details and more time growing your business.</p>
+					<ul className="mt-9 space-y-4 text-sm text-slate-300">
+						{['One secure workspace', 'Simple employee management', 'Payroll reports on demand'].map((item) => (
+							<li key={item} className="flex items-center gap-3"><span className="flex h-6 w-6 items-center justify-center rounded-full bg-teal-400/15 text-teal-300"><FiCheck /></span>{item}</li>
+						))}
+					</ul>
+				</div>
+				<p className="relative z-10 text-xs text-slate-400">A Smart Payroll System on Cloud</p>
+			</section>
 
-    return (
-        <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center">
-            <section className="top-0 z-10 flex w-full justify-center p-2">
-                <div className="relative h-[172px] w-full">
-                    <Link to="/">
-                        <img
-                            src={`${import.meta.env.VITE_PUBLIC_URL}logo_full_dark.svg`}
-                            alt="LOGO"
-                            className=" absolute inset-0 mx-auto h-36 w-auto object-center transition-all duration-700 ease-in-out hover:h-[154px]"
-                        />
-                    </Link>
+			<section className="relative flex w-full items-center justify-center px-5 py-8 sm:px-8 lg:w-[54%] lg:px-12">
+				<div className="w-full max-w-md">
+					<div className="mb-7 flex justify-center lg:hidden">
+						<Link to="/" className="inline-flex"><img src={`${import.meta.env.VITE_PUBLIC_URL}logo_text_dark.svg`} alt="Payper" className="h-auto w-36 brightness-0 invert" /></Link>
+					</div>
 
-                    <p className="absolute bottom-0 mx-auto w-full text-center font-sans text-sm italic text-slate-400">
-                        A Smart Payroll System on Cloud
-                    </p>
-                </div>
-            </section>
+					<div className="rounded-[2rem] border border-white/80 bg-white/75 p-6 shadow-brand-card backdrop-blur-xl dark:border-white/10 dark:bg-zinc-900/70 sm:p-8">
+						<div className="mb-6">
+							<p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-teal-700 dark:text-teal-400">Get started</p>
+							<h2 className="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-white">Create your account</h2>
+							<p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">Your payroll workspace starts here.</p>
+						</div>
 
-            <section id="login" className="flex w-full flex-col md:justify-center">
-                <div
-                    className="box-border flex flex-col rounded-lg bg-zinc-50
-                bg-opacity-70 p-6 shadow-xl dark:bg-black dark:bg-opacity-50 md:mx-6"
-                >
-                    <h1 className="mb-8 text-center text-4xl text-gray-900 text-opacity-70 dark:text-slate-100 dark:text-opacity-70">
-                        Register
-                    </h1>
+						<Formik initialValues={{ email: '', password: '', passConfirm: '', username: '', phone_no: '' }} validationSchema={registerSchema} onSubmit={submitButtonClicked}>
+							{({ handleSubmit, handleChange, handleBlur, values, errors, touched, isValid }) => (
+								<form className="space-y-3.5" onSubmit={handleSubmit}>
+									<div>
+										<label htmlFor="username" className="mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300">Username</label>
+										<Input id="username" name="username" value={values.username} onChange={handleChange} onBlur={handleBlur} placeholder="Choose a username" autoComplete="username" size="sm" startAdornment={<FiUser />} className={inputClass} />
+										<FieldError error={errors.username} touched={touched.username} />
+									</div>
+									<div>
+										<label htmlFor="email" className="mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300">Email address</label>
+										<Input id="email" name="email" type="email" value={values.email} onChange={handleChange} onBlur={handleBlur} placeholder="you@company.com" autoComplete="email" size="sm" startAdornment={<FiMail />} className={inputClass} />
+										<FieldError error={errors.email} touched={touched.email} />
+									</div>
+									<div>
+										<label htmlFor="phone_no" className="mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300">Phone number</label>
+										<Input id="phone_no" name="phone_no" type="tel" value={values.phone_no} onChange={handleChange} onBlur={handleBlur} placeholder="10-digit phone number" autoComplete="tel" maxLength={10} size="sm" startAdornment={<FiPhone />} className={inputClass} />
+										<FieldError error={errors.phone_no} touched={touched.phone_no} />
+									</div>
+									<div>
+										<label htmlFor="password" className="mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300">Password</label>
+										<Input id="password" name="password" type={showPassword ? 'text' : 'password'} value={values.password} onChange={handleChange} onBlur={handleBlur} placeholder="Create a secure password" autoComplete="new-password" size="sm" startAdornment={<FiLock />} endAdornment={<button type="button" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? 'Hide password' : 'Show password'} className="transition hover:text-zinc-200">{showPassword ? <FiEyeOff /> : <FiEye />}</button>} className={inputClass + ' pr-11'} />
+										<FieldError error={errors.password} touched={touched.password} />
+									</div>
+									<div>
+										<label htmlFor="passConfirm" className="mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300">Confirm password</label>
+										<Input id="passConfirm" name="passConfirm" type={showConfirmPassword ? 'text' : 'password'} value={values.passConfirm} onChange={handleChange} onBlur={handleBlur} placeholder="Repeat your password" autoComplete="new-password" size="sm" startAdornment={<FiLock />} endAdornment={<button type="button" onClick={() => setShowConfirmPassword((visible) => !visible)} aria-label={showConfirmPassword ? 'Hide password' : 'Show password'} className="transition hover:text-zinc-200">{showConfirmPassword ? <FiEyeOff /> : <FiEye />}</button>} className={inputClass + ' pr-11'} />
+										<FieldError error={errors.passConfirm} touched={touched.passConfirm} />
+									</div>
 
-                    {/* formik implementation */}
-                    <Formik
-                        initialValues={{
-                            email: '',
-                            password: '',
-                            passConfirm: '',
-                            username: '',
-                            phone_no: '',
-                        }}
-                        validationSchema={registerSchema}
-                        onSubmit={submitButtonClicked}
-                    >
-                        {({ handleSubmit, handleChange, handleBlur, values, errors, touched, isValid }) => (
-                            <form
-                                action=""
-                                className="mx-6 flex flex-col justify-center gap-8 text-sm md:text-base"
-                                onSubmit={handleSubmit}
-                                ref={formRef}
-                            >
-                                {/* using an empty space as a placeholder so when placeholder
-                    dissapears if user enter something then the label stays on top
-                    we are using 'placeholder-shown' pseudo class butt it's not available in taiwind */}
-                                <div className="relative">
-                                    <input
-                                        className="peer  w-full border-b-2 border-gray-800 border-opacity-25 bg-transparent p-1 outline-none transition focus:border-opacity-75 dark:border-slate-100 dark:border-opacity-25 md:p-2"
-                                        type="text"
-                                        id="username"
-                                        name="username"
-                                        placeholder=" "
-                                        onChange={handleChange}
-                                        onBlur={handleBlur}
-                                        value={values.name}
-                                    />
-                                    <label
-                                        htmlFor="username"
-                                        className="absolute left-0 top-1 cursor-text italic text-gray-900 text-opacity-70 transition-all peer-focus:-top-4 peer-focus:text-xs peer-[&:not(:placeholder-shown)]:-top-4 peer-[&:not(:placeholder-shown)]:text-xs dark:text-white dark:text-opacity-70"
-                                    >
-                                        Username
-                                    </label>
-                                    {errors.username && touched.username && (
-                                        <div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
-                                            {errors.username}
-                                        </div>
-                                    )}
-                                </div>
+									{(msg || isError) && <p role="alert" className={`pt-1 text-xs leading-5 ${isError ? 'text-red-500 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>{msg}</p>}
+									<Button type="submit" disabled={!isValid || isLoading} className="group mt-2 h-12 w-full rounded-lg bg-teal-700 px-5 text-sm font-semibold text-white shadow-lg shadow-teal-700/20 transition hover:bg-teal-800 focus:outline-none focus:ring-4 focus:ring-teal-600/20 disabled:cursor-not-allowed disabled:opacity-50">
+										{isLoading ? 'Creating account...' : 'Create account'} {!isLoading && <FiArrowRight className="transition-transform group-hover:translate-x-1" />}
+									</Button>
+								</form>
+							)}
+						</Formik>
 
-                                <div className="relative">
-                                    <input
-                                        className="peer  w-full border-b-2 border-gray-800 border-opacity-25 bg-transparent p-1 outline-none transition focus:border-opacity-75 dark:border-slate-100 dark:border-opacity-25 md:p-2"
-                                        type="email"
-                                        id="email"
-                                        name="email"
-                                        placeholder=" "
-                                        onChange={handleChange}
-                                        onBlur={handleBlur}
-                                        value={values.name}
-                                    />
-                                    <label
-                                        htmlFor="email"
-                                        className="absolute left-0 top-1 cursor-text italic text-gray-900 text-opacity-70 transition-all peer-focus:-top-4 peer-focus:text-xs peer-[&:not(:placeholder-shown)]:-top-4 peer-[&:not(:placeholder-shown)]:text-xs dark:text-white dark:text-opacity-70"
-                                    >
-                                        Email
-                                    </label>
-                                    {errors.email && touched.email && (
-                                        <div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
-                                            {errors.email}
-                                        </div>
-                                    )}
-                                </div>
+						<p className="mt-6 text-center text-sm text-zinc-500 dark:text-zinc-400">Already have an account? <Link to="/login" className="font-semibold text-teal-700 hover:text-teal-900 dark:text-teal-400 dark:hover:text-teal-300">Sign in</Link></p>
+					</div>
+					<p className="mt-5 text-center text-xs text-zinc-400 dark:text-zinc-500">Your data is protected with secure authentication.</p>
+				</div>
+			</section>
 
-                                <div className="relative">
-                                    <input
-                                        className="peer  w-full border-b-2 border-gray-800 border-opacity-25 bg-transparent p-1 outline-none transition focus:border-opacity-75 dark:border-slate-100 dark:border-opacity-25 md:p-2"
-                                        type="tel"
-                                        id="phone_no"
-                                        name="phone_no"
-                                        placeholder=" "
-                                        onChange={handleChange}
-                                        onBlur={handleBlur}
-                                        value={values.name}
-                                        maxLength={10}
-                                    />
-                                    <label
-                                        htmlFor="phone_no"
-                                        className="absolute left-0 top-1 cursor-text italic text-gray-900 text-opacity-70 transition-all peer-focus:-top-4 peer-focus:text-xs peer-[&:not(:placeholder-shown)]:-top-4 peer-[&:not(:placeholder-shown)]:text-xs dark:text-white dark:text-opacity-70"
-                                    >
-                                        Phone Number
-                                    </label>
-                                    {errors.phone_no && touched.phone_no && (
-                                        <div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
-                                            {errors.phone_no}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="relative">
-                                    <input
-                                        className="peer  w-full border-b-2 border-gray-800 border-opacity-25 bg-transparent p-1 outline-none transition focus:border-opacity-75 dark:border-slate-100 dark:border-opacity-25 md:p-2"
-                                        type="password"
-                                        id="password"
-                                        name="password"
-                                        placeholder=" "
-                                        onChange={handleChange}
-                                        onBlur={handleBlur}
-                                        value={values.name}
-                                    />
-                                    <label
-                                        htmlFor="password"
-                                        className="absolute left-0 top-1 cursor-text italic text-gray-900 text-opacity-70 transition-all peer-focus:-top-4 peer-focus:text-xs peer-[&:not(:placeholder-shown)]:-top-4 peer-[&:not(:placeholder-shown)]:text-xs dark:text-white dark:text-opacity-70"
-                                    >
-                                        Password
-                                    </label>
-                                    {errors.password && touched.password && (
-                                        <div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
-                                            {errors.password}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="relative">
-                                    <input
-                                        className="peer  w-full border-b-2 border-gray-800 border-opacity-25 bg-transparent p-1 outline-none transition focus:border-opacity-75 dark:border-slate-100 dark:border-opacity-25 md:p-2"
-                                        type="password"
-                                        id="passConfirm"
-                                        name="passConfirm"
-                                        placeholder=" "
-                                        onChange={handleChange}
-                                        onBlur={handleBlur}
-                                        value={values.name}
-                                    />
-                                    <label
-                                        htmlFor="passConfirm"
-                                        className="absolute left-0 top-1 cursor-text italic text-gray-900 text-opacity-70 transition-all peer-focus:-top-4 peer-focus:text-xs peer-[&:not(:placeholder-shown)]:-top-4 peer-[&:not(:placeholder-shown)]:text-xs dark:text-white dark:text-opacity-70"
-                                    >
-                                        Confirm Password
-                                    </label>
-                                    {errors.passConfirm && touched.passConfirm && (
-                                        <div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
-                                            {errors.passConfirm}
-                                        </div>
-                                    )}
-                                </div>
-                                {/* {errors.name && <div>{errors.name}</div>} */}
-                                {/* <div className="text-red-500 dark:text-red-700 mt-1 text-sm font-bold">{errors}</div> */}
-                                {console.log(values)}
-                                {isError || isSuccess ? (
-                                    <p
-                                        className={classNames(
-                                            isError
-                                                ? 'text-red-500 dark:text-red-700'
-                                                : 'text-green-500 dark:text-green-700',
-                                            'mt-1 text-sm font-bold'
-                                        )}
-                                    >
-                                        {msg}
-                                    </p>
-                                ) : (
-                                    ''
-                                )}
-                                <button
-                                    type="submit"
-                                    className={classNames(
-                                        isValid ? 'hover:bg-teal-600  dark:hover:bg-teal-600' : 'opacity-40',
-                                        'my-2 w-full  rounded-lg bg-teal-500 p-2 text-gray-900 text-opacity-70 active:bg-teal-700 dark:bg-teal-700 dark:text-slate-100 dark:text-opacity-70 dark:active:bg-teal-500'
-                                    )}
-                                    disabled={!isValid}
-                                // className={classNames(isValid ? "dark:hover:bg-teal-600  hover:bg-teal-600" : "opacity-40", "dark:bg-teal-700 rounded w-20 p-2 text-base font-medium bg-teal-500")}
-                                >
-                                    Register
-                                </button>
-                            </form>
-                        )}
-                    </Formik>
-
-                    <Link
-                        to="/login"
-                        className="bottom-0 my-5 text-center text-sm text-gray-900 text-opacity-70 transition-all hover:text-opacity-100 dark:text-white dark:text-opacity-70 md:text-base"
-                    >
-                        Already have an account? Sign in
-                    </Link>
-
-                    <div
-                        className={classNames(
-                            isLoading ? '' : 'hidden',
-                            'z-50 mx-auto mt-2 flex h-fit w-fit items-center rounded bg-indigo-600 p-2 font-medium'
-                        )}
-                    >
-                        <FaCircleNotch className="mr-2 animate-spin text-white" />
-                        Processing...
-                    </div>
-
-                    {/* OTP popup */}
-                    <ReactModal
-                        className="items-left fixed inset-0 mx-2 my-auto flex h-fit flex-col gap-4 rounded bg-zinc-300 p-4 shadow-xl dark:bg-zinc-800 sm:mx-auto sm:max-w-lg"
-                        isOpen={otpFormPopover}
-                        onRequestClose={() => setOtpFormPopover(false)}
-                        style={{
-                            overlay: {
-                                backgroundColor: 'rgba(0, 0, 0, 0.75)',
-                            },
-                        }}
-                    >
-                        {/* <Formik
-                            initialValues={{ newDepartment: "" }}
-                            validationSchema={addDepartmentSchema}
-                            onSubmit={addButtonClicked}
-                            component={(props) => (
-                                <AddDepartment
-                                    {...props}
-                                    setAddDepartmentPopover={
-                                        setAddDepartmentPopover
-                                    }
-                                />
-                            )}
-                        /> */}
-                        <OtpForm
-                            setOtpFormPopover={setOtpFormPopover}
-                            submitOtpButtonCliked={submitOtpButtonCliked}
-                            otpChangeHandler={otpChangeHandler}
-                            otpMsg={otpMsg}
-                            sendOtpError={sendOtpError}
-                        />
-                    </ReactModal>
-                </div>
-            </section>
-        </main>
-    );
+			<Modal isOpen={otpFormPopover} onClose={() => setOtpFormPopover(false)} maxWidth="md" className="border border-white/10 bg-zinc-900 p-6 text-white">
+				<OtpForm setOtpFormPopover={setOtpFormPopover} submitOtpButtonCliked={submitOtpButtonCliked} otpChangeHandler={(event) => setOtp(event.target.value)} otpMsg={otpMsg} sendOtpError={sendOtpError} isLoading={isLoadingOtp} />
+			</Modal>
+		</main>
+	);
 };
 
 export default RegisterForm;

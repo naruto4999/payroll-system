@@ -19,9 +19,11 @@ import { rankItem } from '@tanstack/match-sorter-utils';
 import { FaRegTrashAlt, FaPen, FaAngleUp, FaAngleDown, FaEye } from 'react-icons/fa';
 import { useGetEmployeePersonalDetailsQuery } from '../../../../authentication/api/employeeEntryApiSlice';
 import {
+	timeUpdationApiSlice,
 	useAddEmployeeAttendanceMutation,
 	useUpdateEmployeeAttendanceMutation,
 } from '../../../../authentication/api/timeUpdationApiSlice';
+import { getApiErrorMessage } from '../../../../authentication/api/errorUtils';
 
 import { useOutletContext } from 'react-router-dom';
 import ReactModal from 'react-modal';
@@ -33,6 +35,7 @@ import { useGetLeaveGradesQuery } from '../../../../authentication/api/leaveGrad
 import * as yup from 'yup';
 import { useGetWeeklyOffHolidayOffQuery } from '../../../../authentication/api/weeklyOffHolidayOffApiSlice';
 import { useGetHolidaysQuery } from '../../../../authentication/api/holidayEntryApiSlice';
+import { useGetCompanyDetailsQuery } from '../../../../authentication/api/companyEntryApiSlice';
 import { TimeUpdationSchema } from './TimeUpdationSchema';
 // import createValidationSchema from './EmployeeShiftsSchema';
 
@@ -44,9 +47,62 @@ const isDateWithinRange = (date, fromDate, toDate) => {
 	return date >= fromDate && date <= toDate;
 };
 
+const EXCLUSION_REASONS = new Set([
+	'NONE',
+	'MEAL_BREAK',
+	'REST_BREAK',
+	'UNAUTHORIZED_TIME',
+	'OUTSIDE_ALLOWED_OT',
+	'MANUAL_ADJUSTMENT',
+	'OTHER',
+]);
+
+const validateOvertimeEntry = (entry, date, exact) => {
+	const startSupplied = Boolean(entry.startDatetime);
+	const endSupplied = Boolean(entry.endDatetime);
+	if (exact && startSupplied !== endSupplied) return `${date}: Exact overtime requires both start and end.`;
+	if (exact && new Date(entry.endDatetime) <= new Date(entry.startDatetime)) {
+		return `${date}: Exact overtime end must be after start.`;
+	}
+	if (!exact && !entry.workDate) return `${date}: Overtime work date is required.`;
+	if (!exact && (!Number.isInteger(entry.grossMinutes) || entry.grossMinutes <= 0)) {
+		return `${date}: Gross overtime minutes must be a positive whole number.`;
+	}
+	const excludedMinutes = entry.excludedMinutes ?? 0;
+	if (!Number.isInteger(excludedMinutes) || excludedMinutes < 0) {
+		return `${date}: Excluded overtime minutes must be a nonnegative whole number.`;
+	}
+	if (exact && startSupplied && endSupplied) {
+		const grossMinutes = (new Date(entry.endDatetime) - new Date(entry.startDatetime)) / 60000;
+		if (!Number.isInteger(grossMinutes) || grossMinutes <= 0) {
+			return `${date}: Exact overtime must use positive whole-minute boundaries.`;
+		}
+		if (excludedMinutes >= grossMinutes) return `${date}: Excluded minutes must leave positive overtime.`;
+	}
+	if (!exact && excludedMinutes >= entry.grossMinutes) {
+		return `${date}: Excluded minutes must leave positive overtime.`;
+	}
+	const reason = entry.exclusionReason || 'NONE';
+	const note = (entry.exclusionNote || '').trim();
+	if (!EXCLUSION_REASONS.has(reason)) return `${date}: Select a permitted overtime exclusion reason.`;
+	if ((excludedMinutes === 0 && (reason !== 'NONE' || note)) || (excludedMinutes > 0 && reason === 'NONE')) {
+		return `${date}: The overtime exclusion reason does not match the excluded minutes.`;
+	}
+	if (excludedMinutes > 0 && ['MANUAL_ADJUSTMENT', 'OTHER'].includes(reason) && !note) {
+		return `${date}: This overtime exclusion reason requires a note.`;
+	}
+	if (note.length > 255) return `${date}: Overtime exclusion notes cannot exceed 255 characters.`;
+	return null;
+};
+
 const TimeUpdationForm = () => {
 	const dispatch = useDispatch();
 	const globalCompany = useSelector((state) => state.globalCompany);
+	const {
+		data: companyDetails,
+		isLoading: isLoadingCompanyDetails,
+		isError: isCompanyDetailsError,
+	} = useGetCompanyDetailsQuery(globalCompany.id, { skip: globalCompany.id == null });
 
 	const {
 		data: leaveGrades,
@@ -82,6 +138,7 @@ const TimeUpdationForm = () => {
 
 	const [errorMessage, setErrorMessage] = useState('');
 	const [updateEmployeeId, setUpdateEmployeeId] = useState(null);
+	const [attendanceRefreshVersion, setAttendanceRefreshVersion] = useState(0);
 	const [
 		addEmployeeAttendance,
 		{
@@ -111,23 +168,106 @@ const TimeUpdationForm = () => {
 
 	const updateButtonClicked = useCallback(
 		async (values, formikBag) => {
+			const blockedAttendance = Object.values(values.attendance).find(
+				(attendance) => attendance.unbackfilledOvertime ||
+					attendance.legacyOvertimeExclusion ||
+					attendance.overtimePending
+			);
+			if (blockedAttendance) {
+				dispatch(
+					alertActions.createAlert({
+						message: `${blockedAttendance.date}: Resolve the highlighted overtime warning before saving.`,
+						type: 'Error',
+						duration: 5000,
+					})
+				);
+				return;
+			}
+
 			const employee_attendance = [];
+			let validationMessage = null;
 			for (const day in values.attendance) {
 				if (values.attendance.hasOwnProperty(day)) {
-					employee_attendance.push({ ...values.attendance[day] });
+					const attendance = values.attendance[day];
+					const {
+						otMin,
+						overtimeDetails = [],
+						calculatedOvertimeIntervals = [],
+						calculatedOvertimeComponents = [],
+						otGrossMinutes,
+						otExcludedMinutes = 0,
+						otExclusionReason = 'NONE',
+						otExclusionNote = '',
+						unbackfilledOvertime,
+						legacyOvertimeExclusion,
+						overtimeDirty,
+						overtimePending,
+						...attendanceFields
+					} = attendance;
+					const row = { ...attendanceFields };
+
+					const overtimeIntervals = overtimeDirty
+						? calculatedOvertimeIntervals
+						: overtimeDetails
+							.filter((detail) => detail.startDatetime || detail.endDatetime)
+							.map((detail) => ({
+								startDatetime: detail.startDatetime,
+								endDatetime: detail.endDatetime,
+								excludedMinutes: detail.excludedMinutes,
+								exclusionReason: detail.exclusionReason,
+								exclusionNote: detail.exclusionNote,
+							}));
+					const overtimeDurationEntries = overtimeDirty
+						? []
+						: overtimeDetails
+							.filter((detail) => !detail.startDatetime && !detail.endDatetime)
+							.map((detail) => ({
+								workDate: detail.workDate,
+								grossMinutes: detail.grossMinutes,
+								excludedMinutes: detail.excludedMinutes,
+								exclusionReason: detail.exclusionReason,
+								exclusionNote: detail.exclusionNote,
+							}));
+					row.overtimeIntervals = overtimeIntervals;
+					row.overtimeDurationEntries = overtimeDurationEntries;
+
+					for (const entry of overtimeIntervals) {
+						validationMessage ||= validateOvertimeEntry(entry, attendance.date, true);
+					}
+					for (const entry of overtimeDurationEntries) {
+						validationMessage ||= validateOvertimeEntry(entry, attendance.date, false);
+					}
+					employee_attendance.push(row);
 				}
 			}
+			if (validationMessage) {
+				dispatch(
+					alertActions.createAlert({ message: validationMessage, type: 'Error', duration: 5000 })
+				);
+				return;
+			}
+			const hasExistingRows = employee_attendance.some((attendance) => attendance.id != null);
+			const hasNewRows = employee_attendance.some((attendance) => attendance.id == null);
+			if (hasExistingRows && hasNewRows) {
+				dispatch(
+					alertActions.createAlert({
+						message: 'This month has a mix of saved and unsaved attendance rows and cannot be updated atomically. Fill the missing rows with the default attendance action, then retry.',
+						type: 'Error',
+						duration: 7000,
+					})
+				);
+				return;
+			}
+			const shouldUpdateAttendance = hasExistingRows;
 
 			// Process employee_attendance
 			employee_attendance.forEach((each_attendance) => {
+				delete each_attendance.id;
 				each_attendance.company = globalCompany.id;
 				each_attendance.employee = updateEmployeeId;
 
 				if (each_attendance.machineIn === '') {
 					each_attendance.machineIn = null;
-				}
-				if (each_attendance.otMin === '') {
-					each_attendance.otMin = null;
 				}
 				if (each_attendance.lateMin === '') {
 					each_attendance.lateMin = null;
@@ -150,11 +290,21 @@ const TimeUpdationForm = () => {
 			};
 
 			try {
-				if (employee_attendance[0]?.hasOwnProperty('id')) {
-					const data = await updateEmployeeAttendance(toSend).unwrap();
+				if (shouldUpdateAttendance) {
+					await updateEmployeeAttendance(toSend).unwrap();
 				} else {
-					const data = await addEmployeeAttendance(toSend).unwrap();
+					await addEmployeeAttendance(toSend).unwrap();
 				}
+				const attendanceRefetch = dispatch(
+					timeUpdationApiSlice.endpoints.getCurrentMonthAllEmployeeAttendance.initiate(
+						{ company: globalCompany.id, year: values.year, month: values.month },
+						{ forceRefetch: true, subscribe: false }
+					)
+				);
+				await attendanceRefetch.unwrap();
+				attendanceRefetch.unsubscribe();
+				formikBag.setSubmitting(false);
+				setAttendanceRefreshVersion((version) => version + 1);
 
 				dispatch(
 					alertActions.createAlert({
@@ -164,10 +314,9 @@ const TimeUpdationForm = () => {
 					})
 				);
 			} catch (err) {
-				console.error(err);
 				dispatch(
 					alertActions.createAlert({
-						message: 'Error Occurred',
+						message: getApiErrorMessage(err),
 						type: 'Error',
 						duration: 5000,
 					})
@@ -205,6 +354,17 @@ const TimeUpdationForm = () => {
 				firstHalf: '',
 				secondHalf: '',
 				otMin: '',
+				overtimeDetails: [],
+				calculatedOvertimeIntervals: [],
+				calculatedOvertimeComponents: [],
+				otGrossMinutes: '',
+				otExcludedMinutes: 0,
+				otExclusionReason: 'NONE',
+					otExclusionNote: '',
+					overtimeDirty: true,
+					overtimePending: false,
+					unbackfilledOvertime: false,
+					legacyOvertimeExclusion: false,
 				lateMin: '',
 				date: `${initialValues.year}-${initialValues.month}-${day}`,
 				manualMode: false,
@@ -376,8 +536,16 @@ const TimeUpdationForm = () => {
 				</h4>
 			</section>
 		);
-	} else if (isLoadingEmployeePersonalDetails || isLoadingLeaveGrades) {
+	} else if (isLoadingEmployeePersonalDetails || isLoadingLeaveGrades || isLoadingCompanyDetails) {
 		return <div></div>;
+	} else if (isCompanyDetailsError || !companyDetails?.payrollTimezone) {
+		return (
+			<section className="flex flex-col items-center">
+				<h4 className="text-x mt-10 font-bold text-redAccent-500 dark:text-redAccent-600">
+					Company payroll timezone is required before attendance can be updated.
+				</h4>
+			</section>
+		);
 	} else {
 		return (
 			<>
@@ -403,6 +571,8 @@ const TimeUpdationForm = () => {
 										updateEmployeeId={updateEmployeeId}
 										leaveGrades={leaveGrades}
 										holidays={holidays}
+										payrollTimezone={companyDetails?.payrollTimezone}
+										attendanceRefreshVersion={attendanceRefreshVersion}
 										setSelectedDate={setSelectedDate}
 									/>
 								)}

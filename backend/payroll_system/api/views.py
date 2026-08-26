@@ -1,8 +1,8 @@
 from django.forms import ValidationError
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from rest_framework import generics, status, mixins, serializers
-from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer, EmployeeGenerativeLeaveRecordSerializer, EmployeeLeaveOpeningSerializer, EmployeeMonthlyAttendancePresentDetailsSerializer, EmployeeAdvancePaymentSerializer, EmployeeMonthlyAttendanceDetailsSerializer, EmployeeSalaryPreparedSerializer, EarnedAmountSerializer, SalaryOvertimeSheetSerializer, AttendanceReportsSerializer, EmployeeAttendanceBulkAutofillSerializer, BulkPrepareSalariesSerializer, MachineAttendanceSerializer, PersonnelFileReportsSerializer, DefaultAttendanceSerializer, EmployeeResignationSerializer, EmployeeUnresignSerializer, BonusCalculationSerializer, BonusPercentageSerializer, EmployeeProfessionalDetailRetrieveSerializer, EarnedAmountSerializerPreparedSalary, FullAndFinalSerializer, EmployeeELLeftSerializer, EmployeeYearlyBonusAmountSerializer, FullAndFinalReportSerializer, PfEsiReportsSerializer, RegularRetrieveUpdateSerializer, EmployeeVisibilitySerializer, AllEmployeeCurrentMonthAttendanceSerializer, SubUserOvertimeSettingsSerializer, SubUserMiscSettingsSerializer, TransferAttendanceFromOwnerToRegularSerializer, EmployeeStrengthReportsSerializer, EmployeeLeaveOpeningCreateUpdateSerializer, LeaveClosingTransferSerializer, EmployeeMonthlyMissPunchSerializer, EmployeeYearlyAdvanceTakenDeductedSerializer, AttendanceMachineConfigSerializer, ExtraFeaturesConfigSerializer, CalculateOtAttendanceUsingTotalEarnedSerializer, EmployeeSalaryPreparedWithEarnedAmountSerializer
-from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift, EmployeeSalaryEarning, EarningsHead, EmployeeShifts, EmployeeGenerativeLeaveRecord, EmployeeSalaryPrepared, EarnedAmount, EmployeeAdvanceEmiRepayment, EmployeeAdvancePayment, EmployeeAttendance, EmployeePersonalDetail, EmployeeProfessionalDetail, BonusCalculation, BonusPercentage, EmployeeSalaryDetail, FullAndFinal, Calculations, SubUserOvertimeSettings, EmployeeLeaveOpening, EmployeeMonthlyAttendanceDetails, employee_photo_handler
+from .serializers import CompanySerializer, CreateCompanySerializer, CompanyEntrySerializer, UserSerializer, DepartmentSerializer,DesignationSerializer, SalaryGradeSerializer, RegularRegisterSerializer, CategorySerializer, BankSerializer, LeaveGradeSerializer, ShiftSerializer, HolidaySerializer, EarningsHeadSerializer, EmployeePersonalDetailSerializer, EmployeeProfessionalDetailSerializer, EmployeeListSerializer, EmployeeSalaryEarningSerializer, EmployeeSalaryDetailSerializer, EmployeeFamilyNomineeDetialSerializer, EmployeePfEsiDetailSerializer, WeeklyOffHolidayOffSerializer, PfEsiSetupSerializer, CalculationsSerializer, EmployeeSalaryEarningUpdateSerializer, EmployeeShiftsSerializer, EmployeeShiftsUpdateSerializer, EmployeeAttendanceSerializer, EmployeeGenerativeLeaveRecordSerializer, EmployeeLeaveOpeningSerializer, EmployeeMonthlyAttendancePresentDetailsSerializer, EmployeeAdvancePaymentSerializer, EmployeeMonthlyAttendanceDetailsSerializer, EmployeeSalaryPreparedSerializer, EarnedAmountSerializer, SalaryOvertimeSheetSerializer, AttendanceReportsSerializer, EmployeeAttendanceBulkAutofillSerializer, BulkPrepareSalariesSerializer, MachineAttendanceSerializer, PersonnelFileReportsSerializer, DefaultAttendanceSerializer, EmployeeResignationSerializer, EmployeeUnresignSerializer, BonusCalculationSerializer, BonusPercentageSerializer, EmployeeProfessionalDetailRetrieveSerializer, EarnedAmountSerializerPreparedSalary, FullAndFinalSerializer, EmployeeELLeftSerializer, EmployeeYearlyBonusAmountSerializer, FullAndFinalReportSerializer, PfEsiReportsSerializer, RegularRetrieveUpdateSerializer, EmployeeVisibilitySerializer, AllEmployeeCurrentMonthAttendanceSerializer, SubUserOvertimeSettingsSerializer, SubUserMiscSettingsSerializer, TransferAttendanceFromOwnerToRegularSerializer, EmployeeStrengthReportsSerializer, EmployeeLeaveOpeningCreateUpdateSerializer, LeaveClosingTransferSerializer, EmployeeMonthlyMissPunchSerializer, EmployeeYearlyAdvanceTakenDeductedSerializer, AttendanceMachineConfigSerializer, EmployeeSalaryPreparedWithEarnedAmountSerializer
+from .models import Company, CompanyDetails, User, OwnerToRegular, Regular, LeaveGrade, Shift, Holiday, EmployeeSalaryEarning, EarningsHead, EmployeeShifts, EmployeeGenerativeLeaveRecord, EmployeeSalaryPrepared, EarnedAmount, EmployeeAdvanceEmiRepayment, EmployeeAdvancePayment, EmployeeAttendance, EmployeeAttendanceOvertimeDetail, EmployeePersonalDetail, EmployeeProfessionalDetail, BonusCalculation, BonusPercentage, EmployeeSalaryDetail, FullAndFinal, Calculations, SubUserOvertimeSettings, EmployeeLeaveOpening, EmployeeMonthlyAttendanceDetails, employee_photo_handler
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
@@ -14,6 +14,7 @@ from django.db.models.functions import Lower
 from rest_framework.parsers import MultiPartParser, FormParser
 from djangorestframework_camel_case.parser import CamelCaseFormParser, CamelCaseMultiPartParser
 from django.db import IntegrityError, transaction
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Q
 from datetime import datetime, timedelta, date
 from dateutil.relativedelta import relativedelta
@@ -22,6 +23,7 @@ import calendar
 from django.db.models import Sum
 from decimal import Decimal
 import math
+from .services.attendance_overtime import reclassify_many, replace_many_attendance_overtime
 from fpdf import FPDF
 from django.http import HttpResponse, StreamingHttpResponse
 from .reports.generate_salary_sheet import generate_salary_sheet
@@ -52,7 +54,6 @@ from .reports.generate_overtime_sheet_daily import generate_overtime_sheet_daily
 from .reports.personnnel_file_forms.personnnel_file_reports.generate_personnel_file_reports import generate_personnel_file_reports
 from .reports.generate_payment_sheet_xlsx import generate_payment_sheet_xlsx
 from .templates.master_entry.generate_add_edit_employee_using_excel_template import generate_add_edit_employee_using_excel_template
-from .services.calculate_ot_attendance_using_earned_salary import calculate_ot_attendance_using_total_earned
 # from .reports.personnnel_file_reports.generate_application_form import generate_application_form
 from itertools import groupby
 from operator import attrgetter
@@ -60,6 +61,17 @@ import re
 import time
 from django.db.models import F, Value, CharField, Func, Exists, OuterRef
 from .permissions import isOwnerAndAdmin
+from .serializers import OvertimePolicySerializer
+from .models import OvertimePolicy, EmployeeSalaryPreparedOvertimeDetail
+from .services.overtime_policy import calculate_attendance_overtime, delete_overtime_policy
+from .serializers import EmployeeSalaryPreparationRequestSerializer, SalaryOvertimePreviewSerializer, SalaryPreparationPreviewSerializer
+from .services.salary_preparation import (
+    bulk_prepare_salaries,
+    prepare_employee_salary,
+    preview_employee_overtime,
+    preview_employee_salary,
+    serialize_overtime_result,
+)
 # import sys
 from django.db import connection, reset_queries 
 from rest_framework.exceptions import APIException
@@ -71,6 +83,61 @@ from django.db.models import Prefetch
 
 
 # Create your views here.
+
+
+def _calendar_attendance_scope(*, owner, company):
+    account_ids = [owner.pk]
+    account_ids.extend(
+        OwnerToRegular.objects.filter(owner=owner).values_list('user_id', flat=True)
+    )
+    return EmployeeAttendance.objects.filter(company=company, user_id__in=account_ids)
+
+
+def _reclassify_holiday_dates(*, owner, company, dates):
+    if not dates:
+        return
+    attendances = _calendar_attendance_scope(owner=owner, company=company).filter(
+        overtime_details__work_date__in=dates,
+    ).distinct()
+    if attendances.exists():
+        reclassify_many(attendances=attendances, actor=owner)
+
+
+def _is_employee_off_date(work_date, *, weekly_off, extra_off):
+    weekday = work_date.strftime('%a').lower()
+    occurrence = f'{weekday}{(work_date.day - 1) // 7 + 1}'
+    return weekly_off == weekday or extra_off == occurrence
+
+
+def _reclassify_employee_off_dates(*, owner, professional_detail, old_weekly_off, old_extra_off):
+    details = EmployeeAttendanceOvertimeDetail.objects.filter(
+        attendance__in=_calendar_attendance_scope(
+            owner=owner,
+            company=professional_detail.company,
+        ),
+        attendance__employee=professional_detail.employee,
+    )
+    affected_attendances = {
+        detail.attendance.pk: detail.attendance
+        for detail in details
+        if (
+            _is_employee_off_date(
+                detail.work_date,
+                weekly_off=old_weekly_off,
+                extra_off=old_extra_off,
+            )
+            or _is_employee_off_date(
+                detail.work_date,
+                weekly_off=professional_detail.weekly_off,
+                extra_off=professional_detail.extra_off,
+            )
+        )
+    }
+    if affected_attendances:
+        reclassify_many(
+            attendances=affected_attendances.values(),
+            actor=owner,
+        )
 
 class NaturalOrdering(Func):
     function = 'CAST'
@@ -448,12 +515,24 @@ class LeaveGradeListCreateAPIView(generics.ListCreateAPIView):
     serializer_class = LeaveGradeSerializer
     lookup_field = 'company_id'
 
+    def get_company(self):
+        if not hasattr(self, '_company'):
+            user = self.request.user
+            owner = user if user.role == 'OWNER' else user.regular_to_owner.owner
+            self._company = get_object_or_404(
+                Company, pk=self.kwargs['company_id'], user=owner
+            )
+        return self._company
+
+    def get_serializer_context(self):
+        return {**super().get_serializer_context(), 'company': self.get_company()}
+
     def get_queryset(self, *args, **kwargs):
         company_id = self.kwargs.get('company_id')
         user = self.request.user
         if user.role == "OWNER":
-            return user.leave_grades.filter(company=company_id)
-        return user.regular_to_owner.owner.leave_grades.filter(company=company_id)
+            return user.leave_grades.filter(company=company_id).prefetch_related('payable_earnings_heads')
+        return user.regular_to_owner.owner.leave_grades.filter(company=company_id).prefetch_related('payable_earnings_heads')
     
     def create(self, request, *args, **kwargs):
         print(request.data)
@@ -463,7 +542,7 @@ class LeaveGradeListCreateAPIView(generics.ListCreateAPIView):
         if user.role != "OWNER":
             user = user.regular_to_owner.owner
         try:
-            serializer.save(user=user)
+            serializer.save(user=user, company=self.get_company())
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         except IntegrityError as e:
             print(str(e))
@@ -474,12 +553,24 @@ class LeaveGradeRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIVi
     serializer_class = LeaveGradeSerializer
     lookup_field = 'id'
 
+    def get_company(self):
+        if not hasattr(self, '_company'):
+            user = self.request.user
+            owner = user if user.role == 'OWNER' else user.regular_to_owner.owner
+            self._company = get_object_or_404(
+                Company, pk=self.kwargs['company_id'], user=owner
+            )
+        return self._company
+
+    def get_serializer_context(self):
+        return {**super().get_serializer_context(), 'company': self.get_company()}
+
     def get_queryset(self, *args, **kwargs):
         company_id = self.kwargs.get('company_id')
         user = self.request.user
         if user.role == "OWNER":
-            return user.leave_grades.filter(company=company_id)
-        return user.regular_to_owner.owner.leave_grades.filter(company=company_id)
+            return user.leave_grades.filter(company=company_id).prefetch_related('payable_earnings_heads')
+        return user.regular_to_owner.owner.leave_grades.filter(company=company_id).prefetch_related('payable_earnings_heads')
     
     def update(self, request, *args, **kwargs):
         user = self.request.user
@@ -489,7 +580,7 @@ class LeaveGradeRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIVi
         serializer = self.get_serializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
         try:
-            serializer.save(user=user)
+            serializer.save(user=user, company=self.get_company())
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         except IntegrityError as e:
             print(str(e))
@@ -605,7 +696,18 @@ class HolidayListCreateAPIView(generics.ListCreateAPIView):
             user = user.regular_to_owner.owner
         company_id = self.kwargs.get('company_id')
         try:
-            serializer.save(user=user, company_id=company_id)
+            with transaction.atomic():
+                holiday = serializer.save(user=user, company_id=company_id)
+                if not Holiday.objects.filter(
+                    user=user,
+                    company=holiday.company,
+                    date=holiday.date,
+                ).exclude(pk=holiday.pk).exists():
+                    _reclassify_holiday_dates(
+                        owner=user,
+                        company=holiday.company,
+                        dates={holiday.date},
+                    )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         except IntegrityError as e:
             print(str(e))
@@ -637,7 +739,23 @@ class HolidayRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView)
         if instance.mandatory_holiday:
             return Response({"detail": "Cannot edit a mandatory holiday."}, status=status.HTTP_403_FORBIDDEN)
         try:
-            serializer.save(user=user)
+            old_date = instance.date
+            with transaction.atomic():
+                holiday = serializer.save(user=user)
+                affected_dates = set()
+                if old_date != holiday.date:
+                    for holiday_date in (old_date, holiday.date):
+                        if not Holiday.objects.filter(
+                            user=user,
+                            company=holiday.company,
+                            date=holiday_date,
+                        ).exclude(pk=holiday.pk).exists():
+                            affected_dates.add(holiday_date)
+                _reclassify_holiday_dates(
+                    owner=user,
+                    company=holiday.company,
+                    dates=affected_dates,
+                )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         except IntegrityError as e:
             return Response({"error" : "Holiday with this name on this day already exists"}, status=status.HTTP_400_BAD_REQUEST)
@@ -654,7 +772,21 @@ class HolidayRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView)
             if associated_attendance_with_same_date.exists():
                 return Response({'error': 'Already used in Employee(s) Attendance'}, status=status.HTTP_400_BAD_REQUEST)
             
-            self.perform_destroy(instance)
+            with transaction.atomic():
+                owner = instance.user
+                company = instance.company
+                holiday_date = instance.date
+                self.perform_destroy(instance)
+                if not Holiday.objects.filter(
+                    user=owner,
+                    company=company,
+                    date=holiday_date,
+                ).exists():
+                    _reclassify_holiday_dates(
+                        owner=owner,
+                        company=company,
+                        dates={holiday_date},
+                    )
             return Response(status=status.HTTP_204_NO_CONTENT)
 
         except ValidationError as e:
@@ -746,7 +878,58 @@ class EarningsHeadRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPI
         # Perform deletion
         self.perform_destroy(instance)
         return Response({"detail": "Successfully deleted."}, status=status.HTTP_204_NO_CONTENT)
-        
+
+
+class OvertimePolicyListCreateAPIView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = OvertimePolicySerializer
+    def initial(self, request, *args, **kwargs):
+        super().initial(request, *args, **kwargs)
+        if request.user.role != 'OWNER':
+            raise PermissionDenied('Only owner accounts can manage overtime policies.')
+
+    def get_company(self):
+        if not hasattr(self, '_company'):
+            self._company = get_object_or_404(Company, pk=self.kwargs['company_id'], user=self.request.user)
+        return self._company
+
+    def get_serializer_context(self):
+        return {**super().get_serializer_context(), 'company': self.get_company()}
+
+    def get_queryset(self, *args, **kwargs):
+        return OvertimePolicy.objects.filter(company=self.get_company()).prefetch_related('day_rules', 'selected_earning_heads__earnings_head')
+
+
+class OvertimePolicyRetrieveUpdateAPIView(generics.RetrieveUpdateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = OvertimePolicySerializer
+    lookup_field = 'id'
+
+    def initial(self, request, *args, **kwargs):
+        super().initial(request, *args, **kwargs)
+        if request.user.role != 'OWNER':
+            raise PermissionDenied('Only owner accounts can manage overtime policies.')
+
+    def get_company(self):
+        if not hasattr(self, '_company'):
+            self._company = get_object_or_404(Company, pk=self.kwargs['company_id'], user=self.request.user)
+        return self._company
+
+    def get_serializer_context(self):
+        return {**super().get_serializer_context(), 'company': self.get_company()}
+
+    def get_queryset(self, *args, **kwargs):
+        return OvertimePolicy.objects.filter(company=self.get_company()).prefetch_related('day_rules', 'selected_earning_heads__earnings_head')
+
+    def delete(self, request, *args, **kwargs):
+        policy = self.get_object()
+        try:
+            delete_overtime_policy(actor=request.user, company=self.get_company(), policy=policy)
+        except ValidationError as exc:
+            detail = getattr(exc, 'message_dict', None) or getattr(exc, 'messages', None)
+            raise serializers.ValidationError(detail) from exc
+        return Response(status=status.HTTP_204_NO_CONTENT)
+         
 
 # class DeductionsHeadListCreateAPIView(generics.ListCreateAPIView):
 #     permission_classes = [IsAuthenticated]
@@ -983,12 +1166,15 @@ class EmployeeProfessionalDetailRetrieveUpdateDestroyAPIView(generics.RetrieveUp
             return user.all_companys_employee_professional_details.filter(company_id=company_id)
         return user.regular_to_owner.owner.all_companys_employee_professional_details.filter(company_id=company_id, employee__visible=True)
     
+    @transaction.atomic
     def update(self, request, *args, **kwargs):
         user = self.request.user
         if user.role != "OWNER":
             user = user.regular_to_owner.owner
         instance = self.get_object()
         old_doj = instance.date_of_joining
+        old_weekly_off = instance.weekly_off
+        old_extra_off = instance.extra_off
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         validated_data = serializer.validated_data
@@ -1018,7 +1204,17 @@ class EmployeeProfessionalDetailRetrieveUpdateDestroyAPIView(generics.RetrieveUp
                     if OwnerToRegular.objects.filter(owner=user).exists():
                         EmployeeAttendance.objects.reevaluate_first_weekly_holiday_off_after_doj(user=user.owner_to_regular.user, employee=validated_data['employee'], date_of_joining=validated_data['date_of_joining'])
                 
-        serializer.save(user=user)
+        professional_detail = serializer.save(user=user)
+        if (
+            professional_detail.weekly_off != old_weekly_off
+            or professional_detail.extra_off != old_extra_off
+        ):
+            _reclassify_employee_off_dates(
+                owner=user,
+                professional_detail=professional_detail,
+                old_weekly_off=old_weekly_off,
+                old_extra_off=old_extra_off,
+            )
         print(f"Validated Data: {validated_data}, Instance: {old_doj}")
         if 'date_of_joining' in validated_data and validated_data['date_of_joining']<old_doj:
             num_days_in_month = calendar.monthrange(validated_data['date_of_joining'].year, validated_data['date_of_joining'].month)[1]
@@ -1398,6 +1594,14 @@ class EmployeeSalaryDetailListCreateAPIView(generics.ListCreateAPIView):
     serializer_class = EmployeeSalaryDetailSerializer
     lookup_field = 'company_id'
 
+    def get_company(self):
+        user = self.request.user
+        owner = user if user.role == 'OWNER' else user.regular_to_owner.owner
+        return get_object_or_404(Company, pk=self.kwargs['company_id'], user=owner)
+
+    def get_serializer_context(self):
+        return {**super().get_serializer_context(), 'company': self.get_company()}
+
     def get_queryset(self, *args, **kwargs):
         company_id = self.kwargs.get('company_id')
         user = self.request.user
@@ -1414,7 +1618,7 @@ class EmployeeSalaryDetailListCreateAPIView(generics.ListCreateAPIView):
             # try:
             if user.role != "OWNER":
                 user = user.regular_to_owner.owner
-            serializer.save(user=user)
+            serializer.save(user=user, company=self.get_company())
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         except ValidationError as e:
             error_string = str(e)
@@ -1425,6 +1629,14 @@ class EmployeeSalaryDetailRetrieveUpdateAPIView(generics.RetrieveUpdateAPIView):
     permission_classes= [IsAuthenticated]
     serializer_class = EmployeeSalaryDetailSerializer
     lookup_field = 'employee'
+
+    def get_company(self):
+        user = self.request.user
+        owner = user if user.role == 'OWNER' else user.regular_to_owner.owner
+        return get_object_or_404(Company, pk=self.kwargs['company_id'], user=owner)
+
+    def get_serializer_context(self):
+        return {**super().get_serializer_context(), 'company': self.get_company()}
 
     def get_queryset(self, *args, **kwargs):
         company_id = self.kwargs.get('company_id')
@@ -1441,7 +1653,7 @@ class EmployeeSalaryDetailRetrieveUpdateAPIView(generics.RetrieveUpdateAPIView):
             serializer.is_valid(raise_exception=True)
             if user.role != "OWNER":
                 user = user.regular_to_owner.owner
-            serializer.save(user=user)
+            serializer.save(user=user, company=self.get_company(), employee=instance.employee)
 
             return Response(serializer.data, status=status.HTTP_200_OK)
         except ValidationError as e:
@@ -1754,39 +1966,101 @@ class EmployeeAttendanceListCreateAPIView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = EmployeeAttendanceSerializer
 
+    def _authorized_scope(self, require_employee=False):
+        actor = self.request.user
+        owner = actor if actor.role == 'OWNER' else actor.regular_to_owner.owner
+        company_id = self.kwargs['company_id']
+        company = get_object_or_404(Company, id=company_id, user=owner)
+        employee_id = self.kwargs.get('employee')
+        employee = None
+        if require_employee or employee_id is not None:
+            employee = get_object_or_404(
+                EmployeePersonalDetail,
+                id=employee_id,
+                company=company,
+                user=owner,
+            )
+        return actor, company, employee
+
+    @staticmethod
+    def _validate_rows_scope(rows, company, employee):
+        if not rows:
+            raise serializers.ValidationError({'employee_attendance': 'At least one attendance row is required.'})
+        months = set()
+        for index, row in enumerate(rows):
+            if 'company' in row and str(row['company']) != str(company.id):
+                raise serializers.ValidationError({index: {'company': 'Company is bound by the URL.'}})
+            if 'employee' in row and str(row['employee']) != str(employee.id):
+                raise serializers.ValidationError({index: {'employee': 'Employee is bound by the URL.'}})
+            if 'date' in row:
+                try:
+                    row_date = date.fromisoformat(str(row['date']))
+                except (TypeError, ValueError):
+                    continue
+                months.add((row_date.year, row_date.month))
+        if len(months) > 1:
+            raise serializers.ValidationError({'date': 'One manual attendance request may cover only one calendar month.'})
+
+    @staticmethod
+    def _replacement_from(instance, validated_row):
+        return {
+            'attendance': instance,
+            'intervals': validated_row.get('overtime_intervals', ()),
+            'duration_entries': validated_row.get('overtime_duration_entries', ()),
+            'source': 'MANUAL',
+        }
+
+    @staticmethod
+    def _regenerate_months(actor, company, employee, months):
+        for year, month in sorted(months):
+            EmployeeGenerativeLeaveRecord.objects.generate_update_monthly_record(
+                user=actor,
+                year=year,
+                month=month,
+                employee_id=employee.id,
+                company_id=company.id,
+            )
+
     def get_queryset(self, *args, **kwargs):
-        company_id = self.kwargs.get('company_id')
-        # employee = self.kwargs.get('employee')
-        user = self.request.user
-        # if user.role == "OWNER":
-        return user.all_employees_attendance.filter(company=company_id)
-        # instance = OwnerToRegular.objects.get(user=user)
-        # return instance.owner.employee_family_nominee_details.filter(company=company_id, employee=employee)
+        actor, company, employee = self._authorized_scope()
+        queryset = actor.all_employees_attendance.filter(company=company).prefetch_related('overtime_details')
+        if employee is not None:
+            queryset = queryset.filter(employee=employee)
+        return queryset
 
     def create(self, request, *args, **kwargs):
+        rows = request.data.get('employee_attendance', [])
         try:
-            serializer = self.get_serializer(data=request.data['employee_attendance'], many=True)
+            actor, company, employee = self._authorized_scope(require_employee=True)
+            self._validate_rows_scope(rows, company, employee)
+            for index, row in enumerate(rows):
+                if 'overtime_intervals' not in row and 'overtime_duration_entries' not in row:
+                    raise serializers.ValidationError({index: {'overtime_details': 'A complete overtime replacement is required.'}})
+            serializer = self.get_serializer(data=rows, many=True)
             serializer.is_valid(raise_exception=True)
-            user = self.request.user
-            total_expected_instances= len(serializer.validated_data)
-            date_for_one_instance = serializer.validated_data[0]['date']
-            employee = serializer.validated_data[0]['employee']
-            company = serializer.validated_data[0]['company']
-            print(date_for_one_instance.month)
-            print(date_for_one_instance.year)
-
-            # if user.role == "OWNER":
-            serializer.save(user=user)
-            EmployeeGenerativeLeaveRecord.objects.generate_update_monthly_record(user=user, year=date_for_one_instance.year, month=date_for_one_instance.month, employee_id=employee.id, company_id=company.id)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-                # return Response({"msg": "try"}, status=status.HTTP_200_OK)
-            # else:
-            #     instance = OwnerToRegular.objects.get(user=user)
-            #     serializer.save(user=instance.owner)
-            #     return Response(serializer.data, status=status.HTTP_200_OK)
-        except ValidationError as e:
-            print(e)
-            return Response({'error': e}, status=status.HTTP_400_BAD_REQUEST)
+            months = {(item['date'].year, item['date'].month) for item in serializer.validated_data}
+            with transaction.atomic():
+                instances = serializer.save(user=actor, company=company, employee=employee)
+                replace_many_attendance_overtime(
+                    replacements=[
+                        self._replacement_from(instance, validated_row)
+                        for instance, validated_row in zip(instances, serializer.validated_data)
+                    ],
+                    actor=actor,
+                )
+                months.update(
+                    (work_date.year, work_date.month)
+                    for work_date in EmployeeAttendanceOvertimeDetail.objects.filter(
+                        attendance__in=instances,
+                    ).values_list('work_date', flat=True)
+                )
+                self._regenerate_months(actor, company, employee, months)
+            instances = self.get_queryset().filter(
+                date__in=[item.date for item in instances],
+            ).prefetch_related('overtime_details')
+            return Response(self.get_serializer(instances, many=True).data, status=status.HTTP_200_OK)
+        except DjangoValidationError as exc:
+            return Response({'error': getattr(exc, 'message_dict', exc.messages)}, status=status.HTTP_400_BAD_REQUEST)
         
     def list(self, request, *args, **kwargs):
         start_time = time.time()
@@ -1795,54 +2069,151 @@ class EmployeeAttendanceListCreateAPIView(generics.ListCreateAPIView):
         from_date = datetime(year, month, 1).date() - relativedelta(days=6)
         last_day = calendar.monthrange(year, month)[1]
         to_date = datetime(year, month, last_day).date()
-        queryset = self.get_queryset().filter(date__range=[from_date, to_date])
-        return Response(queryset.values(), content_type='application/json')
+        queryset = self.get_queryset().filter(date__range=[from_date, to_date]).prefetch_related(None)
+        attendance_rows = list(queryset.values(
+            'id', 'user', 'employee', 'company', 'machine_in', 'machine_out', 'manual_in',
+            'manual_out', 'first_half', 'second_half', 'date', 'ot_min', 'late_min',
+            'manual_mode',
+        ))
+        attendance_ids_by_scope = {
+            (row['employee'], row['date'], row['user']): row['id']
+            for row in attendance_rows
+        }
+
+        overtime_details_by_attendance = {}
+        exclusion_reason_labels = dict(EmployeeAttendanceOvertimeDetail.EXCLUSION_REASON_CHOICES)
+        overtime_details = EmployeeAttendanceOvertimeDetail.objects.filter(
+            attendance__in=queryset
+        ).values(
+            'id', 'employee', 'attendance_date', 'user', 'company', 'work_date', 'day_type', 'source', 'start_datetime',
+            'end_datetime', 'gross_minutes', 'excluded_minutes', 'eligible_minutes',
+            'exclusion_reason', 'exclusion_note', 'created_at', 'updated_at',
+        ).order_by('employee_id', 'attendance_date', 'user_id', 'company_id', 'id')
+        for detail in overtime_details:
+            attendance_date = detail.pop('attendance_date')
+            attendance_id = attendance_ids_by_scope[(
+                detail.pop('employee'),
+                attendance_date,
+                detail.pop('user'),
+            )]
+            detail.pop('company')
+            detail['attendance'] = attendance_date
+            detail['exclusion_reason_display'] = exclusion_reason_labels[detail['exclusion_reason']]
+            overtime_details_by_attendance.setdefault(attendance_id, []).append(detail)
+
+        for attendance in attendance_rows:
+            attendance['overtime_details'] = overtime_details_by_attendance.get(attendance['id'], [])
+            attendance.pop('user')
+
+        return Response(attendance_rows)
         
 class EmployeeAttendanceUpdateAPIView(generics.UpdateAPIView):
     permission_classes= [IsAuthenticated]
     serializer_class = EmployeeAttendanceSerializer
     lookup_field = 'id'
 
+    _authorized_scope = EmployeeAttendanceListCreateAPIView._authorized_scope
+    _validate_rows_scope = staticmethod(EmployeeAttendanceListCreateAPIView._validate_rows_scope)
+    _replacement_from = staticmethod(EmployeeAttendanceListCreateAPIView._replacement_from)
+    _regenerate_months = staticmethod(EmployeeAttendanceListCreateAPIView._regenerate_months)
+
     def get_queryset(self, *args, **kwargs):
-        company_id = self.kwargs.get('company_id')
-        employee = self.kwargs.get('employee')
-        user = self.request.user
-        return user.all_employees_attendance.filter(company=company_id, employee=employee)
+        actor, company, employee = self._authorized_scope(require_employee=True)
+        return actor.all_employees_attendance.filter(company=company, employee=employee).prefetch_related('overtime_details')
     
     def update(self, request, *args, **kwargs):
-        user = self.request.user
-        employee_attendance = request.data['employee_attendance']
-        date_for_one_instance = datetime.strptime(employee_attendance[0]['date'], "%Y-%m-%d").date()
-        employee_id = employee_attendance[0]['employee']
-        company_id = employee_attendance[0]['company']
-        for day in employee_attendance:
-            instance = self.get_queryset().filter(id=day['id'])
-            if instance.exists():
-                serializer = self.get_serializer(instance.first(), data=day)
-            else:
-                print(f"Update shouldn't be done, do create here")
+        rows = request.data.get('employee_attendance', [])
+        print("rows: ", rows)
+        actor, company, employee = self._authorized_scope(require_employee=True)
+        self._validate_rows_scope(rows, company, employee)
+        row_dates = []
+        for row in rows:
+            try:
+                row_dates.append(date.fromisoformat(str(row.get('date'))))
+            except (TypeError, ValueError):
+                raise serializers.ValidationError({'date': 'Every update row requires a valid attendance date.'})
+        if len(row_dates) != len(set(row_dates)):
+            raise serializers.ValidationError({'date': 'Every update row requires a unique attendance date.'})
+        instances_by_date = {item.date: item for item in self.get_queryset().filter(date__in=row_dates)}
+        if len(instances_by_date) != len(row_dates):
+            raise NotFound('One or more attendance rows do not belong to the URL scope.')
+
+        row_serializers = []
+        for index, row in enumerate(rows):
+            instance = instances_by_date[date.fromisoformat(str(row['date']))]
+            replacement_supplied = 'overtime_intervals' in row or 'overtime_duration_entries' in row
+            if not replacement_supplied and instance.ot_min and not instance.overtime_details.exists():
+                return Response(
+                    {'unbackfilled_overtime': {'row': index, 'attendance_id': instance.id}},
+                    status=status.HTTP_409_CONFLICT,
+                )
+            if not replacement_supplied:
+                raise serializers.ValidationError({index: {'overtime_details': 'A complete overtime replacement is required.'}})
+            serializer = self.get_serializer(instance, data=row)
             serializer.is_valid(raise_exception=True)
-            serializer.save(user=user)
+            row_serializers.append(serializer)
 
-        EmployeeGenerativeLeaveRecord.objects.generate_update_monthly_record(user=user, year=date_for_one_instance.year, month=date_for_one_instance.month, employee_id=employee_id, company_id=company_id)
+        months = {(item.date.year, item.date.month) for item in instances_by_date.values()}
+        months.update(
+            (work_date.year, work_date.month)
+            for work_date in EmployeeAttendanceOvertimeDetail.objects.filter(
+                attendance__in=instances_by_date.values(),
+            ).values_list('work_date', flat=True)
+        )
+        months.update(
+            (serializer.validated_data['date'].year, serializer.validated_data['date'].month)
+            for serializer in row_serializers
+        )
+        try:
+            with transaction.atomic():
+                updated = [serializer.save(user=actor, company=company, employee=employee) for serializer in row_serializers]
+                replace_many_attendance_overtime(
+                    replacements=[
+                        self._replacement_from(instance, serializer.validated_data)
+                        for instance, serializer in zip(updated, row_serializers)
+                    ],
+                    actor=actor,
+                )
+                months.update(
+                    (work_date.year, work_date.month)
+                    for work_date in EmployeeAttendanceOvertimeDetail.objects.filter(
+                        attendance__in=updated,
+                    ).values_list('work_date', flat=True)
+                )
+                self._regenerate_months(actor, company, employee, months)
+        except DjangoValidationError as exc:
+            return Response({'error': getattr(exc, 'message_dict', exc.messages)}, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response({"detail": "Successful"}, status=status.HTTP_200_OK)
+        return Response(self.get_serializer(updated, many=True).data, status=status.HTTP_200_OK)
                 
 class EmployeeAttendanceBulkAutoFillView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def post(self, request, *args, **kwargs):
         user = self.request.user
         serializer = EmployeeAttendanceBulkAutofillSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        print(serializer.validated_data)
         validated_data = serializer.validated_data
+        owner = user if user.role == 'OWNER' else user.regular_to_owner.owner
+        company = get_object_or_404(Company, id=validated_data['company'], user=owner)
+        if user.role == 'REGULAR' and not company.visible:
+            raise PermissionDenied('Company is not available to this account.')
         num_days_in_month = calendar.monthrange(validated_data['year'], validated_data['month'])[1]
         if validated_data['month_to_date']>num_days_in_month:
             validated_data['month_to_date'] = num_days_in_month
         from_date = date(validated_data['year'], validated_data['month'], validated_data['month_from_date'])
         to_date = date(validated_data['year'], validated_data['month'], validated_data['month_to_date'])
 
-        # try:
-        EmployeeAttendance.objects.bulk_autofill(from_date=from_date, to_date=to_date, company_id=validated_data['company'], user=user)
+        try:
+            EmployeeAttendance.objects.bulk_autofill(
+                from_date=from_date,
+                to_date=to_date,
+                company_id=company.id,
+                user=user,
+                employee_ids=validated_data['employee_ids'],
+            )
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(getattr(exc, 'message_dict', exc.messages)) from exc
         return Response({"message": "Bulk autofill successful"}, status=status.HTTP_200_OK)
 
 
@@ -2073,79 +2444,67 @@ class AllEmployeeSalaryEarningListAPIView(generics.ListAPIView):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
         
+class SalaryOvertimePreviewAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        serializer = SalaryOvertimePreviewSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        result = preview_employee_overtime(actor=request.user, **{
+            'company_id': serializer.validated_data['company'],
+            'employee_id': serializer.validated_data['employee'],
+            'year': serializer.validated_data['year'],
+            'month': serializer.validated_data['month'],
+        })
+        return Response(serialize_overtime_result(result, include_diagnostics=True))
+
+
+class SalaryPreparationPreviewAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        serializer = SalaryPreparationPreviewSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        inputs = serializer.validated_data
+        return Response(preview_employee_salary(
+            actor=request.user,
+            company_id=inputs['company'],
+            employee_id=inputs['employee'],
+            year=inputs['year'],
+            month=inputs['month'],
+            parent_inputs={
+                'incentive_amount': inputs['incentive_amount'],
+                'advance_deducted': inputs['advance_deducted'],
+                'vpf_deducted': inputs['vpf_deducted'],
+                'tds_deducted': inputs['tds_deducted'],
+                'others_deducted': inputs['others_deducted'],
+            },
+            arrear_inputs=inputs['arrears'],
+        ))
+
+
 class EmployeeSalaryPreparedCreateAPIView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
-    serializer_class = EmployeeSalaryPreparedSerializer
+    serializer_class = EmployeeSalaryPreparationRequestSerializer
 
     def create(self, request, *args, **kwargs):
-        user = request.user
-        all_earned_amounts_data = request.data.get('all_earned_amounts', [])
-        serializer = self.get_serializer(data=request.data['employee_salary_prepared'])
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        employee_salary_prepared = EmployeeSalaryPrepared.objects.filter(user=user, employee=request.data['employee_salary_prepared']['employee'], date=request.data['employee_salary_prepared']['date'])
-        
-        if employee_salary_prepared.exists():
-            existing_instance = employee_salary_prepared.first()
-            serializer.update(existing_instance, serializer.validated_data)
-        else:
-            serializer.save(user=user)
-        #Retrieve Saved salary instance
-        employee_salary_after_saved = EmployeeSalaryPrepared.objects.filter(user=user, employee=serializer.data['employee'], date=serializer.data['date'])
-        
-        if employee_salary_after_saved.exists():
-            print("YES SALARY EXISTS")
-            employee_salary_after_saved_instance = employee_salary_after_saved.first()
-            EarnedAmount.objects.filter(salary_prepared=employee_salary_after_saved_instance.id).delete()
-
-            #Iterating through all the earned amounts and saving it
-            for earned_amount_data in all_earned_amounts_data:
-                earned_amount_data['salary_prepared'] = employee_salary_after_saved_instance.id
-                earned_amount_data['earnings_head'] = earned_amount_data['earnings_head']['id']
-                earned_amount_serializer = EarnedAmountSerializer(data=earned_amount_data)
-                if earned_amount_serializer.is_valid():
-                    earned_amount_serializer.save(user=user)
-                else:
-                    print("Not valid earned amount")
-
-            #First delete all the objects of EmployeeAdvanceEmiRepayment for this salary (which was just saved) then retrieve the advances
-            EmployeeAdvanceEmiRepayment.objects.filter(salary_prepared=employee_salary_after_saved_instance.id).delete()
-            employee_advances = EmployeeAdvancePayment.objects.filter(user=user if user.role=='OWNER' else user.regular_to_owner.owner, employee=employee_salary_after_saved_instance.employee, company=employee_salary_after_saved_instance.company, date__lt=(employee_salary_after_saved_instance.date + relativedelta(months=1))).order_by('date')
-            if employee_advances.exists():
-                
-                monthly_advance_repayment = 0
-                max_advance_repayment_left = 0
-                for advance in employee_advances:
-                    max_advance_repayment_left += advance.principal-(advance.repaid_amount if user.role=='OWNER' else advance.sub_user_repaid_amount)
-                    print(f"Repaid Amt: {advance.repaid_amount}")
-                    if advance.emi <= (advance.principal-(advance.repaid_amount if user.role=='OWNER' else advance.sub_user_repaid_amount)):
-                        monthly_advance_repayment += advance.emi
-                    elif (advance.principal-(advance.repaid_amount if user.role=='OWNER' else advance.sub_user_repaid_amount)) > 0:
-                        monthly_advance_repayment += (advance.principal-(advance.repaid_amount if user.role=='OWNER' else advance.sub_user_repaid_amount))
-                if employee_salary_after_saved_instance.advance_deducted > max_advance_repayment_left:
-                    print(f"Advance Deducted: {employee_salary_after_saved_instance.advance_deducted}, MAx left: {max_advance_repayment_left}")
-                    #Changing the advance deducted too since it was wrong
-                    employee_salary_after_saved_instance.advance_deducted = 0
-                    employee_salary_after_saved_instance.save()
-                    return Response({"detail": "Too Much Advance Emi Repayment"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                surplus_repayment = employee_salary_after_saved_instance.advance_deducted - monthly_advance_repayment #0
-                advance_deducted_left = employee_salary_after_saved_instance.advance_deducted
-                for advance in employee_advances:
-                    add_to_repaid = min(advance.principal-(advance.repaid_amount if user.role=='OWNER' else advance.sub_user_repaid_amount), advance.emi)
-                    if surplus_repayment>0:
-                        add_to_repaid = min(advance.principal-(advance.repaid_amount if user.role=='OWNER' else advance.sub_user_repaid_amount), advance.emi+surplus_repayment)
-                        if add_to_repaid != advance.emi+surplus_repayment:
-                            surplus_repayment -= add_to_repaid - min(advance.principal-(advance.repaid_amount if user.role=='OWNER' else advance.sub_user_repaid_amount), advance.emi)
-                        else:
-                            surplus_repayment -= surplus_repayment
-                    
-                    EmployeeAdvanceEmiRepayment.objects.create(user=user, amount=min(add_to_repaid, advance_deducted_left), employee_advance_payment_id=advance.id, salary_prepared_id=employee_salary_after_saved_instance.id)
-                    advance_deducted_left -= min(add_to_repaid, advance_deducted_left)
-
-                if surplus_repayment != 0:
-                    print(f"Surplus is left: {surplus_repayment}")
-
-        return Response({"detail": "Successful"}, status=status.HTTP_200_OK)
+        parent = serializer.validated_data['employee_salary_prepared']
+        period = parent['date']
+        result = prepare_employee_salary(
+            actor=request.user,
+            company_id=parent['company'],
+            employee_id=parent['employee'],
+            year=period.year,
+            month=period.month,
+            parent_inputs=parent,
+            earned_inputs=serializer.validated_data['all_earned_amounts'],
+        )
+        return Response({
+            'salary': EmployeeSalaryPreparedWithEarnedAmountSerializer(result.salary).data,
+            'overtime': serialize_overtime_result(result.overtime_result),
+        }, status=status.HTTP_200_OK)
         
 class EmployeeSalaryPreparedListAPIView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
@@ -2199,14 +2558,36 @@ class EmployeeSalaryPreparedRetrieveAPIView(generics.RetrieveAPIView): #Add entr
         return obj
         
 class BulkPrepareSalariesView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def post(self, request, *args, **kwargs):
-        user = self.request.user
         serializer = BulkPrepareSalariesSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         validated_data = serializer.validated_data
-        operation_result, message = EmployeeSalaryPrepared.objects.bulk_prepare_salaries(month=validated_data['month'], year=validated_data['year'], company_id=validated_data['company'], user=user)
-        print(f"Operation result: {operation_result}, Message: {message}")
-        return Response({"message": "Bulk Prepare Salaries successful"}, status=status.HTTP_200_OK)
+        results = bulk_prepare_salaries(
+            actor=request.user,
+            company_id=validated_data['company'],
+            month=validated_data['month'],
+            year=validated_data['year'],
+            employee_ids=validated_data.get('employee_ids'),
+        )
+        salary_ids = [result.salary.pk for result in results]
+        salary_by_id = {
+            salary.pk: salary
+            for salary in EmployeeSalaryPrepared.objects.filter(pk__in=salary_ids).prefetch_related(
+                'overtime_breakdown',
+                'current_salary_earned_amounts__earnings_head',
+            )
+        }
+        salaries = [salary_by_id[salary_id] for salary_id in salary_ids]
+        return Response({
+            'message': 'Bulk Prepare Salaries successful',
+            'prepared_count': len(results),
+            'salaries': [
+                EmployeeSalaryPreparedWithEarnedAmountSerializer(salary).data
+                for salary in salaries
+            ],
+        }, status=status.HTTP_200_OK)
 
 class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
@@ -2749,8 +3130,11 @@ class AttendanceReportsCreateAPIView(generics.CreateAPIView):
                 date=date(validated_data['year'], validated_data['month'], validated_data['filters']['date']),
                 company_id=validated_data['company'],
                 user=user #OWNER
-            )
-            print(len(employees_attendances_with_ot))
+            ).select_related(
+                'company',
+                'employee__employee_professional_detail__department',
+                'employee__employee_salary_detail',
+            ).prefetch_related('overtime_details')
 
             #Use python regular expression to orderby if the order by is using paycode because it is alpha numeric
             if validated_data['filters']['sort_by'] == "paycode":
@@ -2765,11 +3149,18 @@ class AttendanceReportsCreateAPIView(generics.CreateAPIView):
             else:
                 employees_attendances_with_ot = employees_attendances_with_ot.order_by(*order_by)
 
-            if len(employees_attendances_with_ot) !=0:
-                print('inside the if')
-                response = StreamingHttpResponse(generate_overtime_sheet_daily(serializer.validated_data, employees_attendances_with_ot), content_type="application/pdf")
+            payable_overtime_rows = []
+            for attendance in employees_attendances_with_ot:
+                overtime_result = calculate_attendance_overtime(actor=request.user, attendance=attendance)
+                if overtime_result.policy_eligible_gross_minutes > 0:
+                    payable_overtime_rows.append({
+                        'attendance': attendance,
+                        'overtime_result': overtime_result,
+                    })
+
+            if payable_overtime_rows:
+                response = StreamingHttpResponse(generate_overtime_sheet_daily(serializer.validated_data, payable_overtime_rows), content_type="application/pdf")
                 response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
-                print('returnining the report now ')
                 return response
             else:
                 return Response({"detail": "No OT Employees on this date"}, status=status.HTTP_404_NOT_FOUND)
@@ -3135,42 +3526,53 @@ class EmployeeStrengthReportsCreateAPIView(generics.CreateAPIView):
 #### 2nd Account Done till above here ###
 
 class MachineAttendanceAPIView(APIView):
+    permission_classes = [IsAuthenticated]
     # parser_classes = (MultiPartParser, FormParser)
     parser_classes = [CamelCaseMultiPartParser, CamelCaseFormParser]
 
     def post(self, request, *args, **kwargs):
         user = self.request.user
         if user.role == 'OWNER':
-            print(request.data)
             serializer = MachineAttendanceSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             # print(serializer.validated_data)
             validated_data = serializer.validated_data
-            print(validated_data)
+            company = get_object_or_404(Company, id=validated_data['company'], user=user)
             num_days_in_month = calendar.monthrange(validated_data['year'], validated_data['month'])[1]
             if validated_data['month_to_date']>num_days_in_month:
                 validated_data['month_to_date'] = num_days_in_month
             from_date = datetime(validated_data['year'], validated_data['month'], validated_data['month_from_date'])
             to_date = datetime(validated_data['year'], validated_data['month'], validated_data['month_to_date'])
 
-            operation_result, message = EmployeeAttendance.objects.machine_attendance(from_date=from_date, to_date=to_date, company_id=validated_data['company'], user=user, all_employees_machine_attendance=validated_data['all_employees_machine_attendance'], mdb_database=validated_data['mdb_database'], employee=validated_data['employee'])
+            try:
+                operation_result, message = EmployeeAttendance.objects.machine_attendance(from_date=from_date, to_date=to_date, company_id=company.id, user=user, all_employees_machine_attendance=validated_data['all_employees_machine_attendance'], mdb_database=validated_data['mdb_database'], employee=validated_data['employee'])
+            except DjangoValidationError as exc:
+                raise serializers.ValidationError(getattr(exc, 'message_dict', exc.messages)) from exc
             return Response({"message": "Machine Attendance successful"}, status=status.HTTP_200_OK)
         return Response({'error': "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
         
 class DefaultAttendanceAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def post(self, request, *args, **kwargs):
         user = self.request.user
         print(request.data)
         serializer = DefaultAttendanceSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         validated_data = serializer.validated_data
-        print(validated_data)
+        owner = user if user.role == 'OWNER' else user.regular_to_owner.owner
+        company = get_object_or_404(Company, id=validated_data['company'], user=owner)
+        if user.role == 'REGULAR' and not company.visible:
+            raise PermissionDenied('Company is not available to this account.')
         num_days_in_month = calendar.monthrange(validated_data['year'], validated_data['month'])[1]
         from_date = date(validated_data['year'], validated_data['month'], 1)
         to_date = date(validated_data['year'], validated_data['month'], num_days_in_month)
         print(from_date)
 
-        operation_result, message = EmployeeAttendance.objects.mark_default_attendance(from_date=from_date, to_date=to_date, company_id=validated_data['company'], user=user)
+        try:
+            operation_result, message = EmployeeAttendance.objects.mark_default_attendance(from_date=from_date, to_date=to_date, company_id=company.id, user=user)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(getattr(exc, 'message_dict', exc.messages)) from exc
         print(operation_result, message)
 
         if operation_result == True:
@@ -3779,60 +4181,6 @@ class AttendanceMachineConfigRetrieveUpdateDestroyAPIView(generics.RetrieveUpdat
         serializer.save(user=user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-class ExtraFeaturesConfigCreateAPIView(generics.CreateAPIView):
-    permission_classes = [IsAuthenticated]
-    serializer_class = ExtraFeaturesConfigSerializer 
-    def perform_create(self, serializer):
-        user = self.request.user
-        if user.role != "OWNER":
-            raise PermissionDenied("Not allowed")
-        print('yes owner')
-        return serializer.save(user=user)
-    
-class ExtraFeaturesConfigRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes= [IsAuthenticated]
-    serializer_class = ExtraFeaturesConfigSerializer
-    lookup_field = 'company_id'
-
-    def get_queryset(self, *args, **kwargs):
-        user = self.request.user
-        if user.role != "OWNER":
-            raise PermissionDenied("Not allowed")
-        company_id = self.kwargs.get('company_id')
-        return user.extra_features_configuration.filter(company_id=company_id)
-    
-    def update(self, request, *args, **kwargs):
-        user = self.request.user
-        if user.role != "OWNER":
-            return Response({'error': "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save(user=user)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-class CalculateOtAttendanceUsingTotalEarnedApiView(APIView):
-    def post(self, request, *args, **kwargs):
-        user = self.request.user
-        serializer = CalculateOtAttendanceUsingTotalEarnedSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        print(serializer.validated_data)
-        validated_data = serializer.validated_data
-        num_days_in_month = calendar.monthrange(validated_data['year'], validated_data['month'])[1]
-        # if validated_data['month_to_date']>num_days_in_month:
-        #     validated_data['month_to_date'] = num_days_in_month
-        from_date = date(validated_data['year'], validated_data['month'], 1)
-        to_date = date(validated_data['year'], validated_data['month'], num_days_in_month)
-        #
-        # # try:
-        operation_result, message = calculate_ot_attendance_using_total_earned(user=user, company_id=validated_data['company'], employee_ids=validated_data['employee_ids'], from_date=from_date, to_date=to_date, year=validated_data['year'], month=validated_data['month'], manually_inserted_total_earned=validated_data['manually_inserted_total_earned'])
-        if operation_result==False:
-            return Response({"message": message}, status=status.HTTP_400_BAD_REQUEST)
-        return Response({"message": message}, status=status.HTTP_200_OK)
-
-
-
-
 '''
 Sub User Views (Exclusive) start from here.
 '''
@@ -3880,15 +4228,19 @@ class TransferAttendanceFromOwnerToRegularAPIView(APIView):
         serializer = TransferAttendanceFromOwnerToRegularSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         validated_data = serializer.validated_data
+        company = get_object_or_404(Company, id=validated_data['company'], user=user)
         
         # try:
         # Call the model manager method
-        success, message = EmployeeAttendance.objects.transfer_attendance_from_owner_to_regular(
-            month=validated_data['month'],
-            year=validated_data['year'],
-            company_id=validated_data['company'],
-            user=user
-        )
+        try:
+            success, message = EmployeeAttendance.objects.transfer_attendance_from_owner_to_regular(
+                month=validated_data['month'],
+                year=validated_data['year'],
+                company_id=company.id,
+                user=user
+            )
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(getattr(exc, 'message_dict', exc.messages)) from exc
         if not success:
             # If the operation fails, raise an APIException with the error message
             raise APIException(message)
