@@ -14,7 +14,6 @@ from pathlib import Path
 from datetime import timedelta
 from corsheaders.defaults import default_headers
 import os
-from logging.handlers import RotatingFileHandler
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -333,13 +332,6 @@ SIMPLE_JWT = {
 # }
 #
 
-LOG_FILE_PATH = os.path.join(BASE_DIR, 'logs', 'django.log')
-# Ensure the directory exists
-if not os.path.exists(os.path.dirname(LOG_FILE_PATH)):
-    os.makedirs(os.path.dirname(LOG_FILE_PATH))
-
-
-
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -347,17 +339,10 @@ LOGGING = {
         'console': {
             'class': 'logging.StreamHandler',
         },
-        'file': {
-            'level': 'DEBUG',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': LOG_FILE_PATH,
-            'maxBytes': 1024 * 1024 * 10,  # 10 MB
-            'backupCount': 5,
-        },
     },
     'root': {
-        'handlers': ['console', 'file'],
-        'level': 'DEBUG',
+        'handlers': ['console'],
+        'level': 'INFO',
     },
     'loggers': {
         # 'django.db.backends': {
@@ -366,6 +351,20 @@ LOGGING = {
         # },
     }
 }
+
+if DEBUG:
+    LOG_FILE_PATH = os.path.join(BASE_DIR, 'logs', 'django.log')
+    os.makedirs(os.path.dirname(LOG_FILE_PATH), exist_ok=True)
+
+    LOGGING['handlers']['file'] = {
+        'level': 'DEBUG',
+        'class': 'logging.handlers.RotatingFileHandler',
+        'filename': LOG_FILE_PATH,
+        'maxBytes': 1024 * 1024 * 10,  # 10 MB
+        'backupCount': 5,
+    }
+    LOGGING['root']['handlers'].append('file')
+    LOGGING['root']['level'] = 'DEBUG'
 
 if DEBUG:
     # LOGGING['loggers']['django.db.backends'] = {
