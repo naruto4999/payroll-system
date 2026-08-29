@@ -1325,6 +1325,7 @@ class EmployeeSalaryEarningListUpdateAPIView(generics.UpdateAPIView):
             return user.all_employees_earnings.filter(company=company_id, employee=employee)
         return user.regular_to_owner.owner.all_employees_earnings.filter(company=company_id, employee=employee, employee__visible=True)
     
+    @transaction.atomic
     def update(self, request, *args, **kwargs):
         indian_timezone = pytz.timezone('Asia/Kolkata')
         current_datetime = datetime.now(indian_timezone)

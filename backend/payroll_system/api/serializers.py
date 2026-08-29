@@ -466,10 +466,34 @@ class EmployeeSalaryEarningSerializer(serializers.ModelSerializer):
         model = EmployeeSalaryEarning
         fields = ['employee', 'company', 'earnings_head', 'value', 'from_date', 'to_date']
 
+
+class EmployeeSalaryEarningUpdateListSerializer(serializers.ListSerializer):
+    def validate(self, attrs):
+        seen_from_dates = set()
+        seen_to_dates = set()
+
+        for item in attrs:
+            from_date = item['from_date']
+            to_date = item['to_date']
+
+            if from_date > to_date:
+                raise serializers.ValidationError('from_date must be before or equal to to_date.')
+            if from_date in seen_from_dates:
+                raise serializers.ValidationError('Duplicate from_date for the same employee and earnings_head in request.')
+            if to_date in seen_to_dates:
+                raise serializers.ValidationError('Duplicate to_date for the same employee and earnings_head in request.')
+
+            seen_from_dates.add(from_date)
+            seen_to_dates.add(to_date)
+
+        return attrs
+
 class EmployeeSalaryEarningUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployeeSalaryEarning
         fields = ['employee', 'company', 'earnings_head', 'value', 'from_date', 'to_date']
+        list_serializer_class = EmployeeSalaryEarningUpdateListSerializer
+        validators = []
     
 class EmployeeSalaryDetailSerializer(serializers.ModelSerializer):
     resolved_overtime_policy = serializers.SerializerMethodField(read_only=True)
