@@ -813,7 +813,6 @@ class EmployeeSalaryEarning(models.Model):
     def clean(self):
         if isinstance(self.from_date, str):
             # Parse the string into a datetime object
-            print('in istance')
             self.from_date = datetime.strptime(self.from_date, "%Y-%m-%d").date()
         if isinstance(self.to_date, str):
             # Parse the string into a datetime object
@@ -823,7 +822,6 @@ class EmployeeSalaryEarning(models.Model):
         if isinstance(self.to_date, datetime):
             self.to_date = self.to_date.date()
         # Now both from_date and to_date are datetime objects
-        print(f'from_date type : {type(self.from_date)} value: {self.from_date} and to_date type: {type(self.to_date)} and value {self.to_date}')
 
         # Now both from_date and to_date are datetime objects
 
@@ -1271,7 +1269,6 @@ class EmployeeShifts(models.Model):
     def clean(self):
         if isinstance(self.from_date, str):
             # Parse the string into a datetime object
-            print('in istance')
             self.from_date = datetime.strptime(self.from_date, "%Y-%m-%d").date()
         if isinstance(self.to_date, str):
             # Parse the string into a datetime object
@@ -1281,7 +1278,6 @@ class EmployeeShifts(models.Model):
         if isinstance(self.to_date, datetime):
             self.to_date = self.to_date.date()
         # Now both from_date and to_date are datetime objects
-        print(f'from_date type : {type(self.from_date)} value: {self.from_date} and to_date type: {type(self.to_date)} and value {self.to_date}')
         if self.from_date > self.to_date:
             raise ValidationError("'from_date' must be before 'to_date'")
         
