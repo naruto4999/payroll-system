@@ -225,6 +225,11 @@ const menuItems = [
                 icon: FaCogs,
                 path: '/home/settings/attendance-machine-config',
             },
+            {
+                title: 'Report Settings',
+                icon: FaCogs,
+                path: '/home/settings/report-settings',
+            },
         ],
     },
     {

@@ -66,14 +66,26 @@ const LoginForm = () => {
 	};
 
 	return (
-		<main className="relative flex min-h-screen overflow-hidden bg-brand-light text-zinc-900 dark:bg-brand-canvas dark:text-white">
-			<div className="pointer-events-none absolute -left-32 -top-32 h-80 w-80 rounded-full bg-teal-200/40 blur-3xl dark:bg-teal-900/30" />
-			<div className="pointer-events-none absolute -bottom-40 right-0 h-96 w-96 rounded-full bg-blueAccent-100/60 blur-3xl dark:bg-blueAccent-900/20" />
+		<main className="auth-page relative flex min-h-screen overflow-hidden bg-brand-light text-zinc-900 dark:bg-brand-canvas dark:text-white">
+			<div
+				aria-hidden="true"
+				className="auth-orb pointer-events-none absolute -left-32 -top-32 h-80 w-80 rounded-full bg-teal-200/40 blur-3xl dark:bg-teal-900/30"
+			/>
+			<div
+				aria-hidden="true"
+				className="auth-orb auth-orb-reverse pointer-events-none absolute -bottom-40 right-0 h-96 w-96 rounded-full bg-blueAccent-100/60 blur-3xl dark:bg-blueAccent-900/20"
+			/>
 
 			<section className="relative hidden w-[46%] flex-col justify-between overflow-hidden bg-brand-ink p-12 text-white lg:flex xl:p-16">
-				<div className="absolute -right-24 top-16 h-72 w-72 rounded-full border-[36px] border-teal-400/10" />
-				<div className="absolute -bottom-40 -left-32 h-96 w-96 rounded-full border-[52px] border-teal-300/10" />
-				<Link to="/" className="relative z-10 inline-flex items-center">
+				<div
+					aria-hidden="true"
+					className="auth-orb absolute -right-24 top-16 h-72 w-72 rounded-full border-[36px] border-teal-400/10"
+				/>
+				<div
+					aria-hidden="true"
+					className="auth-orb auth-orb-reverse absolute -bottom-40 -left-32 h-96 w-96 rounded-full border-[52px] border-teal-300/10"
+				/>
+				<Link to="/" className="auth-login-item relative z-10 inline-flex items-center">
 					<img
 						src={`${import.meta.env.VITE_PUBLIC_URL}logo_text_dark.svg`}
 						alt="Payper"
@@ -81,26 +93,33 @@ const LoginForm = () => {
 					/>
 				</Link>
 				<div className="relative z-10 max-w-md pb-8">
-					<p className="mb-5 text-sm font-medium uppercase tracking-[0.24em] text-teal-300">Payroll, simplified</p>
-					<h1 className="text-5xl font-semibold leading-[1.08] tracking-[-0.04em] xl:text-6xl">
+					<p className="auth-login-item auth-login-delay-1 mb-5 text-sm font-medium uppercase tracking-[0.24em] text-teal-300">
+						Payroll, simplified
+					</p>
+					<h1 className="auth-login-item auth-login-delay-2 text-5xl font-semibold leading-[1.08] tracking-[-0.04em] xl:text-6xl">
 						Make every payday feel effortless.
 					</h1>
-					<p className="mt-6 max-w-sm text-base leading-7 text-slate-300">
+					<p className="auth-login-item auth-login-delay-3 mt-6 max-w-sm text-base leading-7 text-slate-300">
 						A smarter way to manage your people, payroll, and the details that keep your business moving.
 					</p>
-					<div className="mt-10 flex items-center gap-3 text-sm text-slate-300">
+					<div className="auth-login-item auth-login-delay-4 mt-10 flex items-center gap-3 text-sm text-slate-300">
 						<span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-teal-300">
 							<FiLock />
 						</span>
 						Secure access to your payroll workspace
 					</div>
 				</div>
-				<p className="relative z-10 text-xs text-slate-400">A Smart Payroll System on Cloud</p>
+				<div className="auth-login-item auth-login-delay-4 relative z-10 flex items-center gap-4">
+					<span className="h-px w-10 bg-teal-300/60" />
+					<p className="text-lg font-medium tracking-[-0.01em] text-slate-200 xl:text-xl">
+						A Smart Payroll System on Cloud
+					</p>
+				</div>
 			</section>
 
 			<section className="relative flex w-full items-center justify-center px-5 py-10 sm:px-8 lg:w-[54%] lg:px-12">
 				<div className="w-full max-w-md">
-					<div className="mb-8 flex justify-center lg:hidden">
+					<div className="auth-login-item mb-8 flex justify-center lg:hidden">
 						<Link to="/" className="inline-flex items-center">
 							<img
 								src={`${import.meta.env.VITE_PUBLIC_URL}logo_text_dark.svg`}
@@ -110,16 +129,27 @@ const LoginForm = () => {
 						</Link>
 					</div>
 
-					<div className="rounded-[2rem] border border-white/80 bg-white/75 p-6 shadow-brand-card backdrop-blur-xl dark:border-white/10 dark:bg-zinc-900/70 sm:p-10">
-							<div className="mb-7">
-							<p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-teal-700 dark:text-teal-400">Welcome back</p>
-							<h2 className="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-white">Sign in to payper</h2>
-							<p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">Continue to your payroll workspace.</p>
+					<div className="auth-login-card rounded-[2rem] border border-white/80 bg-white/75 p-6 shadow-brand-card backdrop-blur-xl dark:border-white/10 dark:bg-zinc-900/70 sm:p-10">
+						<div className="mb-7">
+							<p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-teal-700 dark:text-teal-400">
+								Welcome back
+							</p>
+							<h2 className="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-white">
+								Sign in to payper
+							</h2>
+							<p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+								Continue to your payroll workspace.
+							</p>
 						</div>
 
 						<form className="space-y-4" onSubmit={submitButtonClicked}>
 							<div>
-								<label htmlFor="username" className="mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300">Username</label>
+								<label
+									htmlFor="username"
+									className="mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300"
+								>
+									Username
+								</label>
 								<Input
 									type="text"
 									id="username"
@@ -137,8 +167,18 @@ const LoginForm = () => {
 
 							<div>
 								<div className="mb-2 flex items-center justify-between">
-									<label htmlFor="password" className="text-xs font-medium text-zinc-700 dark:text-zinc-300">Password</label>
-									<Link to="/forgot-password" className="text-xs font-medium text-teal-700 transition hover:text-teal-900 dark:text-teal-400 dark:hover:text-teal-300">Forgot password?</Link>
+									<label
+										htmlFor="password"
+										className="text-xs font-medium text-zinc-700 dark:text-zinc-300"
+									>
+										Password
+									</label>
+									<Link
+										to="/forgot-password"
+										className="text-xs font-medium text-teal-700 transition hover:text-teal-900 dark:text-teal-400 dark:hover:text-teal-300"
+									>
+										Forgot password?
+									</Link>
 								</div>
 								<Input
 									type={showPassword ? 'text' : 'password'}
@@ -165,20 +205,37 @@ const LoginForm = () => {
 								/>
 							</div>
 
-							{errorMessage && <p role="alert" className="pt-1 text-xs leading-5 text-red-500 dark:text-red-400">{errorMessage}</p>}
+							{errorMessage && (
+								<p role="alert" className="pt-1 text-xs leading-5 text-red-500 dark:text-red-400">
+									{errorMessage}
+								</p>
+							)}
 
-							<Button type="submit" disabled={isLoading} className="group h-12 w-full rounded-lg bg-teal-700 px-5 text-sm font-semibold text-white shadow-lg shadow-teal-700/20 transition hover:bg-teal-800 hover:shadow-teal-700/30 focus:outline-none focus:ring-4 focus:ring-teal-600/20 disabled:cursor-not-allowed disabled:opacity-60">
+							<Button
+								type="submit"
+								disabled={isLoading}
+								className="group h-12 w-full rounded-lg bg-teal-700 px-5 text-sm font-semibold text-white shadow-lg shadow-teal-700/20 transition hover:bg-teal-800 hover:shadow-teal-700/30 focus:outline-none focus:ring-4 focus:ring-teal-600/20 disabled:cursor-not-allowed disabled:opacity-60"
+							>
 								{isLoading ? 'Signing in...' : 'Sign in'}
-								{!isLoading && <FiArrowRight className="transition-transform group-hover:translate-x-1" />}
+								{!isLoading && (
+									<FiArrowRight className="transition-transform group-hover:translate-x-1" />
+								)}
 							</Button>
 						</form>
 
 						<p className="mt-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
 							Don't have an account?{' '}
-							<Link to="/register" className="font-semibold text-teal-700 hover:text-teal-900 dark:text-teal-400 dark:hover:text-teal-300">Register now</Link>
+							<Link
+								to="/register"
+								className="font-semibold text-teal-700 hover:text-teal-900 dark:text-teal-400 dark:hover:text-teal-300"
+							>
+								Register now
+							</Link>
 						</p>
 					</div>
-					<p className="mt-6 text-center text-xs text-zinc-400 dark:text-zinc-500">Your data is protected with secure authentication.</p>
+					<p className="mt-6 text-center text-xs text-zinc-400 dark:text-zinc-500">
+						Your data is protected with secure authentication.
+					</p>
 				</div>
 			</section>
 		</main>

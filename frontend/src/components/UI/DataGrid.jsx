@@ -7,26 +7,36 @@ const classNames = (...classes) => {
 	return classes.filter(Boolean).join(' ');
 };
 
+const rowDensityClasses = {
+	compact: 'py-1.5',
+	regular: 'py-2',
+	comfortable: 'py-4',
+};
+
 const DataGrid = React.memo(
 	({
 		table,
 		tbodyRef,
 		getRowId = (row) => row.id,
+		getRowClassName,
 		selectedRowId,
 		selectedIndicatorColumnId,
 		onRowClick,
 		onRowKeyDown,
 		maxHeightClassName = 'max-h-[70dvh]',
+		wrapperClassName,
 		containerClassName,
 		tableClassName,
+		density = 'regular',
 		emptyMessage = 'No records found',
 	}) => {
 		const rows = table.getRowModel().rows;
 		const visibleColumns = table.getVisibleLeafColumns();
 		const visibleColumnCount = visibleColumns.length;
+		const rowPaddingClassName = rowDensityClasses[density] || rowDensityClasses.regular;
 
 		return (
-			<div className="py-2">
+			<div className={classNames('py-2', wrapperClassName)}>
 				<div
 					className={classNames(
 						'scrollbar mx-auto max-w-full overflow-y-auto rounded border border-black border-opacity-50 shadow-md',
@@ -109,8 +119,9 @@ const DataGrid = React.memo(
 									return (
 										<tr
 											className={classNames(
-														'outline-none hover:bg-zinc-200 dark:hover:bg-zinc-800 dark:focus:bg-teal-800 dark:focus:bg-opacity-50',
-												isSelected ? 'bg-blueAccent-100 bg-opacity-60 dark:bg-blueAccent-900 dark:bg-opacity-40' : ''
+												'outline-none hover:bg-zinc-200 dark:hover:bg-zinc-800 dark:focus:bg-teal-800 dark:focus:bg-opacity-50',
+												isSelected ? 'bg-blueAccent-100 bg-opacity-60 dark:bg-blueAccent-900 dark:bg-opacity-40' : '',
+												getRowClassName?.(row)
 											)}
 											key={rowId}
 											id={rowId}
@@ -132,7 +143,8 @@ const DataGrid = React.memo(
 													<td
 														className={classNames(
 															showSelectedIndicator ? 'pl-8' : '',
-															'relative px-3 py-2 font-normal',
+															'relative px-3 font-normal',
+															rowPaddingClassName,
 															cell.column.columnDef.meta?.cellClassName
 														)}
 														key={cell.id}

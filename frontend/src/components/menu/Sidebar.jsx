@@ -41,7 +41,14 @@ const Sidebar = () => {
 							return item.title === 'Setup Entry' ? auth.account.role === 'OWNER' : true;
 						}),
 					}
-				: main_menu_item;
+				: main_menu_item.title === 'Settings'
+					? {
+							...main_menu_item,
+							children: main_menu_item.children.filter(
+								(item) => item.title !== 'Report Settings' || auth.account.role === 'OWNER'
+							),
+						}
+					: main_menu_item;
 		});
 
 	// console.log(auth)

@@ -1,8 +1,22 @@
-from fpdf import FPDF
 import os
-from ..models import CompanyDetails, EmployeeGenerativeLeaveRecord, LeaveGrade, EmployeeSalaryEarning, EarnedAmount
-from .generate_salary_sheet import displayed_absent_half_count, format_day_count, get_selective_pay_unpaid_leave_counts
+from collections import defaultdict
 from datetime import date
+
+from fpdf import FPDF
+
+from ..models import (
+    CompanyDetails,
+    EarnedAmount,
+    EmployeeGenerativeLeaveRecord,
+    EmployeeMonthlyAttendanceDetails,
+    EmployeeSalaryEarning,
+    LeaveGrade,
+)
+from .generate_salary_sheet import (
+    displayed_absent_half_count,
+    format_day_count,
+    get_selective_pay_unpaid_leave_counts_by_employee,
+)
 
 
 # Get the current script's directory
@@ -33,11 +47,86 @@ class FPDF(FPDF):
         # Page number
         self.cell(0, 5, 'Page %s' % self.page_no(), 0, 0, 'R')
 
+
+def _load_payslip_data(user, request_data, employee_salaries, selective_pay_unpaid_leaves):
+    salary_dates_by_employee = {
+        salary.employee_id: salary.date
+        for salary in employee_salaries
+    }
+    employee_ids = list(salary_dates_by_employee)
+    salary_ids = [salary.id for salary in employee_salaries]
+    salary_dates = set(salary_dates_by_employee.values())
+    report_date = date(request_data['year'], request_data['month'], 1)
+
+    monthly_attendance_by_employee = {}
+    monthly_attendances = EmployeeMonthlyAttendanceDetails.objects.filter(
+        user=user,
+        employee_id__in=employee_ids,
+        date=report_date,
+    ).order_by('pk')
+    for monthly_attendance in monthly_attendances:
+        monthly_attendance_by_employee.setdefault(
+            monthly_attendance.employee_id,
+            monthly_attendance,
+        )
+
+    salary_rates_by_employee = defaultdict(list)
+    if salary_dates:
+        salary_rates = EmployeeSalaryEarning.objects.filter(
+            employee_id__in=employee_ids,
+            from_date__lte=max(salary_dates),
+            to_date__gte=min(salary_dates),
+        ).select_related('earnings_head').order_by('earnings_head__id')
+        for salary_rate in salary_rates:
+            salary_date = salary_dates_by_employee[salary_rate.employee_id]
+            if salary_rate.from_date <= salary_date <= salary_rate.to_date:
+                salary_rates_by_employee[salary_rate.employee_id].append(salary_rate)
+
+    earned_amounts_by_salary = defaultdict(list)
+    earned_amounts = EarnedAmount.objects.filter(
+        salary_prepared_id__in=salary_ids,
+    ).order_by('earnings_head__id')
+    for earned_amount in earned_amounts:
+        earned_amounts_by_salary[earned_amount.salary_prepared_id].append(earned_amount)
+
+    generative_leaves_by_employee = defaultdict(list)
+    employee_generative_leaves = EmployeeGenerativeLeaveRecord.objects.filter(
+        user=user,
+        employee_id__in=employee_ids,
+        date=report_date,
+    ).select_related('leave').order_by('leave__name')
+    for employee_generative_leave in employee_generative_leaves:
+        generative_leaves_by_employee[employee_generative_leave.employee_id].append(
+            employee_generative_leave
+        )
+
+    selective_leave_counts_by_employee = get_selective_pay_unpaid_leave_counts_by_employee(
+        user=user,
+        company_id=request_data['company'],
+        salary_dates_by_employee=salary_dates_by_employee,
+        selective_pay_unpaid_leaves=selective_pay_unpaid_leaves,
+    )
+
+    return {
+        'monthly_attendance_by_employee': monthly_attendance_by_employee,
+        'salary_rates_by_employee': salary_rates_by_employee,
+        'earned_amounts_by_salary': earned_amounts_by_salary,
+        'generative_leaves_by_employee': generative_leaves_by_employee,
+        'selective_leave_counts_by_employee': selective_leave_counts_by_employee,
+    }
+
+
 def generate_payslip(user, request_data, employee_salaries):
     intro_cell_height = 5
-    company_details = CompanyDetails.objects.filter(company_id=request_data['company']).first()
+    employee_salaries = list(employee_salaries)
+    company_details = CompanyDetails.objects.select_related('company').filter(
+        company_id=request_data['company']
+    ).first()
     language = request_data['filters']['language']
-    generative_leaves = LeaveGrade.objects.filter(company_id=request_data['company'], generate_frequency__isnull=False)
+    generative_leaves = LeaveGrade.objects.filter(
+        company_id=request_data['company'],
+        generate_frequency__isnull=False,
+    )
     owner = user if user.role == "OWNER" else user.regular_to_owner.owner
     selective_pay_unpaid_leaves = LeaveGrade.objects.filter(
         user=owner,
@@ -46,7 +135,17 @@ def generate_payslip(user, request_data, employee_salaries):
         paid=False,
         payable_earnings_heads__isnull=False,
     ).distinct().order_by('name')
-    default_number_of_cells_in_main_row = max(9, len(generative_leaves)+len(selective_pay_unpaid_leaves)+6)
+    selective_pay_unpaid_leaves = list(selective_pay_unpaid_leaves)
+    payslip_data = _load_payslip_data(
+        user,
+        request_data,
+        employee_salaries,
+        selective_pay_unpaid_leaves,
+    )
+    default_number_of_cells_in_main_row = max(
+        9,
+        len(generative_leaves) + len(selective_pay_unpaid_leaves) + 6,
+    )
     main_table_cell_height = 4
     max_name_earning_head_name_length = 10
     cell_height_for_dashed_line = 4.5
@@ -133,7 +232,7 @@ def generate_payslip(user, request_data, employee_salaries):
         Drawing the Main Salary Slip Table
         """
         #Attendance Details
-        employee_monthly_details = salary.employee.monthly_attendance_details.filter(user=user, date=date(request_data['year'], request_data['month'], 1)).first()
+        employee_monthly_details = payslip_data['monthly_attendance_by_employee'].get(salary.employee_id)
         payslip.set_xy(x=current_payslip_initial_coordinates['x'], y=current_payslip_initial_coordinates["y"]+intro_cell_height*8)
         payslip.rect(x=payslip.get_x(), y=payslip.get_y(), w=width_of_columns["attendance"], h=(default_number_of_cells_in_main_row+1)*main_table_cell_height)
         payslip.set_font('noto-sans-devanagari', size=7, style='B')
@@ -173,13 +272,7 @@ def generate_payslip(user, request_data, employee_salaries):
         if language=="hindi":
             payslip.cell(w=None, h=main_table_cell_height, text=f'अनुपस्थिति')
         #Value
-        selective_pay_unpaid_leave_counts = get_selective_pay_unpaid_leave_counts(
-            user=user,
-            company_id=request_data['company'],
-            employee_id=salary.employee.id,
-            salary_date=salary.date,
-            selective_pay_unpaid_leaves=selective_pay_unpaid_leaves,
-        )
+        selective_pay_unpaid_leave_counts = payslip_data['selective_leave_counts_by_employee'][salary.employee_id]
         absent_half_count = displayed_absent_half_count(
             employee_monthly_details.not_paid_days_count,
             selective_pay_unpaid_leave_counts,
@@ -188,7 +281,7 @@ def generate_payslip(user, request_data, employee_salaries):
         payslip.cell(w=width_of_columns['attendance'], h=main_table_cell_height, text=format_day_count(absent_half_count), new_x="RIGHT", align='R')
         payslip.set_xy(x=current_payslip_initial_coordinates['x'], y=current_payslip_initial_coordinates['y']+intro_cell_height*8+main_table_cell_height*6)
         #Generative Leaves
-        employee_generative_leaves = EmployeeGenerativeLeaveRecord.objects.filter(user=user, employee=salary.employee, date=date(request_data['year'], request_data['month'], 1)).order_by('leave__name')
+        employee_generative_leaves = payslip_data['generative_leaves_by_employee'][salary.employee_id]
         for index, generative_leave in enumerate(employee_generative_leaves):
             payslip.cell(w=None, h=main_table_cell_height, text=f'{generative_leave.leave.name}{" /" if language=="hindi" and generative_leave.leave.name in ("EL", "CL", "SL") else ""}', new_x="RIGHT")
             if language=="hindi" and generative_leave.leave.name in ("EL", "CL", "SL"):
@@ -224,7 +317,7 @@ def generate_payslip(user, request_data, employee_salaries):
         payslip.set_font('noto-sans-devanagari', size=7)
 
         #Salary Wage Rate
-        employee_salary_rates = EmployeeSalaryEarning.objects.filter(from_date__lte=salary.date, to_date__gte=salary.date, employee=salary.employee.id).order_by('earnings_head__id')
+        employee_salary_rates = payslip_data['salary_rates_by_employee'][salary.employee_id]
         payslip.set_xy(x=current_payslip_initial_coordinates['x']+width_of_columns['attendance'], y=current_payslip_initial_coordinates["y"]+intro_cell_height*8)
         payslip.rect(x=payslip.get_x(), y=payslip.get_y(), w=width_of_columns["salary_wage_rate"], h=(default_number_of_cells_in_main_row+1)*main_table_cell_height)
         payslip.set_font('noto-sans-devanagari', size=7, style='B')
@@ -268,7 +361,7 @@ def generate_payslip(user, request_data, employee_salaries):
 
 
         #Earnings
-        earned_amounts = EarnedAmount.objects.filter(salary_prepared = salary.id).order_by('earnings_head__id')
+        earned_amounts = payslip_data['earned_amounts_by_salary'][salary.id]
         payslip.set_xy(x=current_payslip_initial_coordinates['x']+width_of_columns['attendance']+width_of_columns['salary_wage_rate'], y=current_payslip_initial_coordinates["y"]+intro_cell_height*8)
         payslip.rect(x=payslip.get_x(), y=payslip.get_y(), w=width_of_columns["earnings"], h=(default_number_of_cells_in_main_row+1)*main_table_cell_height)
         payslip.set_font('noto-sans-devanagari', size=7, style='B')
@@ -282,7 +375,6 @@ def generate_payslip(user, request_data, employee_salaries):
             payslip.set_xy(x=current_payslip_initial_coordinates['x']+width_of_columns['attendance']+width_of_columns["salary_wage_rate"], y=current_payslip_initial_coordinates["y"]+intro_cell_height*8+(main_table_cell_height*(2+index)))
             payslip.cell(w=width_of_columns['earnings'], h=main_table_cell_height, text=f'{earned.earned_amount-earned.arear_amount}', new_x="RIGHT", align='R')
             total_earned_amount += earned.earned_amount-earned.arear_amount
-            print(earned.earned_amount-earned.arear_amount)
         
         #Printing Total
         payslip.set_xy(x=current_payslip_initial_coordinates['x']+width_of_columns['attendance']+width_of_columns['salary_wage_rate'], y=current_payslip_initial_coordinates['y']+intro_cell_height*8+main_table_cell_height*default_number_of_cells_in_main_row)
@@ -307,7 +399,6 @@ def generate_payslip(user, request_data, employee_salaries):
             payslip.set_xy(x=current_payslip_initial_coordinates['x']+width_of_columns['attendance']+width_of_columns["salary_wage_rate"]+width_of_columns["earnings"], y=current_payslip_initial_coordinates["y"]+intro_cell_height*8+(main_table_cell_height*(2+index)))
             payslip.cell(w=width_of_columns['earnings'], h=main_table_cell_height, text=f'{earned.arear_amount}', new_x="RIGHT", align='R')
             total_arrears_amount += earned.arear_amount
-            print(earned.arear_amount)
         
         #Printing Total
         payslip.set_xy(x=current_payslip_initial_coordinates['x']+width_of_columns['attendance']+width_of_columns['salary_wage_rate']+width_of_columns["earnings"], y=current_payslip_initial_coordinates['y']+intro_cell_height*8+main_table_cell_height*default_number_of_cells_in_main_row)

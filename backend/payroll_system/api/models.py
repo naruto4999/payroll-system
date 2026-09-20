@@ -239,7 +239,43 @@ class CompanyDetails(models.Model):
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
-    
+
+
+class CompanyReportConfiguration(models.Model):
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.CASCADE,
+        related_name='report_configurations',
+    )
+    report_type = models.CharField(max_length=64)
+    output_format = models.CharField(max_length=32)
+    options = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['company', 'report_type', 'output_format'],
+                name='unique_company_report_configuration',
+            ),
+        ]
+
+    def clean(self):
+        from .report_options import normalize_report_options
+
+        try:
+            self.options = normalize_report_options(
+                self.report_type,
+                self.output_format,
+                self.options,
+            )
+        except ValueError as error:
+            raise ValidationError({'options': str(error)}) from error
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
 class Deparment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="departments")
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="deparments")

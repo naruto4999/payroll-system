@@ -88,6 +88,38 @@ const FilterOptions = ({
 					</Field>
 				</div>
 			)}
+			{values.reportType == 'payment_sheet' && values.filters.format == 'xlsx' && (
+				<>
+					<div>
+						<label htmlFor="filters.salaryRateColumns" className="mr-4 text-sm font-medium">
+							Salary Rate Columns :
+						</label>
+						<Field
+							as="select"
+							id="filters.salaryRateColumns"
+							className="my-1 rounded-md bg-zinc-50 bg-opacity-50 p-1 dark:bg-zinc-700"
+							name="filters.salaryRateColumns"
+						>
+							<option value="total_only">Total Only</option>
+							<option value="head_wise">Head-wise Breakdown + Total</option>
+						</Field>
+					</div>
+					<div>
+						<label htmlFor="filters.earnedSalaryColumns" className="mr-4 text-sm font-medium">
+							Earned Salary Columns :
+						</label>
+						<Field
+							as="select"
+							id="filters.earnedSalaryColumns"
+							className="my-1 rounded-md bg-zinc-50 bg-opacity-50 p-1 dark:bg-zinc-700"
+							name="filters.earnedSalaryColumns"
+						>
+							<option value="total_only">Total Only</option>
+							<option value="head_wise">Head-wise Breakdown + Total</option>
+						</Field>
+					</div>
+				</>
+			)}
 			{values.reportType == 'payslip' && (
 				<div>
 					<label
