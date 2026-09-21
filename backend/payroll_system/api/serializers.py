@@ -9,6 +9,7 @@ from .models import Company, CompanyDetails, User, Deparment, Designation, Salar
 from rest_framework import serializers
 
 from .services.overtime_policy import create_overtime_policy, update_overtime_policy
+from .models import CompanyReportConfiguration
 
 
 ATTENDANCE_HISTORY_MIN_DATE = date(2009, 1, 1)
@@ -82,6 +83,38 @@ class CompanyEntrySerializer(serializers.ModelSerializer):
 
             # self.fields['company'] =  CompanySerializer(read_only=True)
             # return super(CompanyEntrySerializer, self).to_representation(instance)
+
+class CompanyReportConfigurationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CompanyReportConfiguration
+        fields = ('id', 'company', 'report_type', 'output_format', 'options')
+        read_only_fields = ('company',)
+
+    def validate(self, attrs):
+        from .report_options import normalize_report_options
+
+        report_type = attrs.get('report_type', getattr(self.instance, 'report_type', None))
+        output_format = attrs.get('output_format', getattr(self.instance, 'output_format', None))
+        options = attrs.get('options', getattr(self.instance, 'options', None))
+        try:
+            attrs['options'] = normalize_report_options(report_type, output_format, options)
+        except ValueError as error:
+            raise serializers.ValidationError({'options': str(error)}) from error
+        company = self.context.get('company')
+        if company:
+            duplicate = CompanyReportConfiguration.objects.filter(
+                company=company,
+                report_type=report_type,
+                output_format=output_format,
+            )
+            if self.instance:
+                duplicate = duplicate.exclude(pk=self.instance.pk)
+            if duplicate.exists():
+                raise serializers.ValidationError(
+                    'A configuration already exists for this report and format.'
+                )
+        return attrs
+
 
 class DepartmentSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
@@ -880,6 +913,12 @@ class FiltersSalaryOvertimeSheet(serializers.Serializer):
     language = serializers.ChoiceField(choices=["hindi", "english"])
     format = serializers.ChoiceField(choices=["xlsx", "pdf"])
     overtime = serializers.ChoiceField(choices=["with_ot", "without_ot"])
+    salary_rate_columns = serializers.ChoiceField(
+        choices=["total_only", "head_wise"], default="total_only"
+    )
+    earned_salary_columns = serializers.ChoiceField(
+        choices=["total_only", "head_wise"], default="total_only"
+    )
 
 class SalaryOvertimeSheetSerializer(serializers.Serializer):
     employee_ids = serializers.ListField(child=serializers.IntegerField())

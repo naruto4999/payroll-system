@@ -420,6 +420,8 @@ const SalaryOvertimeSheet = () => {
 				language: 'english',
 				format: 'pdf',
 				overtime: 'with_ot',
+				salaryRateColumns: 'total_only',
+				earnedSalaryColumns: 'total_only',
 			},
 			reportType: 'salary_sheet',
 		};

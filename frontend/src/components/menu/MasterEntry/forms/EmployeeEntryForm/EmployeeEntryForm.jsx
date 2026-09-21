@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import {
     createColumnHelper,
-    flexRender,
     getCoreRowModel,
+    getFilteredRowModel,
     useReactTable,
     getSortedRowModel,
 } from '@tanstack/react-table';
-import { FaRegTrashAlt, FaPen, FaAngleUp, FaAngleDown, FaEye } from 'react-icons/fa';
+import { FaRegTrashAlt, FaPen, FaEye, FaSearch, FaTimes } from 'react-icons/fa';
 import { useSelector } from 'react-redux';
 import {
     useGetEmployeePersonalDetailsQuery,
@@ -53,13 +53,11 @@ import { alertActions } from '../../../../authentication/store/slices/alertSlice
 import { useAddEmployeeShiftsMutation } from '../../../../authentication/api/employeeShiftsApiSlice';
 import AddEditEmployeeUsingExcel from './AddEditEmployeeUsingExcel';
 import ConfirmationModal from '../../../../UI/ConfirmationModal';
+import DataGrid from '../../../../UI/DataGrid';
+import Dropdown from '../../../../UI/Dropdown';
 import { ConfirmationModalSchema } from '../../../Transaction/forms/TimeUpdationForm/TimeUpdationSchema';
 
 ReactModal.setAppElement('#root');
-
-const classNames = (...classes) => {
-    return classes.filter(Boolean).join(' ');
-};
 
 function getObjectDifferences(obj1, obj2) {
     const diffObj = {};
@@ -116,6 +114,8 @@ const EmployeeEntryForm = () => {
     const dispatch = useDispatch();
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [employeeToDelete, setEmployeeToDelete] = useState(null);
+    const [globalFilter, setGlobalFilter] = useState('');
+    const [employeeStatus, setEmployeeStatus] = useState('all');
 
     const dispatchAlert = (type) => {
         if (type === 'Success') {
@@ -1144,7 +1144,18 @@ const EmployeeEntryForm = () => {
         }),
     ];
 
-    const data = useMemo(() => (fetchedData ? [...fetchedData] : []), [fetchedData]);
+    const data = useMemo(() => {
+        const employees = fetchedData ? [...fetchedData] : [];
+
+        if (employeeStatus === 'current') {
+            return employees.filter((employee) => !employee.resignationDate);
+        }
+        if (employeeStatus === 'resigned') {
+            return employees.filter((employee) => Boolean(employee.resignationDate));
+        }
+
+        return employees;
+    }, [employeeStatus, fetchedData]);
 
     const table = useReactTable({
         data,
@@ -1152,7 +1163,12 @@ const EmployeeEntryForm = () => {
         initialState: {
             sorting: [{ id: 'name', desc: false }],
         },
+        state: {
+            globalFilter,
+        },
+        onGlobalFilterChange: setGlobalFilter,
         getCoreRowModel: getCoreRowModel(),
+        getFilteredRowModel: getFilteredRowModel(),
         getSortedRowModel: getSortedRowModel(),
         enableSortingRemoval: false,
     });
@@ -1215,8 +1231,8 @@ const EmployeeEntryForm = () => {
     } else {
         return (
             <>
-                <section className="mx-5 mt-2">
-                    <div className="flex flex-row flex-wrap place-content-between">
+                <section className="mx-5 mt-2 flex h-[calc(100dvh-2.5rem)] min-h-0 flex-col overflow-hidden">
+                    <div className="flex shrink-0 flex-row flex-wrap place-content-between">
                         <div className="mr-4">
                             <h1 className="text-3xl font-medium">Employees</h1>
                             <p className="my-2 text-sm">Add and manage employees here</p>
@@ -1242,82 +1258,59 @@ const EmployeeEntryForm = () => {
                             {/* </button> */}
                         </div>
                     </div>
-                    <div className="scrollbar mx-auto max-h-[80dvh] max-w-6xl overflow-y-auto rounded border border-black border-opacity-50 shadow-md lg:max-h-[84dvh]">
-                        <table className="w-full border-collapse text-center text-sm">
-                            <thead className="sticky top-0 bg-blueAccent-600 dark:bg-blueAccent-700">
-                                {table.getHeaderGroups().map((headerGroup) => (
-                                    <tr key={headerGroup.id}>
-                                        {headerGroup.headers.map((header) => (
-                                            <th key={header.id} scope="col" className="px-4 py-4 font-medium">
-                                                {header.isPlaceholder ? null : (
-                                                    <div className="">
-                                                        <div
-                                                            {...{
-                                                                className: header.column.getCanSort()
-                                                                    ? 'cursor-pointer select-none flex flex-row justify-center'
-                                                                    : '',
-                                                                onClick: header.column.getToggleSortingHandler(),
-                                                            }}
-                                                        >
-                                                            {flexRender(
-                                                                header.column.columnDef.header,
-                                                                header.getContext()
-                                                            )}
-
-                                                            {/* {console.log(
-                                                            header.column.getIsSorted()
-                                                        )} */}
-                                                            {header.column.getCanSort() ? (
-                                                                <div className="relative pl-2">
-                                                                    <FaAngleUp
-                                                                        className={classNames(
-                                                                            header.column.getIsSorted() == 'asc'
-                                                                                ? 'text-teal-700'
-                                                                                : '',
-                                                                            'absolute -translate-y-2 text-lg'
-                                                                        )}
-                                                                    />
-                                                                    <FaAngleDown
-                                                                        className={classNames(
-                                                                            header.column.getIsSorted() == 'desc'
-                                                                                ? 'text-teal-700'
-                                                                                : '',
-                                                                            'absolute translate-y-2 text-lg'
-                                                                        )}
-                                                                    />
-                                                                </div>
-                                                            ) : (
-                                                                ''
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </th>
-                                        ))}
-                                    </tr>
-                                ))}
-                            </thead>
-                            <tbody className="max-h-20 divide-y divide-black divide-opacity-50 overflow-y-auto border-t border-black border-opacity-50">
-                                {table.getRowModel().rows.map((row) => (
-                                    <tr
-                                        className={`hover:bg-zinc-200 dark:hover:bg-zinc-800 ${row.original.resignationDate ? 'text-redAccent-500' : ''
-                                            }`}
-                                        key={row.id}
-                                    >
-                                        {row.getVisibleCells().map((cell) => (
-                                            <td className="px-4 py-4 font-normal" key={cell.id}>
-                                                <div className="text-sm">
-                                                    <div className="font-medium">
-                                                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                                    </div>
-                                                </div>
-                                            </td>
-                                        ))}
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                    <div className="relative z-30 mx-auto mt-3 flex w-full max-w-6xl shrink-0 flex-col gap-2 rounded-2xl border border-zinc-200/80 bg-white/60 p-1.5 shadow-sm shadow-zinc-950/5 backdrop-blur-sm dark:border-zinc-700/80 dark:bg-zinc-900/40 dark:shadow-black/10 sm:flex-row sm:items-center">
+                        <div className="group relative min-w-0 flex-1">
+                            <FaSearch
+                                aria-hidden="true"
+                                className="pointer-events-none absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400 transition-colors group-focus-within:text-teal-500 dark:text-zinc-500 dark:group-focus-within:text-teal-400"
+                            />
+                            <input
+                                type="search"
+                                value={globalFilter}
+                                onChange={(event) => setGlobalFilter(event.target.value)}
+                                className="h-10 w-full appearance-none rounded-xl border border-zinc-200 bg-zinc-100/80 pl-10 pr-10 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 hover:border-zinc-300 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-500/10 dark:border-zinc-700 dark:bg-zinc-800/80 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:hover:border-zinc-600 dark:focus:border-teal-500 dark:focus:bg-zinc-800 dark:focus:ring-teal-500/10"
+                                placeholder="Search by name, paycode, or ACN"
+                                aria-label="Search employees"
+                            />
+                            {globalFilter && (
+                                <button
+                                    type="button"
+                                    onClick={() => setGlobalFilter('')}
+                                    className="absolute right-2.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-200 hover:text-zinc-700 focus:outline-none focus:ring-2 focus:ring-teal-500/40 dark:hover:bg-zinc-700 dark:hover:text-zinc-100"
+                                    aria-label="Clear employee search"
+                                >
+                                    <FaTimes className="h-3 w-3" />
+                                </button>
+                            )}
+                        </div>
+                        <div className="flex w-full items-center gap-2 sm:w-auto">
+                            <span className="hidden whitespace-nowrap pl-1 text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 sm:inline">
+                                Status
+                            </span>
+                            <Dropdown
+                                value={employeeStatus}
+                                onChange={(event) => setEmployeeStatus(event.target.value)}
+                                wrapperClassName="w-full sm:w-[12.5rem]"
+                                className="h-10 rounded-xl border-zinc-200 bg-zinc-100/80 dark:border-zinc-700 dark:bg-zinc-800/80"
+                                aria-label="Filter employees by employment status"
+                            >
+                                <option value="all">All employees</option>
+                                <option value="current">Current employees</option>
+                                <option value="resigned">Resigned employees</option>
+                            </Dropdown>
+                        </div>
                     </div>
+                    <DataGrid
+                        table={table}
+                        getRowId={(row) => row.original.id}
+                        getRowClassName={(row) => (row.original.resignationDate ? 'text-redAccent-500' : '')}
+                        maxHeightClassName="max-h-full"
+                        wrapperClassName="relative z-0 flex min-h-0 flex-1"
+                        containerClassName="h-full w-full max-w-6xl"
+                        tableClassName="text-sm [&_td]:px-4 [&_td_div]:text-sm [&_th]:px-4 [&_th]:py-4"
+                        density="compact"
+                        emptyMessage="No employees found"
+                    />
 
                     {/* For Adding */}
                     <ReactModal
@@ -1333,6 +1326,7 @@ const EmployeeEntryForm = () => {
                         style={{
                             overlay: {
                                 backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                                zIndex: 40,
                             },
                         }}
                     >
@@ -1570,6 +1564,7 @@ const EmployeeEntryForm = () => {
                         style={{
                             overlay: {
                                 backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                                zIndex: 40,
                             },
                         }}
                     >
@@ -1817,6 +1812,7 @@ const EmployeeEntryForm = () => {
                         style={{
                             overlay: {
                                 backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                                zIndex: 40,
                             },
                         }}
                     >

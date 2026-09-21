@@ -29,7 +29,7 @@ from django.http import HttpResponse, StreamingHttpResponse
 from .reports.generate_salary_sheet import generate_salary_sheet
 from .reports.generate_payment_sheet import generate_payment_sheet
 from .reports.generate_payment_sheet_as_per_compliance import generate_payment_sheet_as_per_compliance
-from .reports.generate_attendance_register import generate_attendance_register
+from .reports.generate_attendance_register import generate_attendance_register, load_attendance_register_employees
 from .reports.generate_full_and_final_report import generate_full_and_final_report
 from .reports.generate_payslip import generate_payslip
 from .reports.generate_overtime_sheet import generate_overtime_sheet
@@ -72,6 +72,8 @@ from .services.salary_preparation import (
     preview_employee_salary,
     serialize_overtime_result,
 )
+from .models import CompanyReportConfiguration
+from .serializers import CompanyReportConfigurationSerializer
 # import sys
 from django.db import connection, reset_queries 
 from rest_framework.exceptions import APIException
@@ -224,6 +226,68 @@ mixins.UpdateModelMixin):
             return serializer.save(user=self.request.user)
         # instance = OwnerToRegular.objects.get(user=user)
         return serializer.save(user=user.regular_to_owner.owner)
+
+
+class CompanyReportConfigurationListCreateAPIView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = CompanyReportConfigurationSerializer
+
+    def initial(self, request, *args, **kwargs):
+        super().initial(request, *args, **kwargs)
+        if request.user.role != 'OWNER':
+            raise PermissionDenied('Only owner accounts can manage report configurations.')
+
+    def get_company(self):
+        if not hasattr(self, '_company'):
+            self._company = get_object_or_404(
+                Company,
+                pk=self.kwargs['company_id'],
+                user=self.request.user,
+            )
+        return self._company
+
+    def get_queryset(self):
+        return CompanyReportConfiguration.objects.filter(
+            company=self.get_company()
+        ).order_by('report_type', 'output_format', 'id')
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['company'] = self.get_company()
+        return context
+
+    def perform_create(self, serializer):
+        serializer.save(company=self.get_company())
+
+
+class CompanyReportConfigurationRetrieveUpdateDestroyAPIView(
+    generics.RetrieveUpdateDestroyAPIView
+):
+    permission_classes = [IsAuthenticated]
+    serializer_class = CompanyReportConfigurationSerializer
+    lookup_field = 'id'
+
+    def initial(self, request, *args, **kwargs):
+        super().initial(request, *args, **kwargs)
+        if request.user.role != 'OWNER':
+            raise PermissionDenied('Only owner accounts can manage report configurations.')
+
+    def get_company(self):
+        if not hasattr(self, '_company'):
+            self._company = get_object_or_404(
+                Company,
+                pk=self.kwargs['company_id'],
+                user=self.request.user,
+            )
+        return self._company
+
+    def get_queryset(self):
+        return CompanyReportConfiguration.objects.filter(company=self.get_company())
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['company'] = self.get_company()
+        return context
 
 
 class DepartmentListCreateAPIView(generics.ListCreateAPIView):
@@ -2602,7 +2666,6 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         validated_data = serializer.validated_data
-        print(validated_data)
         employee_ids = validated_data["employee_ids"]
 
         if validated_data['report_type'] == 'salary_sheet':
@@ -2617,7 +2680,18 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
                     order_by = ('employee__employee_professional_detail__department', *order_by)
                 else:
                     order_by = ('employee__employee_professional_detail__department',)
-            employee_salaries = EmployeeSalaryPrepared.objects.filter(user=user, employee__id__in=employee_ids, date=salary_date)
+            employee_salaries = EmployeeSalaryPrepared.objects.filter(
+                user=user,
+                employee__id__in=employee_ids,
+                date=salary_date,
+            ).select_related(
+                'employee',
+                'employee__employee_professional_detail',
+                'employee__employee_professional_detail__department',
+                'employee__employee_professional_detail__designation',
+                'employee__employee_pf_esi_detail',
+                'employee__employee_salary_detail',
+            )
 
             #Use python regular expression to orderby if the order by is using paycode because it is alpha numeric
             if validated_data['filters']['sort_by'] == "paycode" and validated_data['filters']['group_by'] == 'none':
@@ -2645,7 +2719,21 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
                     order_by = ('employee__employee_professional_detail__department', *order_by)
                 else:
                     order_by = ('employee__employee_professional_detail__department',)
-            employee_salaries = EmployeeSalaryPrepared.objects.filter(user=request.user, employee__id__in=employee_ids, date=salary_date)
+            employee_salaries = EmployeeSalaryPrepared.objects.filter(
+                user=request.user,
+                company_id=validated_data['company'],
+                employee__id__in=employee_ids,
+                date=salary_date,
+            ).select_related(
+                'employee',
+                'employee__employee_professional_detail',
+                'employee__employee_professional_detail__department',
+                'employee__employee_professional_detail__designation',
+                'company',
+                'company__company_details',
+                'user',
+                'user__regular_to_owner',
+            )
 
             #Use python regular expression to orderby if the order by is using paycode because it is alpha numeric
             if validated_data['filters']['sort_by'] == "paycode":
@@ -2743,7 +2831,20 @@ class SalaryOvertimeSheetCreateAPIView(generics.CreateAPIView):
                 order_by = ("employee__attendance_card_no",)
             elif validated_data['filters']['sort_by'] == "employee_name":
                 order_by = ('employee__name',)
-            employee_salaries = EmployeeSalaryPrepared.objects.filter(user=request.user, employee__id__in=employee_ids, date=payslip_date)
+            employee_salaries = EmployeeSalaryPrepared.objects.filter(
+                user=request.user,
+                employee__id__in=employee_ids,
+                date=payslip_date,
+            ).select_related(
+                'employee',
+                'employee__employee_professional_detail',
+                'employee__employee_professional_detail__department',
+                'employee__employee_professional_detail__designation',
+                'employee__employee_pf_esi_detail',
+                'employee__employee_salary_detail',
+                'company',
+                'company__pf_esi_setup_details',
+            )
 
             #Use python regular expression to orderby if the order by is using paycode because it is alpha numeric
             if validated_data['filters']['sort_by'] == "paycode":
@@ -2943,25 +3044,29 @@ class AttendanceReportsCreateAPIView(generics.CreateAPIView):
             #Use python regular expression to orderby if the order by is using paycode because it is alpha numeric
             if validated_data['filters']['sort_by'] == "paycode":
                 employees = sorted(
-                    employees, 
+                    employees.select_related(
+                        'employee_salary_detail',
+                        'employee_professional_detail__department',
+                        'employee_professional_detail__designation',
+                    ),
                     key=lambda x: (
                         (getattr(x.employee_professional_detail.department, 'name', 'zzzzzzzz') if hasattr(x.employee_professional_detail, 'department') else 'zzzzzzzz') if validated_data['filters']['group_by'] != 'none' else '',
                         re.sub(r'[^A-Za-z]', '', x.paycode), 
                         int(re.sub(r'[^0-9]', '', x.paycode))
                     )
                 )
-                sorted_employee_ids = [employee.id for employee in employees]
-                # Use the sorted IDs to get the queryset in the correct order
-                preserved = Case(*[When(id=pk, then=pos) for pos, pk in enumerate(sorted_employee_ids)])
-                employees = EmployeePersonalDetail.objects.filter(id__in=sorted_employee_ids).order_by(preserved)
             else:
                 employees = employees.order_by(*order_by)
 
+            employees = load_attendance_register_employees(
+                request.user,
+                serializer.validated_data,
+                employees,
+            )
 
-            if len(employees) != 0:
+            if employees:
                 response = StreamingHttpResponse(generate_attendance_register(request.user, serializer.validated_data, employees), content_type="application/pdf")
                 response["Content-Disposition"] = 'attachment; filename="mypdf.pdf"'
-                print('returnining the report now ')
                 return response
             else:
                 return Response({"detail": "No Attendances Found for the given month"}, status=status.HTTP_404_NOT_FOUND)

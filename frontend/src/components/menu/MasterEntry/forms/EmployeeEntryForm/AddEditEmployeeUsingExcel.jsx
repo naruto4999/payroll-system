@@ -178,6 +178,7 @@ const AddEditEmployeeUsingExcel = ({
             style={{
                 overlay: {
                     backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                    zIndex: 40,
                 },
             }}
         >
