@@ -1,11 +1,9 @@
-from fpdf import FPDF
-from ..models import EarningsHead, EmployeeSalaryEarning, EarnedAmount, PfEsiSetup
 from datetime import date
-from django.db.models import Case, When, Value, CharField
-import math
-from .pdf_utils.custom_fpdf import CustomFPDF
+from types import SimpleNamespace
 
-#Note - Add LWF Column in this payment sheet as well. Render it conditionally depending upon if company pf esi setup has lwf enabled or not.
+from .pdf_utils.custom_fpdf import CustomFPDF
+from .payment_sheet_data import build_payment_sheet_report
+
 width_of_columns = {
     "serial": 7,
     "acn": 12,
@@ -147,6 +145,8 @@ class CustomFPDF(CustomFPDF):
             self.cell(w=width_of_columns['signature'], h=10, text=f'Signature', align="C", new_x="LMARGIN", new_y='NEXT', border=1)
 
 def generate_payment_sheet(user, request_data, prepared_salaries):
+    prepared_salaries = list(prepared_salaries)
+    report = build_payment_sheet_report(user, request_data, prepared_salaries, 'pdf')
 
     left_margin = 6
     right_margin = 7
@@ -154,10 +154,9 @@ def generate_payment_sheet(user, request_data, prepared_salaries):
     top_margin = 6
 
     default_cell_height = 5
-    default_heading_height = 10
-    default_dept_heading_height = 8
-
-    company_pf_esi_setup = PfEsiSetup.objects.get(company=request_data['company'])
+    company_pf_esi_setup = SimpleNamespace(
+        enable_labour_welfare_fund=report.show_lwf,
+    )
     grand_total_dict = {
         "earned_salary" : 0,
         "incentive": 0,
@@ -201,7 +200,9 @@ def generate_payment_sheet(user, request_data, prepared_salaries):
     payment_sheet.set_auto_page_break(auto=True, margin = bottom_margin)
 
     payment_sheet.set_font("Helvetica", size=6.5, style="")
+    report_rows = report.rows
     for index, salary in enumerate(prepared_salaries):
+        report_row = report_rows[index]
         if request_data['filters']['group_by'] != 'none':
             try:
                 if index == 0 or salary.employee.employee_professional_detail.department.name != prepared_salaries[index-1].employee.employee_professional_detail.department.name:
@@ -243,146 +244,91 @@ def generate_payment_sheet(user, request_data, prepared_salaries):
         payment_sheet.multi_cell_with_limit(w=width_of_columns['designation'], h=default_cell_height, text=f"{designation if designation else ''}", min_lines=1, max_lines=1, border_each_line=False, align="L", new_x="RIGHT", new_y='TOP', border=1)
 
         #Salary Rate
-        total_earnings_rate = None
-        try:
-            total_earnings_rate = 0
-            earnings_heads = EarningsHead.objects.filter(company=salary.company, user=salary.user if salary.user.role == "OWNER" else salary.user.regular_to_owner.owner)
-            employee_salary_rates = EmployeeSalaryEarning.objects.filter(employee=salary.employee, from_date__lte=salary.date, to_date__gte=salary.date)
-            for head in earnings_heads:
-                salary_for_particular_earning_head = employee_salary_rates.filter(earnings_head=head)
-                if salary_for_particular_earning_head.exists():
-                    total_earnings_rate += salary_for_particular_earning_head.first().value
-        except: 
-            pass
+        total_earnings_rate = report_row.salary_rate
         payment_sheet.cell(w=width_of_columns['salary_rate'], h=default_cell_height, text=f"{total_earnings_rate if total_earnings_rate!=None else ''}", align="R", new_x="RIGHT", new_y='TOP', border=1)
 
         #Paid Days
-        paid_days = 0
-        paid_days_str = ''
-        employee_monthly_attendance_details = None
-        try: 
-            employee_monthly_attendance_details = salary.employee.monthly_attendance_details.filter(date=salary.date, user=user).first()
-            print(f"Paid Days: { salary.employee.monthly_attendance_details.filter(date=salary.date, user=user)}")
-            paid_days += employee_monthly_attendance_details.paid_days_count
-            paid_days_str =  paid_days/2
-        except: 
-            pass
+        paid_days_str = report_row.paid_days if report_row.paid_days is not None else ''
         payment_sheet.cell(w=width_of_columns['paid_days'], h=default_cell_height, text=f'{paid_days_str}', align="L", new_x="RIGHT", new_y='TOP', border=1)
 
         #Earned Salary
-        total_earnings_amount = None
-        try:
-            earned_amounts = salary.current_salary_earned_amounts.all()
-
-            #Total Earned
-            if earned_amounts and earned_amounts.exists():
-                total_earnings_amount = 0
-                for earned in earned_amounts:
-                    total_earnings_amount += (earned.earned_amount)
-        except: 
-            pass
+        total_earnings_amount = report_row.earned_salary
         if total_earnings_amount:
             grand_total_dict['earned_salary'] += total_earnings_amount
             dept_total_dict['earned_salary'] += total_earnings_amount
         payment_sheet.cell(w=width_of_columns['earned_salary'], h=default_cell_height, text=f"{total_earnings_amount if total_earnings_amount!=None else ''}", align="R", new_x="RIGHT", new_y='TOP', border=1)
 
         #Incentive
-        if salary.incentive_amount:
-            grand_total_dict['incentive'] += salary.incentive_amount
-            dept_total_dict['incentive'] +=salary.incentive_amount
-        payment_sheet.cell(w=width_of_columns['incentive'], h=default_cell_height, text=f"{salary.incentive_amount if salary.incentive_amount!=None else ''}", align="R", new_x="RIGHT", new_y='TOP', border=1)
+        if report_row.incentive:
+            grand_total_dict['incentive'] += report_row.incentive
+            dept_total_dict['incentive'] += report_row.incentive
+        payment_sheet.cell(w=width_of_columns['incentive'], h=default_cell_height, text=f"{report_row.incentive if report_row.incentive is not None else ''}", align="R", new_x="RIGHT", new_y='TOP', border=1)
 
         #OT
-        ot_hrs = None
-        if employee_monthly_attendance_details:
-            ot_hrs = salary.net_ot_minutes_monthly/60
+        ot_hrs = report_row.ot_hours
         payment_sheet.cell(w=width_of_columns['ot_hrs'], h=default_cell_height, text=f"{ot_hrs if ot_hrs!=None else ''}", align="R", new_x="RIGHT", new_y='TOP', border=1)
 
         #OT Amt
-        ot_amt = None
-        if employee_monthly_attendance_details:
-            ot_amt = salary.net_ot_amount_monthly
+        ot_amt = report_row.ot_amount
         if ot_amt:
             grand_total_dict['ot_amt'] += ot_amt
             dept_total_dict['ot_amt'] += ot_amt
         payment_sheet.cell(w=width_of_columns['ot_amount'], h=default_cell_height, text=f"{ot_amt if ot_amt!=None else ''}", align="R", new_x="RIGHT", new_y='TOP', border=1)
 
         #Total Earned
-        total_earned = None
-        if total_earnings_amount:
-            total_earned = total_earnings_amount
-            if ot_amt:
-                total_earned += ot_amt
-            if salary.incentive_amount:
-                total_earned += salary.incentive_amount
+        total_earned = report_row.total_earned
         if total_earned:
             grand_total_dict['total_earnings'] += total_earned
             dept_total_dict['total_earnings'] += total_earned
         payment_sheet.cell(w=width_of_columns['total_earnings'], h=default_cell_height, text=f"{total_earned if total_earned!=None else ''}", align="R", new_x="RIGHT", new_y='TOP', border=1)
 
         #Advance
-        if salary.advance_deducted:
-            grand_total_dict['total_advance'] += salary.advance_deducted
-            dept_total_dict['total_advance'] += salary.advance_deducted
-        payment_sheet.cell(w=width_of_columns['advance'], h=default_cell_height, text=f"{salary.advance_deducted if salary.advance_deducted!=None else ''}", align="R", new_x="RIGHT", new_y='TOP', border=1)
+        if report_row.advance:
+            grand_total_dict['total_advance'] += report_row.advance
+            dept_total_dict['total_advance'] += report_row.advance
+        payment_sheet.cell(w=width_of_columns['advance'], h=default_cell_height, text=str(report_row.advance), align="R", new_x="RIGHT", new_y='TOP', border=1)
 
         #EPF
-        pf_and_vpf_deducted = 0
-        if salary.pf_deducted:
-            pf_and_vpf_deducted += salary.pf_deducted
-            grand_total_dict['total_pf'] += salary.pf_deducted
-            dept_total_dict['total_pf'] += salary.pf_deducted
-        if salary.vpf_deducted:
-            pf_and_vpf_deducted += salary.vpf_deducted
-            grand_total_dict['total_pf'] += salary.vpf_deducted
-            dept_total_dict['total_pf'] += salary.vpf_deducted
+        pf_and_vpf_deducted = report_row.epf
+        if pf_and_vpf_deducted:
+            grand_total_dict['total_pf'] += pf_and_vpf_deducted
+            dept_total_dict['total_pf'] += pf_and_vpf_deducted
         payment_sheet.cell(w=width_of_columns['epf'], h=default_cell_height, text=f"{pf_and_vpf_deducted}", align="R", new_x="RIGHT", new_y='TOP', border=1)
 
         #ESI
-        if salary.esi_deducted:
-            grand_total_dict['total_esi'] += salary.esi_deducted
-            dept_total_dict['total_esi'] += salary.esi_deducted
-        payment_sheet.cell(w=width_of_columns['esi'] if company_pf_esi_setup.enable_labour_welfare_fund==True else width_of_columns['esi']+width_of_columns['lwf'], h=default_cell_height, text=f"{salary.esi_deducted if salary.esi_deducted!=None else ''}", align="R", new_x="RIGHT", new_y='TOP', border=1)
+        if report_row.esi:
+            grand_total_dict['total_esi'] += report_row.esi
+            dept_total_dict['total_esi'] += report_row.esi
+        payment_sheet.cell(w=width_of_columns['esi'] if company_pf_esi_setup.enable_labour_welfare_fund==True else width_of_columns['esi']+width_of_columns['lwf'], h=default_cell_height, text=str(report_row.esi), align="R", new_x="RIGHT", new_y='TOP', border=1)
         
         #LWF
         if company_pf_esi_setup.enable_labour_welfare_fund:
-            if salary.labour_welfare_fund_deducted:
-                grand_total_dict['total_lwf'] += salary.labour_welfare_fund_deducted
-                dept_total_dict['total_lwf'] += salary.labour_welfare_fund_deducted
-            payment_sheet.cell(w=width_of_columns['lwf'], h=default_cell_height, text=f"{salary.labour_welfare_fund_deducted if salary.labour_welfare_fund_deducted!=None else ''}", align="R", new_x="RIGHT", new_y='TOP', border=1)
+            if report_row.lwf:
+                grand_total_dict['total_lwf'] += report_row.lwf
+                dept_total_dict['total_lwf'] += report_row.lwf
+            payment_sheet.cell(w=width_of_columns['lwf'], h=default_cell_height, text=str(report_row.lwf), align="R", new_x="RIGHT", new_y='TOP', border=1)
 
         #Others
-        if salary.others_deducted:
-            grand_total_dict['total_others'] += salary.others_deducted
-            dept_total_dict['total_others'] += salary.others_deducted
-        payment_sheet.cell(w=width_of_columns['tds'], h=default_cell_height, text=f"{salary.others_deducted if salary.others_deducted!=None else ''}", align="R", new_x="RIGHT", new_y='TOP', border=1)
+        if report_row.others:
+            grand_total_dict['total_others'] += report_row.others
+            dept_total_dict['total_others'] += report_row.others
+        payment_sheet.cell(w=width_of_columns['tds'], h=default_cell_height, text=str(report_row.others), align="R", new_x="RIGHT", new_y='TOP', border=1)
 
         #TDS
-        if salary.tds_deducted:
-            grand_total_dict['total_tds'] += salary.tds_deducted
-            dept_total_dict['total_tds'] += salary.tds_deducted
-        payment_sheet.cell(w=width_of_columns['tds'], h=default_cell_height, text=f"{salary.tds_deducted if salary.tds_deducted!=None else ''}", align="R", new_x="RIGHT", new_y='TOP', border=1)
+        if report_row.tds:
+            grand_total_dict['total_tds'] += report_row.tds
+            dept_total_dict['total_tds'] += report_row.tds
+        payment_sheet.cell(w=width_of_columns['tds'], h=default_cell_height, text=str(report_row.tds), align="R", new_x="RIGHT", new_y='TOP', border=1)
 
         #Total Deductions
-        total_deductions = None
-        try:
-            #total_deductions = salary.pf_deducted+esi_deducted_based_on_overtime_filter+salary.vpf_deducted+salary.advance_deducted+salary.tds_deducted+salary.others_deducted
-            total_deductions = salary.advance_deducted + salary.pf_deducted + salary.esi_deducted + salary.tds_deducted + salary.others_deducted + salary.vpf_deducted
-            if company_pf_esi_setup.enable_labour_welfare_fund:
-                total_deductions += salary.labour_welfare_fund_deducted
-        except:
-            pass
+        total_deductions = report_row.total_deductions
         if total_deductions:
             grand_total_dict['total_deductions'] +=  total_deductions
             dept_total_dict['total_deductions'] +=  total_deductions
         payment_sheet.cell(w=width_of_columns['total_deductions'], h=default_cell_height, text=f"{total_deductions if total_deductions!=None else ''}", align="R", new_x="RIGHT", new_y='TOP', border=1)
 
         #Net Payable
-        net_payable = None
-        try:
-            net_payable = total_earned - total_deductions
-        except:
-            pass
+        net_payable = report_row.net_payable
         if net_payable:
             grand_total_dict['net_payable'] +=  net_payable
             dept_total_dict['net_payable'] +=  net_payable

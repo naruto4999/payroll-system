@@ -55,6 +55,7 @@ import SwitchToggle from './UI/ToggleSwitch';
 import Alert from './UI/Alert';
 import PfEsiReports from './menu/Reports/forms/PfEsiReports/PfEsiReports';
 import AttendanceMachineConfigForm from './menu/Settings/forms/AttendanceMachineConfigForm/AttendanceMachineConfigForm';
+import ReportSettingsForm from './menu/Settings/forms/ReportSettingsForm/ReportSettingsForm';
 import LandingPage from './LandingPage/LandingPage';
 
 function App() {
@@ -148,6 +149,14 @@ function App() {
 					</Route>
 					<Route path="settings">
 						<Route path="attendance-machine-config" element={<AttendanceMachineConfigForm />} />
+						<Route
+							path="report-settings"
+							element={
+								<ProtectedOwnerRoute>
+									<ReportSettingsForm />
+								</ProtectedOwnerRoute>
+							}
+						/>
 					</Route>
 
 					{/* <Route path="bank-entry" element={<BankEntryForm />} />

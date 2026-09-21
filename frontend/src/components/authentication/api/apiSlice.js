@@ -117,6 +117,7 @@ export const apiSlice = createApi({
 		'AllEmployeeSalaryDetail',
 		'OvertimePolicies',
 		'SalaryOvertimePreview',
+		'ReportConfigurations',
 	],
 	endpoints: (builder) => ({}),
 });

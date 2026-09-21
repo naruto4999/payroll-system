@@ -1,10 +1,21 @@
-from fpdf import FPDF
-from ..models import EmployeeSalaryPrepared, EmployeePersonalDetail, EmployeeProfessionalDetail, EmployeePfEsiDetail, EmployeeSalaryDetail, LeaveGrade, EmployeeGenerativeLeaveRecord, EmployeeMonthlyAttendanceDetails, CompanyDetails, EarningsHead, EmployeeSalaryEarning, EarnedAmount, PfEsiSetup, EmployeeAttendance
+from collections import defaultdict
 from datetime import date
-from django.db.models import Case, When, Value, CharField
-import math
 import calendar
-from decimal import Decimal, ROUND_HALF_UP, ROUND_CEILING
+import math
+from decimal import Decimal, ROUND_CEILING
+
+from fpdf import FPDF
+
+from ..models import (
+    EarnedAmount,
+    EarningsHead,
+    EmployeeAttendance,
+    EmployeeGenerativeLeaveRecord,
+    EmployeeMonthlyAttendanceDetails,
+    EmployeeSalaryEarning,
+    LeaveGrade,
+    PfEsiSetup,
+)
 
 
 width_of_columns = {
@@ -21,12 +32,7 @@ width_of_columns = {
         "signature": 22
     }
 
-# default_cell_height = 5
-default_number_of_cells_in_row = 8
-header_height = 0
 max_name_earning_head_name_length = 5
-# default_row_height = 40
-#default_number_of_cells_in_row = max(len(generative_leaves)+3, 8) #do this before even starting to draw the row of the slaray of employee
 
 
 def format_day_count(half_day_count):
@@ -65,6 +71,141 @@ def get_selective_pay_unpaid_leave_counts(user, company_id, employee_id, salary_
         for leave_id, leave_count in leave_counts.items()
         if leave_count > 0
     ]
+
+
+def get_selective_pay_unpaid_leave_counts_by_employee(
+    user,
+    company_id,
+    salary_dates_by_employee,
+    selective_pay_unpaid_leaves,
+):
+    leave_by_id = {leave.id: leave.name for leave in selective_pay_unpaid_leaves}
+    if not leave_by_id or not salary_dates_by_employee:
+        return {employee_id: [] for employee_id in salary_dates_by_employee}
+
+    period_bounds = {
+        employee_id: (
+            salary_date.replace(day=1),
+            date(
+                salary_date.year,
+                salary_date.month,
+                calendar.monthrange(salary_date.year, salary_date.month)[1],
+            ),
+        )
+        for employee_id, salary_date in salary_dates_by_employee.items()
+    }
+    period_start = min(start for start, _ in period_bounds.values())
+    period_end = max(end for _, end in period_bounds.values())
+    leave_counts = {
+        employee_id: {leave_id: 0 for leave_id in leave_by_id}
+        for employee_id in salary_dates_by_employee
+    }
+
+    attendances = EmployeeAttendance.objects.filter(
+        user=user,
+        company_id=company_id,
+        employee_id__in=salary_dates_by_employee,
+        date__range=(period_start, period_end),
+    ).only('employee_id', 'date', 'first_half_id', 'second_half_id')
+
+    for attendance in attendances:
+        employee_start, employee_end = period_bounds[attendance.employee_id]
+        if not employee_start <= attendance.date <= employee_end:
+            continue
+        employee_leave_counts = leave_counts[attendance.employee_id]
+        if attendance.first_half_id in employee_leave_counts:
+            employee_leave_counts[attendance.first_half_id] += 1
+        if attendance.second_half_id in employee_leave_counts:
+            employee_leave_counts[attendance.second_half_id] += 1
+
+    return {
+        employee_id: [
+            (leave_by_id[leave_id], leave_count)
+            for leave_id, leave_count in employee_leave_counts.items()
+            if leave_count > 0
+        ]
+        for employee_id, employee_leave_counts in leave_counts.items()
+    }
+
+
+def _load_employee_report_data(user, request_data, prepared_salaries, selective_pay_unpaid_leaves):
+    salary_dates_by_employee = {
+        salary.employee_id: salary.date
+        for salary in prepared_salaries
+    }
+    employee_ids = list(salary_dates_by_employee)
+    salary_ids = [salary.id for salary in prepared_salaries]
+    salary_dates = set(salary_dates_by_employee.values())
+
+    monthly_attendance_by_key = defaultdict(list)
+    monthly_attendances = EmployeeMonthlyAttendanceDetails.objects.filter(
+        user=user,
+        employee_id__in=employee_ids,
+        date__in=salary_dates,
+    )
+    for monthly_attendance in monthly_attendances:
+        monthly_attendance_by_key[(monthly_attendance.employee_id, monthly_attendance.date)].append(
+            monthly_attendance
+        )
+
+    salary_rates_by_employee = defaultdict(list)
+    if salary_dates:
+        salary_rates = EmployeeSalaryEarning.objects.filter(
+            employee_id__in=employee_ids,
+            from_date__lte=max(salary_dates),
+            to_date__gte=min(salary_dates),
+        ).select_related('earnings_head').order_by('earnings_head__id')
+        for salary_rate in salary_rates:
+            salary_date = salary_dates_by_employee[salary_rate.employee_id]
+            if salary_rate.from_date <= salary_date <= salary_rate.to_date:
+                salary_rates_by_employee[salary_rate.employee_id].append(salary_rate)
+
+    earned_amounts_by_salary = defaultdict(list)
+    earned_amounts = EarnedAmount.objects.filter(
+        user=user,
+        salary_prepared_id__in=salary_ids,
+    ).select_related('earnings_head').order_by('earnings_head__id')
+    for earned_amount in earned_amounts:
+        earned_amounts_by_salary[earned_amount.salary_prepared_id].append(earned_amount)
+
+    generative_leaves_by_key = defaultdict(list)
+    employee_generative_leaves = EmployeeGenerativeLeaveRecord.objects.filter(
+        user=user,
+        employee_id__in=employee_ids,
+        date__in=salary_dates,
+    ).select_related('leave').order_by('leave__name')
+    for employee_generative_leave in employee_generative_leaves:
+        generative_leaves_by_key[
+            (employee_generative_leave.employee_id, employee_generative_leave.date)
+        ].append(employee_generative_leave)
+
+    selective_leave_counts_by_employee = get_selective_pay_unpaid_leave_counts_by_employee(
+        user=user,
+        company_id=request_data['company'],
+        salary_dates_by_employee=salary_dates_by_employee,
+        selective_pay_unpaid_leaves=selective_pay_unpaid_leaves,
+    )
+
+    return {
+        'monthly_attendance_by_key': monthly_attendance_by_key,
+        'salary_rates_by_employee': salary_rates_by_employee,
+        'earned_amounts_by_salary': earned_amounts_by_salary,
+        'generative_leaves_by_key': generative_leaves_by_key,
+        'selective_leave_counts_by_employee': selective_leave_counts_by_employee,
+    }
+
+
+def _get_required_monthly_attendance(monthly_attendance_by_key, employee_id, salary_date):
+    records = monthly_attendance_by_key[(employee_id, salary_date)]
+    if not records:
+        raise EmployeeMonthlyAttendanceDetails.DoesNotExist(
+            'EmployeeMonthlyAttendanceDetails matching query does not exist.'
+        )
+    if len(records) > 1:
+        raise EmployeeMonthlyAttendanceDetails.MultipleObjectsReturned(
+            f'get() returned more than one EmployeeMonthlyAttendanceDetails -- it returned {len(records)}!'
+        )
+    return records[0]
 
 
 
@@ -145,30 +286,35 @@ class FPDF(FPDF):
 
 
 def generate_salary_sheet(user, request_data, prepared_salaries):
-    print(f"Salary Sheet User: {user.id}")
-    global default_cell_height
-    global default_number_of_cells_in_row
     default_cell_height = 5
-    print(request_data)
-
-
+    prepared_salaries = list(prepared_salaries)
     earnings_grand_total_dict = {}
-    generative_leaves = LeaveGrade.objects.filter(company_id=request_data['company'], generate_frequency__isnull=False)
+    generative_leaves = list(
+        LeaveGrade.objects.filter(
+            company_id=request_data['company'],
+            generate_frequency__isnull=False,
+        ).select_related('company', 'company__company_details')
+    )
     owner = user if user.role == "OWNER" else user.regular_to_owner.owner
-    selective_pay_unpaid_leaves = LeaveGrade.objects.filter(
-        user=owner,
-        company_id=request_data['company'],
-        mandatory_leave=False,
-        paid=False,
-        payable_earnings_heads__isnull=False,
-    ).distinct().order_by('name')
-    earnings_head = EarningsHead.objects.filter(company_id=request_data['company']).order_by("id")
+    selective_pay_unpaid_leaves = list(
+        LeaveGrade.objects.filter(
+            user=owner,
+            company_id=request_data['company'],
+            mandatory_leave=False,
+            paid=False,
+            payable_earnings_heads__isnull=False,
+        ).distinct().order_by('name')
+    )
+    earnings_head = list(
+        EarningsHead.objects.filter(company_id=request_data['company']).order_by("id")
+    )
     for head in earnings_head:
         earnings_grand_total_dict[head.id] = {"name":head.name, "amount": 0, "arrear_amount": 0}
 
     default_number_of_cells_in_row = max(len(generative_leaves)+len(selective_pay_unpaid_leaves)+2, 8, len(earnings_head)+1)
-    company_details = CompanyDetails.objects.filter(company=generative_leaves[0].company.id)
-    salary_sheet_pdf = FPDF(my_date=date(request_data['year'], request_data['month'], 1), company_name=generative_leaves[0].company.name, company_address=company_details.first().address if company_details.exists() else '', request_data=request_data, orientation="L", unit="mm", format="A4")
+    company = generative_leaves[0].company
+    company_details = getattr(company, 'company_details', None)
+    salary_sheet_pdf = FPDF(my_date=date(request_data['year'], request_data['month'], 1), company_name=company.name, company_address=company_details.address if company_details else '', request_data=request_data, orientation="L", unit="mm", format="A4")
     salary_sheet_pdf.set_margins(left=6, top=4, right=6)
 
     salary_sheet_pdf.set_font('Arial', '', 8)
@@ -191,11 +337,8 @@ def generate_salary_sheet(user, request_data, prepared_salaries):
 
 
     if request_data['filters']['group_by'] != 'none':
-        print(f"Y: {salary_sheet_pdf.get_y()} In goupby cell height {(salary_sheet_pdf.h-header_height-8-((rows_per_page//1)*group_by_filter_heading_height))/((default_number_of_cells_in_row*(rows_per_page//1))+(rows_per_page//1))}")
         default_cell_height = (salary_sheet_pdf.h-header_height-8-((rows_per_page//1)*group_by_filter_heading_height))/((default_number_of_cells_in_row*(rows_per_page//1))+(rows_per_page//1))
         default_cell_height = math.floor(default_cell_height * 10) / 10
-
-        print(default_cell_height)
     group_by_filter_total_height = default_cell_height
 
 
@@ -221,15 +364,29 @@ def generate_salary_sheet(user, request_data, prepared_salaries):
 
     department_grand_total = {}
 
+    employee_report_data = _load_employee_report_data(
+        user,
+        request_data,
+        prepared_salaries,
+        selective_pay_unpaid_leaves,
+    )
+
     employee_department_list = []
     for index, salary in enumerate(prepared_salaries):
-        employee_professional_details = EmployeeProfessionalDetail.objects.get(employee=salary.employee.id)
-        employee_pf_esi_details = EmployeePfEsiDetail.objects.get(employee=salary.employee.id)
-        employee_salary_details = EmployeeSalaryDetail.objects.get(employee=salary.employee.id)
-        employee_monthly_attendance_details = EmployeeMonthlyAttendanceDetails.objects.get(user=user, employee=salary.employee.id, date=salary.date)
-        employee_salary_rates = EmployeeSalaryEarning.objects.filter(from_date__lte=salary.date, to_date__gte=salary.date, employee=salary.employee.id).order_by('earnings_head__id')
-        earned_amounts = EarnedAmount.objects.filter(user=user, salary_prepared = salary.id).order_by('earnings_head__id')
-        basic_earned = earned_amounts.filter(earnings_head__name="Basic").first()
+        employee_professional_details = salary.employee.employee_professional_detail
+        employee_pf_esi_details = salary.employee.employee_pf_esi_detail
+        employee_salary_details = salary.employee.employee_salary_detail
+        employee_monthly_attendance_details = _get_required_monthly_attendance(
+            employee_report_data['monthly_attendance_by_key'],
+            salary.employee_id,
+            salary.date,
+        )
+        employee_salary_rates = employee_report_data['salary_rates_by_employee'][salary.employee_id]
+        earned_amounts = employee_report_data['earned_amounts_by_salary'][salary.id]
+        basic_earned = next(
+            (earned for earned in earned_amounts if earned.earnings_head.name == "Basic"),
+            None,
+        )
 
         #For Department Name Header and Total if the group_by is not none
         if request_data['filters']['group_by'] == 'department':
@@ -325,15 +482,13 @@ def generate_salary_sheet(user, request_data, prepared_salaries):
             
             if column_name == "attendance_detail":
                 salary_sheet_pdf.rect(salary_sheet_pdf.get_x(), salary_sheet_pdf.get_y(), w=width_of_columns["attendance_detail"], h=default_cell_height*default_number_of_cells_in_row)
-                employee_generative_leaves = EmployeeGenerativeLeaveRecord.objects.filter(user=user, employee=salary.employee.id, date=salary.date).order_by('leave__name')
+                employee_generative_leaves = employee_report_data['generative_leaves_by_key'][
+                    (salary.employee_id, salary.date)
+                ]
                 # generative_leaves = [{"name": "EL", "amount":4}, {"name":"CL", "amount":2}, {"name":"SL", "amount":1}] #Get actual data from db and replace this                
-                selective_pay_unpaid_leave_counts = get_selective_pay_unpaid_leave_counts(
-                    user=user,
-                    company_id=request_data['company'],
-                    employee_id=salary.employee.id,
-                    salary_date=salary.date,
-                    selective_pay_unpaid_leaves=selective_pay_unpaid_leaves,
-                )
+                selective_pay_unpaid_leave_counts = employee_report_data[
+                    'selective_leave_counts_by_employee'
+                ][salary.employee_id]
                 attendance_leave_lines = [
                     f"{leave.leave.name} : {format_day_count(leave.leave_count)}"
                     for leave in employee_generative_leaves
@@ -445,7 +600,6 @@ def generate_salary_sheet(user, request_data, prepared_salaries):
 
             if column_name == "arrears":
                 salary_sheet_pdf.rect(salary_sheet_pdf.get_x(), salary_sheet_pdf.get_y(), w=column_width, h=default_cell_height*default_number_of_cells_in_row)
-                print(f"Earned AMounts: {earned_amounts}")
                 total_arrear_amount = 0
                 arrear_amounts_text = ""
                 for earned in earned_amounts:
@@ -573,7 +727,7 @@ def generate_salary_sheet(user, request_data, prepared_salaries):
                         if index<(len(prepared_salaries)):
                                 next_employee_department = None
                                 if index<(len(prepared_salaries)-1):
-                                    next_employee_professional_details = EmployeeProfessionalDetail.objects.get(employee=prepared_salaries[index+1].employee.id)
+                                    next_employee_professional_details = prepared_salaries[index+1].employee.employee_professional_detail
                                     next_employee_department = next_employee_professional_details.department
                                 if (not next_employee_department or (employee_professional_details.department and employee_professional_details.department.name != next_employee_department.name)) and employee_professional_details.department:
                                     salary_sheet_pdf.set_xy(x=initial_cursor_position_before_row["x"], y=salary_sheet_pdf.get_y()+((default_number_of_cells_in_row-1)*default_cell_height))
@@ -603,7 +757,7 @@ def generate_salary_sheet(user, request_data, prepared_salaries):
                         if index<(len(prepared_salaries)):
                                 next_employee_department = None
                                 if index<(len(prepared_salaries)-1):
-                                    next_employee_professional_details = EmployeeProfessionalDetail.objects.get(employee=prepared_salaries[index+1].employee.id)
+                                    next_employee_professional_details = prepared_salaries[index+1].employee.employee_professional_detail
                                     next_employee_department = next_employee_professional_details.department
                                 if (not next_employee_department or (employee_professional_details.department and employee_professional_details.department.name != next_employee_department.name)) and employee_professional_details.department:
                                     #Printing Department Totals
