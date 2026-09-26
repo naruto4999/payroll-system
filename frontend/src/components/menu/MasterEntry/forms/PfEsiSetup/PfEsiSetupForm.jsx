@@ -13,6 +13,9 @@ import { Field, ErrorMessage } from 'formik';
 import { PfEsiSetupValidationSchema } from './PfEsiSetupValidationSchema';
 // import { PfEsiVa}
 import { alertActions } from '../../../../authentication/store/slices/alertSlice';
+import { useGetEarningsHeadsQuery } from '../../../../authentication/api/earningsHeadEntryApiSlice';
+import Button from '../../../../UI/Button';
+import Checkbox from '../../../../UI/Checkbox';
 
 const classNames = (...classes) => {
 	return classes.filter(Boolean).join(' ');
@@ -22,6 +25,7 @@ const PfEsiSetupForm = () => {
 	const dispatch = useDispatch();
 
 	const globalCompany = useSelector((state) => state.globalCompany);
+	const companyId = globalCompany?.id;
 	const [showLoadingBar, setShowLoadingBar] = useOutletContext();
 
 	const {
@@ -31,9 +35,14 @@ const PfEsiSetupForm = () => {
 		isError,
 		error,
 		isFetching,
-	} = useGetPfEsiSetupQuery(globalCompany.id);
+	} = useGetPfEsiSetupQuery(companyId, { skip: !companyId });
+	const {
+		currentData: earningsHeads = [],
+		isLoading: isLoadingEarningsHeads,
+		isFetching: isFetchingEarningsHeads,
+		isError: isEarningsHeadsError,
+	} = useGetEarningsHeadsQuery(globalCompany, { skip: !companyId });
 
-	console.log(pfEsiSetup);
 	const [
 		addPfEsiSetup,
 		{
@@ -53,14 +62,15 @@ const PfEsiSetupForm = () => {
 	const [errorMessage, setErrorMessage] = useState('');
 
 	const updateButtonClicked = async (values, formikBag) => {
-		// console.log(values);
+		if (!companyId) return;
+		const toSend = {
+			...values,
+			esiEarningsHeads: (values.esiEarningsHeads || []).map(Number),
+			company: companyId,
+		};
 		if (isSuccess) {
 			try {
-				const data = await updatePfEsiSetup({
-					...values,
-					company: globalCompany.id,
-				}).unwrap();
-				console.log(data);
+				await updatePfEsiSetup(toSend).unwrap();
 				dispatch(
 					alertActions.createAlert({
 						message: 'Saved',
@@ -69,7 +79,6 @@ const PfEsiSetupForm = () => {
 					})
 				);
 			} catch (err) {
-				console.log(err);
 				dispatch(
 					alertActions.createAlert({
 						message: 'Error Occurred',
@@ -80,11 +89,7 @@ const PfEsiSetupForm = () => {
 			}
 		} else if (!isSuccess) {
 			try {
-				const data = await addPfEsiSetup({
-					...values,
-					company: globalCompany.id,
-				}).unwrap();
-				console.log(data);
+				await addPfEsiSetup(toSend).unwrap();
 				dispatch(
 					alertActions.createAlert({
 						message: 'Saved',
@@ -93,7 +98,6 @@ const PfEsiSetupForm = () => {
 					})
 				);
 			} catch (err) {
-				console.log(err);
 				dispatch(
 					alertActions.createAlert({
 						message: 'Error Occurred',
@@ -106,10 +110,35 @@ const PfEsiSetupForm = () => {
 	};
 
 	useEffect(() => {
-		setShowLoadingBar(isLoading || isAddingPfEsiSetup || isUpdatingPfEsiSetup || isLoading);
-	}, [isLoading, isAddingPfEsiSetup, isUpdatingPfEsiSetup]);
+		setShowLoadingBar(
+			isLoading ||
+				isFetching ||
+				isLoadingEarningsHeads ||
+				isFetchingEarningsHeads ||
+				isAddingPfEsiSetup ||
+				isUpdatingPfEsiSetup
+		);
+	}, [
+		isLoading,
+		isFetching,
+		isLoadingEarningsHeads,
+		isFetchingEarningsHeads,
+		isAddingPfEsiSetup,
+		isUpdatingPfEsiSetup,
+		setShowLoadingBar,
+	]);
 
-	if (isLoading) {
+	if (!companyId) {
+		return (
+			<section className="flex flex-col items-center">
+				<h4 className="text-x mt-10 font-bold text-redAccent-500 dark:text-redAccent-600">
+					Please Select a Company First
+				</h4>
+			</section>
+		);
+	}
+
+	if (isLoading || isFetching || isLoadingEarningsHeads || isFetchingEarningsHeads) {
 		return (
 			<div className="fixed inset-0 z-50 mx-auto my-auto flex h-fit w-fit items-center rounded bg-indigo-600 p-2 font-medium">
 				<FaCircleNotch className="mr-2 animate-spin text-white" />
@@ -118,11 +147,11 @@ const PfEsiSetupForm = () => {
 		);
 	} else {
 		return (
-			<section className="mx-5 mt-2">
+			<section className="mx-4 mt-4 sm:mx-6">
 				<div className="flex flex-row flex-wrap place-content-between">
 					<div className="mr-4">
 						<h1 className="text-3xl font-medium">PF and ESI Setup</h1>
-						<p className="my-2 text-sm">Edit the values for PF and ESI calculations here</p>
+						<p className="my-2 text-sm text-zinc-600 dark:text-zinc-400">Edit the values for PF and ESI calculations here</p>
 						{/* <p className="text-sm my-2">
                             {isSuccess
                                 ? "Sub user already exists, below are the details."
@@ -133,6 +162,8 @@ const PfEsiSetupForm = () => {
 
 				{/* Formik Implementation */}
 				<Formik
+					enableReinitialize
+					validateOnMount
 					initialValues={
 						isSuccess
 							? {
@@ -140,6 +171,9 @@ const PfEsiSetupForm = () => {
 									employerPfCode: pfEsiSetup.employerPfCode ?? '',
 									employerEsiCode: pfEsiSetup.employerEsiCode ?? '',
 									labourWellfareFundEmployerCode: pfEsiSetup.labourWellfareFundEmployerCode ?? '',
+									esiEarningsHeads: (pfEsiSetup.esiEarningsHeads || []).map((head) =>
+										String(typeof head === 'object' ? head.id : head)
+									),
 							  }
 							: {
 									ac1EpfEmployeePercentage: '',
@@ -157,16 +191,21 @@ const PfEsiSetupForm = () => {
 									esiEmployerPercentage: '',
 									esiEmployerLimit: '',
 									employerEsiCode: '',
+									esiEarningsHeads: [],
 							  }
 					}
 					validationSchema={PfEsiSetupValidationSchema}
 					onSubmit={updateButtonClicked}
 				>
-					{({ handleSubmit, errors, touched, values }) => (
-						<form id="" className="mt-2" onSubmit={handleSubmit}>
-							<section className="flex flex-row flex-wrap gap-4">
-								<div className="flex flex-col gap-2">
-									<div className="flex w-fit flex-row flex-wrap gap-3 rounded border px-2 pt-5 pb-2 dark:border-slate-300 dark:border-opacity-20 dark:focus-within:border-opacity-60">
+					{({ handleSubmit, errors, touched, values, isValid }) => (
+						<form
+							id=""
+							className="mt-2 [&_input:not([type=checkbox])]:!w-40"
+							onSubmit={handleSubmit}
+						>
+							<section className="grid grid-cols-1 items-start gap-5 xl:grid-cols-2">
+								<div className="flex min-w-0 flex-col gap-3">
+									<div className="flex w-fit max-w-full flex-row flex-wrap gap-3 rounded-lg border border-zinc-300 bg-white/40 px-3 pb-3 pt-5 shadow-sm transition-colors focus-within:border-teal-500 dark:border-zinc-700 dark:bg-zinc-900/30 dark:focus-within:border-teal-600">
 										<div className="my-auto block w-52 font-medium text-amber-600 dark:text-amber-600">
 											{'Employer PF Code'}
 										</div>
@@ -194,8 +233,8 @@ const PfEsiSetupForm = () => {
 											</div>
 										</div>
 									</div>
-									<div>
-										<div className="flex w-fit flex-row flex-wrap gap-3 rounded border px-2 pt-5 pb-2 dark:border-slate-300 dark:border-opacity-20 dark:focus-within:border-opacity-60">
+										<div>
+										<div className="flex w-fit max-w-full flex-row flex-wrap gap-3 rounded-lg border border-zinc-300 bg-white/40 px-3 pb-3 pt-5 shadow-sm transition-colors focus-within:border-teal-500 dark:border-zinc-700 dark:bg-zinc-900/30 dark:focus-within:border-teal-600">
 											<div className="my-auto block w-52 font-medium text-blueAccent-700 dark:text-blueAccent-400">
 												{'A/C No. 1 (EPF - Employee)'}
 											</div>
@@ -254,7 +293,7 @@ const PfEsiSetupForm = () => {
 									</div>
 
 									<div>
-										<div className="flex w-fit flex-row flex-wrap gap-3 rounded border px-2 pt-5 pb-2 dark:border-slate-300 dark:border-opacity-20 dark:focus-within:border-opacity-60">
+									<div className="flex w-fit max-w-full flex-row flex-wrap gap-3 rounded-lg border border-zinc-300 bg-white/40 px-3 pb-3 pt-5 shadow-sm transition-colors focus-within:border-teal-500 dark:border-zinc-700 dark:bg-zinc-900/30 dark:focus-within:border-teal-600">
 											<div className="my-auto block w-52 font-medium text-blueAccent-700 dark:text-blueAccent-400">
 												{'A/C No. 1 (EPF - Employer)'}
 											</div>
@@ -313,7 +352,7 @@ const PfEsiSetupForm = () => {
 									</div>
 
 									<div>
-										<div className="flex w-fit flex-row flex-wrap gap-3 rounded border px-2 pt-5 pb-2 dark:border-slate-300 dark:border-opacity-20 dark:focus-within:border-opacity-60">
+										<div className="flex w-fit max-w-full flex-row flex-wrap gap-3 rounded-lg border border-zinc-300 bg-white/40 px-3 pb-3 pt-5 shadow-sm transition-colors focus-within:border-teal-500 dark:border-zinc-700 dark:bg-zinc-900/30 dark:focus-within:border-teal-600">
 											<div className="my-auto block w-52 font-medium text-blueAccent-700 dark:text-blueAccent-400">
 												{'A/C No. 10 (EPS - Employer)'}
 											</div>
@@ -372,7 +411,7 @@ const PfEsiSetupForm = () => {
 									</div>
 
 									<div>
-										<div className="flex w-fit flex-row flex-wrap gap-3 rounded border px-2 pt-5 pb-2 dark:border-slate-300 dark:border-opacity-20 dark:focus-within:border-opacity-60">
+										<div className="flex w-fit max-w-full flex-row flex-wrap gap-3 rounded-lg border border-zinc-300 bg-white/40 px-3 pb-3 pt-5 shadow-sm transition-colors focus-within:border-teal-500 dark:border-zinc-700 dark:bg-zinc-900/30 dark:focus-within:border-teal-600">
 											<div className="my-auto block w-52 font-medium text-blueAccent-700 dark:text-blueAccent-400">
 												{'A/C No. 2 (Employer)'}
 											</div>
@@ -404,7 +443,7 @@ const PfEsiSetupForm = () => {
 									</div>
 
 									<div>
-										<div className="flex w-fit flex-row flex-wrap gap-3 rounded border px-2 pt-5 pb-2 dark:border-slate-300 dark:border-opacity-20 dark:focus-within:border-opacity-60">
+										<div className="flex w-fit max-w-full flex-row flex-wrap gap-3 rounded-lg border border-zinc-300 bg-white/40 px-3 pb-3 pt-5 shadow-sm transition-colors focus-within:border-teal-500 dark:border-zinc-700 dark:bg-zinc-900/30 dark:focus-within:border-teal-600">
 											<div className="my-auto block w-52 font-medium text-blueAccent-700 dark:text-blueAccent-400">
 												{'A/C No. 21 (Employer)'}
 											</div>
@@ -436,7 +475,7 @@ const PfEsiSetupForm = () => {
 									</div>
 
 									<div>
-										<div className="flex w-fit flex-row flex-wrap gap-3 rounded border px-2 pt-5 pb-2 dark:border-slate-300 dark:border-opacity-20 dark:focus-within:border-opacity-60">
+										<div className="flex w-fit max-w-full flex-row flex-wrap gap-3 rounded-lg border border-zinc-300 bg-white/40 px-3 pb-3 pt-5 shadow-sm transition-colors focus-within:border-teal-500 dark:border-zinc-700 dark:bg-zinc-900/30 dark:focus-within:border-teal-600">
 											<div className="my-auto block w-52 font-medium text-blueAccent-700 dark:text-blueAccent-400">
 												{'A/C No. 22 (Employer)'}
 											</div>
@@ -466,8 +505,11 @@ const PfEsiSetupForm = () => {
 											</div>
 										</div>
 									</div>
+								</div>
 
-									<div className="flex w-fit flex-row flex-wrap gap-3 rounded border px-2 pt-5 pb-2 dark:border-slate-300 dark:border-opacity-20 dark:focus-within:border-opacity-60">
+								<div className="flex min-w-0 flex-col gap-3">
+
+									<div className="flex w-fit max-w-full flex-row flex-wrap gap-3 rounded-lg border border-zinc-300 bg-white/40 px-3 pb-3 pt-5 shadow-sm transition-colors focus-within:border-teal-500 dark:border-zinc-700 dark:bg-zinc-900/30 dark:focus-within:border-teal-600">
 										<div className="my-auto block w-52 font-medium text-amber-600 dark:text-amber-600">
 											{'Employer ESI Code'}
 										</div>
@@ -497,7 +539,7 @@ const PfEsiSetupForm = () => {
 									</div>
 
 									<div>
-										<div className="flex w-fit flex-row flex-wrap gap-3 rounded border px-2 pt-5 pb-2 dark:border-slate-300 dark:border-opacity-20 dark:focus-within:border-opacity-60">
+										<div className="flex w-fit max-w-full flex-row flex-wrap gap-3 rounded-lg border border-zinc-300 bg-white/40 px-3 pb-3 pt-5 shadow-sm transition-colors focus-within:border-teal-500 dark:border-zinc-700 dark:bg-zinc-900/30 dark:focus-within:border-teal-600">
 											<div className="my-auto block w-52 font-medium text-blueAccent-700 dark:text-blueAccent-400">
 												{'ESI Employee'}
 											</div>
@@ -555,7 +597,7 @@ const PfEsiSetupForm = () => {
 									</div>
 
 									<div>
-										<div className="flex w-fit flex-row flex-wrap gap-3 rounded border px-2 pt-5 pb-2 dark:border-slate-300 dark:border-opacity-20 dark:focus-within:border-opacity-60">
+										<div className="flex w-fit max-w-full flex-row flex-wrap gap-3 rounded-lg border border-zinc-300 bg-white/40 px-3 pb-3 pt-5 shadow-sm transition-colors focus-within:border-teal-500 dark:border-zinc-700 dark:bg-zinc-900/30 dark:focus-within:border-teal-600">
 											<div className="my-auto block w-52 font-medium text-blueAccent-700 dark:text-blueAccent-400">
 												{'ESI Employer'}
 											</div>
@@ -611,23 +653,64 @@ const PfEsiSetupForm = () => {
 											</div>
 										</div>
 									</div>
-								</div>
 
-								<div className="flex flex-col gap-2">
-									<div>
-										<div className="my-auto block w-72 font-medium text-amber-600 dark:text-amber-600">
-											{'Enable Labour Wellfare Fund ?'}
-
-											<Field
-												type="checkbox"
-												name={`enableLabourWelfareFund`}
-												className="my-auto ml-4 inline h-4 w-4 rounded accent-teal-600"
-											/>
+										<fieldset className="w-full rounded-lg border border-zinc-300 bg-white/30 px-3 py-3 shadow-sm transition-colors focus-within:border-teal-500 dark:border-zinc-700 dark:bg-zinc-900/20 dark:focus-within:border-teal-600">
+										<legend className="px-1 font-medium text-blueAccent-700 dark:text-blueAccent-400">
+											ESI Earnings Heads
+										</legend>
+										<p className="text-xs text-zinc-600 dark:text-zinc-400">
+											Select the earnings heads included when calculating ESI for this company.
+										</p>
+											<div className="mt-2 grid gap-2 rounded-lg border border-zinc-300 bg-zinc-100/70 p-3 dark:border-zinc-600 dark:bg-zinc-700/80 sm:grid-cols-2">
+											{isEarningsHeadsError ? (
+												<p className="text-sm text-red-700 dark:text-red-400 sm:col-span-2">
+													Unable to load earnings heads for this company.
+												</p>
+											) : earningsHeads.length === 0 ? (
+												<p className="text-sm text-amber-700 dark:text-amber-400 sm:col-span-2">
+													No earnings heads are available for this company.
+												</p>
+											) : (
+												earningsHeads.map((head) => (
+														<Field
+															as={Checkbox}
+															key={head.id}
+															type="checkbox"
+															name="esiEarningsHeads"
+															value={String(head.id)}
+															variant="primary"
+															className="min-h-10 rounded-md px-2 py-1 text-sm transition-colors hover:bg-white/70 dark:hover:bg-zinc-800/70"
+														>
+															{head.name}
+														</Field>
+													))
+											)}
 										</div>
+										<div className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">
+											<ErrorMessage name="esiEarningsHeads" />
+										</div>
+									</fieldset>
+
+								<div className="flex min-w-0 flex-col gap-3 rounded-xl border border-zinc-300 bg-white/40 p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/30 sm:p-5">
+									<div className="flex items-start justify-between gap-4">
+										<div>
+											<h2 className="font-semibold text-amber-600 dark:text-amber-500">Labour Welfare Fund</h2>
+											<p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">Configure the employer contribution and applicable limit.</p>
+										</div>
+										<Field
+											as={Checkbox}
+											type="checkbox"
+												name="enableLabourWelfareFund"
+												aria-label="Enable Labour Welfare Fund"
+												variant="primary"
+												className="shrink-0 rounded-full border border-zinc-300 px-3 py-2 text-sm font-medium dark:border-zinc-600"
+										>
+											Enable
+										</Field>
 									</div>
 
 									{values.enableLabourWelfareFund && (
-										<div className="flex w-fit flex-row flex-wrap gap-3 rounded border px-2 pt-5 pb-2 dark:border-slate-300 dark:border-opacity-20 dark:focus-within:border-opacity-60">
+										<div className="flex w-full flex-row flex-wrap gap-3 rounded-lg border border-zinc-300 px-3 pb-3 pt-5 shadow-sm transition-colors focus-within:border-teal-500 dark:border-zinc-700 dark:focus-within:border-teal-600">
 											<div className="my-auto block w-52 font-medium text-amber-600 dark:text-amber-600">
 												{'Labour Wellfare Code'}
 											</div>
@@ -660,7 +743,7 @@ const PfEsiSetupForm = () => {
 
 									{values.enableLabourWelfareFund && (
 										<div>
-											<div className="flex w-fit flex-row flex-wrap gap-3 rounded border px-2 pt-5 pb-2 dark:border-slate-300 dark:border-opacity-20 dark:focus-within:border-opacity-60">
+											<div className="flex w-full flex-row flex-wrap gap-3 rounded-lg border border-zinc-300 px-3 pb-3 pt-5 shadow-sm transition-colors focus-within:border-teal-500 dark:border-zinc-700 dark:focus-within:border-teal-600">
 												<div className="my-auto block w-52 font-medium text-blueAccent-700 dark:text-blueAccent-400">
 													{'Labour Wellfare Fund'}
 												</div>
@@ -720,15 +803,19 @@ const PfEsiSetupForm = () => {
 										</div>
 									)}
 								</div>
+							</div>
 							</section>
 
-							<div>
-								<button
-									className="mt-4 whitespace-nowrap rounded bg-teal-500 py-2 px-6 text-base font-medium hover:bg-teal-600 dark:bg-teal-700 dark:hover:bg-teal-600"
+							<div className="mt-5 border-t border-zinc-200 pt-4 dark:border-zinc-800">
+								<Button
 									type="submit"
+									size="sm"
+									variant={isValid ? 'primary' : 'secondary'}
+									disabled={!isValid || isAddingPfEsiSetup || isUpdatingPfEsiSetup}
+									className="disabled:cursor-not-allowed disabled:bg-zinc-500 disabled:text-zinc-200 disabled:opacity-80 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500"
 								>
 									Update
-								</button>
+								</Button>
 							</div>
 						</form>
 					)}

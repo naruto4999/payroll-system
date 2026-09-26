@@ -16,7 +16,7 @@ export const pfEsiSetupApiSlice = apiSlice.injectEndpoints({
                 method: "POST",
                 body: body,
             }),
-            invalidatesTags: ["PfEsiSetup"],
+            invalidatesTags: ["PfEsiSetup", "SalaryOvertimePreview"],
         }),
         updatePfEsiSetup: builder.mutation({
             query: (body) => ({
@@ -24,7 +24,7 @@ export const pfEsiSetupApiSlice = apiSlice.injectEndpoints({
                 method: "PUT",
                 body: body,
             }),
-            invalidatesTags: ["PfEsiSetup"],
+            invalidatesTags: ["PfEsiSetup", "SalaryOvertimePreview"],
         }),
     }),
 });

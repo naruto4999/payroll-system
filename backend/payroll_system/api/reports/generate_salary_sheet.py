@@ -2,7 +2,6 @@ from collections import defaultdict
 from datetime import date
 import calendar
 import math
-from decimal import Decimal, ROUND_CEILING
 
 from fpdf import FPDF
 
@@ -620,7 +619,11 @@ def generate_salary_sheet(user, request_data, prepared_salaries):
 
                 #For epf and esic summary
                 if employee_pf_esi_details.esi_allow == True:
-                    grand_total_epf_esic_dict["esi_wages_total"] += min(total_earnings_amount+total_arrear_amount+(salary.net_ot_amount_monthly if request_data['filters']['overtime'] == 'with_ot' and (employee_pf_esi_details.esi_on_ot or user.role=='REGULAR') else 0), company_pf_esi_setup.esi_employee_limit)
+                    grand_total_epf_esic_dict["esi_wages_total"] += (
+                        salary.esi_employee_wages
+                        if request_data['filters']['overtime'] == 'with_ot'
+                        else salary.esi_employee_wages_without_overtime
+                    )
                     grand_total_epf_esic_dict["esi_employees_number"] += 1
 
                 salary_sheet_pdf.multi_cell(w=column_width, h=default_cell_height, txt=f"{total_arrear_amount}\n", align='R', border=0)
@@ -659,12 +662,11 @@ def generate_salary_sheet(user, request_data, prepared_salaries):
             if column_name == "deductions":
                 salary_sheet_pdf.rect(salary_sheet_pdf.get_x(), salary_sheet_pdf.get_y(), w=column_width, h=default_cell_height*default_number_of_cells_in_row)
                 deductions_name_text = f"PF\nESI\nVPF\nAdvance\nTDS\nOther"
-                esi_deducted_based_on_overtime_filter = salary.esi_deducted
-                if request_data['filters']['overtime'] != 'with_ot' and employee_pf_esi_details.esi_allow and (employee_pf_esi_details.esi_on_ot or user.role == 'REGULAR'):
-                    total_earned_with_arrear = total_earnings_amount + total_arrear_amount
-                    esiable_amount = min(company_pf_esi_setup.esi_employee_limit, total_earned_with_arrear)
-                    esi_deducted = Decimal(esiable_amount) * Decimal(company_pf_esi_setup.esi_employee_percentage) / Decimal(100)
-                    esi_deducted_based_on_overtime_filter = esi_deducted.quantize(Decimal('1.'), rounding=ROUND_CEILING)
+                esi_deducted_based_on_overtime_filter = (
+                    salary.esi_deducted
+                    if request_data['filters']['overtime'] == 'with_ot'
+                    else salary.esi_deducted_without_overtime
+                )
                 
                 deductions_amount_text = f"{salary.pf_deducted}\n{esi_deducted_based_on_overtime_filter }\n{salary.vpf_deducted}\n{salary.advance_deducted}\n{salary.tds_deducted}\n{salary.others_deducted}"
                 if company_pf_esi_setup.enable_labour_welfare_fund:
