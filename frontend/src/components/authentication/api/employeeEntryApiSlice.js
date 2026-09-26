@@ -141,7 +141,7 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
             invalidatesTags: (result, error, id) => [
                 { type: 'EmployeeSalaryDetails', id: id.employee },
                 'AllEmployeeSalaryDetail',
-				'SalaryOvertimePreview',
+                'SalaryOvertimePreview',
             ],
         }),
         //Pf Esi Detail
@@ -159,7 +159,11 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
                 method: 'POST',
                 body: employeePfEsiDetail,
             }),
-            invalidatesTags: ['AllEmployeePfEsiDetail', { type: 'EmployeePersonalDetails', id: 'LIST' }],
+            invalidatesTags: [
+                'AllEmployeePfEsiDetail',
+                { type: 'EmployeePersonalDetails', id: 'LIST' },
+                'SalaryOvertimePreview',
+            ],
         }),
         updateEmployeePfEsiDetail: builder.mutation({
             query: (employee) => ({
@@ -172,6 +176,7 @@ export const employeeEntryApiSlice = apiSlice.injectEndpoints({
                 { type: 'EmployeeFamilyNomineeDetails', id: id.employee },
                 'AllEmployeePfEsiDetail',
                 { type: 'EmployeePersonalDetails', id: 'LIST' },
+                'SalaryOvertimePreview',
             ],
         }),
 

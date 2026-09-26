@@ -38,11 +38,31 @@ class AttendanceWriterPhaseFourTests(AttendanceTestDataMixin, TestCase):
         OwnerToRegular.objects.create(owner=cls.user, user=cls.regular)
         SubUserMiscSettings.objects.create(user=cls.user, company=cls.company)
 
-    def test_autofill_destructively_cascades_details_and_writes_canonical_null(self):
-        old_attendance = self.create_attendance(self.employee, work_date=date(2024, 1, 2), ot_min=20)
+    def test_autofill_updates_in_place_preserving_machine_punches_and_clearing_overtime(self):
+        old_attendance = EmployeeAttendance.objects.create(
+            user=self.user,
+            company=self.company,
+            employee=self.employee,
+            date=date(2024, 1, 2),
+            machine_in=time(8, 45),
+            machine_out=time(17, 30),
+            manual_in=time(10, 0),
+            manual_out=time(16, 0),
+            first_half=self.leave_absent,
+            second_half=self.leave_absent,
+            ot_min=20,
+            late_min=60,
+            manual_mode=True,
+        )
         old_detail = self.create_overtime_detail(old_attendance, minutes=20)
 
-        with patch('api.models.EmployeeGenerativeLeaveRecord.objects.generate_update_monthly_record'):
+        with patch(
+            'api.models.EmployeeGenerativeLeaveRecord.objects.generate_update_monthly_record'
+        ), patch.object(
+            EmployeeAttendance.objects,
+            'generate_random_time',
+            side_effect=[time(9, 5), time(17, 5)],
+        ):
             EmployeeAttendance.objects.bulk_autofill(
                 from_date=date(2024, 1, 2),
                 to_date=date(2024, 1, 2),
@@ -54,11 +74,87 @@ class AttendanceWriterPhaseFourTests(AttendanceTestDataMixin, TestCase):
         replacement = EmployeeAttendance.objects.get(
             user=self.user, employee=self.employee, date=date(2024, 1, 2),
         )
+        self.assertEqual(replacement.id, old_attendance.id)
+        self.assertEqual(replacement.machine_in, time(8, 45))
+        self.assertEqual(replacement.machine_out, time(17, 30))
+        self.assertEqual(replacement.manual_in, time(9, 5))
+        self.assertEqual(replacement.manual_out, time(17, 5))
+        self.assertEqual(replacement.first_half, self.leave_present)
+        self.assertEqual(replacement.second_half, self.leave_present)
+        self.assertFalse(replacement.manual_mode)
         self.assertIsNone(replacement.ot_min)
+        self.assertIsNone(replacement.late_min)
         self.assertFalse(EmployeeAttendanceOvertimeDetail.objects.filter(pk=old_detail.pk).exists())
         self.assertFalse(replacement.overtime_details.exists())
 
-    def test_autofill_rolls_back_destructive_replacement_when_summary_fails(self):
+    def test_autofill_preserves_machine_overtime_on_weekly_offs_and_holidays(self):
+        employee = self.create_employee(
+            paycode='AUTOFILL-OFF-DAY',
+            attendance_card_no=205,
+            overtime_type='holiday_weekly_off',
+            weekly_off='sun',
+        )
+        holiday_date = date(2024, 1, 11)
+        self.create_holiday(holiday_date=holiday_date, name='Autofill holiday')
+        cases = (
+            (date(2024, 1, 7), self.leave_weekly_off, 'WEEKLY_OFF'),
+            (holiday_date, self.leave_holiday_off, 'HOLIDAY'),
+        )
+        original_rows = {}
+        original_details = {}
+        for work_date, leave, day_type in cases:
+            attendance = EmployeeAttendance.objects.create(
+                user=self.user,
+                company=self.company,
+                employee=employee,
+                date=work_date,
+                machine_in=time(9, 0),
+                machine_out=time(18, 0),
+                manual_in=time(9, 5),
+                manual_out=time(17, 5),
+                first_half=leave,
+                second_half=leave,
+                ot_min=510,
+            )
+            detail = self.create_overtime_detail(
+                attendance,
+                minutes=540,
+                day_type=day_type,
+                source='IMPORTED',
+                excluded_minutes=30,
+                exclusion_reason='MEAL_BREAK',
+            )
+            original_rows[work_date] = attendance
+            original_details[work_date] = detail
+
+        with patch('api.models.EmployeeGenerativeLeaveRecord.objects.generate_update_monthly_record'):
+            EmployeeAttendance.objects.bulk_autofill(
+                from_date=date(2024, 1, 7),
+                to_date=holiday_date,
+                company_id=self.company.id,
+                user=self.user,
+                employee_ids=[employee.id],
+            )
+
+        for work_date, expected_leave, expected_day_type in cases:
+            with self.subTest(work_date=work_date):
+                attendance = EmployeeAttendance.objects.get(
+                    user=self.user,
+                    employee=employee,
+                    date=work_date,
+                )
+                self.assertEqual(attendance.id, original_rows[work_date].id)
+                self.assertEqual((attendance.machine_in, attendance.machine_out), (time(9, 0), time(18, 0)))
+                self.assertEqual((attendance.manual_in, attendance.manual_out), (None, None))
+                self.assertEqual((attendance.first_half, attendance.second_half), (expected_leave, expected_leave))
+                self.assertEqual(attendance.ot_min, 510)
+                detail = attendance.overtime_details.get()
+                self.assertEqual(detail.pk, original_details[work_date].pk)
+                self.assertEqual(detail.source, 'IMPORTED')
+                self.assertEqual(detail.day_type, expected_day_type)
+                self.assertEqual((detail.gross_minutes, detail.excluded_minutes, detail.eligible_minutes), (540, 30, 510))
+
+    def test_autofill_rolls_back_in_place_update_when_summary_fails(self):
         old_attendance = self.create_attendance(self.employee, work_date=date(2024, 1, 2), ot_min=20)
         old_detail = self.create_overtime_detail(old_attendance, minutes=20)
 

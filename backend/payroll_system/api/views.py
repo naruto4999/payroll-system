@@ -1865,20 +1865,28 @@ class PfEsiSetupCreateAPIView(generics.CreateAPIView):
     serializer_class = PfEsiSetupSerializer
     def perform_create(self, serializer):
         user = self.request.user
-        if user.role == "OWNER":
-            return serializer.save(user=self.request.user)
-        return Response({'error': "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
+        if user.role != "OWNER":
+            raise PermissionDenied('Only owner accounts can manage PF/ESI setup.')
+        return serializer.save(user=user)
     
 class PfEsiSetupRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes= [IsAuthenticated]
     serializer_class = PfEsiSetupSerializer
     lookup_field = 'company_id'
 
+    def get_company(self):
+        user = self.request.user
+        owner = user if user.role == 'OWNER' else user.regular_to_owner.owner
+        return get_object_or_404(Company, pk=self.kwargs['company_id'], user=owner)
+
+    def get_serializer_context(self):
+        return {**super().get_serializer_context(), 'company': self.get_company()}
+
     def get_queryset(self, *args, **kwargs):
         user = self.request.user
         if user.role != "OWNER":
             user = user.regular_to_owner.owner
-        return user.all_companies_pf_esi_setup_details
+        return user.all_companies_pf_esi_setup_details.prefetch_related('esi_earnings_heads')
         # return Response({'error': "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
     
     def update(self, request, *args, **kwargs):
@@ -1890,6 +1898,11 @@ class PfEsiSetupRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIVi
             serializer.save(user=user)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response({'error': "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
+
+    def destroy(self, request, *args, **kwargs):
+        if request.user.role != 'OWNER':
+            raise PermissionDenied('Only owner accounts can manage PF/ESI setup.')
+        return super().destroy(request, *args, **kwargs)
 
 class CalculationsCreateAPIView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]

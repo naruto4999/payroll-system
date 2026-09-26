@@ -192,7 +192,9 @@ def _load_prerequisites(*, actor, owner, company, employee, period_start):
     except EmployeePfEsiDetail.DoesNotExist:
         _error('The employee PF/ESI detail is missing.', code='missing_employee_pf_esi_detail')
     try:
-        pf_esi_setup = PfEsiSetup.objects.select_for_update().get(user=owner, company=company)
+        pf_esi_setup = PfEsiSetup.objects.select_for_update().prefetch_related(
+            'esi_earnings_heads'
+        ).get(user=owner, company=company)
     except PfEsiSetup.DoesNotExist:
         _error('The company PF/ESI setup is missing.', code='missing_company_pf_esi_setup')
     try:
@@ -367,14 +369,48 @@ def _calculate_deductions(
         ).quantize(Decimal('1'), rounding=ROUND_HALF_UP)
 
     esi_deducted = Decimal(0)
+    esi_employee_wages = Decimal(0)
+    esi_employee_wages_without_overtime = Decimal(0)
+    esi_deducted_without_overtime = Decimal(0)
+    esi_employer_contribution = Decimal(0)
     if pf_esi_detail.esi_allow:
-        esi_basis = Decimal(total_earned)
+        selected_head_ids = {
+            head.pk for head in pf_esi_setup.esi_earnings_heads.all()
+        }
+        if not selected_head_ids:
+            _error(
+                'Select at least one ESI earnings head in the company PF/ESI setup.',
+                code='missing_esi_earnings_heads',
+            )
+        esi_basis_without_overtime = Decimal(sum(
+            row['earned_amount']
+            for row in earned_rows
+            if row['earnings_head_id'] in selected_head_ids
+        ))
+        esi_basis = esi_basis_without_overtime
         if actor.role == 'REGULAR' or pf_esi_detail.esi_on_ot:
             esi_basis += overtime_result.amount
-        esiable = min(Decimal(pf_esi_setup.esi_employee_limit), esi_basis)
-        esi_deducted = (
-            esiable * pf_esi_setup.esi_employee_percentage / Decimal(100)
+        esi_employee_wages_without_overtime = min(
+            Decimal(pf_esi_setup.esi_employee_limit),
+            esi_basis_without_overtime,
+        )
+        esi_employee_wages = min(
+            Decimal(pf_esi_setup.esi_employee_limit), esi_basis
+        )
+        esi_employer_wages = min(
+            Decimal(pf_esi_setup.esi_employer_limit), esi_basis
+        )
+        esi_deducted_without_overtime = (
+            esi_employee_wages_without_overtime
+            * pf_esi_setup.esi_employee_percentage
+            / Decimal(100)
         ).quantize(Decimal('1'), rounding=ROUND_CEILING)
+        esi_deducted = (
+            esi_employee_wages * pf_esi_setup.esi_employee_percentage / Decimal(100)
+        ).quantize(Decimal('1'), rounding=ROUND_CEILING)
+        esi_employer_contribution = (
+            esi_employer_wages * pf_esi_setup.esi_employer_percentage / Decimal(100)
+        ).quantize(Decimal('1'), rounding=ROUND_HALF_UP)
 
     lwf_deducted = Decimal(0)
     if pf_esi_setup.enable_labour_welfare_fund and salary_detail.labour_wellfare_fund:
@@ -385,6 +421,10 @@ def _calculate_deductions(
     return {
         'pf_deducted': int(pf_deducted),
         'esi_deducted': int(esi_deducted),
+        'esi_employee_wages': int(esi_employee_wages),
+        'esi_employee_wages_without_overtime': int(esi_employee_wages_without_overtime),
+        'esi_deducted_without_overtime': int(esi_deducted_without_overtime),
+        'esi_employer_contribution': int(esi_employer_contribution),
         'vpf_deducted': pf_esi_detail.vpf_amount,
         'tds_deducted': pf_esi_detail.tds_amount,
         'labour_welfare_fund_deducted': int(lwf_deducted),

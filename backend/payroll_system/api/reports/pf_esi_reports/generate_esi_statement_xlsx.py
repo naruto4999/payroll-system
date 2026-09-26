@@ -1,10 +1,9 @@
 import pandas as pd
 from django.http import HttpResponse
 import io
-from ...models import EarningsHead, EmployeeSalaryEarning, EarnedAmount
+from ...models import EmployeeSalaryPrepared
 from datetime import date, timedelta, datetime
 from dateutil.relativedelta import relativedelta
-from decimal import Decimal, ROUND_HALF_UP, ROUND_CEILING
 import calendar
 from openpyxl.styles import Font, PatternFill
 
@@ -55,28 +54,16 @@ def generate_esi_statement_xlsx(user, request_data, employees):
         grand_total['all_employee_paid_days'] += paid_days
 
 
-        company_pf_esi_setup = employee.company.pf_esi_setup_details
-        #ESI
-        salary_prepared = None
-        total_earned_amount = 0
-        try:
-            esi_deducted = 0
-            esiable_amount = 0
-            salary_prepared = employee.salaries_prepared.filter(user=user, date=date(request_data['year'], request_data['month'], 1)).first()
-            earned_amounts = EarnedAmount.objects.filter(user=user, salary_prepared = salary_prepared.id).order_by('earnings_head__id')
-            for index, earned in enumerate(earned_amounts):
-                total_earned_amount += earned.earned_amount
-            total_earned_for_esi_deduction = total_earned_amount
-            if employee.employee_pf_esi_detail.esi_on_ot:
-                total_earned_for_esi_deduction += salary_prepared.net_ot_amount_monthly if salary_prepared.net_ot_amount_monthly else 0
-            esiable_amount = min(company_pf_esi_setup.esi_employee_limit, total_earned_for_esi_deduction)
-            esiable_amount_employer  = min(company_pf_esi_setup.esi_employer_limit, total_earned_for_esi_deduction)
-            esi_deducted_employer = Decimal(esiable_amount_employer) * Decimal(company_pf_esi_setup.esi_employer_percentage) / Decimal(100)
-            esi_deducted_employer =  esi_deducted_employer.quantize(Decimal('1.'), rounding=ROUND_HALF_UP)
-            esi_deducted = Decimal(esiable_amount) * Decimal(company_pf_esi_setup.esi_employee_percentage) / Decimal(100)
-            esi_deducted = esi_deducted.quantize(Decimal('1.'), rounding=ROUND_CEILING)
-        except:
-            pass
+        salary_prepared = EmployeeSalaryPrepared.objects.filter(
+            user=user,
+            employee=employee,
+            date=date(request_data['year'], request_data['month'], 1),
+        ).first()
+        esiable_amount = salary_prepared.esi_employee_wages if salary_prepared else 0
+        esi_deducted = salary_prepared.esi_deducted if salary_prepared else 0
+        esi_deducted_employer = (
+            salary_prepared.esi_employer_contribution if salary_prepared else 0
+        )
         esi_wages.append(esiable_amount)
         esi_employee.append(int(esi_deducted))
         esi_employer.append(int(esi_deducted_employer))
