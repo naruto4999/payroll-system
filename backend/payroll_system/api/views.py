@@ -1286,7 +1286,7 @@ class EmployeeProfessionalDetailRetrieveUpdateDestroyAPIView(generics.RetrieveUp
             to_date = date(validated_data['date_of_joining'].year, validated_data['date_of_joining'].month, num_days_in_month)
             print(f"From Date: {from_date} To Date: {to_date}")
             operation_result, message = EmployeeAttendance.objects.mark_default_attendance(from_date=from_date, to_date=to_date, company_id=validated_data['employee'].company.id, user=user)
-            if OwnerToRegular.objects.filter(owner=user).exists():
+            if professional_detail.company.visible and OwnerToRegular.objects.filter(owner=user).exists():
                 operation_result, message = EmployeeAttendance.objects.mark_default_attendance(from_date=from_date, to_date=to_date, company_id=validated_data['employee'].company.id, user=user.owner_to_regular.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
