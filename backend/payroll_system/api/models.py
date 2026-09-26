@@ -1084,6 +1084,66 @@ class PfEsiSetup(models.Model):
     labour_wellfare_fund_employer_code = models.CharField(max_length=100, null=True, blank=True)
     labour_welfare_fund_percentage = models.DecimalField(max_digits=5, decimal_places=2, validators=PERCENTAGE_VALIDATOR, null=False, blank=False, default=0.2)
     labour_welfare_fund_limit = models.PositiveIntegerField(null=False, blank=False, default=31)
+    esi_earnings_heads = models.ManyToManyField(
+        EarningsHead,
+        through='PfEsiSetupEarningsHead',
+        related_name='esi_setups',
+        blank=True,
+    )
+
+
+class PfEsiSetupEarningsHead(models.Model):
+    pf_esi_setup = models.ForeignKey(
+        PfEsiSetup,
+        on_delete=models.CASCADE,
+        related_name='esi_earnings_head_links',
+    )
+    earnings_head = models.ForeignKey(
+        EarningsHead,
+        on_delete=models.PROTECT,
+        related_name='esi_setup_links',
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['pf_esi_setup', 'earnings_head'],
+                name='unique_pf_esi_setup_earning_head',
+            ),
+        ]
+
+    def clean(self):
+        if (
+            self.earnings_head.company_id != self.pf_esi_setup.company_id
+            or self.earnings_head.user_id != self.pf_esi_setup.user_id
+        ):
+            raise ValidationError({
+                'earnings_head': 'ESI earnings head must belong to the setup company and owner.'
+            })
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
+@receiver(m2m_changed, sender=PfEsiSetup.esi_earnings_heads.through)
+def validate_pf_esi_setup_earnings_heads(sender, instance, action, reverse, pk_set, **kwargs):
+    if action != 'pre_add' or not pk_set:
+        return
+    if reverse:
+        invalid = PfEsiSetup.objects.filter(pk__in=pk_set).exclude(
+            company_id=instance.company_id,
+            user_id=instance.user_id,
+        ).exists()
+    else:
+        invalid = EarningsHead.objects.filter(pk__in=pk_set).exclude(
+            company_id=instance.company_id,
+            user_id=instance.user_id,
+        ).exists()
+    if invalid:
+        raise ValidationError(
+            'ESI earnings heads and the PF/ESI setup must belong to the same company and owner.'
+        )
 
 class Calculations(models.Model):
     OT_CALCULATION_CHOICES = [
@@ -1857,6 +1917,10 @@ class EmployeeSalaryPrepared(models.Model):
     incentive_amount = models.PositiveIntegerField(null=False, blank=False, default=0)
     pf_deducted = models.PositiveIntegerField(null=False, blank=False, default=0)
     esi_deducted = models.PositiveIntegerField(null=False, blank=False, default=0)
+    esi_employee_wages = models.PositiveIntegerField(null=False, blank=False, default=0)
+    esi_employee_wages_without_overtime = models.PositiveIntegerField(null=False, blank=False, default=0)
+    esi_deducted_without_overtime = models.PositiveIntegerField(null=False, blank=False, default=0)
+    esi_employer_contribution = models.PositiveIntegerField(null=False, blank=False, default=0)
     vpf_deducted = models.PositiveIntegerField(null=False, blank=False, default=0)
     advance_deducted = models.PositiveIntegerField(null=False, blank=False, default=0)
     tds_deducted = models.PositiveIntegerField(null=False, blank=False, default=0)
@@ -2122,7 +2186,10 @@ def create_default_pf_esi_setup(sender, instance, created, **kwargs):
     if created:
         company = instance  # Assign the instance to a variable
         user = company.user
-        PfEsiSetup.objects.create( user=user, company=company, ac_1_epf_employee_percentage=12, ac_1_epf_employee_limit=15000, ac_1_epf_employer_percentage=3.67, ac_1_epf_employer_limit=15000, ac_10_eps_employer_percentage=8.33, ac_10_eps_employer_limit=15000, ac_2_employer_percentage=0.5, ac_21_employer_percentage=0.5, ac_22_employer_percentage=0, esi_employee_percentage=0.75, esi_employee_limit=21000, esi_employer_percentage=3.25, esi_employer_limit=21000, employer_pf_code=None, employer_esi_code=None, enable_labour_welfare_fund=False, labour_welfare_fund_percentage=0.2, labour_welfare_fund_limit=31)
+        setup = PfEsiSetup.objects.create( user=user, company=company, ac_1_epf_employee_percentage=12, ac_1_epf_employee_limit=15000, ac_1_epf_employer_percentage=3.67, ac_1_epf_employer_limit=15000, ac_10_eps_employer_percentage=8.33, ac_10_eps_employer_limit=15000, ac_2_employer_percentage=0.5, ac_21_employer_percentage=0.5, ac_22_employer_percentage=0, esi_employee_percentage=0.75, esi_employee_limit=21000, esi_employer_percentage=3.25, esi_employer_limit=21000, employer_pf_code=None, employer_esi_code=None, enable_labour_welfare_fund=False, labour_welfare_fund_percentage=0.2, labour_welfare_fund_limit=31)
+        setup.esi_earnings_heads.set(
+            EarningsHead.objects.filter(user=user, company=company)
+        )
         
 @receiver(post_save, sender=Company)
 def create_default_calculations(sender, instance, created, **kwargs):

@@ -20,4 +20,3 @@ const CustomCheckbox = ({ value, name, checked, onChange, disabled, borderColor 
 
 export default CustomCheckbox;
 
-

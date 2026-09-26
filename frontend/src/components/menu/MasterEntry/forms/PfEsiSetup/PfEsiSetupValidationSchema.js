@@ -69,6 +69,18 @@ export const PfEsiSetupValidationSchema = yup.object().shape({
 		.integer('Cannot be a decimal')
 		.required('Required')
 		.min(0, 'Cannot be less than 0'),
+	esiEarningsHeads: yup
+		.array()
+		.of(
+			yup.number().integer('Earnings head IDs must be integers').positive('Earnings head IDs must be positive')
+		)
+		.ensure()
+		.min(1, 'Select at least one ESI earnings head')
+		.test(
+			'unique',
+			'Each earnings head can only be selected once',
+			(ids) => new Set(ids.map(Number)).size === ids.length
+		),
 	employerEsiCode: yup.string().max(100, 'Cannot be more than 100'),
 });
 

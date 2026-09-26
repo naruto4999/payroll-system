@@ -35,3 +35,4 @@ frontend/dist
 
 #gemini ignore
 .geminiignore
+.playwright-cli/

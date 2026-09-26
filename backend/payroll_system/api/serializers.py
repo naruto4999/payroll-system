@@ -588,9 +588,69 @@ class WeeklyOffHolidayOffSerializer(serializers.ModelSerializer):
         fields = ('company', 'min_days_for_weekly_off', 'min_days_for_holiday_off')
     
 class PfEsiSetupSerializer(serializers.ModelSerializer):
+    esi_earnings_heads = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=EarningsHead.objects.all(),
+        required=False,
+        allow_empty=False,
+    )
+
     class Meta:
         model = PfEsiSetup
-        fields = ('company', 'ac_1_epf_employee_percentage', 'ac_1_epf_employee_limit', 'ac_1_epf_employer_percentage', 'ac_1_epf_employer_limit', 'ac_10_eps_employer_percentage', 'ac_10_eps_employer_limit', 'ac_2_employer_percentage', 'ac_21_employer_percentage', 'ac_22_employer_percentage', 'employer_pf_code', 'esi_employee_percentage', 'esi_employee_limit', 'esi_employer_percentage', 'esi_employer_limit', 'employer_esi_code', 'enable_labour_welfare_fund', 'labour_wellfare_fund_employer_code', 'labour_welfare_fund_percentage', 'labour_welfare_fund_limit')
+        fields = ('company', 'ac_1_epf_employee_percentage', 'ac_1_epf_employee_limit', 'ac_1_epf_employer_percentage', 'ac_1_epf_employer_limit', 'ac_10_eps_employer_percentage', 'ac_10_eps_employer_limit', 'ac_2_employer_percentage', 'ac_21_employer_percentage', 'ac_22_employer_percentage', 'employer_pf_code', 'esi_employee_percentage', 'esi_employee_limit', 'esi_employer_percentage', 'esi_employer_limit', 'employer_esi_code', 'esi_earnings_heads', 'enable_labour_welfare_fund', 'labour_wellfare_fund_employer_code', 'labour_welfare_fund_percentage', 'labour_welfare_fund_limit')
+
+    def validate(self, attrs):
+        company = self.context.get('company') or attrs.get(
+            'company', getattr(self.instance, 'company', None)
+        )
+        submitted_company = attrs.get('company')
+        if submitted_company is not None and company is not None and submitted_company.pk != company.pk:
+            raise serializers.ValidationError({
+                'company': 'Company is bound by the URL and cannot be changed.'
+            })
+        request = self.context.get('request')
+        if company is not None and request is not None:
+            owner = request.user if request.user.role == 'OWNER' else request.user.regular_to_owner.owner
+            if company.user_id != owner.pk:
+                raise serializers.ValidationError({'company': 'Company is outside this account scope.'})
+
+        selected_heads = attrs.get('esi_earnings_heads')
+        if selected_heads is None and (
+            self.instance is None or not self.instance.esi_earnings_heads.exists()
+        ):
+            raise serializers.ValidationError({
+                'esi_earnings_heads': 'Select at least one ESI earnings head.'
+            })
+        if selected_heads is not None:
+            if len(selected_heads) != len({head.pk for head in selected_heads}):
+                raise serializers.ValidationError({
+                    'esi_earnings_heads': 'ESI earnings heads must be unique.'
+                })
+            if company is not None and any(
+                head.company_id != company.pk or head.user_id != company.user_id
+                for head in selected_heads
+            ):
+                raise serializers.ValidationError({
+                    'esi_earnings_heads':
+                        'All ESI earnings heads must belong to the setup company and owner.'
+                })
+        return attrs
+
+    @transaction.atomic
+    def create(self, validated_data):
+        selected_heads = validated_data.pop('esi_earnings_heads')
+        instance = super().create(validated_data)
+        instance.esi_earnings_heads.set(selected_heads)
+        return instance
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        missing = object()
+        selected_heads = validated_data.pop('esi_earnings_heads', missing)
+        instance = super().update(instance, validated_data)
+        if selected_heads is not missing:
+            instance.esi_earnings_heads.set(selected_heads)
+        return instance
 
 class CalculationsSerializer(serializers.ModelSerializer):
     class Meta:
@@ -776,8 +836,8 @@ class EmployeeSalaryPreparedSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
     class Meta:
         model = EmployeeSalaryPrepared
-        fields = ('id', 'employee', 'company', 'date', 'incentive_amount', 'pf_deducted', 'esi_deducted', 'vpf_deducted', 'advance_deducted', 'tds_deducted', 'labour_welfare_fund_deducted', 'others_deducted', 'net_ot_minutes_monthly', 'net_ot_amount_monthly', 'ot_rounding_increment_minutes', 'ot_round_up_from_minutes', 'payment_mode')
-        read_only_fields = ('net_ot_minutes_monthly', 'net_ot_amount_monthly', 'ot_rounding_increment_minutes', 'ot_round_up_from_minutes')
+        fields = ('id', 'employee', 'company', 'date', 'incentive_amount', 'pf_deducted', 'esi_deducted', 'esi_employee_wages', 'esi_employee_wages_without_overtime', 'esi_deducted_without_overtime', 'esi_employer_contribution', 'vpf_deducted', 'advance_deducted', 'tds_deducted', 'labour_welfare_fund_deducted', 'others_deducted', 'net_ot_minutes_monthly', 'net_ot_amount_monthly', 'ot_rounding_increment_minutes', 'ot_round_up_from_minutes', 'payment_mode')
+        read_only_fields = ('esi_employee_wages', 'esi_employee_wages_without_overtime', 'esi_deducted_without_overtime', 'esi_employer_contribution', 'net_ot_minutes_monthly', 'net_ot_amount_monthly', 'ot_rounding_increment_minutes', 'ot_round_up_from_minutes')
 
 
 class SalaryOvertimePreviewSerializer(serializers.Serializer):
@@ -819,6 +879,10 @@ class SalaryPreparationParentInputSerializer(serializers.Serializer):
         prohibited = sorted({
             'pf_deducted',
             'esi_deducted',
+            'esi_employee_wages',
+            'esi_employee_wages_without_overtime',
+            'esi_deducted_without_overtime',
+            'esi_employer_contribution',
             'labour_welfare_fund_deducted',
             'payment_mode',
             'net_ot_minutes_monthly',
@@ -856,8 +920,8 @@ class EmployeeSalaryPreparedWithEarnedAmountSerializer(serializers.ModelSerializ
     id = serializers.IntegerField(read_only=True)
     class Meta:
         model = EmployeeSalaryPrepared
-        fields = ('id', 'employee', 'company', 'date', 'incentive_amount', 'pf_deducted', 'esi_deducted', 'vpf_deducted', 'advance_deducted', 'tds_deducted', 'labour_welfare_fund_deducted', 'others_deducted', 'net_ot_minutes_monthly', 'net_ot_amount_monthly', 'ot_rounding_increment_minutes', 'ot_round_up_from_minutes', 'payment_mode', 'net_salary', 'earned_amounts', 'overtime_breakdown')
-        read_only_fields = ('ot_rounding_increment_minutes', 'ot_round_up_from_minutes')
+        fields = ('id', 'employee', 'company', 'date', 'incentive_amount', 'pf_deducted', 'esi_deducted', 'esi_employee_wages', 'esi_employee_wages_without_overtime', 'esi_deducted_without_overtime', 'esi_employer_contribution', 'vpf_deducted', 'advance_deducted', 'tds_deducted', 'labour_welfare_fund_deducted', 'others_deducted', 'net_ot_minutes_monthly', 'net_ot_amount_monthly', 'ot_rounding_increment_minutes', 'ot_round_up_from_minutes', 'payment_mode', 'net_salary', 'earned_amounts', 'overtime_breakdown')
+        read_only_fields = ('esi_employee_wages', 'esi_employee_wages_without_overtime', 'esi_deducted_without_overtime', 'esi_employer_contribution', 'ot_rounding_increment_minutes', 'ot_round_up_from_minutes')
     def get_earned_amounts(self, obj):
         # Get all related EarnedAmount records through the reverse relation
         earned_amounts = obj.current_salary_earned_amounts.all()

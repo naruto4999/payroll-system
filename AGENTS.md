@@ -19,3 +19,8 @@
 - The controlling implementations are:
   - `frontend/src/components/menu/Transaction/forms/SalaryPreparationForm/EditSalary.jsx`
   - `backend/payroll_system/api/managers.py`
+
+- For testing using playwright navigate to "http://localhost:5173/login" and use credentials
+  username: ANOOP INTERNATIONAL
+  password: India@12345
+  Check playwright-cli --help for available commands.

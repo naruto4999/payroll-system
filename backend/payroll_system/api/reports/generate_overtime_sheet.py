@@ -2,7 +2,6 @@ from fpdf import FPDF
 import os
 from ..models import CompanyDetails, EmployeeGenerativeLeaveRecord, LeaveGrade, EmployeeSalaryEarning, EarnedAmount
 from datetime import date
-from decimal import Decimal, ROUND_HALF_UP, ROUND_CEILING
 
 
 width_of_columns = {
@@ -112,12 +111,10 @@ def generate_overtime_sheet(user, request_data, employee_salaries):
         overtime_sheet.cell(w=width_of_columns['ot_amount'], h=default_cell_height*default_row_number_of_cells, text=f'{ot_amount}', align="R", new_x="RIGHT", new_y='TOP', border=1)
 
         #ESI on OT
-        company_pf_esi_details = salary.company.pf_esi_setup_details
-        esiable_amount = 0
-        if salary.employee.employee_pf_esi_detail.esi_on_ot or user.role=='REGULAR':
-            esiable_amount = min(company_pf_esi_details.esi_employee_limit, salary.net_ot_amount_monthly)
-        esi_deducted = Decimal(esiable_amount) * Decimal(company_pf_esi_details.esi_employee_percentage) / Decimal(100)
-        esi_deducted = esi_deducted.quantize(Decimal('1.'), rounding=ROUND_CEILING)
+        esi_deducted = max(
+            salary.esi_deducted - salary.esi_deducted_without_overtime,
+            0,
+        )
         grand_total_dict['esi_on_ot'] += esi_deducted
         overtime_sheet.cell(w=width_of_columns['esi_on_ot'], h=default_cell_height*default_row_number_of_cells, text=f'{esi_deducted}', align="R", new_x="RIGHT", new_y='TOP', border=1)
 

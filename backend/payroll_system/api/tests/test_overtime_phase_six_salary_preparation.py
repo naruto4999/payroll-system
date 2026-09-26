@@ -118,6 +118,10 @@ class PhaseSixSalaryPreparationTests(AttendanceTestDataMixin, TestCase):
         self.assertEqual(salary.net_ot_minutes_monthly, preview.data['totals']['net_minutes'])
         self.assertEqual(str(salary.net_ot_amount_monthly), preview.data['totals']['amount'])
         self.assertEqual(salary.esi_deducted, 158)
+        self.assertEqual(salary.esi_employee_wages, 21000)
+        self.assertEqual(salary.esi_employee_wages_without_overtime, 20800)
+        self.assertEqual(salary.esi_deducted_without_overtime, 156)
+        self.assertEqual(salary.esi_employer_contribution, 683)
         self.assertEqual(
             salary.net_ot_minutes_monthly,
             sum(salary.overtime_breakdown.values_list('net_minutes', flat=True)),
@@ -128,6 +132,59 @@ class PhaseSixSalaryPreparationTests(AttendanceTestDataMixin, TestCase):
         )
         self.assertIn('salary', response.data)
         self.assertIn('overtime', response.data)
+
+    def test_esi_uses_only_company_selected_earnings_heads(self):
+        hra = self.create_salary_earning(self.employee, name='HRA', value=1000)
+        setup = self.company.pf_esi_setup_details
+        setup.esi_earnings_heads.set([hra.earnings_head])
+
+        response = self.client.post(
+            '/api/salary-preparation/preview',
+            self.salary_preview_payload(),
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 200, response.data)
+        salary = response.data['salary']
+        self.assertEqual(salary['esi_employee_wages_without_overtime'], 1000)
+        self.assertEqual(salary['esi_deducted_without_overtime'], 8)
+        self.assertEqual(salary['esi_employee_wages'], 1210)
+        self.assertEqual(salary['esi_deducted'], 10)
+        self.assertEqual(salary['esi_employer_contribution'], 39)
+
+    def test_saved_esi_snapshots_do_not_change_with_company_mapping(self):
+        preview = self.client.post(
+            '/api/salary-preparation/preview',
+            self.salary_preview_payload(),
+            format='json',
+        )
+        payload = self.salary_payload()
+        payload['all_earned_amounts'] = [{
+            'earnings_head': {'id': row['earnings_head']['id']},
+            'rate': row['rate'],
+            'earned_amount': row['earned_amount'],
+            'arear_amount': row['arear_amount'],
+        } for row in preview.data['salary']['earned_amounts']]
+        response = self.client.post('/api/employee-salary-prepared', payload, format='json')
+        self.assertEqual(response.status_code, 200, response.data)
+        salary = EmployeeSalaryPrepared.objects.get(employee=self.employee, date=date(2024, 1, 1))
+        snapshot = (
+            salary.esi_employee_wages,
+            salary.esi_deducted,
+            salary.esi_employer_contribution,
+        )
+
+        setup = self.company.pf_esi_setup_details
+        setup.esi_earnings_heads.set([
+            EarningsHead.objects.get(company=self.company, name='HRA')
+        ])
+        salary.refresh_from_db()
+
+        self.assertEqual((
+            salary.esi_employee_wages,
+            salary.esi_deducted,
+            salary.esi_employer_contribution,
+        ), snapshot)
 
     def test_full_salary_preview_has_no_writes(self):
         EmployeeAdvancePayment.objects.create(
@@ -193,6 +250,10 @@ class PhaseSixSalaryPreparationTests(AttendanceTestDataMixin, TestCase):
             'incentive_amount',
             'pf_deducted',
             'esi_deducted',
+            'esi_employee_wages',
+            'esi_employee_wages_without_overtime',
+            'esi_deducted_without_overtime',
+            'esi_employer_contribution',
             'vpf_deducted',
             'advance_deducted',
             'tds_deducted',
