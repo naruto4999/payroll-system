@@ -167,14 +167,17 @@ def generate_full_and_final_report(user, request_data, employee):
 
     full_and_final_report.set_xy(x=full_and_final_report.get_x(), y=full_and_final_report.get_y()+default_cell_height*5) #blank line
     ##Earnings Table
+    resignation_month = resignation_date.replace(day=1)
+    monthly_attendance = employee.employee.monthly_attendance_details.filter(user=user, date=resignation_month).first()
+    paid_days = monthly_attendance.paid_days_count / 2 if monthly_attendance else 0
     full_and_final_report.set_font('noto-sans-devanagari', size=8, style="B")
-    full_and_final_report.cell(w=width_of_columns['salary_wage_rate']+width_of_columns['arrears']+width_of_columns['earnings'], h=default_cell_height, text=f"Earnings", align="C", new_x="RIGHT", new_y='TOP', border=1)
+    full_and_final_report.cell(w=width_of_columns['salary_wage_rate']+width_of_columns['arrears']+width_of_columns['earnings'], h=default_cell_height, text=f"Earnings (Paid Days: {paid_days:g})", align="C", new_x="RIGHT", new_y='TOP', border=1)
     full_and_final_report.cell(w=width_of_columns['deductions'], h=default_cell_height*2, text=f"Deductions", align="C", new_x="RIGHT", new_y='TOP', border=1)
     full_and_final_report.cell(w=width_of_columns['net_amount'], h=default_cell_height*2, text=f"Net Amt.", align="C", new_x="LMARGIN", new_y='NEXT', border=1)
 
     # Salary Wage Rate
     full_and_final_report.set_xy(x=full_and_final_report.get_x(), y=full_and_final_report.get_y()-default_cell_height)
-    employee_salary_rates = EmployeeSalaryEarning.objects.filter(from_date__lte=resignation_date.replace(day=1), to_date__gte=resignation_date.replace(day=1), employee=employee.employee).order_by('earnings_head__id')
+    employee_salary_rates = EmployeeSalaryEarning.objects.filter(from_date__lte=resignation_month, to_date__gte=resignation_month, employee=employee.employee).order_by('earnings_head__id')
     
     coordinates_before_table = {"x": full_and_final_report.get_x(), "y": full_and_final_report.get_y()}
 
@@ -207,7 +210,7 @@ def generate_full_and_final_report(user, request_data, employee):
     full_and_final_report.set_xy(x=coordinates_before_table['x']+width_of_columns['salary_wage_rate'], y=coordinates_before_table["y"])
     full_and_final_report.cell(w=width_of_columns['earnings'], h=default_cell_height, text=f"Earnings", new_x="LEFT", new_y="NEXT", align='C', border=1)
 
-    salary_prepared_resign_month = employee.employee.salaries_prepared.filter(user=user, date=resignation_date.replace(day=1)).first()
+    salary_prepared_resign_month = employee.employee.salaries_prepared.filter(user=user, date=resignation_month).first()
     earned_amounts = EarnedAmount.objects.filter(salary_prepared = salary_prepared_resign_month.id).order_by('earnings_head__id')
     full_and_final_report.rect(x=full_and_final_report.get_x(), y=full_and_final_report.get_y(), w=width_of_columns["earnings"], h=(default_cell_height)*minimum_salary_table_rows)
     full_and_final_report.set_font('noto-sans-devanagari', size=7, style='')

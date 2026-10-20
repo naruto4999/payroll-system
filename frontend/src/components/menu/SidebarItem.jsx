@@ -1,71 +1,60 @@
-import React from "react";
-import { useState } from "react";
-import { FaChevronUp } from "react-icons/fa";
-import { NavLink } from "react-router-dom";
+import React, { useEffect, useId, useState } from 'react';
+import { FaChevronDown } from 'react-icons/fa';
+import { NavLink, useLocation } from 'react-router-dom';
 
-const classNames = (...classes) => {
-    // console.log(classes)
-    return classes.filter(Boolean).join(" ");
-};
+const containsRoute = (item, pathname) =>
+	item.path
+		? pathname === item.path || pathname.startsWith(`${item.path}/`)
+		: item.children?.some((child) => containsRoute(child, pathname));
 
-const SidebarItem = ({ item }) => {
-    const [upArrow, setUpArrow] = useState(false);
-    const [showDiv, setShowDiv] = useState(false);
-    const submenuHandler = () => {
-        setUpArrow(!upArrow);
-        setShowDiv(!showDiv);
-    };
+const SidebarItem = ({ item, onNavigate }) => {
+	const { pathname } = useLocation();
+	const isCurrentSection = containsRoute(item, pathname);
+	const [expanded, setExpanded] = useState(isCurrentSection);
+	const submenuId = useId();
 
-    if (item.children) {
-        return (
-            <div>
-                <div
-                    className="z-50 p-2.5 mt-3 flex items-center rounded-md px-4 duration-300 cursor-pointer hover:bg-teal-500 dark:hover:bg-teal-600"
-                    id="masterEntry"
-                    onClick={submenuHandler}
-                >
-                    {item.icon ? <item.icon /> : ""}
-                    <div className="flex justify-between w-full items-center">
-                        <span className="text-[15px] ml-4 font-bold">{item.title}</span>
-                        <span className="text-sm rotate-180" id="arrow">
-                            <FaChevronUp
-                                className={classNames(
-                                    upArrow == true ? "rotate-180" : "rotate-0",
-                                    "transition-transform"
-                                )}
-                            />
-                        </span>
-                    </div>
-                </div>
-                <div
-                    className={classNames(
-                        showDiv == false ? "hidden" : "",
-                        "text-left text-sm mt-2 w-4/5 mx-auto font-bold"
-                    )}
-                    id="submenu"
-                >
-                    {item.children.map((child, index) => (
-                        <SidebarItem key={index} item={child} />
-                    ))}
-                </div>
-            </div>
-        );
-    } else {
-        return (
-            <div>
-                <NavLink
-                    className="z-50 p-2.5 mt-3 flex items-center rounded-md px-4 duration-300 cursor-pointer hover:bg-teal-500 dark:hover:bg-teal-600"
-                    id="masterEntry"
-                    to={item.path}
-                >
-                    {item.icon ? <item.icon /> : ""}
-                    <div className="flex justify-between w-full items-center">
-                        <span className="text-[15px] ml-4 font-bold">{item.title}</span>
-                    </div>
-                </NavLink>
-            </div>
-        );
-    }
+	useEffect(() => {
+		if (isCurrentSection) setExpanded(true);
+	}, [pathname, isCurrentSection]);
+
+	const icon = item.icon ? <item.icon className="sidebar-icon" aria-hidden="true" /> : null;
+
+	if (item.children) {
+		return (
+			<div className="sidebar-group">
+				<button
+					type="button"
+					className={`sidebar-link sidebar-group-toggle${isCurrentSection ? ' sidebar-current-section' : ''}`}
+					aria-expanded={expanded}
+					aria-controls={submenuId}
+					onClick={() => setExpanded((value) => !value)}
+				>
+					{icon}
+					<span className="sidebar-label">{item.title}</span>
+					<FaChevronDown
+						className={`sidebar-chevron${expanded ? ' sidebar-chevron-open' : ''}`}
+						aria-hidden="true"
+					/>
+				</button>
+				<div id={submenuId} className="sidebar-submenu" hidden={!expanded}>
+					{item.children.map((child) => (
+						<SidebarItem key={child.path || child.title} item={child} onNavigate={onNavigate} />
+					))}
+				</div>
+			</div>
+		);
+	}
+
+	return (
+		<NavLink
+			to={item.path}
+			className={({ isActive }) => `sidebar-link${isActive ? ' sidebar-link-active' : ''}`}
+			onClick={onNavigate}
+		>
+			{icon}
+			<span className="sidebar-label">{item.title}</span>
+		</NavLink>
+	);
 };
 
 export default SidebarItem;

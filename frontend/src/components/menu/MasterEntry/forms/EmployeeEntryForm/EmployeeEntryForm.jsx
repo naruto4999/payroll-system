@@ -1231,11 +1231,21 @@ const EmployeeEntryForm = () => {
     } else {
         return (
             <>
-                <section className="mx-5 mt-2 flex h-[calc(100dvh-2.5rem)] min-h-0 flex-col overflow-hidden">
-                    <div className="flex shrink-0 flex-row flex-wrap place-content-between">
+                <section
+                    className="mx-4 flex h-[calc(100dvh-56px)] min-h-0 flex-col overflow-hidden sm:mx-5"
+                    aria-labelledby="employees-heading"
+                >
+                    <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-zinc-200 pb-2 dark:border-zinc-800">
                         <div className="mr-4">
-                            <h1 className="text-3xl font-medium">Employees</h1>
-                            <p className="my-2 text-sm">Add and manage employees here</p>
+                            <h1
+                                id="employees-heading"
+                                className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100"
+                            >
+                                Employees
+                            </h1>
+                            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                                Add and manage employees here
+                            </p>
                         </div>
                         {/* <button */}
                         {/* 	className="my-auto whitespace-nowrap rounded bg-teal-500 p-2 text-base font-medium hover:bg-teal-600 dark:bg-teal-700 dark:hover:bg-teal-600" */}
@@ -1257,8 +1267,8 @@ const EmployeeEntryForm = () => {
                             {/* 	Bulk Upload Employees */}
                             {/* </button> */}
                         </div>
-                    </div>
-                    <div className="relative z-30 mx-auto mt-3 flex w-full max-w-6xl shrink-0 flex-col gap-2 rounded-2xl border border-zinc-200/80 bg-white/60 p-1.5 shadow-sm shadow-zinc-950/5 backdrop-blur-sm dark:border-zinc-700/80 dark:bg-zinc-900/40 dark:shadow-black/10 sm:flex-row sm:items-center">
+                    </header>
+                    <div className="relative z-30 mx-auto mt-3 flex w-full max-w-6xl shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
                         <div className="group relative min-w-0 flex-1">
                             <FaSearch
                                 aria-hidden="true"
@@ -1268,7 +1278,7 @@ const EmployeeEntryForm = () => {
                                 type="search"
                                 value={globalFilter}
                                 onChange={(event) => setGlobalFilter(event.target.value)}
-                                className="h-10 w-full appearance-none rounded-xl border border-zinc-200 bg-zinc-100/80 pl-10 pr-10 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 hover:border-zinc-300 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-500/10 dark:border-zinc-700 dark:bg-zinc-800/80 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:hover:border-zinc-600 dark:focus:border-teal-500 dark:focus:bg-zinc-800 dark:focus:ring-teal-500/10"
+                                className="h-10 w-full appearance-none rounded-xl border border-zinc-200 bg-zinc-100/80 pl-10 pr-10 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 hover:border-zinc-300 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-500/10 dark:border-zinc-700 dark:bg-zinc-800/80 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:hover:border-zinc-600 dark:focus:border-teal-500 dark:focus:bg-zinc-800 dark:focus:ring-teal-500/10 [&::-webkit-search-cancel-button]:appearance-none"
                                 placeholder="Search by name, paycode, or ACN"
                                 aria-label="Search employees"
                             />

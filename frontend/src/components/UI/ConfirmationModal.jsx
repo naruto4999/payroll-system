@@ -1,9 +1,6 @@
 import { useRef, useEffect } from 'react';
-
-const classNames = (...classes) => {
-    return classes.filter(Boolean).join(' ');
-};
 import { FaCircleNotch } from 'react-icons/fa6';
+import Button from './Button';
 
 const ConfirmationModal = ({
     // deleteCompanyChangeHandler,
@@ -28,12 +25,12 @@ const ConfirmationModal = ({
         <div className="text-gray-900 dark:text-slate-100">
             <h1 className="mb-2 text-2xl font-medium">{`${displayHeading}`}</h1>
 
-            <form action="" className="flex flex-col justify-center gap-2">
+            <form onSubmit={handleSubmit} className="flex flex-col justify-center gap-2">
                 <label
                     htmlFor="userInput"
                     className="text-sm font-medium text-black text-opacity-100 dark:text-white dark:text-opacity-70"
                 >
-                    {`Please type "confirm" to ${displayHeading}`}
+                    {`Please type "Confirm" to ${displayHeading}`}
                 </label>
                 <div className="relative">
                     <input
@@ -52,29 +49,13 @@ const ConfirmationModal = ({
                     <p className="mt-1 text-xs font-bold text-red-500 dark:text-red-700">{errors.userInput}</p>
                 )}
                 <section className="mt-4 mb-2 flex flex-row gap-4">
-                    <button
-                        className={classNames(
-                            isValid && !isSubmitting ? 'hover:bg-teal-600  dark:hover:bg-teal-600' : 'opacity-40',
-                            'w-24 rounded bg-teal-500 p-2 text-base font-medium dark:bg-teal-700'
-                        )}
-                        onClick={handleSubmit}
-                        type="submit"
-                        disabled={isSubmitting}
-                    >
+                    <Button size="sm" className="min-w-24" type="submit" disabled={isSubmitting}>
                         Confirm
-                        <FaCircleNotch
-                            className={classNames(isSubmitting ? '' : 'hidden', 'mx-2 inline animate-spin text-white')}
-                        />
-                    </button>
-                    <button
-                        className="w-20 rounded bg-zinc-400 p-2 text-base font-medium hover:bg-zinc-500 dark:bg-zinc-600 dark:hover:bg-zinc-700"
-                        type="button"
-                        onClick={() => {
-                            setShowConfirmModal(false || isSubmitting);
-                        }}
-                    >
+                        {isSubmitting && <FaCircleNotch className="animate-spin" />}
+                    </Button>
+                    <Button size="sm" variant="secondary" disabled={isSubmitting} onClick={() => setShowConfirmModal(false)}>
                         Cancel
-                    </button>
+                    </Button>
                 </section>
             </form>
         </div>

@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import EmployeeTable from './EmployeeTable';
-import { FaCheck, FaWindowMinimize } from 'react-icons/fa';
+import { FaSearch, FaTimes } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { useGetEmployeePersonalDetailsQuery } from '../../../../authentication/api/employeeEntryApiSlice';
 import {
@@ -8,33 +7,24 @@ import {
   useGenerateFullAndFinalReportMutation,
 } from '../../../../authentication/api/fullAndFinalApiSlice';
 import {
-  // column,
   createColumnHelper,
-  flexRender,
   getCoreRowModel,
   useReactTable,
   getSortedRowModel,
-  // columnFiltersState,
   getFilteredRowModel,
-  // filterFn,
-  // filterFns,
 } from '@tanstack/react-table';
 import { Formik } from 'formik';
 import { useOutletContext } from 'react-router-dom';
 import { alertActions } from '../../../../authentication/store/slices/alertSlice';
 import { authActions } from '../../../../authentication/store/slices/auth';
 import ConfirmationModal from '../../../../UI/ConfirmationModal';
-import ReactModal from 'react-modal';
+import Modal from '../../../../UI/Modal';
 import { ConfirmationModalSchema } from '../TimeUpdationForm/TimeUpdationSchema';
 import { useUpdateResignationMutation, useUnresignMutation } from '../../../../authentication/api/resignationApiSlice';
 import FullAndFinal from './FullAndFinal';
-import { FaCircleNotch } from 'react-icons/fa';
-
-ReactModal.setAppElement('#root');
-
-const classNames = (...classes) => {
-  return classes.filter(Boolean).join(' ');
-};
+import DataGrid from '../../../../UI/DataGrid';
+import Dropdown from '../../../../UI/Dropdown';
+import Button from '../../../../UI/Button';
 
 const ResignDateToBeAssigned = ({ getValue, row, column, table }) => {
   const initialValue = getValue() == null ? '' : getValue();
@@ -43,7 +33,7 @@ const ResignDateToBeAssigned = ({ getValue, row, column, table }) => {
     setValue(initialValue);
   }, [initialValue]);
   const onBlur = () => {
-    table.options.meta?.updateData(row.index, column.id, value);
+    table.options.meta?.updateData(row.original.id, column.id, value);
   };
   return (
     <>
@@ -79,6 +69,8 @@ const ResignationForm = () => {
   const [fullAndFinalEmployeeId, setFullAndFinalEmployeeId] = useState(null);
   const [confirmType, setConfirmType] = useState(null);
   const [data, setData] = useState([]);
+  const [globalFilter, setGlobalFilter] = useState('');
+  const [employeeStatus, setEmployeeStatus] = useState('all');
 
   const [
     updateResignation,
@@ -145,6 +137,7 @@ const ResignationForm = () => {
       columnHelper.accessor('resignationDate', {
         header: () => 'Resign Date',
         cell: (props) => props.renderValue(),
+        meta: { headerClassName: 'whitespace-nowrap' },
         //   footer: info => info.column.id,
       }),
       columnHelper.accessor('designation', {
@@ -175,16 +168,12 @@ const ResignationForm = () => {
         header: () => 'Actions',
         cell: (props) => {
           return (
-            <div className="flex justify-center gap-4">
+            <div className="flex justify-center gap-2 whitespace-nowrap">
               {props.row.original.resignationDate == null && (
                 <>
-                  <button
-                    className={classNames(
-                      true ? 'dark:hover:bg-redAccent-600' : 'opacity-40',
-                      'h-10 w-fit rounded bg-redAccent-500 p-2 px-4 text-base font-medium   dark:bg-redAccent-700'
-                    )}
-                    type="submit"
-                    // disabled={!isValid}
+                  <Button
+                    variant="danger"
+                    size="sm"
                     onClick={() => {
                       if (props.row.original.Date) {
                         setEmployeeToResign(props.row.original.id);
@@ -202,19 +191,14 @@ const ResignationForm = () => {
                     }}
                   >
                     Resign
-                    {false && (
-                      <FaCircleNotch className="my-auto ml-2 inline animate-spin text-xl text-amber-700 dark:text-amber-600 " />
-                    )}
-                  </button>
+                  </Button>
                 </>
               )}
               {props.row.original.resignationDate != null && (
                 <>
-                  <button
-                    className={
-                      'h-10 w-fit rounded bg-teal-600 p-2 text-slate-100 hover:bg-teal-700 dark:bg-teal-700 dark:hover:bg-teal-600'
-                    }
-                    type="submit"
+                  <Button
+                    size="sm"
+                    className="whitespace-nowrap"
                     onClick={() => {
                       // setEmployeeToResign(props.row.original.id);
                       setShowFullAndFinalModal(true);
@@ -225,12 +209,10 @@ const ResignationForm = () => {
                     {/* {false && (
 									<FaCircleNotch className="my-auto ml-2 inline animate-spin text-xl text-amber-700 dark:text-amber-600 " />
 								)} */}
-                  </button>
-                  <button
-                    className={
-                      'h-10 w-fit rounded bg-blueAccent-400 p-2 font-medium text-slate-100 hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:hover:bg-blueAccent-600'
-                    }
-                    type="submit"
+                  </Button>
+                  <Button
+                    variant="accent"
+                    size="sm"
                     onClick={() => {
                       setEmployeeToResign(props.row.original.id);
                       setShowConfirmModal(true);
@@ -238,7 +220,7 @@ const ResignationForm = () => {
                     }}
                   >
                     Unresign
-                  </button>
+                  </Button>
                   {/* {false && (
 									<FaCircleNotch className="my-auto ml-2 inline animate-spin text-xl text-amber-700 dark:text-amber-600 " />
 								)} */}
@@ -251,7 +233,7 @@ const ResignationForm = () => {
     ];
 
     return columns;
-  }, [fetchedData]);
+  }, []);
 
   useEffect(() => {
     if (fetchedData != undefined) {
@@ -260,24 +242,35 @@ const ResignationForm = () => {
     // fetchedData != undefined ? setData(fetchedData) : '';
   }, [fetchedData]);
 
-  // const data = useMemo(() => (fetchedData ? [...fetchedData] : []), [fetchedData]);
+  const filteredData = useMemo(() => {
+    if (employeeStatus === 'current') {
+      return data.filter((employee) => !employee.resignationDate);
+    }
+    if (employeeStatus === 'resigned') {
+      return data.filter((employee) => Boolean(employee.resignationDate));
+    }
+    return data;
+  }, [data, employeeStatus]);
 
   const table = useReactTable({
-    data,
+    data: filteredData,
     columns,
     initialState: {
       sorting: [{ id: 'name', desc: false }],
     },
+    state: { globalFilter },
+    onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
     enableSortingRemoval: false,
     meta: {
-      updateData: (rowIndex, columnId, value) => {
+      updateData: (employeeId, columnId, value) => {
         setData((old) =>
-          old.map((row, index) => {
-            if (index === rowIndex) {
+          old.map((row) => {
+            if (row.id === employeeId) {
               return {
-                ...old[rowIndex],
+                ...row,
                 [columnId]: value,
               };
             }
@@ -452,24 +445,18 @@ const ResignationForm = () => {
   };
 
   const resignButtonClicked = async (formikBag) => {
-    let row = table.getRowModel().rows.find((rowModel) => {
-      if (rowModel.original.id === employeeToResign) {
-        // console.log(rowModel.original);
-        return true; // Return true to include the row
-      }
-      return false; // Return false to exclude the row
-    });
+    const employee = data.find((row) => row.id === employeeToResign);
     let toSend = {
       company: globalCompany.id,
       employee: employeeToResign,
       resigned: true,
-      resignationDate: row.original.Date,
+      resignationDate: employee.Date,
     };
-    table.options.meta?.updateData(row.index, 'Date', '');
 
-    console.log(row.original.Date);
+    console.log(employee.Date);
     try {
       const data = await updateResignation(toSend).unwrap();
+      table.options.meta?.updateData(employeeToResign, 'Date', '');
 
       dispatch(
         alertActions.createAlert({
@@ -562,76 +549,129 @@ const ResignationForm = () => {
     return <div></div>;
   } else {
     return (
-      <section className="mt-4 w-full">
-        <div className="ml-4 flex flex-row flex-wrap place-content-between">
+      <section
+        className="mx-4 flex h-[calc(100dvh-56px)] min-h-0 flex-col overflow-hidden sm:mx-5"
+        aria-labelledby="resignation-heading"
+      >
+        <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-zinc-200 pb-2 dark:border-zinc-800">
           <div className="mr-4">
-            <h1 className="text-3xl font-medium">Resignation</h1>
-            <p className="my-2 text-sm">Change status of employees to resign here</p>
+            <h1
+              id="resignation-heading"
+              className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100"
+            >
+              Resignation
+            </h1>
+            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+              Change status of employees to resign here
+            </p>
+          </div>
+        </header>
+        <div className="relative z-30 mx-auto mt-3 flex w-full max-w-6xl shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="group relative min-w-0 flex-1">
+            <FaSearch
+              aria-hidden="true"
+              className="pointer-events-none absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400 transition-colors group-focus-within:text-teal-500 dark:text-zinc-500 dark:group-focus-within:text-teal-400"
+            />
+            <input
+              type="search"
+              value={globalFilter}
+              onChange={(event) => setGlobalFilter(event.target.value)}
+              className="h-10 w-full appearance-none rounded-xl border border-zinc-200 bg-zinc-100/80 pl-10 pr-10 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 hover:border-zinc-300 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-500/10 dark:border-zinc-700 dark:bg-zinc-800/80 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:hover:border-zinc-600 dark:focus:border-teal-500 dark:focus:bg-zinc-800 dark:focus:ring-teal-500/10 [&::-webkit-search-cancel-button]:appearance-none"
+              placeholder="Search by name, paycode, or ACN"
+              aria-label="Search employees"
+            />
+            {globalFilter && (
+              <button
+                type="button"
+                onClick={() => setGlobalFilter('')}
+                className="absolute right-2.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-200 hover:text-zinc-700 focus:outline-none focus:ring-2 focus:ring-teal-500/40 dark:hover:bg-zinc-700 dark:hover:text-zinc-100"
+                aria-label="Clear employee search"
+              >
+                <FaTimes className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+          <div className="flex w-full items-center gap-2 sm:w-auto">
+            <span className="hidden whitespace-nowrap pl-1 text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 sm:inline">
+              Status
+            </span>
+            <Dropdown
+              value={employeeStatus}
+              onChange={(event) => setEmployeeStatus(event.target.value)}
+              wrapperClassName="w-full sm:w-[12.5rem]"
+              className="h-10 rounded-xl border-zinc-200 bg-zinc-100/80 dark:border-zinc-700 dark:bg-zinc-800/80"
+              aria-label="Filter employees by employment status"
+            >
+              <option value="all">All employees</option>
+              <option value="current">Current employees</option>
+              <option value="resigned">Resigned employees</option>
+            </Dropdown>
           </div>
         </div>
-        <EmployeeTable table={table} flexRender={flexRender} />;
-        <ReactModal
-          className="items-left fixed inset-0 mx-2 my-auto flex h-fit flex-col gap-4 rounded bg-zinc-300 p-4 shadow-xl dark:bg-zinc-800 sm:mx-auto sm:max-w-lg"
+        <DataGrid
+          table={table}
+          getRowId={(row) => row.original.id}
+          getRowClassName={(row) => (row.original.resignationDate ? 'text-redAccent-500' : '')}
+          maxHeightClassName="max-h-full"
+          wrapperClassName="relative z-0 flex min-h-0 flex-1"
+          containerClassName="h-full w-full max-w-6xl"
+          tableClassName="text-sm [&_td]:whitespace-nowrap [&_td]:px-2 [&_td_div]:text-sm [&_th]:px-2 [&_th]:py-4"
+          density="compact"
+          emptyMessage="No employees found"
+        />
+        <Modal
+          className="w-full"
+          maxWidth="lg"
           isOpen={showConfirmModal}
-          onRequestClose={() => {
+          onClose={() => {
             setShowConfirmModal(false);
             setEmployeeToResign(null);
           }}
-          style={{
-            overlay: {
-              backgroundColor: 'rgba(0, 0, 0, 0.75)',
-            },
-          }}
         >
-          <Formik
-            initialValues={{ userInput: '' }}
-            validationSchema={ConfirmationModalSchema}
-            onSubmit={confirmType == 'resign' ? resignButtonClicked : unresignButtonClicked}
-            component={(props) => (
-              <ConfirmationModal
-                {...props}
-                displayHeading={
-                  confirmType == 'resign'
-                    ? 'Resign Employee (All the attendances for this employee after the resignation date will be deleted)'
-                    : 'Unresign Employee'
-                }
-                setShowConfirmModal={setShowConfirmModal}
-              />
-            )}
-          />
-        </ReactModal>
-        <ReactModal
-          className="items-left sm:max-w-8xl fixed inset-0 mx-2 my-auto flex h-fit w-fit flex-col gap-4 rounded bg-zinc-300 p-4 shadow-xl dark:bg-zinc-800 sm:mx-auto"
+          <div className="p-5">
+            <Formik
+              initialValues={{ userInput: '' }}
+              validationSchema={ConfirmationModalSchema}
+              onSubmit={confirmType == 'resign' ? resignButtonClicked : unresignButtonClicked}
+              component={(props) => (
+                <ConfirmationModal
+                  {...props}
+                  displayHeading={
+                    confirmType == 'resign'
+                      ? 'Resign Employee (All the attendances for this employee after the resignation date will be deleted)'
+                      : 'Unresign Employee'
+                  }
+                  setShowConfirmModal={setShowConfirmModal}
+                />
+              )}
+            />
+          </div>
+        </Modal>
+        <Modal
+          className="w-full min-w-0"
+          maxWidth="8xl"
           isOpen={showFullAndFinalModal}
-          onRequestClose={() => {
+          onClose={() => {
             setShowFullAndFinalModal(false);
           }}
-          style={{
-            overlay: {
-              backgroundColor: 'rgba(0, 0, 0, 0.75)',
-            },
-          }}
         >
-          <Formik
-            initialValues={fullAndFinalInitialValues}
-            validationSchema={''}
-            onSubmit={saveFullAndFinalButtonClicked}
-            component={(props) => (
-              <FullAndFinal
-                {...props}
-                // displayHeading={
-                // 	confirmType == 'resign'
-                // 		? 'Resign Employee (All the attendances for this employee after the resignation date will be deleted)'
-                // 		: 'Unresign Employee'
-                // }
-                setShowFullAndFinalModal={setShowFullAndFinalModal}
-                fullAndFinalEmployeeId={fullAndFinalEmployeeId}
-                globalCompany={globalCompany}
-                generateButtonClicked={generateButtonClicked}
-              />
-            )}
-          />
-        </ReactModal>
+          <div className="w-max p-4">
+            <Formik
+              initialValues={fullAndFinalInitialValues}
+              validationSchema={''}
+              onSubmit={saveFullAndFinalButtonClicked}
+              component={(props) => (
+                <FullAndFinal
+                  {...props}
+                  setShowFullAndFinalModal={setShowFullAndFinalModal}
+                  fullAndFinalEmployeeId={fullAndFinalEmployeeId}
+                  globalCompany={globalCompany}
+                  generateButtonClicked={generateButtonClicked}
+                />
+              )}
+            />
+          </div>
+        </Modal>
       </section>
     );
   }

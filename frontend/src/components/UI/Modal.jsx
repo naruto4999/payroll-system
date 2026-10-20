@@ -9,6 +9,7 @@ const maxWidthClasses = {
 	xl: 'sm:max-w-xl',
 	'2xl': 'sm:max-w-2xl',
 	'3xl': 'sm:max-w-3xl',
+	'8xl': 'sm:max-w-[86rem]',
 };
 
 const Modal = ({ isOpen, onClose, children, className = '', closeOnOverlayClick = true, maxWidth = '3xl' }) => (
