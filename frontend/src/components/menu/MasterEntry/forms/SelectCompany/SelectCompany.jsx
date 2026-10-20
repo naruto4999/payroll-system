@@ -1,68 +1,121 @@
-import React from "react";
-import { useGetCompaniesQuery } from "../../../../authentication/api/newCompanyEntryApiSlice";
-import { globalCompanyActions } from "../../../../authentication/store/slices/globalCompany";
-import { useSelector, useDispatch } from "react-redux";
-import { useOutletContext } from "react-router-dom";
-import { useEffect } from "react";
-import { FaCheck } from "react-icons/fa";
-
-const classNames = (...classes) => {
-    return classes.filter(Boolean).join(" ");
-};
+import React, { useEffect } from 'react';
+import { useGetCompaniesQuery } from '../../../../authentication/api/newCompanyEntryApiSlice';
+import { globalCompanyActions } from '../../../../authentication/store/slices/globalCompany';
+import { useSelector, useDispatch } from 'react-redux';
+import { useOutletContext } from 'react-router-dom';
+import { FiCheck } from 'react-icons/fi';
+import { HiOutlineOfficeBuilding } from 'react-icons/hi';
 
 const SelectCompany = () => {
-    const { data: fetchedData, isLoading, isSuccess, isError, error } = useGetCompaniesQuery();
-    const [showLoadingBar, setShowLoadingBar] = useOutletContext();
-    console.log(fetchedData);
-    const globalCompany = useSelector((state) => state.globalCompany);
-    const dispatch = useDispatch();
-    // console.log(globalCompany);
+	const { data: companies = [], isLoading, isError, refetch } = useGetCompaniesQuery();
+	const [, setShowLoadingBar] = useOutletContext();
+	const globalCompany = useSelector((state) => state.globalCompany);
+	const dispatch = useDispatch();
 
-    const val = 1;
-    const handler = (company) => {
-        // console.log(company);
-        dispatch(globalCompanyActions.setCompany({ id: company.id, name: company.name }));
-    };
+	useEffect(() => {
+		setShowLoadingBar(isLoading);
+	}, [isLoading, setShowLoadingBar]);
 
-    useEffect(() => {
-        setShowLoadingBar(isLoading);
-    }, [isLoading]);
+	return (
+		<section className="mx-4 pb-6 sm:mx-5" aria-labelledby="select-company-heading">
+			<header className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 pb-2 dark:border-zinc-800">
+				<div>
+					<h1
+						id="select-company-heading"
+						className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100"
+					>
+						Select a company
+					</h1>
+					<p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+						Choose the company you want to work with.
+					</p>
+				</div>
+				{!isLoading && !isError && (
+					<span className="rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-600 dark:border-zinc-700/70 dark:bg-zinc-800/50 dark:text-zinc-400">
+						{companies.length} {companies.length === 1 ? 'company' : 'companies'}
+					</span>
+				)}
+			</header>
 
-    if (isLoading) {
-        return <div></div>;
-    } else {
-        return (
-            <section className="mx-6 mt-2">
-                <div className="">
-                    <h1 className="text-3xl font-medium">Select a Company</h1>
-                    <p className="text-sm my-2">Select a company to work on</p>
-                    <div className="mt-6 flex flex-row flex-wrap gap-14 md:gap-20 justify-center ">
-                        {fetchedData?.map((data) => {
-                            return (
-                                <button
-                                    key={data.id}
-                                    className={classNames(
-                                        globalCompany.id == data.id
-                                            ? "dark:bg-blueAccent-700 bg-blueAccent-600 scale-125"
-                                            : "dark:hover:bg-teal-700 hover:bg-teal-600 md:hover:scale-125 dark:bg-zinc-800 bg-zinc-200",
-                                        "h-32 w-60 p-6 md:h-40 md:w-96 md:p-10 rounded cursor-pointer transition-transform relative"
-                                    )}
-                                    onClick={() => handler(data)}
-                                    value={val}
-                                >
-                                    {globalCompany.id == data.id ? (
-                                        <FaCheck className="absolute scale-150 left-1/2 -translate-y-5 -translate-x-1/2" />
-                                    ) : (
-                                        ""
-                                    )}
-                                    <h1 className="text-xl">{data.name}</h1>
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-            </section>
-        );
-    }
+			{isLoading ? (
+				<div role="status" className="mt-4">
+					<span className="sr-only">Loading companies</span>
+					<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3" aria-hidden="true">
+						{[0, 1].map((index) => (
+							<div
+								key={index}
+								className="h-44 rounded-xl border border-zinc-200 bg-zinc-100 motion-safe:animate-pulse dark:border-zinc-800 dark:bg-zinc-800/50"
+							/>
+						))}
+					</div>
+				</div>
+			) : isError ? (
+				<div
+					role="alert"
+					className="mt-4 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"
+				>
+					<p className="text-sm text-zinc-600 dark:text-zinc-400">
+						Unable to load your companies. Please try again.
+					</p>
+					<button
+						type="button"
+						onClick={refetch}
+						className="mt-2 rounded text-sm font-medium text-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:text-teal-400"
+					>
+						Try again
+					</button>
+				</div>
+			) : companies.length === 0 ? (
+				<div className="mt-4 rounded-xl border border-dashed border-zinc-300 p-6 text-center dark:border-zinc-700">
+					<HiOutlineOfficeBuilding className="mx-auto mb-2 h-6 w-6 text-zinc-400" aria-hidden="true" />
+					<p className="text-sm font-medium">No companies available</p>
+					<p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+						Your companies will appear here once they have been added.
+					</p>
+				</div>
+			) : (
+				<>
+					<div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+						{companies.map((company) => {
+							const isSelected = globalCompany.id == company.id;
+							return (
+								<button
+									key={company.id}
+									type="button"
+									aria-pressed={isSelected}
+									onClick={() =>
+										dispatch(
+											globalCompanyActions.setCompany({ id: company.id, name: company.name })
+										)
+									}
+									className={`group flex min-w-0 flex-col rounded-xl border p-4 text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 motion-reduce:transition-none dark:focus-visible:ring-offset-zinc-900 ${
+										isSelected
+											? 'border-teal-500/70 bg-gradient-to-br from-teal-50 to-white shadow-sm dark:border-teal-500/50 dark:from-teal-900/30 dark:to-zinc-900'
+											: 'border-zinc-200 bg-white hover:border-teal-400 hover:bg-teal-50/40 dark:border-zinc-700/60 dark:bg-zinc-800/30 dark:hover:border-teal-500/50 dark:hover:bg-zinc-800/70'
+									}`}
+								>
+									<div className="mb-3 flex w-full items-center justify-between gap-2">
+										<span
+											className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${isSelected ? 'bg-teal-100 text-teal-700 dark:bg-teal-400/10 dark:text-teal-300' : 'bg-zinc-100 text-zinc-500 group-hover:text-teal-600 dark:bg-zinc-700/40 dark:text-zinc-400 dark:group-hover:text-teal-300'}`}
+										>
+											<HiOutlineOfficeBuilding className="h-5 w-5" aria-hidden="true" />
+										</span>
+										{isSelected && (
+											<span className="flex items-center gap-1 rounded-full bg-teal-100 px-2 py-0.5 text-[11px] font-medium text-teal-800 dark:bg-teal-400/10 dark:text-teal-300">
+												<FiCheck className="h-3 w-3" aria-hidden="true" /> Selected
+											</span>
+										)}
+									</div>
+									<span className="block w-full break-words text-sm font-semibold leading-5 text-zinc-900 dark:text-zinc-100">
+										{company.name}
+									</span>
+								</button>
+							);
+						})}
+					</div>
+				</>
+			)}
+		</section>
+	);
 };
 export default SelectCompany;

@@ -4,7 +4,7 @@ import { FaCircleInfo, FaCircleNotch } from 'react-icons/fa6';
 
 const waitingForPreview = 'Waiting for preview';
 
-const Deductions = React.memo(({ salary, isUpdating = false }) => {
+const Deductions = React.memo(({ salary, isUpdating = false, onDeductionChange }) => {
 	const serverDeductions = [
 		['PF', 'pfDeducted'],
 		['ESI', 'esiDeducted'],
@@ -67,6 +67,10 @@ const Deductions = React.memo(({ salary, isUpdating = false }) => {
 								{({ field: formikField }) => (
 									<input
 										{...formikField}
+										onChange={(event) => {
+											onDeductionChange?.(field);
+											formikField.onChange(event);
+										}}
 										className="custom-number-input h-8 w-full rounded-none border-0 bg-transparent px-3 text-right outline-none transition focus:bg-blueAccent-50 dark:focus:bg-blueAccent-900/30"
 										type="number"
 										value={formikField.value ?? ''}

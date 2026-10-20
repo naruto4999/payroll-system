@@ -52,6 +52,7 @@ class SalaryCalculation:
     overtime_result: object
     values: dict
     net_salary: Decimal
+    paid_days: Decimal
 
 
 def _error(detail, *, code='invalid_salary_preparation', field=None):
@@ -206,7 +207,10 @@ def _load_prerequisites(*, actor, owner, company, employee, period_start):
         user=actor, company=company, employee=employee, date=period_start,
     ).order_by('pk')[:2])
     if not attendance_rows:
-        _error('The monthly attendance summary is missing.', code='missing_monthly_attendance')
+        _error(
+            f'This Employee has no attendance in {period_start:%B}, {period_start:%Y}',
+            code='missing_monthly_attendance',
+        )
     if len(attendance_rows) > 1:
         _error('Multiple monthly attendance summaries exist.', code='duplicate_monthly_attendance')
 
@@ -646,6 +650,7 @@ def _calculate_employee_salary(
         overtime_result=overtime_result,
         values=values,
         net_salary=net_salary,
+        paid_days=Decimal(monthly_attendance.paid_days_count) / Decimal(2),
     )
 
 
@@ -663,6 +668,7 @@ def serialize_salary_calculation(calculation):
             if key != 'company'
         },
         'net_salary': serialize_value(calculation.net_salary),
+        'paid_days': serialize_value(calculation.paid_days),
         'earned_amounts': [
             {
                 'earnings_head': {
