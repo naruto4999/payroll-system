@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import {
 	// column,
 	createColumnHelper,
@@ -237,15 +237,14 @@ const SalaryPreparationForm = () => {
 
 	const tbodyRef = useRef(null);
 	const focusedRowRef = useRef(null);
-	let debouncedSetUpdateEmployeeId;
+	const keyboardSelectionTimeoutRef = useRef(null);
+	useEffect(() => () => clearTimeout(keyboardSelectionTimeoutRef.current), []);
 
 	const onRowClick = (event, row) => {
 		const currentRow = tbodyRef.current?.children.namedItem(row.original.id);
-		clearTimeout(debouncedSetUpdateEmployeeId); // Clear the debounce timer
-		debouncedSetUpdateEmployeeId = setTimeout(() => {
-			focusedRowRef.current = currentRow.getAttribute('id');
-			setUpdateEmployeeId(row.original.id);
-		}, 300);
+		clearTimeout(keyboardSelectionTimeoutRef.current);
+		focusedRowRef.current = currentRow.getAttribute('id');
+		setUpdateEmployeeId(row.original.id);
 	};
 	const handleKeyDown = (event, row) => {
 		event.stopPropagation();
@@ -259,8 +258,8 @@ const SalaryPreparationForm = () => {
 					previousRow.focus();
 
 					// setUpdateEmployeeId(previousRow?.getAttribute('data-row-id'));
-					clearTimeout(debouncedSetUpdateEmployeeId); // Clear the debounce timer
-					debouncedSetUpdateEmployeeId = setTimeout(() => {
+					clearTimeout(keyboardSelectionTimeoutRef.current);
+					keyboardSelectionTimeoutRef.current = setTimeout(() => {
 						focusedRowRef.current = previousRow?.getAttribute('id');
 						setUpdateEmployeeId(parseInt(previousRow?.getAttribute('data-row-id')));
 					}, 300);
@@ -275,8 +274,8 @@ const SalaryPreparationForm = () => {
 					nextRow.focus();
 
 					// setUpdateEmployeeId(nextRow?.getAttribute('data-row-id'));
-					clearTimeout(debouncedSetUpdateEmployeeId); // Clear the debounce timer
-					debouncedSetUpdateEmployeeId = setTimeout(() => {
+					clearTimeout(keyboardSelectionTimeoutRef.current);
+					keyboardSelectionTimeoutRef.current = setTimeout(() => {
 						focusedRowRef.current = nextRow?.getAttribute('id');
 						setUpdateEmployeeId(parseInt(nextRow?.getAttribute('data-row-id')));
 					}, 300);
@@ -367,11 +366,16 @@ const SalaryPreparationForm = () => {
 		return <div></div>;
 	} else {
 		return (
-			<section className="mx-5 mt-2">
-				<div className="flex flex-row flex-wrap items-start justify-between gap-4">
+			<section className="mx-4 sm:mx-5" aria-labelledby="salary-preparation-heading">
+				<header className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 pb-2 dark:border-zinc-800">
 					<div className="mr-4">
-						<h1 className="text-3xl font-medium">Salary Preperation</h1>
-						<p className="my-2 text-sm">Prepare employees salaries here</p>
+						<h1
+							id="salary-preparation-heading"
+							className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100"
+						>
+							Salary Preparation
+						</h1>
+						<p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Prepare employees salaries here</p>
 					</div>
 					<section className="flex flex-wrap items-center gap-2 text-sm">
 						<label
@@ -405,7 +409,7 @@ const SalaryPreparationForm = () => {
 							))}
 						</select>
 					</section>
-				</div>
+				</header>
 				<div className="grid w-full gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-start lg:gap-8 xl:grid-cols-[minmax(640px,0.95fr)_minmax(0,1.05fr)]">
 					<div className="mt-4 min-w-0 lg:ml-4">
 						<TableFilterInput
@@ -429,7 +433,7 @@ const SalaryPreparationForm = () => {
 					) : (
 						<div className="mt-4 min-w-0">
 							<Formik
-								key={`${updateEmployeeId}-${selectedDate.year}-${selectedDate.month}`}
+								key={`${globalCompany.id}-${updateEmployeeId}-${selectedDate.year}-${selectedDate.month}`}
 								enableReinitialize
 								initialValues={initialValues}
 								validationSchema={SalaryPreparationSchema}

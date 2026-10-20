@@ -794,8 +794,13 @@ def _calculate_loaded_overtime(
         ):
             _configuration_error('An attendance row is outside the employee calculation scope.', 'invalid_attendance_scope')
         attendance_key = (attendance.id, attendance.date)
-        has_any_details = attendance.overtime_details.exists() if attendance_key not in attendance_keys_with_details else True
-        if attendance.ot_min and not has_any_details:
+        # Zero-OT rows do not need a detail lookup. For positive OT, reuse
+        # the loaded details before falling back to a database check.
+        if (
+            attendance.ot_min
+            and attendance_key not in attendance_keys_with_details
+            and not attendance.overtime_details.exists()
+        ):
             _configuration_error(
                 f'Attendance {attendance.id} on {attendance.date} has positive overtime but no categorized details.',
                 'unbackfilled_overtime',
@@ -919,10 +924,10 @@ def calculate_employee_overtime(*, actor, company, employee, period_start):
         date__range=(period_start, period_end),
     ))
     detail_records = EmployeeAttendanceOvertimeDetail.objects.filter(
-        attendance__user=actor,
-        attendance__company=company,
-        attendance__employee=employee,
-        attendance__date__range=(period_start, period_end),
+        user=actor,
+        company=company,
+        employee=employee,
+        attendance_date__range=(period_start, period_end),
     )
     salary_earnings = EmployeeSalaryEarning.objects.select_related('earnings_head').filter(
         user=owner,
@@ -952,11 +957,14 @@ def calculate_employee_overtime_from_loaded(
     period_end = period_end.replace(day=1) - timedelta(days=1)
     from api.models import EmployeeAttendanceOvertimeDetail
 
+    # Scope the detail table directly so its index and date partitions can
+    # be used without joining the partitioned attendance table. The loaded
+    # calculator attaches and validates each detail's attendance below.
     detail_records = EmployeeAttendanceOvertimeDetail.objects.filter(
-        attendance__user=actor,
-        attendance__company=employee_salary_detail.company,
-        attendance__employee=employee_salary_detail.employee,
-        attendance__date__range=(period_start, period_end),
+        user=actor,
+        company=employee_salary_detail.company,
+        employee=employee_salary_detail.employee,
+        attendance_date__range=(period_start, period_end),
     )
     return _calculate_loaded_overtime(
         employee_salary_detail=employee_salary_detail,

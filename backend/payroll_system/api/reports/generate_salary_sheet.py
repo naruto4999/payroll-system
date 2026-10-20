@@ -12,6 +12,7 @@ from ..models import (
     EmployeeGenerativeLeaveRecord,
     EmployeeMonthlyAttendanceDetails,
     EmployeeSalaryEarning,
+    FullAndFinal,
     LeaveGrade,
     PfEsiSetup,
 )
@@ -135,6 +136,13 @@ def _load_employee_report_data(user, request_data, prepared_salaries, selective_
     employee_ids = list(salary_dates_by_employee)
     salary_ids = [salary.id for salary in prepared_salaries]
     salary_dates = set(salary_dates_by_employee.values())
+    full_and_final_employee_ids = set(
+        FullAndFinal.objects.filter(
+            user=user,
+            company_id=request_data['company'],
+            employee_id__in=employee_ids,
+        ).values_list('employee_id', flat=True)
+    )
 
     monthly_attendance_by_key = defaultdict(list)
     monthly_attendances = EmployeeMonthlyAttendanceDetails.objects.filter(
@@ -191,6 +199,7 @@ def _load_employee_report_data(user, request_data, prepared_salaries, selective_
         'earned_amounts_by_salary': earned_amounts_by_salary,
         'generative_leaves_by_key': generative_leaves_by_key,
         'selective_leave_counts_by_employee': selective_leave_counts_by_employee,
+        'full_and_final_employee_ids': full_and_final_employee_ids,
     }
 
 
@@ -721,8 +730,20 @@ def generate_salary_sheet(user, request_data, prepared_salaries):
 
 
             if column_name == "signature":
-                salary_sheet_pdf.rect(salary_sheet_pdf.get_x(), salary_sheet_pdf.get_y(), w=column_width, h=default_cell_height*default_number_of_cells_in_row)
+                signature_x = salary_sheet_pdf.get_x()
+                salary_sheet_pdf.rect(signature_x, salary_sheet_pdf.get_y(), w=column_width, h=default_cell_height*default_number_of_cells_in_row)
                 salary_sheet_pdf.multi_cell(w=column_width, h=default_cell_height, txt=f"{employee_salary_details.get_payment_mode_display()}", align='C', border=0)
+                resignation_date = employee_professional_details.resignation_date
+                if (employee_professional_details.resigned and resignation_date
+                        and (resignation_date.year, resignation_date.month) == (request_data['year'], request_data['month'])):
+                    position_after_payment_mode = (salary_sheet_pdf.get_x(), salary_sheet_pdf.get_y())
+                    remark = 'F&F' if salary.employee_id in employee_report_data['full_and_final_employee_ids'] else 'Resigned'
+                    salary_sheet_pdf.set_xy(
+                        x=signature_x,
+                        y=initial_cursor_position_before_row['y'] + (default_number_of_cells_in_row * default_cell_height - default_cell_height) / 2,
+                    )
+                    salary_sheet_pdf.multi_cell(w=column_width, h=default_cell_height, txt=remark, align='C', border=0)
+                    salary_sheet_pdf.set_xy(*position_after_payment_mode)
 
                 if ((index+1) % (rows_per_page//1)) == 0:
                     if request_data['filters']['group_by'] == 'department':

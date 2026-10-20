@@ -1,14 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch } from 'react-redux';
 import { useSelector } from 'react-redux';
-import { authActions } from '../authentication/store/slices/auth';
-import { globalCompanyActions } from '../authentication/store/slices/globalCompany';
-import { FaRegWindowClose, FaRegBuilding, FaChevronDown, FaBars, FaSignOutAlt } from 'react-icons/fa';
+import { FaTimes, FaRegBuilding, FaSignOutAlt } from 'react-icons/fa';
 import SidebarItem from './SidebarItem';
 import menuItems from './SidebarData';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { NavLink } from 'react-router-dom';
-import SwitchToggle from '../UI/ToggleSwitch';
+import WorkspaceTopBar from './WorkspaceTopBar';
+import './Sidebar.css';
 
 const classNames = (...classes) => {
 	return classes.filter(Boolean).join(' ');
@@ -16,9 +15,10 @@ const classNames = (...classes) => {
 
 const Sidebar = () => {
 	const dispatch = useDispatch();
+	const { pathname } = useLocation();
+	const navigationRef = useRef(null);
+	const openButtonRef = useRef(null);
 	const handleLogout = () => {
-		// dispatch(authActions.logout());
-		// dispatch(globalCompanyActions.deselectComapny());
 		dispatch({ type: 'RESET' });
 	};
 
@@ -51,27 +51,35 @@ const Sidebar = () => {
 					: main_menu_item;
 		});
 
-	// console.log(auth)
-	// if (auth.account.role == 'OWNER' && auth.account.is_admin == true) {
-	// 	items = menuItems;
-	// 	// const items = itemsWithoutAdminControl
-	// }
 	const [showSidebar, setShowSidebar] = useState(false);
 	const [showLoadingBar, setShowLoadingBar] = useState(false);
 	const sidebarHandler = () => {
 		setShowSidebar(!showSidebar);
 	};
-	console.log();
+	const closeSidebar = () => {
+		setShowSidebar(false);
+		requestAnimationFrame(() => openButtonRef.current?.focus());
+	};
+	const handleNavigate = () => {
+		if (window.innerWidth < 768) closeSidebar();
+	};
+
+	useEffect(() => {
+		if (!showSidebar) return;
+		const frame = requestAnimationFrame(() => {
+			navigationRef.current?.querySelector('[aria-current="page"]')?.scrollIntoView({ block: 'nearest' });
+		});
+		const handleKeyDown = (event) => {
+			if (event.key === 'Escape') closeSidebar();
+		};
+		window.addEventListener('keydown', handleKeyDown);
+		return () => {
+			cancelAnimationFrame(frame);
+			window.removeEventListener('keydown', handleKeyDown);
+		};
+	}, [showSidebar, pathname]);
 
 	const [theme, setTheme] = useState('dark');
-
-	// useEffect(() => {
-	// 	if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-	// 		setTheme('dark');
-	// 	} else {
-	// 		setTheme('light');
-	// 	}
-	// }, []);
 
 	useEffect(() => {
 		if (theme == 'dark') {
@@ -86,88 +94,80 @@ const Sidebar = () => {
 	};
 
 	return (
-		<>
-			<div className={classNames(showSidebar == false ? '' : 'hidden', 'relative z-40 cursor-pointer px-4')}>
-				<FaBars
-					className="fixed mt-2 -translate-x-2 p-1 text-3xl hover:rounded hover:border hover:text-teal-600"
-					onClick={sidebarHandler}
+		<section className="workspace-shell relative flex flex-row gap-0">
+			{showSidebar && (
+				<button
+					type="button"
+					className="sidebar-backdrop"
+					aria-label="Close navigation overlay"
+					onClick={closeSidebar}
 				/>
-				<div className="fixed right-4 z-20 mt-2 flex flex-row items-center gap-2 text-xs dark:text-slate-100 dark:text-opacity-70 sm:text-base">
-					Dark
-					<SwitchToggle theme={theme} switch={themeSwitch} />
-				</div>
-			</div>
-			<section className="relative flex flex-row gap-0">
-				<div>
-					{/* <button
-                className="absolute bottom-0 right-0 bg-teal-700 h-10 rounded-lg p-2 hover:bg-teal-600"
-                onClick={handleLogout}
-            >
-                Bish me Logout uwu
-            </button> */}
-
-					<div
-						className={classNames(
-							showSidebar == false ? '-ml-80' : 'md:flex-shrink-0',
-							'scrollbar fixed top-0 bottom-0 z-20 h-screen w-[300px] overflow-y-auto bg-zinc-200 bg-opacity-70 p-2 transition-all duration-300 dark:bg-black dark:bg-opacity-90 md:sticky md:dark:bg-opacity-40'
-						)}
-					>
-						<div className="text-xl">
-							<div className="mt-1 flex items-center p-2.5">
-								<div className="ml-3">
-									<img
-										src={`${import.meta.env.VITE_PUBLIC_URL}logo_text_dark.svg`}
-										alt="PAY-PER Logo"
-										className="h-4 w-auto"
-									/>
-								</div>
-								<FaRegWindowClose
-									className="absolute right-0 mx-4 cursor-pointer"
-									onClick={sidebarHandler}
-								/>
-							</div>
-
-							{/* Line Divide */}
-							<div className="my-2 h-[1px] bg-gray-600"></div>
+			)}
+			<div className="sidebar-container">
+				<aside
+					id="payroll-sidebar"
+					className={`payroll-sidebar${showSidebar ? ' payroll-sidebar-open' : ''}`}
+					aria-label="Sidebar"
+				>
+					<header className="sidebar-header">
+						<div>
+							<img
+								src={`${import.meta.env.VITE_PUBLIC_URL}logo_text_dark.svg`}
+								alt="PAY-PER Logo"
+								className="h-4 w-auto"
+							/>
 						</div>
-
+						<button
+							type="button"
+							className="sidebar-close-button"
+							aria-label="Close navigation"
+							onClick={closeSidebar}
+						>
+							<FaTimes aria-hidden="true" />
+						</button>
+					</header>
+					<nav ref={navigationRef} className="sidebar-navigation scrollbar" aria-label="Main navigation">
 						<NavLink
-							className="mt-3 flex cursor-pointer items-center rounded-md p-2.5 px-4 duration-300 hover:bg-teal-500 dark:hover:bg-teal-600"
+							className={({ isActive }) =>
+								`sidebar-link sidebar-company${isActive ? ' sidebar-link-active' : ''}`
+							}
 							to="/home/select-company"
+							onClick={handleNavigate}
 						>
-							<FaRegBuilding />
-							<span className="ml-4 text-[15px] font-bold">Select Company</span>
+							<FaRegBuilding className="sidebar-icon" aria-hidden="true" />
+							<span className="sidebar-label">Select Company</span>
 						</NavLink>
-
-						<div className="my-4 h-[1px] bg-gray-600"></div>
-
-						{/* Sidebar Items go here */}
-						{items.map((item, index) => (
-							<SidebarItem key={index} item={item} />
+						<p className="sidebar-navigation-label">Workspace</p>
+						{items.map((item) => (
+							<SidebarItem key={item.title} item={item} onNavigate={handleNavigate} />
 						))}
-
-						<div
-							className="mt-3 flex cursor-pointer items-center rounded-md p-2.5 px-4 duration-300 hover:bg-teal-500 dark:hover:bg-teal-600"
-							onClick={handleLogout}
-						>
-							<FaSignOutAlt />
-							<span className="ml-4 text-[15px] font-bold">Logout</span>
+						<div className="sidebar-footer">
+							<button type="button" className="sidebar-link sidebar-logout" onClick={handleLogout}>
+								<FaSignOutAlt className="sidebar-icon" aria-hidden="true" />
+								<span className="sidebar-label">Logout</span>
+							</button>
 						</div>
-					</div>
-				</div>
-				<div
-					className={classNames(
-						showLoadingBar == true ? '' : 'hidden',
-						'overflow-x:hidden fixed top-0 z-50 h-1 w-10 animate-[loading-bar_1s_infinite_linear] rounded bg-orange-700 dark:bg-orange-200 sm:w-14 sm:animate-[loading-bar_1.5s_infinite_linear] md:animate-loading-bar'
-					)}
-				></div>
+					</nav>
+				</aside>
+			</div>
+			<div
+				className={classNames(
+					showLoadingBar == true ? '' : 'hidden',
+					'overflow-x:hidden fixed top-0 z-50 h-1 w-10 animate-[loading-bar_1s_infinite_linear] rounded bg-orange-700 dark:bg-orange-200 sm:w-14 sm:animate-[loading-bar_1.5s_infinite_linear] md:animate-loading-bar'
+				)}
+			></div>
 
-				<div className="relative grow">
-					<div className="top-0 h-[30px]"></div>
-					<Outlet context={[showLoadingBar, setShowLoadingBar]} />
-				</div>
-			</section>
-		</>
+			<div className="relative min-w-0 grow">
+				<WorkspaceTopBar
+					showSidebar={showSidebar}
+					openButtonRef={openButtonRef}
+					onOpenNavigation={sidebarHandler}
+					theme={theme}
+					onThemeChange={themeSwitch}
+				/>
+				<Outlet context={[showLoadingBar, setShowLoadingBar]} />
+			</div>
+		</section>
 	);
 };
 

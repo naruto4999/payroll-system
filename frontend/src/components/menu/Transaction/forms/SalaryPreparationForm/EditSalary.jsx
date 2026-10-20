@@ -3,21 +3,16 @@ import { Field, ErrorMessage, Formik } from 'formik';
 import { FaChevronDown, FaChevronUp, FaCircleNotch } from 'react-icons/fa6';
 
 import {
-	useGetAllEmployeeMonthlyAttendanceDetailsQuery,
-	useGetAllEmployeeSalaryEarningsQuery,
 	useEmployeeBulkSalaryPreparedMutation,
-	useGetAllEmployeePfEsiDetailsQuery,
 	useGetSalaryPreparationPreviewQuery,
 } from '../../../../authentication/api/salaryPreparationApiSlice';
 import Deductions from './Deductions';
-import { useGetAllEmployeeSalaryDetailQuery } from '../../../../authentication/api/timeUpdationApiSlice';
 import NetSalary from './NetSalary';
 import ReactModal from 'react-modal';
 import ConfirmationModal from '../../../../UI/ConfirmationModal';
 import { ConfirmationModalSchema } from './SalaryPreperationSchema';
 import { useDispatch } from 'react-redux';
 import { alertActions } from '../../../../authentication/store/slices/alertSlice';
-import LoadingSpinner from '../../../../UI/LoadingSpinner';
 import { getApiErrorMessage } from '../../../../authentication/api/errorUtils';
 
 ReactModal.setAppElement('#root');
@@ -233,6 +228,7 @@ const EditSalary = ({
 	errors,
 	isSubmitting,
 	setFieldValue,
+	setValues,
 	handleReset,
 	touched,
 	isValid,
@@ -256,15 +252,14 @@ const EditSalary = ({
 	];
 	const dispatch = useDispatch();
 
-	const isDateWithinRange = (fromDate, toDate) => {
-		const dateSelected = new Date(Date.UTC(values.year, values.month - 1, 1));
-		// console.log('Selected Date', dateSelected);
-		const fromDateObj = new Date(fromDate);
-		const toDateObj = new Date(toDate);
-		return dateSelected >= fromDateObj && dateSelected <= toDateObj;
-	};
 	const [showConfirmModal, setShowConfirmModal] = useState(false);
 	const [bulkErrors, setBulkErrors] = useState([]);
+	// Server defaults populate the form for saving, but only explicit user
+	// overrides change the preview request. Hydration must not request it again.
+	const [editedDefaultDeductions, setEditedDefaultDeductions] = useState({});
+	const onDeductionChange = (field) => {
+		setEditedDefaultDeductions((previous) => ({ ...previous, [field]: true }));
+	};
 	const latestSelectionKeyRef = useRef('');
 	latestSelectionKeyRef.current = `${globalCompany?.id}-${updateEmployeeId}-${values.year}-${values.month}`;
 	const previewInput = useMemo(
@@ -275,16 +270,21 @@ const EditSalary = ({
 			month: Number(values?.month),
 			incentiveAmount: Number(values.employeeSalaryPrepared?.incentiveAmount || 0),
 			advanceDeducted:
+				!editedDefaultDeductions.advanceDeducted ||
 				values.employeeSalaryPrepared?.advanceDeducted === null ||
 				values.employeeSalaryPrepared?.advanceDeducted === ''
 					? null
 					: Number(values.employeeSalaryPrepared.advanceDeducted),
 			vpfDeducted:
-				values.employeeSalaryPrepared?.vpfDeducted === null || values.employeeSalaryPrepared?.vpfDeducted === ''
+				!editedDefaultDeductions.vpfDeducted ||
+				values.employeeSalaryPrepared?.vpfDeducted === null ||
+				values.employeeSalaryPrepared?.vpfDeducted === ''
 					? null
 					: Number(values.employeeSalaryPrepared.vpfDeducted),
 			tdsDeducted:
-				values.employeeSalaryPrepared?.tdsDeducted === null || values.employeeSalaryPrepared?.tdsDeducted === ''
+				!editedDefaultDeductions.tdsDeducted ||
+				values.employeeSalaryPrepared?.tdsDeducted === null ||
+				values.employeeSalaryPrepared?.tdsDeducted === ''
 					? null
 					: Number(values.employeeSalaryPrepared.tdsDeducted),
 			othersDeducted: Number(values.employeeSalaryPrepared?.othersDeducted || 0),
@@ -305,11 +305,14 @@ const EditSalary = ({
 			values.employeeSalaryPrepared?.vpfDeducted,
 			values.employeeSalaryPrepared?.tdsDeducted,
 			values.employeeSalaryPrepared?.othersDeducted,
+			editedDefaultDeductions,
 			values.earnedAmount.map((row) => `${row.earningsHead.id}:${row.arearAmount}`).join(','),
 		]
 	);
 	const previewInputSignature = JSON.stringify(previewInput);
-	const [debouncedPreviewInput, setDebouncedPreviewInput] = useState(null);
+	// Selection remounts this form, so its first preview is immediate. Only
+	// subsequent edits are debounced.
+	const [debouncedPreviewInput, setDebouncedPreviewInput] = useState(previewInput);
 
 	useEffect(() => {
 		const timeout = setTimeout(() => setDebouncedPreviewInput(previewInput), 250);
@@ -326,102 +329,7 @@ const EditSalary = ({
 	] = useEmployeeBulkSalaryPreparedMutation();
 
 	const {
-		data: allEmployeeMonthlyAttendanceDetails,
-		isLoading: isLoadingAllEmployeeMonthlyAttendanceDetails,
-		isSuccess: isAllEmployeeMonthlyAttendanceDetailsSuccess,
-		isFetching: isFetchingAllEmployeeMonthlyAttendanceDetails,
-	} = useGetAllEmployeeMonthlyAttendanceDetailsQuery(
-		{
-			company: globalCompany?.id,
-			year: values?.year,
-		},
-		{
-			skip: globalCompany === null || globalCompany === '' || values?.year == undefined,
-		}
-	);
-
-	const {
-		data: allEmployeeSalaryDetails,
-		isLoading: isLoadingAllEmployeeSalaryDetails,
-		isSuccess: isAllEmployeeSalaryDetailsSuccess,
-		isFetching: isFetchingAllEmployeeSalaryDetails,
-	} = useGetAllEmployeeSalaryDetailQuery(
-		{
-			company: globalCompany?.id,
-		},
-		{
-			skip: globalCompany === null || globalCompany === '',
-		}
-	);
-
-	const {
-		data: allEmployeeSalaryEarnings,
-		isLoading: isLoadingAllEmployeeSalaryEarnings,
-		isSuccess: isAllEmployeeSalaryEarningsSuccess,
-		isFetching: isFetchingAllEmployeeSalaryEarnings,
-	} = useGetAllEmployeeSalaryEarningsQuery(
-		{
-			company: globalCompany?.id,
-			year: values?.year,
-		},
-		{
-			skip: globalCompany === null || globalCompany === '' || values?.year == undefined,
-		}
-	);
-
-	const {
-		data: allEmployeePfEsiDetails,
-		isLoading: isLoadingAllEmployeePfEsiDetails,
-		isSuccess: isAllEmployeePfEsiDetailsSuccess,
-		isFetching: isFetchingAllEmployeePfEsiDetails,
-	} = useGetAllEmployeePfEsiDetailsQuery(
-		{
-			company: globalCompany?.id,
-		},
-		{
-			skip: globalCompany === null || globalCompany === '',
-		}
-	);
-
-	const currentEmployeeMonthlyAttendanceDetails = useMemo(() => {
-		if (allEmployeeMonthlyAttendanceDetails && updateEmployeeId) {
-			const selectedEmployeeData = allEmployeeMonthlyAttendanceDetails.filter((item) => {
-				const dateOfInstance = new Date(item.date);
-				const currentSelectedDate = new Date(Date.UTC(values.year, values.month - 1, 1));
-				return item.employee === updateEmployeeId && dateOfInstance.getTime() === currentSelectedDate.getTime();
-			});
-			return selectedEmployeeData;
-		}
-		// handleReset();
-		return [];
-	}, [allEmployeeMonthlyAttendanceDetails, updateEmployeeId, values.year, values.month]);
-
-	const currentEmployeeSalaryEarning = useMemo(() => {
-		const currentEmployeeSalaryEarning =
-			allEmployeeSalaryEarnings?.filter(
-				(item) => item.employee === updateEmployeeId && isDateWithinRange(item.fromDate, item.toDate)
-			) ?? [];
-		return currentEmployeeSalaryEarning;
-	}, [allEmployeeSalaryEarnings, updateEmployeeId, values.year, values.month]);
-
-	const currentEmployeePfEsiDetails = useMemo(() => {
-		const selectedEmployeeData = allEmployeePfEsiDetails?.filter((item) => item.employee === updateEmployeeId);
-		return selectedEmployeeData;
-	}, [allEmployeePfEsiDetails, updateEmployeeId]);
-
-	const currentEmployeeSalaryDetails = useMemo(() => {
-		const matchingItem = allEmployeeSalaryDetails?.find((item) => item.employee === updateEmployeeId);
-		return matchingItem || null; // Return null (or another default value) when no match is found
-	}, [allEmployeeSalaryDetails, updateEmployeeId]);
-
-	const hasPreviewPrerequisites = Boolean(
-		currentEmployeeMonthlyAttendanceDetails.length > 0 &&
-			currentEmployeeSalaryEarning.length > 0 &&
-			currentEmployeeSalaryDetails &&
-			currentEmployeePfEsiDetails.length > 0
-	);
-	const {
-		data: salaryPreview,
+		data: previewResponse,
 		isLoading: isLoadingSalaryPreview,
 		isFetching: isFetchingSalaryPreview,
 		isSuccess: isSalaryPreviewSuccess,
@@ -429,7 +337,6 @@ const EditSalary = ({
 		error: salaryPreviewError,
 	} = useGetSalaryPreparationPreviewQuery(debouncedPreviewInput, {
 		skip:
-			!hasPreviewPrerequisites ||
 			!debouncedPreviewInput?.company ||
 			!debouncedPreviewInput?.employee ||
 			!Number.isInteger(debouncedPreviewInput?.year) ||
@@ -438,41 +345,46 @@ const EditSalary = ({
 			debouncedPreviewInput?.month > 12,
 		refetchOnMountOrArgChange: true,
 	});
+	// Retain this selection's last result while editing, but never display a
+	// response belonging to a different employee, company, or month.
+	const periodDate = `${values.year}-${String(values.month).padStart(2, '0')}-01`;
+	const salaryPreview =
+		previewResponse?.salary?.employee === updateEmployeeId &&
+		previewResponse?.salary?.company === globalCompany.id &&
+		previewResponse?.salary?.date === periodDate
+			? previewResponse
+			: undefined;
 	const previewIsUpdating =
-		hasPreviewPrerequisites &&
-		(!debouncedPreviewInput ||
-			previewInputSignature !== JSON.stringify(debouncedPreviewInput) ||
-			isLoadingSalaryPreview ||
-			isFetchingSalaryPreview);
+		previewInputSignature !== JSON.stringify(debouncedPreviewInput) ||
+		isLoadingSalaryPreview ||
+		isFetchingSalaryPreview;
 
 	useEffect(() => {
 		const previewRows = salaryPreview?.salary?.earnedAmounts;
 		if (!previewRows || previewIsUpdating) return;
-		if (values.employeeSalaryPrepared.advanceDeducted === null) {
-			setFieldValue('employeeSalaryPrepared.advanceDeducted', salaryPreview.salary.advanceDeducted, false);
-		}
-		if (values.employeeSalaryPrepared.vpfDeducted === null) {
-			setFieldValue('employeeSalaryPrepared.vpfDeducted', salaryPreview.salary.vpfDeducted, false);
-		}
-		if (values.employeeSalaryPrepared.tdsDeducted === null) {
-			setFieldValue('employeeSalaryPrepared.tdsDeducted', salaryPreview.salary.tdsDeducted, false);
-		}
-		const currentSignature = values.earnedAmount
-			.map((row) => `${row.earningsHead.id}:${row.rate}:${row.earnedAmount}:${row.arearAmount}`)
-			.join(',');
-		const previewSignature = previewRows
-			.map((row) => `${row.earningsHead.id}:${row.rate}:${row.earnedAmount}:${row.arearAmount}`)
-			.join(',');
-		if (currentSignature !== previewSignature) {
-			setFieldValue('earnedAmount', previewRows, false);
-		}
+		setValues((current) => {
+			const deductions = { ...current.employeeSalaryPrepared };
+			let changed = false;
+			for (const field of ['advanceDeducted', 'vpfDeducted', 'tdsDeducted']) {
+				if (!editedDefaultDeductions[field] && deductions[field] !== salaryPreview.salary[field]) {
+					deductions[field] = salaryPreview.salary[field];
+					changed = true;
+				}
+			}
+			const rowSignature = (rows) =>
+				rows.map((row) => `${row.earningsHead.id}:${row.rate}:${row.earnedAmount}:${row.arearAmount}`).join(',');
+			const earningsChanged = rowSignature(current.earnedAmount) !== rowSignature(previewRows);
+			if (!changed && !earningsChanged) return current;
+			return { ...current, employeeSalaryPrepared: deductions, earnedAmount: previewRows };
+		}, false);
 	}, [
 		salaryPreview?.salary?.earnedAmounts,
 		salaryPreview?.salary?.advanceDeducted,
 		salaryPreview?.salary?.vpfDeducted,
 		salaryPreview?.salary?.tdsDeducted,
 		previewIsUpdating,
-		setFieldValue,
+		editedDefaultDeductions,
+		setValues,
 	]);
 
 	const bulkPrepareSalaries = async (formikBag) => {
@@ -489,6 +401,7 @@ const EditSalary = ({
 			const elapsedTime = formatElapsedSeconds(performance.now() - startedAt);
 			setShowConfirmModal(false);
 			if (latestSelectionKeyRef.current === requestSelectionKey) {
+				setEditedDefaultDeductions({});
 				setFieldValue('employeeSalaryPrepared.incentiveAmount', 0, false);
 				setFieldValue('employeeSalaryPrepared.advanceDeducted', null, false);
 				setFieldValue('employeeSalaryPrepared.vpfDeducted', null, false);
@@ -529,54 +442,15 @@ const EditSalary = ({
 			);
 		}
 	};
-	if (
-		isLoadingAllEmployeeMonthlyAttendanceDetails ||
-		isLoadingAllEmployeeSalaryDetails ||
-		isLoadingAllEmployeeSalaryEarnings ||
-		isLoadingAllEmployeePfEsiDetails
-	) {
+	if (isSalaryPreviewError && salaryPreviewError?.data?.code?.startsWith('missing_')) {
 		return (
-			<div className="mx-auto">
-				<LoadingSpinner />
-			</div>
-		);
-	} else if (
-		currentEmployeeMonthlyAttendanceDetails?.length == 0 ||
-		currentEmployeeSalaryEarning?.length == 0 ||
-		currentEmployeeSalaryDetails == null ||
-		currentEmployeePfEsiDetails?.length == 0
-	) {
-		return (
-			<div>
-				<section>
-					{isSalaryPreviewError && (
-						<h2 className="mx-auto text-lg dark:text-red-600">
-							{getApiErrorMessage(salaryPreviewError, 'Salary preview is unavailable')}
-						</h2>
-					)}
-				</section>
-				<section>
-					{currentEmployeeMonthlyAttendanceDetails?.length == 0 && (
-						<h2 className="mx-auto text-lg dark:text-red-600">
-							This Employee has no attendance in {`${months[values.month - 1]}, ${values.year}`}
-						</h2>
-					)}
-					{currentEmployeePfEsiDetails?.length == 0 && (
-						<h2 className="mx-auto text-lg dark:text-red-600">
-							PF ESI Details haven't been added for this employee
-						</h2>
-					)}
-					{!currentEmployeeSalaryDetails && (
-						<h2 className="mx-auto text-lg dark:text-red-600">
-							Salary Details hasn't been added for this employee
-						</h2>
-					)}
-				</section>
-			</div>
+			<p className="my-2 text-sm text-red-600">
+				{getApiErrorMessage(salaryPreviewError, 'Salary preview is unavailable')}
+			</p>
 		);
 	} else {
 		return (
-			<div>
+			<div className="[container-name:salary-editor] [container-type:inline-size]">
 				<div>
 					{isSalaryPreviewError && (
 						<p className="my-2 text-sm text-red-600">
@@ -584,8 +458,8 @@ const EditSalary = ({
 						</p>
 					)}
 				</div>
-				<section className="grid items-start gap-2 xl:grid-cols-2">
-					<div className="rounded-xl border border-zinc-300 bg-white/60 p-2 shadow-sm dark:border-zinc-700 dark:bg-zinc-800/60">
+				<section className="grid grid-cols-1 items-start gap-2 [@container_salary-editor_(min-width:560px)]:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+					<div className="min-w-0 overflow-x-auto rounded-xl border border-zinc-300 bg-white/60 p-2 shadow-sm dark:border-zinc-700 dark:bg-zinc-800/60">
 						<div className="mb-2 flex items-center justify-between gap-3">
 							<h3 className="text-sm font-semibold uppercase tracking-wide text-blueAccent-600 dark:text-blueAccent-300">
 								Earnings
@@ -596,8 +470,8 @@ const EditSalary = ({
 								<tr>
 									<th className="px-3 py-1 text-left font-semibold">Head</th>
 									<th className="px-3 py-1 font-semibold">Rate</th>
-									<th className="px-3 py-1 font-semibold">Arrear</th>
-									<th className="px-3 py-1 font-semibold">Earned</th>
+									<th className="w-20 px-2 py-1 font-semibold">Arrear</th>
+									<th className="w-20 px-2 py-1 font-semibold">Earned</th>
 								</tr>
 							</thead>
 							<tbody className="divide-y divide-zinc-200 dark:divide-zinc-700">
@@ -612,7 +486,7 @@ const EditSalary = ({
 											</td>
 											<td className="relative p-0 font-normal dark:bg-zinc-800/40">
 												<Field
-													className="custom-number-input focus:bg-blueAccent-50 h-8 w-full bg-transparent px-3 text-right outline-none transition dark:focus:bg-blueAccent-900/30"
+													className="custom-number-input focus:bg-blueAccent-50 h-8 w-20 min-w-0 max-w-full bg-transparent px-2 text-right outline-none transition dark:focus:bg-blueAccent-900/30"
 													type="number"
 													name={`earnedAmount.${index}.arearAmount`}
 												/>
@@ -622,7 +496,7 @@ const EditSalary = ({
 													className="text-red-600"
 												/>
 											</td>
-											<td className="relative px-3 py-1 font-normal tabular-nums text-teal-600 dark:text-teal-400">
+											<td className="relative px-2 py-1 font-normal tabular-nums text-teal-600 dark:text-teal-400">
 												<span className="inline-flex items-center justify-end gap-2">
 													{earning.earnedAmount}
 													{previewIsUpdating && (
@@ -639,7 +513,7 @@ const EditSalary = ({
 									<td className="relative px-3 py-1.5 font-semibold tabular-nums">
 										{values.earnedAmount?.reduce((total, earning) => total + earning.rate, 0)}
 									</td>
-									<td className="relative px-3 py-2 font-semibold tabular-nums">
+									<td className="relative px-2 py-2 font-semibold tabular-nums">
 										{values.earnedAmount?.reduce((total, earning) => {
 											if (
 												earning.arearAmount != '' &&
@@ -651,7 +525,7 @@ const EditSalary = ({
 											return total;
 										}, 0)}
 									</td>
-									<td className="relative px-3 py-1.5 font-semibold tabular-nums text-teal-600 dark:text-teal-400">
+									<td className="relative px-2 py-1.5 font-semibold tabular-nums text-teal-600 dark:text-teal-400">
 										<span className="inline-flex items-center justify-end gap-2">
 											{values.earnedAmount?.reduce(
 												(total, earning) => total + earning.earnedAmount,
@@ -666,13 +540,17 @@ const EditSalary = ({
 							</tbody>
 						</table>
 					</div>
-					<div className="rounded-xl border border-zinc-300 bg-white/60 p-2 shadow-sm dark:border-zinc-700 dark:bg-zinc-800/60">
+					<div className="min-w-0 overflow-x-auto rounded-xl border border-zinc-300 bg-white/60 p-2 shadow-sm dark:border-zinc-700 dark:bg-zinc-800/60">
 						<div className="mb-2 flex items-center justify-between gap-3">
 							<h3 className="text-sm font-semibold uppercase tracking-wide text-blueAccent-600 dark:text-blueAccent-300">
 								Deductions
 							</h3>
 						</div>
-						<Deductions salary={salaryPreview?.salary} isUpdating={previewIsUpdating} />
+						<Deductions
+							salary={salaryPreview?.salary}
+							isUpdating={previewIsUpdating}
+							onDeductionChange={onDeductionChange}
+						/>
 					</div>
 				</section>
 				<OvertimeSummary overtime={salaryPreview?.overtime} isUpdating={previewIsUpdating} />
@@ -683,7 +561,7 @@ const EditSalary = ({
 								Paid days
 							</p>
 							<p className="mt-0 font-bold tabular-nums text-teal-600 dark:text-teal-400">
-								{currentEmployeeMonthlyAttendanceDetails?.[0]?.paidDaysCount / 2 || 0}
+								{salaryPreview?.salary?.paidDays ?? 'Waiting for preview'}
 							</p>
 						</div>
 						<div>

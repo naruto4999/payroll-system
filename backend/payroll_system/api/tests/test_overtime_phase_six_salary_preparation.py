@@ -3,8 +3,9 @@ from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
 from unittest.mock import patch
 
-from django.db import close_old_connections
+from django.db import close_old_connections, connection
 from django.test import TestCase, TransactionTestCase
+from django.test.utils import CaptureQueriesContext
 from rest_framework.test import APIClient
 
 from api.models import (
@@ -223,6 +224,36 @@ class PhaseSixSalaryPreparationTests(AttendanceTestDataMixin, TestCase):
             EmployeeSalaryPreparedOvertimeDetail.objects.count(),
             EmployeeAdvanceEmiRepayment.objects.count(),
         ))
+
+    def test_preview_query_count_does_not_grow_with_zero_overtime_days(self):
+        with CaptureQueriesContext(connection) as initial_queries:
+            initial = self.client.post(
+                '/api/salary-preparation/preview', self.salary_preview_payload(), format='json',
+            )
+        self.assertEqual(initial.status_code, 200, initial.data)
+
+        for day in range(3, 32):
+            self.create_attendance(self.employee, work_date=date(2024, 1, day), ot_min=0)
+
+        with CaptureQueriesContext(connection) as full_month_queries:
+            full_month = self.client.post(
+                '/api/salary-preparation/preview', self.salary_preview_payload(), format='json',
+            )
+        self.assertEqual(full_month.status_code, 200, full_month.data)
+        self.assertEqual(full_month.data, initial.data)
+        self.assertEqual(len(full_month_queries), len(initial_queries))
+
+    def test_salary_preview_includes_paid_days_with_half_day_precision(self):
+        self.monthly.paid_days_count = 41
+        self.monthly.save(update_fields=['paid_days_count'])
+
+        response = self.client.post(
+            '/api/salary-preparation/preview', self.salary_preview_payload(), format='json',
+        )
+
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(response.data['salary']['paid_days'], '20.5')
+        self.assertEqual(response.data['salary']['earned_amounts'][0]['earned_amount'], 13755)
 
     def test_full_salary_preview_matches_saved_salary(self):
         preview = self.client.post(
