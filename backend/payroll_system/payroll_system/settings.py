@@ -40,38 +40,13 @@ if not DEBUG:
     SECURE_HSTS_PRELOAD = True
 
 
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS").split(' ')
+# Deployment supplies production domains; local development uses its own .env.
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split()
 
 CORS_ALLOW_CREDENTIALS = True
 
-# CORS_ALLOW_HEADERS = default_headers + (
-#     'Access-Control-Allow-Origin',
-# )
-1
-# CORS_ALLOW_ALL_ORIGINS = True
-
-CORS_ALLOWED_ORIGINS = []
-CORS_ALLOWED_ORIGINS += os.environ.get("CORS_ALLOWED_ORIGINS").split(' ') 
-CSRF_TRUSTED_ORIGINS = []
-CSRF_TRUSTED_ORIGINS += os.environ.get("CSRF_TRUSTED_ORIGINS").split(' ') 
-
-# CSRF_TRUSTED_ORIGINS = [
-#     "https://pay-per.me",
-#     # Add other trusted origins as needed
-# ]
-# if DEBUG:
-#     CORS_ALLOWED_ORIGINS = []
-#     CORS_ALLOWED_ORIGINS += os.environ.get("CORS_ALLOWED_ORIGINS").split(' ') 
-
-# CORS_ALLOWED_ORIGIN_REGEXES = [
-#     r".*",
-# ]
-
-# CSRF_TRUSTED_ORIGINS = [
-#     'https://faeb-43-248-153-185.in.ngrok.io',
-# ]
-
-# CORS_ALLOW_HEADERS = '*'
+CORS_ALLOWED_ORIGINS = os.environ.get("CORS_ALLOWED_ORIGINS", "").split()
+CSRF_TRUSTED_ORIGINS = os.environ.get("CSRF_TRUSTED_ORIGINS", "").split()
 
 
 CORS_ALLOW_HEADERS = list(default_headers) + [
