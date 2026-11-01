@@ -5,7 +5,7 @@ if ! [ -x "$(command -v docker-compose)" ]; then
   exit 1
 fi
 
-domains=(pay-per.me www.pay-per.me)
+domains=(pay-per.in www.pay-per.in)
 rsa_key_size=4096
 data_path="./data/certbot"
 email="kk.singh4999@gmail.com"

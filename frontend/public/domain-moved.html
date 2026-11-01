@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Pay-Per has moved</title>
+    <style>
+      :root { color-scheme: light; font-family: system-ui, sans-serif; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #f1f5f9; color: #0f172a; }
+      main { width: 100%; max-width: 560px; padding: 40px; background: white; border: 1px solid #e2e8f0; border-radius: 20px; box-shadow: 0 16px 48px #0f172a0d; }
+      .brand { font-weight: 800; letter-spacing: .08em; color: #4338ca; }
+      h1 { font-size: clamp(1.8rem, 6vw, 2.4rem); line-height: 1.15; }
+      .domain { white-space: nowrap; }
+      p { line-height: 1.65; color: #475569; }
+      a { color: #4338ca; overflow-wrap: anywhere; }
+      .button { display: inline-block; margin: 12px 0; padding: 14px 22px; border-radius: 10px; background: #4338ca; color: white; font-weight: 700; text-decoration: none; }
+      a:focus-visible { outline: 3px solid #818cf8; outline-offset: 4px; }
+      .small { font-size: .9rem; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="brand">PAY-PER</div>
+      <h1>We've moved to <span class="domain">pay-per.in</span></h1>
+      <p>Our new address is <a href="https://pay-per.in">https://pay-per.in</a>.</p>
+      <p><strong>pay-per.me expires on 10 November 2026.</strong> Please update your bookmarks and saved links to use our new address.</p>
+      <a class="button" id="continue" href="https://pay-per.in">Go to Pay-Per now &rarr;</a>
+      <p class="small" id="redirect-message" hidden>You'll be redirected in <span id="countdown">10</span> seconds.</p>
+      <p class="small">Your account and payroll data stay the same. Please sign in again on the new domain.</p>
+      <noscript><p>Use the button above to continue to the new website.</p></noscript>
+    </main>
+    <script>
+      (() => {
+        // Keep app paths, but do not transfer query strings or fragments that
+        // could contain credentials or tokens from the old origin.
+        const target = new URL('https://pay-per.in');
+        target.pathname = window.location.pathname;
+        document.getElementById('continue').href = target.href;
+        document.getElementById('redirect-message').hidden = false;
+        let remaining = 10;
+        const interval = window.setInterval(() => {
+          remaining -= 1;
+          document.getElementById('countdown').textContent = remaining;
+          if (remaining <= 0) {
+            window.clearInterval(interval);
+            window.location.replace(target.href);
+          }
+        }, 1000);
+      })();
+    </script>
+  </body>
+</html>

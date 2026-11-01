@@ -25,7 +25,7 @@ services:
             - ./data/certbot/www:/var/www/certbot:rw
         depends_on:
             - frontend
-        command: certonly --webroot --webroot-path=/var/www/certbot --email kk.singh4999@gmail.com --agree-tos --no-eff-email -d pay-per.me  -d www.pay-per.me
+        command: certonly --webroot --webroot-path=/var/www/certbot --cert-name pay-per.in --email kk.singh4999@gmail.com --agree-tos -d pay-per.in -d www.pay-per.in
 
     certbot-validity:
         image: certbot/certbot
