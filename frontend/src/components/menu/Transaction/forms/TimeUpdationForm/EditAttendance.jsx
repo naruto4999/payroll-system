@@ -36,6 +36,7 @@ import { alertActions } from '../../../../authentication/store/slices/alertSlice
 import { useOutletContext } from 'react-router-dom';
 import calculateAttendance from './attendanceUtils';
 import { getApiErrorMessage } from '../../../../authentication/api/errorUtils';
+import { getAttendanceScope, isAttendanceReady } from './attendanceScope';
 
 import { useFormikContext } from 'formik';
 import MdbMachineAttendance from './MdbMachineAttendanceModal';
@@ -94,8 +95,9 @@ const EditAttendance = ({
 	// onRowClick,
 	setSelectedDate,
 }) => {
-	const { values, errors, touched, handleChange, handleSubmit, setFieldValue, isSubmitting, isValid } =
+	const { values, errors, touched, handleChange, handleSubmit, setFieldValue, setValues, isSubmitting, isValid } =
 		useFormikContext();
+	const loadedAttendanceRef = useRef(null);
 
 	const dispatch = useDispatch();
 	const [showLoadingBar, setShowLoadingBar] = useOutletContext();
@@ -161,7 +163,9 @@ const EditAttendance = ({
 	] = useBulkDefaultAttendanceMutation();
 
 	const {
-		data: allEmployeeAttendance,
+		currentData: allEmployeeAttendance,
+		requestId: attendanceRequestId,
+		status: attendanceStatus,
 		isLoading: isLoadingAllEmployeeAttendance,
 		isSuccess: isAllEmployeeAttendanceSuccess,
 		isFetching: isFetchingAllEmployeeAttendance,
@@ -177,7 +181,7 @@ const EditAttendance = ({
 	);
 	// console.log(allEmployeeAttendance);
 	const {
-		data: allEmployeeProfessionalDetail,
+		currentData: allEmployeeProfessionalDetail,
 		isLoading: isLoadingAllEmployeeProfessionalDetail,
 		isSuccess: isAllEmployeeProfessionalDetailSuccess,
 		isFetching: isFetchingAllEmployeeProfessionalDetail,
@@ -190,7 +194,7 @@ const EditAttendance = ({
 		}
 	);
 	const {
-		data: allEmployeeSalaryDetail,
+		currentData: allEmployeeSalaryDetail,
 		isLoading: isLoadingAllEmployeeSalaryDetail,
 		isSuccess: isAllEmployeeSalaryDetailSuccess,
 		isFetching: isFetchingAllEmployeeSalaryDetail,
@@ -261,7 +265,7 @@ const EditAttendance = ({
 	}, [allEmployeeProfessionalDetail]);
 
 	const {
-		data: allEmployeeShifts,
+		currentData: allEmployeeShifts,
 		isLoading: isLoadingAllEmployeeShifts,
 		isSuccess: isAllEmployeeShiftsSuccess,
 		isFetching: isFetchingAllEmployeeShifts,
@@ -320,6 +324,13 @@ const EditAttendance = ({
 		() => categorizedAllEmployeeAttendance?.[updateEmployeeId] || [],
 		[categorizedAllEmployeeAttendance, updateEmployeeId]
 	);
+	const attendanceScope = getAttendanceScope(globalCompany.id, updateEmployeeId, values.year, values.month);
+	// Keep the loaded grid visible during same-scope refreshes; saving still requires the latest result.
+	const attendanceVisible = Boolean(attendanceScope && values.attendanceScope === attendanceScope);
+	const attendanceReady = Boolean(allEmployeeShifts && currentEmployeeProfessionalDetail && currentEmployeeSalaryDetail) &&
+		isAttendanceReady(values, globalCompany.id, updateEmployeeId, {
+		status: attendanceStatus, requestId: attendanceRequestId,
+	});
 
 	const giveWeeklyOffHolidayOff = (year, month, day, minDays, auto = false) => {
 		// Multiply by 2 because present count is twice as much since first half and second hlaf is counted separately
@@ -820,7 +831,7 @@ const EditAttendance = ({
 			}
 		};
 
-		if (categorizedAllEmployeeShifts && !isSubmitting) {
+		if (attendanceReady && categorizedAllEmployeeShifts && !isSubmitting) {
 			clearTimeout(timeoutId);
 			timeoutId = setTimeout(() => {
 				performCalculations();
@@ -831,6 +842,7 @@ const EditAttendance = ({
 			clearTimeout(timeoutId);
 		};
 	}, [
+		attendanceReady,
 		values.attendance,
 		currentEmployeeProfessionalDetail,
 		currentEmployeeSalaryDetail,
@@ -843,11 +855,16 @@ const EditAttendance = ({
 		if (
 			!isSubmitting &&
 			!isFetchingAllEmployeeAttendance &&
+			isAllEmployeeAttendanceSuccess &&
+			allEmployeeAttendance &&
+			allEmployeeShifts &&
 			employeeAttendance &&
 			currentEmployeeProfessionalDetail &&
 			currentEmployeeSalaryDetail &&
 			updateEmployeeId
 		) {
+			const loadKey = `${attendanceScope}:${attendanceRequestId}:${attendanceRefreshVersion}`;
+			if (loadedAttendanceRef.current === loadKey) return;
 			const daysInMonth = new Date(values.year, values.month, 0).getDate();
 			const new_attendance = {};
 			const weeklyOffIndex = weeklyOffValues.indexOf(currentEmployeeProfessionalDetail.weeklyOff);
@@ -867,6 +884,8 @@ const EditAttendance = ({
 					continue;
 				}
 				new_attendance[day] = {
+					employee: updateEmployeeId,
+					company: globalCompany.id,
 					machineIn: '',
 					machineOut: '',
 					manualIn: '',
@@ -957,9 +976,21 @@ const EditAttendance = ({
 				}
 			}
 
-			setFieldValue('attendance', new_attendance);
+			loadedAttendanceRef.current = loadKey;
+			setValues((previous) => ({
+				...previous,
+				attendance: new_attendance,
+				attendanceScope,
+				attendanceRequestId,
+			}));
 		}
 	}, [
+		attendanceScope,
+		attendanceRequestId,
+		isSubmitting,
+		isAllEmployeeAttendanceSuccess,
+		allEmployeeAttendance,
+		allEmployeeShifts,
 		employeeAttendance,
 		currentEmployeeProfessionalDetail,
 		currentEmployeeSalaryDetail,
@@ -1186,6 +1217,7 @@ const EditAttendance = ({
 				{/* <section className="w-fit"> */}
 				<AttendanceHeader />
 				{updateEmployeeId &&
+					attendanceVisible &&
 					categorizedAllEmployeeShifts &&
 					currentEmployeeSalaryDetail &&
 					sortedKeys.map((day) => {
@@ -1221,7 +1253,7 @@ const EditAttendance = ({
 							/>
 						);
 					})}
-				{sortedKeys.length == 0 && updateEmployeeId && (
+				{attendanceVisible && sortedKeys.length == 0 && updateEmployeeId && (
 					<div className="mx-auto mt-6 w-fit font-bold dark:text-red-600">
 						Current Employee hadn't Joined till this date
 					</div>
@@ -1231,7 +1263,7 @@ const EditAttendance = ({
 						Please Select an Employee First
 					</div>
 				)}
-				{updateEmployeeId && (
+				{updateEmployeeId && attendanceVisible && (
 					<AttendanceFooter
 						absent={absent}
 						attendance={values.attendance}
@@ -1268,6 +1300,7 @@ const EditAttendance = ({
 
 								<select
 									name="month"
+									disabled={isSubmitting}
 									id="month"
 									value={values.month}
 									onChange={(e) => {
@@ -1299,6 +1332,7 @@ const EditAttendance = ({
 								</select>
 								<select
 									name="year"
+									disabled={isSubmitting}
 									id="year"
 									onChange={(e) => {
 										handleChange(e);
@@ -1380,6 +1414,7 @@ const EditAttendance = ({
 								<button
 									type="button"
 									className="h-7 w-20 rounded bg-blueAccent-400 p-1 text-sm font-medium hover:bg-blueAccent-500 dark:bg-blueAccent-700 dark:hover:bg-blueAccent-600"
+									disabled={!attendanceReady || isSubmitting}
 									onClick={AutoFillAttendance}
 								>
 									Auto
@@ -1402,6 +1437,7 @@ const EditAttendance = ({
 								<button
 									type="button"
 									className="h-7 w-20 rounded bg-slate-600 bg-opacity-30 p-1 text-sm font-medium hover:bg-opacity-60 dark:bg-slate-400 dark:bg-opacity-30 dark:hover:bg-opacity-60"
+									disabled={!attendanceReady || isSubmitting}
 									onClick={clearAttendance}
 								>
 									Clear
@@ -1436,13 +1472,13 @@ const EditAttendance = ({
 						<>
 							<button
 								className={classNames(
-									isValid && !isSubmitting && blockingOvertimeRows.length === 0
+									attendanceReady && sortedKeys.length > 0 && isValid && !isSubmitting && blockingOvertimeRows.length === 0
 										? 'hover:bg-teal-600 dark:hover:bg-teal-600'
 										: 'cursor-not-allowed opacity-40',
 									'h-10 w-fit rounded bg-teal-500 p-2 px-4 text-base font-medium dark:bg-teal-700'
 								)}
 								type="submit"
-								disabled={!isValid || isSubmitting || blockingOvertimeRows.length > 0}
+								disabled={!attendanceReady || sortedKeys.length === 0 || !isValid || isSubmitting || blockingOvertimeRows.length > 0}
 								onClick={handleSubmit}
 							>
 								Update
