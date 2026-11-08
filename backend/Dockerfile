@@ -26,7 +26,7 @@ EXPOSE 8000
 EXPOSE 587
 CMD ["gunicorn", "payroll_system.wsgi:application", \
      "--bind", ":8000", \
-     "--workers", "3", \
+     "--workers", "2", \
      "--timeout", "120", \
      "--max-requests", "20", \
      "--max-requests-jitter", "10"]
