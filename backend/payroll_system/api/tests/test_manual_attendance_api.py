@@ -181,3 +181,42 @@ class ManualAttendanceApiTests(AttendanceTestDataMixin, TestCase):
         mixed_month = [self.row(), self.row(work_date='2024-02-01')]
         response = self.client.post(self.create_url, {'employeeAttendance': mixed_month}, format='json')
         self.assertEqual(response.status_code, 400)
+
+    def test_manual_endpoints_preserve_imported_punches_and_accept_manual_corrections(self):
+        attendance = self.create_attendance(self.employee)
+        EmployeeAttendance.objects.filter(pk=attendance.pk).update(
+            machine_in=time(8, 51), machine_out=time(21, 2),
+        )
+        for method, url, machine_in, machine_out in (
+            ('post', self.create_url, '09:22', '21:00'),
+            ('put', self.update_url, None, None),
+        ):
+            with self.subTest(method=method):
+                response = getattr(self.client, method)(url, {'employeeAttendance': [self.row(
+                    machineIn=machine_in, machineOut=machine_out,
+                    manualIn='09:00', manualOut='18:00',
+                )]}, format='json')
+
+                self.assertEqual(response.status_code, 200, response.data)
+                attendance.refresh_from_db()
+                self.assertEqual((attendance.machine_in, attendance.machine_out), (time(8, 51), time(21, 2)))
+                self.assertEqual((attendance.manual_in, attendance.manual_out), (time(9), time(18)))
+                saved = next(row for row in response.data if row['date'] == '2024-01-02')
+                self.assertEqual(saved['machine_in'], '08:51:00')
+                self.assertEqual(saved['machine_out'], '21:02:00')
+
+    def test_manual_endpoints_cannot_create_machine_punches_for_new_days(self):
+        for method, url, work_date in (
+            ('post', self.create_url, '2024-02-02'),
+            ('put', self.update_url, '2024-03-02'),
+        ):
+            with self.subTest(method=method):
+                response = getattr(self.client, method)(url, {'employeeAttendance': [self.row(
+                    work_date=work_date, machineIn='09:22', machineOut='21:00', manualIn='09:00',
+                )]}, format='json')
+
+                self.assertEqual(response.status_code, 200, response.data)
+                attendance = EmployeeAttendance.objects.get(employee=self.employee, date=work_date)
+                self.assertIsNone(attendance.machine_in)
+                self.assertIsNone(attendance.machine_out)
+                self.assertEqual(attendance.manual_in, time(9))

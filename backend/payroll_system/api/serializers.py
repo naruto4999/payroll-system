@@ -733,7 +733,8 @@ class EmployeeAttendanceSerializer(serializers.ModelSerializer):
             'manual_mode', 'overtime_details', 'overtime_intervals',
             'overtime_duration_entries',
         ]
-        read_only_fields = ['id', 'employee', 'company', 'ot_min', 'overtime_details']
+        # Machine punches are owned by machine imports/transfers, never manual saves.
+        read_only_fields = ['id', 'employee', 'company', 'machine_in', 'machine_out', 'ot_min', 'overtime_details']
 
     def validate_date(self, value):
         if value < ATTENDANCE_HISTORY_MIN_DATE:

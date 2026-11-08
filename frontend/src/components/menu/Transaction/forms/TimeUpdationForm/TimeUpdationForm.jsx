@@ -28,7 +28,7 @@ import { getApiErrorMessage } from '../../../../authentication/api/errorUtils';
 import { useOutletContext } from 'react-router-dom';
 import ReactModal from 'react-modal';
 import { Formik } from 'formik';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch, useSelector, useStore } from 'react-redux';
 import { alertActions } from '../../../../authentication/store/slices/alertSlice';
 import EditAttendance from './EditAttendance';
 import { useGetLeaveGradesQuery } from '../../../../authentication/api/leaveGradeEntryApiSlice';
@@ -37,6 +37,7 @@ import { useGetWeeklyOffHolidayOffQuery } from '../../../../authentication/api/w
 import { useGetHolidaysQuery } from '../../../../authentication/api/holidayEntryApiSlice';
 import { useGetCompanyDetailsQuery } from '../../../../authentication/api/companyEntryApiSlice';
 import { TimeUpdationSchema } from './TimeUpdationSchema';
+import { attendanceRowsMatchScope, isAttendanceReady } from './attendanceScope';
 // import createValidationSchema from './EmployeeShiftsSchema';
 
 const classNames = (...classes) => {
@@ -97,6 +98,7 @@ const validateOvertimeEntry = (entry, date, exact) => {
 
 const TimeUpdationForm = () => {
 	const dispatch = useDispatch();
+	const store = useStore();
 	const globalCompany = useSelector((state) => state.globalCompany);
 	const {
 		data: companyDetails,
@@ -168,6 +170,18 @@ const TimeUpdationForm = () => {
 
 	const updateButtonClicked = useCallback(
 		async (values, formikBag) => {
+			const attendanceQuery = timeUpdationApiSlice.endpoints.getCurrentMonthAllEmployeeAttendance.select({
+				company: globalCompany.id, year: values.year, month: values.month,
+			})(store.getState());
+			if (!isAttendanceReady(values, globalCompany.id, updateEmployeeId, attendanceQuery) ||
+				!attendanceRowsMatchScope(values, globalCompany.id, updateEmployeeId)) {
+				dispatch(alertActions.createAlert({
+					message: 'Wait for attendance for the selected employee and month to finish loading before saving.',
+					type: 'Error',
+					duration: 5000,
+				}));
+				return;
+			}
 			const blockedAttendance = Object.values(values.attendance).find(
 				(attendance) => attendance.unbackfilledOvertime ||
 					attendance.legacyOvertimeExclusion ||
@@ -190,6 +204,8 @@ const TimeUpdationForm = () => {
 				if (values.attendance.hasOwnProperty(day)) {
 					const attendance = values.attendance[day];
 					const {
+						machineIn,
+						machineOut,
 						otMin,
 						overtimeDetails = [],
 						calculatedOvertimeIntervals = [],
@@ -263,17 +279,8 @@ const TimeUpdationForm = () => {
 			// Process employee_attendance
 			employee_attendance.forEach((each_attendance) => {
 				delete each_attendance.id;
-				each_attendance.company = globalCompany.id;
-				each_attendance.employee = updateEmployeeId;
-
-				if (each_attendance.machineIn === '') {
-					each_attendance.machineIn = null;
-				}
 				if (each_attendance.lateMin === '') {
 					each_attendance.lateMin = null;
-				}
-				if (each_attendance.machineOut === '') {
-					each_attendance.machineOut = null;
 				}
 				if (each_attendance.manualIn === '') {
 					each_attendance.manualIn = null;
@@ -323,7 +330,7 @@ const TimeUpdationForm = () => {
 				);
 			}
 		},
-		[globalCompany, updateEmployeeId, dispatch, updateEmployeeAttendance, addEmployeeAttendance]
+		[globalCompany, updateEmployeeId, dispatch, store, updateEmployeeAttendance, addEmployeeAttendance]
 	);
 
 	const [editTimeUpdationPopover, setEditTimeUpdationPopover] = useState(false);
@@ -343,6 +350,8 @@ const TimeUpdationForm = () => {
 			manualFromDate: '',
 			manualToDate: '',
 			attendance: {},
+			attendanceScope: null,
+			attendanceRequestId: null,
 		};
 
 		for (let day = 1; day <= daysInMonth; day++) {
@@ -559,6 +568,7 @@ const TimeUpdationForm = () => {
 					<div className="ml-14 flex max-w-full flex-row justify-between gap-4">
 						<div className="max-w-1/2">
 							<Formik
+								key={globalCompany.id}
 								initialValues={initialValues}
 								validationSchema={TimeUpdationSchema}
 								onSubmit={updateButtonClicked}
